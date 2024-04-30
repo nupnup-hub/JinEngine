@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once  
 #include"SsaoCommon.hlsl"
 
 #ifndef USE_HBAO
@@ -16,7 +16,7 @@ struct GSOut
 void SsaoGs(triangle VertexOut input[3], inout TriangleStream<GSOut> stream)
 {
 	GSOut gsOut;
-	gsOut.LayerIndex = uSliceIndex;
+    gsOut.LayerIndex = cbSlice.uSliceIndex;
 
     [unroll]
 	for (int i = 0; i < 3; i++)

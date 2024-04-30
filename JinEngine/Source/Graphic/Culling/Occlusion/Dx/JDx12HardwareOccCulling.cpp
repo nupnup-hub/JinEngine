@@ -1,15 +1,19 @@
 #include"JDx12HardwareOccCulling.h"
 #include"../../Dx/JDx12CullingManager.h" 
-#include"../../Dx/JDx12CullingResourceHolder.h"  
+#include"../../Dx/JDx12CullingResourceHolder.h"
+#include"../../../Command/Dx/JDx12CommandContext.h"
 #include"../../../DepthMap/Dx/JDx12DepthTest.h"
 #include"../../../DataSet/Dx/JDx12GraphicDataSet.h"
 #include"../../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
-#include"../../../Utility/Dx/JD3DUtility.h"
+#include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
+#include"../../../Utility/Dx/JDx12Utility.h" 
 #include"../../../JGraphicUpdateHelper.h"
 #include"../../../../Core/Time/JStopWatch.h"
 #include"../../../../Core/Platform/JHardwareInfo.h"
+#include"../../../../Core/Log/JLogMacro.h"
 #include"../../../../Object/Component/Camera/JCamera.h" 
+#include"../../../../Object/Resource/Scene/JScene.h" 
 
 #include"../../../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine::Graphic
@@ -43,14 +47,14 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HardwareOccCulling::UpdateData::CalculateRate(const size_t capacity)
 	{
-		static constexpr uint appMaxResolveRateCapacity = 16;
+		static constexpr uint appMaxResolveRateCapacity = allUpdateCount;
 		static constexpr uint appMinResolveRateCapacity = 1000;
 		if (capacity < appMaxResolveRateCapacity)
 			resolveRate = 1.0f;
 		else if (capacity < appMinResolveRateCapacity)
 		{
-			static constexpr uint rateCount = 6;	//1/2, 1/4, 1/8, 1/16, 1/32, 1/64 
-			static constexpr float rateWidth = 1.0f / rateCount;
+			static constexpr uint rateCount = 4;	//1/2, 1/4, 1/8, 1/16, 1/32, 1/64 
+			static constexpr float rateWidth = 1.0f / (float)rateCount;
 
 			//minResolveRate ~1.0f
 			float rawRate = Private::CalRate(capacity, appMaxResolveRateCapacity, appMinResolveRateCapacity);
@@ -64,27 +68,29 @@ namespace JinEngine::Graphic
 
 		resolveRate = std::clamp(resolveRate, minResolveRate, 1.0f);
 		offset = count = 0;
-		bufferCapacity = capacity;
-		updateAllObject = false;
+		bufferCapacity = capacity; 
 		isUpdateEnd = true;
 		CalcuateUpdateCycle();
 	}
 	void JDx12HardwareOccCulling::UpdateData::CalculateRate(const size_t capacity, const size_t gpuMemoryBusWidth)
-	{
-		//2400
+	{  
 		const uint executeCount = capacity / gpuMemoryBusWidth;
-		const float executeRate = 1.0f / executeCount;
-
-		resolveRate = std::clamp(executeRate, minResolveRate, 1.0f);
+		if (capacity < allUpdateCount)
+			resolveRate = 1.0f;
+		else
+		{
+			float executeRate = 1.0f / executeCount;
+			resolveRate = std::clamp(executeRate, minResolveRate, maxResolveRate); 
+		}
+ 
 		offset = count = 0;
-		bufferCapacity = capacity;
-		updateAllObject = false;
+		bufferCapacity = capacity; 
 		isUpdateEnd = true;
 		CalcuateUpdateCycle();
 	}
 	uint JDx12HardwareOccCulling::UpdateData::CalculateCount()const noexcept
 	{
-		return updateAllObject ? bufferCapacity : (uint)(bufferCapacity * resolveRate);
+		return (uint)(bufferCapacity * resolveRate);
 	}
 	void JDx12HardwareOccCulling::UpdateData::CalcuateUpdateCycle() noexcept
 	{
@@ -92,7 +98,7 @@ namespace JinEngine::Graphic
 		updateCycle = bufferCapacity % updateCount ? (bufferCapacity / updateCount + 1) : (bufferCapacity / updateCount);
 	}
 	void JDx12HardwareOccCulling::UpdateData::Update()
-	{ 
+	{
 		if (isUpdateEnd)
 			isUpdateEnd = false;
 
@@ -109,18 +115,21 @@ namespace JinEngine::Graphic
 			count = bufferCapacity - offset;
 	}
 	void JDx12HardwareOccCulling::UpdateData::Reset()
-	{
-		updateAllObject = false;
+	{ 
 		offset = count = 0;
 	}
 
-	void JDx12HardwareOccCulling::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
+	JDx12HardwareOccCulling::~JDx12HardwareOccCulling()
 	{
-		auto gpuInfo = Core::JHardwareInfo::GetGpuInfo();
-		gpuMemoryBusWidth = gpuInfo[0].memoryBusWidth;
+		ClearResource();
+	}
+	void JDx12HardwareOccCulling::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)
+	{
+		BuildResource(device, gM, GetGraphicInfo());
 	}
 	void JDx12HardwareOccCulling::Clear()
 	{
+		ClearResource();
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12HardwareOccCulling::GetDeviceType()const noexcept
 	{
@@ -128,11 +137,31 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12HardwareOccCulling::HasPreprocessing()const noexcept
 	{
-		return false;
+		return true;
 	}
 	bool JDx12HardwareOccCulling::HasPostprocessing()const noexcept
 	{
 		return false;
+	}
+	bool JDx12HardwareOccCulling::HasDependency(const JGraphicInfo::TYPE type)const noexcept
+	{
+		if (type == JGraphicInfo::TYPE::FRAME)
+			return true;
+		else
+			return false;
+	}
+	bool JDx12HardwareOccCulling::HasDependency(const JGraphicOption::TYPE type)const noexcept
+	{ 
+		return false;
+	}
+	void JDx12HardwareOccCulling::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
+	{
+		auto dx12Set = static_cast<const JDx12GraphicInfoChangedSet&>(set);  
+		if (dx12Set.preInfo.frame.upBoundingObjCapacity != dx12Set.newInfo.frame.upBoundingObjCapacity)
+			NotifyReBuildHdOccBuffer(dx12Set.device, dx12Set.newInfo.frame.upBoundingObjCapacity, dx12Set.cm->GetCullingInfoVec(J_CULLING_TYPE::HD_OCCLUSION));
+	}
+	void JDx12HardwareOccCulling::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
+	{ 
 	}
 	void JDx12HardwareOccCulling::NotifyBuildNewHdOccBuffer(JGraphicDevice* device, const size_t initCapacity, const JUserPtr<JCullingInfo>& cullingInfo)
 	{
@@ -151,7 +180,7 @@ namespace JinEngine::Graphic
 		{
 			UpdateData& upData = updateData[data->GetArrayIndex()];
 			upData.CalculateRate(capacity, gpuMemoryBusWidth);
-			data->SetUpdateFrequency(upData.resolveRate);  
+			data->SetUpdateFrequency(upData.resolveRate);
 			data->SetUpdateEnd(true);
 		}
 	}
@@ -164,22 +193,23 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HardwareOccCulling::BeginDraw(const JGraphicBindSet* bindSet, const JDrawHelper& helper)
 	{
-		/*	
-			//앞으로 read back buffer로 cpu로 occlusion query 데이터를 가져와서 
-			//SetPredict가 아닌 pointer에 접근해서 데이터를 읽는다.
-			if (!IsSameDevice(bindSet))
+		//앞으로 read back buffer로 cpu로 occlusion query 데이터를 가져와서
+		//SetPredict가 아닌 pointer에 접근해서 데이터를 읽는다.
+		if (!IsSameDevice(bindSet))
 			return;
 
-			const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
-			JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(dx12BindSet->cullingManager);
-			ID3D12GraphicsCommandList* cmdList = dx12BindSet->cmdList;
+		const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
+		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12BindSet->context);
 
-			auto cInterface = helper.GetCullInterface();
-			if (!cInterface.HasCullingData(J_CULLING_TYPE::HD_OCCLUSION))
-				return;
-					//auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
-		//JD3DUtility::ResourceTransition(cmdList, resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PREDICATION);
-		*/
+		auto gRInterface = helper.GetOccGResourceInterface(); 
+		auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		
+		context->Transition(dsSet.holder, D3D12_RESOURCE_STATE_DEPTH_READ);		//깊이값 write(x)
+		context->FlushResourceBarriers();
+
+		auto cInterface = helper.GetCullInterface();
+		UpdateData& upData = updateData[cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
+		upData.Update();
 	}
 	void JDx12HardwareOccCulling::EndDraw(const JGraphicBindSet* bindSet, const JDrawHelper& helper)
 	{
@@ -196,75 +226,48 @@ namespace JinEngine::Graphic
 			return;
 
 		auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
-		JD3DUtility::ResourceTransition(cmdList, resource, D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COMMON);
+		JDx12Utility::ResourceTransition(cmdList, resource, D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COMMON);
 		*/
 	}
 	void JDx12HardwareOccCulling::DrawOcclusionDepthMap(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper)
 	{
 		if (!IsSameDevice(occDrawSet) || !helper.allowHdOcclusionCulling)
-			return; 
+			return;
 
 		const JDx12GraphicOccDrawSet* dx12DrawSet = static_cast<const JDx12GraphicOccDrawSet*>(occDrawSet);
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(dx12DrawSet->device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12DrawSet->graphicResourceM);
-		ID3D12GraphicsCommandList* cmdList = dx12DrawSet->cmdList;
+		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12DrawSet->context);
 
-		auto gRInterface = helper.GetOccGResourceInterface();
-		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL);
-
+		auto gRInterface = helper.GetOccGResourceInterface(); 
 		auto cInterface = helper.GetCullInterface();
 		UpdateData& upData = updateData[cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
-		if (upData.CanPassThisFrame(helper.info.currFrameResourceIndex))
+		if (upData.CanPassThisFrame(helper.info.frame.currIndex))
 			return;
 
 		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
 		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		
-		const bool canCulling = !upData.updateAllObject;
-		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+	 
+		upData.Update();
 
-		for (uint i = 0; i < dataCount; ++i)
+		//use SCENE_LAYER_DEPTH_STENCIL after scene draw
+		auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		context->SetViewportAndRect(dsSet.info->GetResourceSize());
+		context->Transition(dsSet.holder, D3D12_RESOURCE_STATE_DEPTH_READ, true);	//깊이값 write(x)
+		context->SetDepthStencilView(dsSet);
+
+		JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
+		JDrawCondition drawCondition(helper, false, true, false, helper.option.culling.allowHDOcclusionUseOccluder);
+		drawCondition.SetRestrictRange(upData.offset, upData.count);
+
+		if (hasAlignedData && helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT))
+			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, helper.objVec.aligned[camFrustumIndex], helper, drawCondition);
+		else
 		{
-			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
-			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
-		
-			JGraphicResourceInfo* dsInfo = dx12Gm->GetInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
-			ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
-			D3D12_RESOURCE_DESC desc = dsResource->GetDesc();
-
-			D3D12_VIEWPORT viewPort;
-			D3D12_RECT rect;
-			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), true, viewPort, rect);
-			cmdList->RSSetViewports(1, &viewPort);
-			cmdList->RSSetScissorRects(1, &rect);
-
-			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
-			JD3DUtility::ResourceTransition(cmdList, dsResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
-			//draw specific count 
-
-			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
-			if (hasAlignedData)
-			{
-				dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,
-					helper.objVec.aligned[camFrustumIndex],
-					helper,
-					JDrawCondition(helper, false, canCulling, false, helper.option.allowHDOcclusionUseOccluder));
-			}
-			else
-			{
-				dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,
-					objVec00,
-					helper,
-					JDrawCondition(helper, false, canCulling, false, helper.option.allowHDOcclusionUseOccluder));
-				dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,
-					objVec01,
-					helper,
-					JDrawCondition(helper, false, canCulling, false, helper.option.allowHDOcclusionUseOccluder));
-			}
-			JD3DUtility::ResourceTransition(cmdList, dsResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+			
+			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec00, helper, drawCondition);
+			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec01, helper, drawCondition);
 		}
 	}
 	void JDx12HardwareOccCulling::DrawOcclusionDepthMapMultiThread(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper)
@@ -273,62 +276,35 @@ namespace JinEngine::Graphic
 			return;
 
 		const JDx12GraphicOccDrawSet* dx12DrawSet = static_cast<const JDx12GraphicOccDrawSet*>(occDrawSet);
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(dx12DrawSet->device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12DrawSet->graphicResourceM);
-		ID3D12GraphicsCommandList* cmdList = dx12DrawSet->cmdList;
+		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12DrawSet->context);
 
-		auto gRInterface = helper.GetOccGResourceInterface();
-		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL);
-
+		auto gRInterface = helper.GetOccGResourceInterface(); 
 		auto cInterface = helper.GetCullInterface();
 		UpdateData& upData = updateData[cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
-		if (upData.CanPassThisFrame(helper.info.currFrameResourceIndex))
+		if (upData.CanPassThisFrame(helper.info.frame.currIndex))
 			return;
 
 		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
 		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+ 
+		auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		context->SetViewportAndRect(dsSet.info->GetResourceSize());
+		context->SetDepthStencilView(dsSet);
 
-		const bool canCulling = !upData.updateAllObject;
-		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+		JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
+		JDrawCondition drawCondition(helper, false, true, false, helper.option.culling.allowHDOcclusionUseOccluder);
+		drawCondition.SetRestrictRange(upData.offset, upData.count);
 
-		for (uint i = 0; i < dataCount; ++i)
+		if (hasAlignedData && helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT))
+			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, helper.objVec.aligned[camFrustumIndex], helper, drawCondition);
+		else
 		{
-			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
-			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
-			
-			ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
-			D3D12_RESOURCE_DESC desc = dsResource->GetDesc();
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
-			D3D12_VIEWPORT viewPort;
-			D3D12_RECT rect;
-			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), true, viewPort, rect);
-			cmdList->RSSetViewports(1, &viewPort);
-			cmdList->RSSetScissorRects(1, &rect);
-
-			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
-			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
-			
-			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
-			if (hasAlignedData)
-			{
-				dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,
-					helper.objVec.aligned[camFrustumIndex],
-					helper,
-					JDrawCondition(helper, false, canCulling, false, helper.option.allowHDOcclusionUseOccluder));
-			}
-			else
-			{
-				dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,
-					objVec00,
-					helper,
-					JDrawCondition(helper, false, canCulling, false, helper.option.allowHDOcclusionUseOccluder));
-				dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,
-					objVec01,
-					helper,
-					JDrawCondition(helper, false, canCulling, false, helper.option.allowHDOcclusionUseOccluder));
-			} 
+			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec00, helper, drawCondition);
+			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec01, helper, drawCondition);
 		}
 	}
 	void JDx12HardwareOccCulling::ExtractHDOcclusionCullingData(const JGraphicHdOccExtractSet* extractSet, const JDrawHelper& helper)
@@ -337,49 +313,35 @@ namespace JinEngine::Graphic
 			return;
 
 		const JDx12GraphicHdOccExtractSet* dx12ExtractSet = static_cast<const JDx12GraphicHdOccExtractSet*>(extractSet);
-		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(dx12ExtractSet->cullingM);
-		ID3D12GraphicsCommandList* cmdList = dx12ExtractSet->cmdList;
+		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12ExtractSet->context);
 
 		auto cInterface = helper.GetCullInterface();
-		const int occVecIndex = cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM);
-		auto cullingInfo = dx12Cm->GetCullingInfo(J_CULLING_TYPE::HD_OCCLUSION, occVecIndex);
-		UpdateData& upData = updateData[occVecIndex];
-		if (upData.CanPassThisFrame(helper.info.currFrameResourceIndex))
+		auto cSet = context->ComputeSet(cInterface, J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM);
+
+		UpdateData& upData = updateData[cSet.info->GetArrayIndex()];
+		if (upData.CanPassThisFrame(helper.info.frame.currIndex))
 		{
 			JCullingUpdatedInfo updatedInfo;
 			updatedInfo.updatedStartIndex = 0;
-			updatedInfo.updatedCount = 0;		 
-			cullingInfo->SetUpdatedInfo(updatedInfo, helper.info.currFrameResourceIndex);
+			updatedInfo.updatedCount = 0;
+			cSet.info->SetUpdatedInfo(updatedInfo, helper.info.frame.currIndex);
 			return;
 		}
 
-		//const uint buffSize = cInterface.GetResultBufferSize(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM);
-		ID3D12QueryHeap* occQueryHeap = dx12Cm->GetQueryHeap(occVecIndex);
-		ID3D12Resource* occQueryResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, occVecIndex);
-
-		upData.Update();
-		const size_t queryOffset = upData.offset;
-		const size_t queryCount = upData.count;
-
-		JD3DUtility::ResourceTransition(cmdList, occQueryResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-		cmdList->ResolveQueryData(occQueryHeap, D3D12_QUERY_TYPE_BINARY_OCCLUSION, queryOffset, queryCount, occQueryResource, queryOffset * Private::querySize);
-		JD3DUtility::ResourceTransition(cmdList, occQueryResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
-		
-		//ExtractHDOcclusionCullingData은 항상 single thread에서 수행되며 hdOcc에 마지막 시퀸스 이므로
-		//여기서 upData.updateAllObject trigger를 해제한다.
-		if (upData.updateAllObject)
-			upData.updateAllObject = false;
-		 
+		//upData.Update();
+		context->ResolveOcclusionQueryData(cSet, upData.offset, upData.count);
+		//context->Transition(cSet.gHolder, D3D12_RESOURCE_STATE_COMMON);
+ 
 		JCullingUpdatedInfo updatedInfo;
-		updatedInfo.updatedStartIndex = queryOffset;
-		updatedInfo.updatedCount = queryCount;
-		 
-		cullingInfo->SetUpdateEnd(upData.isUpdateEnd);
-		cullingInfo->SetUpdatedInfo(updatedInfo, helper.info.currFrameResourceIndex);
-		 /*
-		 */
+		updatedInfo.updatedStartIndex = upData.offset;
+		updatedInfo.updatedCount = upData.count;
+
+		cSet.info->SetUpdateEnd(upData.isUpdateEnd);
+		cSet.info->SetUpdatedInfo(updatedInfo, helper.info.frame.currIndex);
 		/*
-		Develop::JDevelopDebug::PushLog("FrameIndex: " + std::to_string(helper.info.currFrameResourceIndex) +
+		*/
+		/*
+		Develop::JDevelopDebug::PushLog("FrameIndex: " + std::to_string(helper.info.frame.currIndex) +
 			" Offset: " + std::to_string(queryOffset) +
 			" Count: " + std::to_string(queryCount) +
 			" Cyclate: " + std::to_string(upData.updateCycle));
@@ -394,5 +356,14 @@ namespace JinEngine::Graphic
 			Develop::JDevelopDebug::Write();
 		}
 		*/
+	}
+	void JDx12HardwareOccCulling::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
+	{
+		auto gpuInfo = Core::JHardwareInfo::GetGpuInfo();
+		gpuMemoryBusWidth = gpuInfo[0].memoryBusWidth;
+	}
+	void JDx12HardwareOccCulling::ClearResource()
+	{
+
 	}
 }

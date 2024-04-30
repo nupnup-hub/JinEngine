@@ -1,9 +1,7 @@
 #pragma once 
-
 #include"LightDefine.hlsl"
 #include"LightClusterCommon.hlsl"
-#include"Math.hlsl"
-#include"CBCameraDefine.hlsl"
+#include"Math.hlsl" 
 
 #ifndef LIGHT_RANGE_OFFSET
 #define LIGHT_RANGE_OFFSET 1.0f
@@ -18,7 +16,19 @@ StructuredBuffer<RectLightData> light : register(t0);
 #else 
 #endif 
 
-cbuffer cbPass : register(b1)
+struct CameraData
 {
-	uint litOffset;	
-};
+	float4x4 view;
+	float4x4 proj;
+	float2 renderTargetSize;
+	float2 invRenderTargetSize;
+	float nearZ;
+	float farZ;
+	uint pad00;
+	uint pad01;
+}; 
+
+ConstantBuffer<CameraData> cbCam : register(b0);
+ 
+ 
+ 

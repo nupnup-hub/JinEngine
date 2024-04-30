@@ -38,17 +38,22 @@ namespace JinEngine
 			ResourceViewInfo viewInfo[(int)J_GRAPHIC_BIND_TYPE::COUNT];
 			std::unique_ptr<OptionResourceViewInfo> optionalInfo; 
 		private:
-			J_GRAPHIC_MIP_MAP_TYPE mipMapType = J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
+			J_GRAPHIC_MIP_MAP_TYPE mipMapType = J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT; 
 		public:
 			J_GRAPHIC_RESOURCE_TYPE GetGraphicResourceType()const noexcept;
 			int GetArrayIndex()const noexcept; 
 			int GetHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
 			int GetOptionHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept;
+			int GetMinValidHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;			//consider info & option
 			uint GetViewCount(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
 			uint GetOptionViewCount(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept;
 			virtual uint GetWidth()const noexcept = 0;
 			virtual uint GetHeight()const noexcept = 0; 
+			virtual uint GetElementCount()const noexcept = 0;		//buffer byte size  / element size
+			virtual uint GetElementSize()const noexcept = 0;		//buffer byte size  / element size
 			virtual uint GetMipmapCount()const noexcept = 0;
+			virtual J_GRAPHIC_RESOURCE_FORMAT GetFormat()const noexcept = 0;
+			virtual JVector2<uint> GetResourceSize()const noexcept = 0;
 			virtual ResourceHandle GetResourceGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex = 0)const noexcept = 0;
 			virtual ResourceHandle GetResourceOptionGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex = 0)const noexcept = 0;
 			J_GRAPHIC_MIP_MAP_TYPE GetMipmapType()const noexcept;

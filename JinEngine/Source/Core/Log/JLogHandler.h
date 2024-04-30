@@ -10,6 +10,7 @@ namespace JinEngine
 		public:
 			static void PrintOut(const JLogBase& log);
 			static void PrintOut(const std::string& file, const std::string& line, const std::string& title, const std::string& contents);
+			static void PrintOut(const std::wstring& file, const std::wstring& line, const std::wstring& title, const std::wstring& contents);
 		};
 
 		class JLogHolderInterface

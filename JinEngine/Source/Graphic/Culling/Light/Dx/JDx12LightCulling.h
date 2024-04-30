@@ -13,10 +13,14 @@ namespace JinEngine
 		class JDx12GraphicResourceManager;
 		class JDx12FrameResource;
 		class JDx12CullingManager;  
+		class JDx12CommandContext;
 
 		//referenced by gpu pro7  ch 2.1 by Kevin Ortegren and Emil Persson
 		class JDx12LightCulling : public JLightCulling
 		{
+		private:
+			using JDx12GraphicShaderDataHolder = JDx12GraphicShaderDataHolder<1>;
+			using JDx12ComputeShaderDataHolder = JDx12ComputeShaderDataHolder<1>;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mGRootSignature;
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mCRootSignature;
@@ -27,17 +31,17 @@ namespace JinEngine
 			std::unique_ptr<JDx12ComputeShaderDataHolder> clearOffsetBufferShader;
 			std::unique_ptr<JDx12GraphicShaderDataHolder> drawDebugShader;
 		private:
-			std::unique_ptr<JDx12GraphicBuffer<uint>> resultOutBuffer;
-			std::unique_ptr<JDx12GraphicBuffer<uint>> resultOutClearBuffer;
-			std::unique_ptr<JDx12GraphicBuffer<uint>> counterClearBuffer; 	 
+			std::unique_ptr<JDx12GraphicBufferT<uint>> resultOutBuffer;
+			std::unique_ptr<JDx12GraphicBufferT<uint>> resultOutClearBuffer;
+			std::unique_ptr<JDx12GraphicBufferT<uint>> counterClearBuffer; 	 
 		private:
 			//for debugging
-			std::unique_ptr<JDx12GraphicBuffer<uint>> offsetDebugBuffer;
-			std::unique_ptr<JDx12GraphicBuffer<uint64>> listDebugBuffer;
+			std::unique_ptr<JDx12GraphicBufferT<uint>> offsetDebugBuffer;
+			std::unique_ptr<JDx12GraphicBufferT<uint64>> listDebugBuffer;
 		private:
 			//Intermediate
-			std::unique_ptr<JDx12GraphicBuffer<uint>> resultClearUploadBuffer;
-			std::unique_ptr<JDx12GraphicBuffer<uint>> counterClearUploadBuffer;
+			std::unique_ptr<JDx12GraphicBufferT<uint>> resultClearUploadBuffer;
+			std::unique_ptr<JDx12GraphicBufferT<uint>> counterClearUploadBuffer;
 		private:
 			JUserPtr<JGraphicResourceInfo> lightRt[(uint)JLightType::GetLocalLightCount()];
 		/*
@@ -53,12 +57,20 @@ namespace JinEngine
 			uint lowConeIndexCount;
 		*/
 		public:
-			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicBaseDataSet& baseDataSet) final;
+			~JDx12LightCulling();
+		public:
+			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM) final;
 			void Clear() final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;  
+		private:
+			bool HasDependency(const JGraphicInfo::TYPE type)const noexcept final;
+			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final;
+		private:
+			void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)final;
+			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;
 		public:
-			void NotifyNewClusterOption(JGraphicDevice* device, const JGraphicBaseDataSet& baseDataSet) final;
+			void NotifyNewClusterOption(JGraphicDevice* device) final;
 			void NotifyLocalLightCapacityChanged(JGraphicDevice* device, JGraphicResourceManager* gM, const size_t capacity) final;
 		public:
 			void BindDrawResource(const JGraphicBindSet* bindSet) final; 
@@ -67,35 +79,26 @@ namespace JinEngine
 			void ExecuteLightClusterTask(const JGraphicLightCullingTaskSet* taskSet, const JDrawHelper& helper)final;
 			void ExecuteLightClusterDebug(const JGraphicLightCullingDebugDrawSet* drawSet, const JDrawHelper& helper)final;
 		public: 
-			void StreamOutDebugInfo(const std::wstring& path, const JGraphicBaseDataSet& baseDataSet)final;
+			void StreamOutDebugInfo(const std::wstring& path)final;
 		public:
 			void RecompileShader(const JGraphicShaderCompileSet& dataSet)final;
 		private:
-			void DrawLight(ID3D12GraphicsCommandList* cmdList, 
-				JDx12GraphicResourceManager* dx12Gm,
-				JDx12CullingManager* dx12Cm, 
-				JDx12FrameResource* dx12Frame,
-				const JDrawHelper& helper);
-			void ComputeLightCluster(ID3D12GraphicsCommandList* cmdList,
-				JDx12GraphicResourceManager* dx12Gm,
-				JDx12CullingManager* dx12Cm,
-				JDx12FrameResource* dx12Frame,
-				const JDrawHelper& helper);
-			void DrawLightClusterDebug(ID3D12GraphicsCommandList* cmdList,
-				JDx12GraphicDevice* dx12Device,
-				JDx12GraphicResourceManager* dx12Gm, 
-				const JDrawHelper& helper);
+			void DrawLight(JDx12CommandContext* context, const JDrawHelper& helper); 
+			void DrawLightClusterDebug(JDx12CommandContext* context, const JDrawHelper& helper);
 		private:
+			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);
 			void BuildGraphicRootSignature(ID3D12Device* device);
 			void BuildComputeRootSignature(ID3D12Device* device);
 			void BuildDebugRootSignature(ID3D12Device* device);
-			void BuildGraphicPso(ID3D12Device* device, const JGraphicBaseDataSet& baseDataSet);
-			void BuildComputePso(ID3D12Device* device, const JGraphicBaseDataSet& baseDataSet);
-			void BuildDebugPso(ID3D12Device* device, const JGraphicBaseDataSet& baseDataSet);
+			void BuildGraphicPso(ID3D12Device* device);
+			void BuildComputePso(ID3D12Device* device);
+			void BuildDebugPso(ID3D12Device* device);
 			void BuildCounterClearBuffer(JDx12GraphicDevice* device);
 			void BuildResultBuffer(JDx12GraphicDevice* device, const uint localLightCapacity);
-			void BuildDebugBuffer(JDx12GraphicDevice* device, const JGraphicBaseDataSet& baseDataSet);
-			void BuildRtResource(JDx12GraphicDevice* device, JDx12GraphicResourceManager* dx12Gm, const JGraphicBaseDataSet& baseDataSet);
+			void BuildDebugBuffer(JDx12GraphicDevice* device);
+			void BuildRtResource(JDx12GraphicDevice* device, JDx12GraphicResourceManager* dx12Gm);
+		private:
+			void ClearResource();
 		private:
 			void LoadLightShape(JDx12GraphicDevice* device, JDx12GraphicResourceManager* gM);
 		};

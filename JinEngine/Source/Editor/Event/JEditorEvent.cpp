@@ -12,14 +12,14 @@ namespace JinEngine
 			{
 			public:
 				std::unique_ptr<JEditorEvStruct> evStruct;
-				bool canDestroy = true;
+				bool canDestroyThisFrame = true;
 			public:
-				EvStructInfo(std::unique_ptr<JEditorEvStruct> evStruct, bool canDestroy)
-					:evStruct(std::move(evStruct)), canDestroy(canDestroy)
+				EvStructInfo(std::unique_ptr<JEditorEvStruct> evStruct, bool canDestroyThisFrame)
+					:evStruct(std::move(evStruct)), canDestroyThisFrame(canDestroyThisFrame)
 				{}
 			};
 		public:
-			std::unordered_map<size_t, EvStructInfo> evDataMap;
+			std::unordered_map<size_t, EvStructInfo> evDataMap; 
 		public:
 			JEditorEventManager()
 				:JEventManager([](const size_t& a, const size_t& b) {return a == b; })
@@ -36,7 +36,15 @@ namespace JinEngine
 		public:
 			void OnEvnet()
 			{
-				SendEventNotification();
+				std::vector<size_t> eraseEv;
+				for (const auto& data : evDataMap)
+				{
+					if (data.second.canDestroyThisFrame)
+						eraseEv.push_back(data.first);
+				} 
+				SendEventNotification(); 
+				for (const auto& data : eraseEv)
+					evDataMap.erase(data);
 			}
 		};
 
@@ -51,36 +59,25 @@ namespace JinEngine
 		}
 		void JEditorEvent::ExecuteEvent()noexcept
 		{
-			evM->OnEvnet();
-			ClearInvalidEvStructData();
+			evM->OnEvnet(); 
 		}
 		JEditorEvStruct* JEditorEvent::RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct)noexcept
 		{
 			size_t temp = 0;
-			return RegisterEvStruct(std::move(evStruct), temp, true);
+			return RegisterEvStruct(std::move(evStruct), temp, false);
 		}
-		JEditorEvStruct* JEditorEvent::_RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct, _Out_ size_t& key, bool canRemove)noexcept
+		JEditorEvStruct* JEditorEvent::_RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct, _Out_ size_t& key, bool controlDestroyTiming)noexcept
 		{
+			key = 0;
 			if (evStruct != nullptr)
 			{
 				key = Core::MakeGuid();
 				JEditorEvStruct* ptr = evStruct.get();
-				evM->evDataMap.emplace(key, JEditorEventManager::EvStructInfo(std::move(evStruct), canRemove));
+				evM->evDataMap.emplace(key, JEditorEventManager::EvStructInfo(std::move(evStruct), !controlDestroyTiming));
 				return ptr;
 			}
 			else
 				return nullptr;
-		}
-		void JEditorEvent::ClearInvalidEvStructData()noexcept
-		{
-			std::vector<size_t> invalidVec;
-			for (auto& data : evM->evDataMap)
-			{
-				if (data.second.canDestroy)
-					invalidVec.push_back(data.first);
-			}
-			for (auto& data : invalidVec)
-				evM->evDataMap.erase(data);
 		}
 		void JEditorEvent::Initialize()noexcept
 		{
@@ -90,16 +87,13 @@ namespace JinEngine
 		void JEditorEvent::Clear()noexcept
 		{
 			if (evM != nullptr)
-			{
-				ClearInvalidEvStructData();
 				evM.reset();
-			}
 		}
 		void JEditorEvent::SetCanDestroyBit(const size_t guid, const bool value)noexcept
 		{
 			auto data = evM->evDataMap.find(guid);
 			if (data != evM->evDataMap.end())
-				data->second.canDestroy = value;
+				data->second.canDestroyThisFrame = value;
 		}
 	}
 }

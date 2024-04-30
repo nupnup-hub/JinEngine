@@ -6,6 +6,12 @@ namespace JinEngine::Graphic
 	namespace Private
 	{ 
 	}
+
+	uint JCullingResultHolder::GetBufferSize()const noexcept
+	{
+		return GetElementSize() * GetElementCount();
+	}
+
 	/*
 	*  Culling Manager가 CullingInfo를 생성할때 같이 생성되며(CullingInfo private has)
 	*  cullingResult항상 유효한 값을 가지고
@@ -22,8 +28,12 @@ namespace JinEngine::Graphic
 	{		
 		if(capacity > index)
 			cullingResult[index] = value;
+	} 
+	uint JFrustumCullingResultHolder::GetElementSize()const noexcept
+	{
+		return sizeof(bool);
 	}
-	uint JFrustumCullingResultHolder::GetBufferSize()const noexcept
+	uint JFrustumCullingResultHolder::GetElementCount()const noexcept
 	{
 		return (uint)capacity;
 	}

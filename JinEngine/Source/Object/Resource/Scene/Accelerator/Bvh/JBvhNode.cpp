@@ -349,7 +349,7 @@ namespace JinEngine
 				else
 				{
 					if (info.allowPushVisibleObjVec)
-					{
+					{ 
 						(*info.appAlignedObjVec)[info.pushedCount] = innerGameObject;
 						++info.pushedCount;
 					}

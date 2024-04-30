@@ -86,12 +86,14 @@ namespace JinEngine
 		//subDirFlag
 		//defaultFolderCash indexing
 
+		static constexpr uint defaultResourceInedx = 4;
 		std::vector<std::wstring> defaultFolderPath
 		{
 			JApplicationProject::ConfigPath(),
-			JApplicationProject::ProjectResourcePath(),
+			JApplicationProject::ProjectPrivateResourcePath(),
 			JApplicationProject::DocumentPath(), 
 			JApplicationProject::ContentsPath(),
+			JApplicationProject::DefaultResourcePath()
 		};
 
 		std::vector<J_OBJECT_FLAG> flag
@@ -99,22 +101,28 @@ namespace JinEngine
 			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE),
 			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE),
 			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE),
 			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE)
 		};
-
+		 
 		std::vector<JUserPtr<JDirectory>> defaultFolderCash;
 		for (uint i = 0; i < defaultFolderPath.size(); ++i)
 		{
+			JUserPtr<JDirectory> parent = projectRootDir;
+			if (i == defaultResourceInedx)
+				parent = defaultFolderCash[3];
+
 			Core::JAssetFileLoadPathData pathData{ defaultFolderPath[i] };   
 			if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
 				_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
 			{
-				auto loadData = DirIOInterface::CreateLoadAssetDIData(projectRootDir, pathData);
+				auto loadData = DirIOInterface::CreateLoadAssetDIData(parent, pathData);
 				defaultFolderCash.push_back(Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get())));
 			}
 			else
-				defaultFolderCash.push_back(JICI::Create<JDirectory>(pathData.name, Core::MakeGuid(), flag[i], projectRootDir));
+				defaultFolderCash.push_back(JICI::Create<JDirectory>(pathData.name, Core::MakeGuid(), flag[i], parent));
 		}
+ 
 		/*
 		* dependence resource
 		* need to search In the order below.
@@ -123,6 +131,7 @@ namespace JinEngine
 		// defaultFolderCash[1] = projectResourceDir
 		// defaultFolderCash[2] = projectLog
 		// defaultFolderCash[3] = projectContentsDir
+		// defaultFolderCash[4] = projectContentsDefaultResourceDir
 
 		//subDir Flag
 		const J_OBJECT_FLAG projectOtherDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
@@ -133,6 +142,7 @@ namespace JinEngine
 		SearchDirectory(defaultFolderCash[1], true, false, projectOtherDirFlag);	// default resource has folder
 		SearchDirectory(defaultFolderCash[2], true, false, projectOtherDirFlag); 
 		SearchDirectory(defaultFolderCash[3], true, true, projectContentDirFlag);
+		SearchDirectory(defaultFolderCash[4], true, false, projectOtherDirFlag);
 		SearchDirectory(defaultFolderCash[3], true, false, userDefineDirFlag);
 	}
 	void JResourceObjectIO::LoadProjectResourceFile(const JUserPtr<JDirectory>& projectRootDir)

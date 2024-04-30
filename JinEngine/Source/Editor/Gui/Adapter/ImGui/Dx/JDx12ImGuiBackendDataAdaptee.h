@@ -12,6 +12,7 @@ namespace JinEngine
 		public:
 			std::unique_ptr<Graphic::JGuiInitData> CreateInitData(_In_ Graphic::JGraphicDevice* device,
 				_In_ Graphic::JGraphicResourceManager* gm,
+				_In_ const Graphic::JGraphicOption& option,
 				_In_ const Graphic::GuiIdentification guiIden) final;
 			std::unique_ptr<Graphic::JGuiDrawData> CreateDrawData(_In_ Graphic::JGraphicDevice* device,
 				_In_ Graphic::JGraphicResourceManager* gm,

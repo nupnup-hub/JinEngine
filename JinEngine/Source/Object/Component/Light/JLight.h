@@ -8,6 +8,7 @@
 
 namespace JinEngine
 {
+	class JMeshGeometry;
 	class JLight :public JComponent,
 		public Graphic::JFrameUpdateUserAccess,
 		public Graphic::JGraphicResourceUserAccess,
@@ -40,7 +41,8 @@ namespace JinEngine
 		float GetPower()const noexcept;
 		float GetBias()const noexcept;
 		float GetPenumbraWidth()const noexcept;
-		float GetPenumbraBlockerWidth()const noexcept;
+		float GetPenumbraBlockerWidth()const noexcept; 
+		JComponent::UserCompComparePtr GetLitTypeComparePtr()const noexcept;
 		virtual J_LIGHT_TYPE GetLightType()const noexcept = 0;
 		virtual J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept = 0;
 		virtual float GetMinPower()const noexcept = 0;
@@ -48,6 +50,8 @@ namespace JinEngine
 		virtual float GetFrustumNear()const noexcept = 0;
 		virtual float GetFrustumFar()const noexcept = 0;
 		virtual DirectX::BoundingBox GetBBox()const noexcept = 0;
+		virtual JUserPtr<JMeshGeometry> GetMesh()const noexcept = 0;
+		virtual DirectX::XMMATRIX GetMeshWorldM(const bool restrictScaledZ = false)const noexcept = 0;
 	public: 
 		void SetColor(const JVector3<float>& color)noexcept;  
 		virtual void SetShadow(const bool value)noexcept;
@@ -61,7 +65,7 @@ namespace JinEngine
 		bool IsShadowActivated()const noexcept;
 		bool IsAvailableOverlap()const noexcept final; 
 		bool AllowDisplayShadowMap()const noexcept; 
-		bool AllowLightCulling()const noexcept final;
+		bool AllowLightCulling()const noexcept final;  
 	protected:
 		void DoActivate()noexcept override;
 		void DoDeActivate()noexcept override;

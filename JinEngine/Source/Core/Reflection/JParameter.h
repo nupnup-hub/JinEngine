@@ -376,73 +376,6 @@ namespace JinEngine
 				using Convertible = JParameterConvertible<true, false, true, false, true, T>;
 				using Type = typename JSelect<Convertible::value>::template Result<Success, Fail>;
 			};
-			template<typename T>
-			J_PARAMETER_TYPE GetParameterType()
-			{
-				if constexpr (std::is_void_v<T>)
-					return J_PARAMETER_TYPE::Void;
-				else if constexpr (std::is_enum_v<T>)
-					return J_PARAMETER_TYPE::Enum;
-				else if constexpr (std::is_class_v<T>)
-				{
-					if constexpr (std::is_same_v<T, std::string>)
-						return J_PARAMETER_TYPE::String;
-					else if constexpr (std::is_base_of_v<JVectorBase, T>)
-					{
-						if constexpr (JVectorDetermine<T>::value)
-						{ 
-							if constexpr (T::GetDigitCount() == 2)
-								return J_PARAMETER_TYPE::JVector2;
-							else if constexpr (T::GetDigitCount() == 3)
-								return J_PARAMETER_TYPE::JVector3;
-							else if constexpr (T::GetDigitCount() == 4)
-								return J_PARAMETER_TYPE::JVector4;
-							else
-								return J_PARAMETER_TYPE::UnKnown;
-						}
-						else
-							return J_PARAMETER_TYPE::UnKnown;
-					}
-					else if constexpr (std::is_same_v<T, DirectX::XMINT2>)
-						return J_PARAMETER_TYPE::XMInt2;
-					else if constexpr (std::is_same_v<T, DirectX::XMINT3>)
-						return J_PARAMETER_TYPE::XMInt3;
-					else if constexpr (std::is_same_v<T, DirectX::XMINT4>)
-						return J_PARAMETER_TYPE::XMInt4;
-					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT2>)
-						return J_PARAMETER_TYPE::XMFloat2;
-					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
-						return J_PARAMETER_TYPE::XMFloat3;
-					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
-						return J_PARAMETER_TYPE::XMFloat4;
-					else if constexpr (JUserPtrDetermine<T>::value)
-						return  J_PARAMETER_TYPE::USER_PTR;
-					else if constexpr (JWeakPtrDetermine<T>::value)
-						return  J_PARAMETER_TYPE::WEAK_PTR;
-					else if constexpr (StdVectorDetermine<T>::value)
-						return  J_PARAMETER_TYPE::STD_VECTOR;
-					else if constexpr (StdDequeDetermine<T>::value)
-						return  J_PARAMETER_TYPE::STD_DEQUE;
-					else if constexpr (StdMapDetermine<T>::value)
-						return  J_PARAMETER_TYPE::STD_MAP;
-					else if constexpr (StdUnorderedMapDetermine<T>::value)
-						return  J_PARAMETER_TYPE::STD_UNORDERED_MAP;
-					else
-						return J_PARAMETER_TYPE::Class;
-				}
-				else if constexpr (std::is_floating_point_v<T>)
-					return J_PARAMETER_TYPE::Float;
-				else if constexpr (std::is_integral_v<T>)
-				{
-					if constexpr (std::is_same_v<T, bool>)
-						return J_PARAMETER_TYPE::Bool;
-					else if constexpr(std::is_unsigned_v<T>)
-						return J_PARAMETER_TYPE::Uint;
-					else
-						return J_PARAMETER_TYPE::Int;
-				}
-				return J_PARAMETER_TYPE::UnKnown;
-			}
 		}
 		struct JParameterHint
 		{
@@ -595,6 +528,74 @@ namespace JinEngine
 					copyName = copyName.substr(edindex + 1);
 				}
 			}
+		}
+
+		template<typename T>
+		static J_PARAMETER_TYPE GetParameterType()
+		{
+			if constexpr (std::is_void_v<T>)
+				return J_PARAMETER_TYPE::Void;
+			else if constexpr (std::is_enum_v<T>)
+				return J_PARAMETER_TYPE::Enum;
+			else if constexpr (std::is_class_v<T>)
+			{
+				if constexpr (std::is_same_v<T, std::string>)
+					return J_PARAMETER_TYPE::String;
+				else if constexpr (std::is_base_of_v<JVectorBase, T>)
+				{
+					if constexpr (JVectorDetermine<T>::value)
+					{
+						if constexpr (T::GetDigitCount() == 2)
+							return J_PARAMETER_TYPE::JVector2;
+						else if constexpr (T::GetDigitCount() == 3)
+							return J_PARAMETER_TYPE::JVector3;
+						else if constexpr (T::GetDigitCount() == 4)
+							return J_PARAMETER_TYPE::JVector4;
+						else
+							return J_PARAMETER_TYPE::UnKnown;
+					}
+					else
+						return J_PARAMETER_TYPE::UnKnown;
+				}
+				else if constexpr (std::is_same_v<T, DirectX::XMINT2>)
+					return J_PARAMETER_TYPE::XMInt2;
+				else if constexpr (std::is_same_v<T, DirectX::XMINT3>)
+					return J_PARAMETER_TYPE::XMInt3;
+				else if constexpr (std::is_same_v<T, DirectX::XMINT4>)
+					return J_PARAMETER_TYPE::XMInt4;
+				else if constexpr (std::is_same_v<T, DirectX::XMFLOAT2>)
+					return J_PARAMETER_TYPE::XMFloat2;
+				else if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
+					return J_PARAMETER_TYPE::XMFloat3;
+				else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
+					return J_PARAMETER_TYPE::XMFloat4;
+				else if constexpr (JUserPtrDetermine<T>::value)
+					return  J_PARAMETER_TYPE::USER_PTR;
+				else if constexpr (JWeakPtrDetermine<T>::value)
+					return  J_PARAMETER_TYPE::WEAK_PTR;
+				else if constexpr (StdVectorDetermine<T>::value)
+					return  J_PARAMETER_TYPE::STD_VECTOR;
+				else if constexpr (StdDequeDetermine<T>::value)
+					return  J_PARAMETER_TYPE::STD_DEQUE;
+				else if constexpr (StdMapDetermine<T>::value)
+					return  J_PARAMETER_TYPE::STD_MAP;
+				else if constexpr (StdUnorderedMapDetermine<T>::value)
+					return  J_PARAMETER_TYPE::STD_UNORDERED_MAP;
+				else
+					return J_PARAMETER_TYPE::Class;
+			}
+			else if constexpr (std::is_floating_point_v<T>)
+				return J_PARAMETER_TYPE::Float;
+			else if constexpr (std::is_integral_v<T>)
+			{
+				if constexpr (std::is_same_v<T, bool>)
+					return J_PARAMETER_TYPE::Bool;
+				else if constexpr (std::is_unsigned_v<T>)
+					return J_PARAMETER_TYPE::Uint;
+				else
+					return J_PARAMETER_TYPE::Int;
+			}
+			return J_PARAMETER_TYPE::UnKnown;
 		}
 
 		template<typename T>

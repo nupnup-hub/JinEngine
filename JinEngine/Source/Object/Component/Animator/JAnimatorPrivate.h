@@ -12,7 +12,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphic; 
-		struct JDrawHelper;
+		class JFrameIndexAccess;
 		struct JAnimationConstants;
 	}
 	class JAnimatorPrivate final : public JComponentPrivate
@@ -64,7 +64,7 @@ namespace JinEngine
 		class FrameIndexInterface final
 		{
 		private:
-			friend struct Graphic::JDrawHelper; 
+			friend class Graphic::JFrameIndexAccess; 
 		private:
 			static int GetFrameIndex(JAnimator* ani)noexcept;
 		};

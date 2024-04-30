@@ -218,17 +218,29 @@ namespace JinEngine
 			x /= rhs;
 			y /= rhs;
 		}
-		bool operator==(const JVector2& data)
+		bool operator==(const JVector2& data) const
 		{
 			return x == data.x && y == data.y;
 		}
 		bool operator!=(const JVector2& data) const
 		{
 			return x != data.x || y != data.y;
-		}
-		bool operator==(const JVector2& data) const
+		} 
+		bool operator>(const JVector2& data) const
 		{
-			return x == data.x && y == data.y;
+			return x > data.x && y > data.y;
+		}
+		bool operator<(const JVector2& data) const
+		{
+			return x < data.x&& y < data.y;
+		}
+		bool operator>=(const JVector2& data) const
+		{
+			return x >= data.x && y >= data.y;
+		}
+		bool operator<=(const JVector2& data) const
+		{
+			return x <= data.x && y <= data.y;
 		}
 		ValueType& operator[](const uint index)noexcept
 		{
@@ -506,18 +518,14 @@ namespace JinEngine
 			x /= rhs;
 			y /= rhs;
 			z /= rhs;
-		}
-		bool operator==(const JVector3& data)
-		{
-			return x == data.x && y == data.y && z == data.z;
-		}
-		bool operator!=(const JVector3& data) const
-		{
-			return x != data.x || y != data.y || z != data.z;
-		}
+		} 
 		bool operator==(const JVector3& data) const
 		{
 			return x == data.x && y == data.y && z == data.z;
+		}
+		bool operator!=(const JVector3& data)const
+		{
+			return x != data.x || y != data.y || z != data.z;
 		}
 		bool operator>(const JVector3& data) const
 		{
@@ -525,7 +533,15 @@ namespace JinEngine
 		}
 		bool operator<(const JVector3& data) const
 		{
-			return x < data.x&& y < data.y&& z < data.z;
+			return x < data.x&& y < data.y && z < data.z;
+		}
+		bool operator>=(const JVector3& data) const
+		{
+			return x >= data.x && y >= data.y && z >= data.z;
+		}
+		bool operator<=(const JVector3& data) const
+		{
+			return x <= data.x && y <= data.y && z <= data.z;
 		}
 		ValueType& operator[](const uint index)noexcept
 		{
@@ -559,6 +575,19 @@ namespace JinEngine
 		ValueType* Data()noexcept
 		{
 			return &x;
+		}
+	public:
+		JVector2<ValueType> XY()const noexcept
+		{
+			return JVector2<ValueType>(x, y);
+		}
+		JVector2<ValueType> XZ()const noexcept
+		{
+			return JVector2<ValueType>(x, z);
+		}
+		JVector2<ValueType> YZ()const noexcept
+		{
+			return JVector2<ValueType>(y, z);
 		}
 	public:
 		template<typename T1, typename T2>
@@ -599,6 +628,10 @@ namespace JinEngine
 		float Length()const noexcept
 		{
 			return abs(sqrt(x * x + y * y + z * z));
+		}
+		JVector3 Abs()const noexcept
+		{
+			return JVector3(abs(x), abs(y), abs(z));
 		}
 		JVector3 Normalize()const noexcept
 		{
@@ -892,13 +925,29 @@ namespace JinEngine
 			z /= rhs;
 			w /= rhs;
 		}
-		bool operator==(const JVector4& data)
+		bool operator==(const JVector4& data)const
 		{
 			return x == data.x && y == data.y && z == data.z && w == data.w;
 		}
-		bool operator!=(const JVector4& data)
+		bool operator!=(const JVector4& data)const
 		{
 			return x != data.x || y != data.y || z != data.z || w != data.w;
+		}
+		bool operator>(const JVector4& data) const
+		{
+			return x > data.x && y > data.y && z > data.z && w > data.w;
+		}
+		bool operator<(const JVector4& data) const
+		{
+			return x < data.x&& y < data.y&& z < data.z && w < data.w;
+		}
+		bool operator>=(const JVector4& data) const
+		{
+			return x >= data.x && y >= data.y && z >= data.z && w >= data.w;
+		}
+		bool operator<=(const JVector4& data) const
+		{
+			return x <= data.x&& y <= data.y&& z <= data.z&& w <= data.w;
 		}
 		ValueType& operator[](const uint index)noexcept
 		{
@@ -936,6 +985,23 @@ namespace JinEngine
 		ValueType* Data()noexcept
 		{
 			return &x;
+		}
+	public:
+		JVector2<ValueType> XY()const noexcept
+		{
+			return JVector2<ValueType>(x, y);
+		}
+		JVector2<ValueType> XZ()const noexcept
+		{
+			return JVector2<ValueType>(x, z);
+		}
+		JVector2<ValueType> YZ()const noexcept
+		{
+			return JVector2<ValueType>(y, z);
+		}
+		JVector3<ValueType> XYZ()const noexcept
+		{
+			return JVector3<ValueType>(x, y, z);
 		}
 	public:
 		template<typename T1, typename T2>

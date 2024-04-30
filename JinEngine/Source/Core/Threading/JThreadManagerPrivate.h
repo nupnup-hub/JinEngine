@@ -19,7 +19,7 @@ namespace JinEngine
 			private:
 				friend class JMain;
 			private:
-				static void Initialize();
+				static void Initialize(const uint reservedThreadCount);
 				static void Clear();
 			private:
 				static void Update(); 

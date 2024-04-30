@@ -7,6 +7,7 @@
 #include"../../../../Core/Time/JGameTimer.h"
 #include"../../../../Core/Memory/JMemoryCapture.h"
 #include"../../../../Core/Unit/JByteUnit.h"
+#include"../../../../Graphic/JGraphic.h"
 
 namespace JinEngine
 {
@@ -32,6 +33,7 @@ namespace JinEngine
 			{ 
 				UpdateMouseClick();
 				DisplayTimeOnScreen();
+				DisplayCpuDrawingTimeOnScreen();
 				DisplayMemoryUsageOnScreen();
 			}
 			CloseWindow();
@@ -43,6 +45,23 @@ namespace JinEngine
 			JGui::Text("Fps: " + std::to_string(Core::JGameTimer::FramePerSecond()));
 			JGui::EndGroup();
 		}
+		void JApplicationWatcher::DisplayCpuDrawingTimeOnScreen()
+		{
+			JGui::BeginGroup();
+			static bool display = false;
+			if (JGui::Button("Cpu time##JApplicationWatcher"))
+				display = !display;
+			if (display)
+			{
+				auto log = JGraphic::Instance().GetCpuDrawingLog();
+				for (const auto& step : log)
+				{
+					JGui::Text(step.name + ": " + std::to_string(step.lastUpdatedMsTime) + ".ms");
+					JGui::Separator();
+				}
+			}
+			JGui::EndGroup();
+		}
 		void JApplicationWatcher::DisplayMemoryUsageOnScreen()
 		{
 			JGui::BeginGroup();
@@ -52,11 +71,11 @@ namespace JinEngine
 			JGui::Text("VirtualMemory: " + Core::JByteUnit::ByteToString(mem.totalVirtual));
 			JGui::Text("ProcessUsage: " + Core::JByteUnit::ByteToString(proc.privateUsage));
 
-			static bool displayDetail = false;
+			static bool display = false;
 			if (JGui::Button("Detail##JApplicationWatcher"))
-				displayDetail = !displayDetail;
+				display = !display;
 
-			if (displayDetail)
+			if (display)
 			{
 				JGui::Text("PeakWorkingSetSize: " + Core::JByteUnit::ByteToString(proc.peakWorkingSetSize));
 				JGui::Text("WorkingSetSize: " + Core::JByteUnit::ByteToString(proc.workingSetSize));

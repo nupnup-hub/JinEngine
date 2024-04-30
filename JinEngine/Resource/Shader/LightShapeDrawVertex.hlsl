@@ -19,28 +19,28 @@ struct VertexOut
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout;
-	uint index = vin.id + litOffset;
+	uint index = vin.id ;
 	float range = light[index].frustumFar * LIGHT_RANGE_OFFSET;
 	 
 	float4 posW = float4(vin.posL.xyz * range + light[index].midPosition, 1);
-	vout.posV = mul(posW, camView);
+	vout.posV = mul(posW, cbCam.view);
 	vout.id = vin.id;   
 	return vout;
 }
 #elif SPOT_LIGHT
 VertexOut VS(VertexIn vin)
 { 
-	uint index = vin.id + litOffset;
+	uint index = vin.id ;
 	float range = light[index].frustumFar * LIGHT_RANGE_OFFSET;
  
 	float angle = light[index].outerConeAngle;
-	float XZscale = tan(angle) * range * 2.0f; //cone bottom radius is 0.5f
+	float XZscale = tan(angle) * range;  
 	float3 posL = vin.posL.xyz;
 	posL.xz *= XZscale; 
 	posL.y *= range;
 
-	//if (length(posL) > range)
-	//	posL = normalize(posL) * range;
+	if (length(posL) > range)
+		posL = normalize(posL) * range;
 
 	 //rotate
 	float3 dir = light[index].direction;
@@ -51,11 +51,11 @@ VertexOut VS(VertexIn vin)
 		initDir.x = 0.000001f;
  
 	float3 k = normalize(cross(initDir, dir)); 
-	posL = posL * rotCosAngle +  cross(k, posL) * sin(rotAngle) + k * dot(k, posL) * (1.0f - cos(rotAngle));
+	posL = posL * rotCosAngle +  cross(k, posL) * sin(rotAngle) + k * dot(k, posL) * (1.0f - rotCosAngle);
 
 	VertexOut vout;
 	float4 posW = float4(posL + light[index].position, 1);
-	vout.posV = mul(posW, camView).xyz;
+	vout.posV = mul(posW, cbCam.view).xyz;
 	vout.id = vin.id;
 
 	return vout;
@@ -64,7 +64,7 @@ VertexOut VS(VertexIn vin)
 VertexOut VS(VertexIn vin)
 {
 #ifdef HEMISPHERE
-	uint index = vin.id + litOffset;
+	uint index = vin.id ;
 	float range = light[index].frustumFar * LIGHT_RANGE_OFFSET;
 	
 	float xScale = light[index].extents.x + range;
@@ -76,22 +76,20 @@ VertexOut VS(VertexIn vin)
 	posL.x *= xScale;
 	posL.y *= yScale;
 	posL.z *= range;
-	posL = mul(float3x3(light[index].axis[0], light[index].axis[1], light[index].axis[2]), posL);
+	posL = mul(posL, float3x3(light[index].axis[0], light[index].axis[1], light[index].axis[2]));
  
 	VertexOut vout;
 	float4 posW = float4(posL + light[index].origin, 1);
-	vout.posV = mul(posW, camView).xyz;
+	vout.posV = mul(posW, cbCam.view).xyz;
 	vout.id = vin.id;
-
 	return vout;
 #else
 	VertexOut vout;
-	uint index = vin.id + litOffset;
-	float range = (light[index].frustumFar) * LIGHT_RANGE_OFFSET;
-	//float range = light[index].frustumFar  * LIGHT_RANGE_OFFSET;
+	uint index = vin.id ;
+	float range = light[index].frustumFar * LIGHT_RANGE_OFFSET; 
 
 	float4 posW = float4(vin.posL.xyz * range + light[index].origin, 1);
-	vout.posV = mul(posW, camView);
+	vout.posV = mul(posW, cbCam.view);
 	vout.id = vin.id;   
 	return vout;
 #endif

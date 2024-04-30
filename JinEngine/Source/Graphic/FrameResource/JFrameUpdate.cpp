@@ -249,7 +249,7 @@ namespace JinEngine
 
 			vec.erase(vec.begin() + arrayIndex); 
 			--areaInfo->holderCount;
-			if (areaInfo->holderCount == 0)
+			if (areaInfo->holderCount <= 0)
 				areaVec.erase(areaVec.begin() + GetAreaVecIndex(type, areaGuid));
 
 			const int indexSize = holder->indexSize;
@@ -271,9 +271,13 @@ namespace JinEngine
 		{
 			return frameDirty;
 		}
+		int JFrameDirty::GetFrameDirtyMax()const noexcept
+		{
+			return Constants::gNumFrameResources;
+		}
 		void JFrameDirty::SetFrameDirty()noexcept
 		{
-			frameDirty = Graphic::Constants::gNumFrameResources;
+			frameDirty = GetFrameDirtyMax();
 		}
 		void JFrameDirty::SetLastFrameHotUpdatedTrigger(const bool value)noexcept
 		{
@@ -286,6 +290,10 @@ namespace JinEngine
 		bool JFrameDirty::IsFrameDirted()const noexcept
 		{
 			return frameDirty;
+		}
+		bool JFrameDirty::IsFrameHotDirted()const noexcept
+		{
+			return frameDirty == GetFrameDirtyMax();
 		}
 		bool JFrameDirty::IsLastFrameHotUpdated()const noexcept
 		{

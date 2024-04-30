@@ -51,7 +51,7 @@ namespace JinEngine
 			using RequestEvF = JAnimationDiagramListCreationFunctor::RequestEvF;
 			createNewDiagramNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creation->reqCreateStateEvF, this));
 			destroyDigamraNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creation->reqDestroyEvF, this));
-			destroyDigamraNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
+			destroyDigamraNode->RegisterEnableBind(std::make_unique<PassPopupConditionF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
 			diagramListPopup = std::make_unique<JEditorPopupMenu>(Private::DiagramListName(GetName()), std::move(diagramListRootNode));
 			diagramListPopup->AddPopupNode(std::move(createNewDiagramNode));
@@ -76,7 +76,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(diagramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, diagramList->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JAnimationDiagramListCreationFunctor* impl = diagramList->creation.get();
 				impl->creation.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
@@ -95,7 +95,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(diagramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, diagramList->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JAnimationDiagramListCreationFunctor* impl = diagramList->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);

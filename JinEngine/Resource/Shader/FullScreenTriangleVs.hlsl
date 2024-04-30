@@ -14,7 +14,7 @@ VertexOut FullScreenTriangleVS(uint VertexId : SV_VertexID)
 	vout.texC = float2((VertexId << 1) & 2, VertexId & 2);
 	vout.posH = float4(vout.texC * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
 #ifdef USE_TRIANGLE_VERTEX_DIR
-	float3 posV = mul(vout.posH, camInvProj).xyz;
+	float3 posV = mul(vout.posH, InvProj).xyz;
 	vout.dir = float3(posV.xy / posV.z, 1.0f);
 #endif
 	return vout;

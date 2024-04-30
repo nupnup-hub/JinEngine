@@ -11,13 +11,14 @@ namespace JinEngine
 	{
 	public: 
 		static constexpr float Pi = 3.1415926535f;
+		static constexpr float Pi2 = Pi * 2.0f;
 		static constexpr float Epsilon = 1.e-6f;
 		static constexpr float DegToRad = Pi / 180;
 		static constexpr float RadToDeg = 180 / Pi;
 	public:
 		static int Log2Int(uint v)noexcept;
 		static uint PowerOfTwoExponent(uint v)noexcept;
-		static uint DivideTwo(uint v, int count)noexcept;
+		static uint DivideTwo(uint v, int count)noexcept; 
 	public: 
 		// Returns simple random float in [0, 1).
 		static float RandF()noexcept;
@@ -33,6 +34,10 @@ namespace JinEngine
 		static JVector3<float> Vector3BetweenRot(const JVector3<float>& from, const JVector3<float>& to);
 		static DirectX::XMVECTOR RandUnitVec3()noexcept;
 		static DirectX::XMVECTOR RandHemisphereUnitVec3(const JVector3<float>& n)noexcept;
+		/**
+		* @param rand = 0.0f ~ 1.0f
+		*/
+		static JVector2F RandomRotationTrigger(const float rand)noexcept;
 	public: 
 		//src A = des Get A 
 		static DirectX::XMVECTOR QuaternionGap(const JVector4<float>& src, const JVector4<float>& des)noexcept;
@@ -72,6 +77,16 @@ namespace JinEngine
 		static T Clamp(const T& x, const T& low, const T& high)noexcept
 		{
 			return x < low ? low : (x > high ? high : x);
+		}
+		template<typename T>
+		static T DivideByMultiple(T value, size_t alignment)
+		{
+			return (T)((value + alignment - 1) / alignment);
+		}
+		template<typename T>
+		static T AlignT(T value, size_t alignment)
+		{
+			return DivideByMultiple(value, alignment) * alignment;
 		}
 	};
 }

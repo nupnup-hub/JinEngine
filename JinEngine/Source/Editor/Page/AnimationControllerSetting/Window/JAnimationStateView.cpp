@@ -118,16 +118,16 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy", J_EDITOR_POPUP_NODE_TYPE::LEAF, stateViewRootNode.get());
 			editorString->AddString(destroyNode->GetNodeId(), { "Destroy" , u8"»èÁ¦" });
 
-			//createNewCilpStateNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
+			//createNewCilpStateNode->RegisterEnableBind(std::make_unique<PassPopupConditionF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 
 			using RequestEvF = JAnimationStateViewCreationFunctor::RequestEvF;
 			using TryConnectStateTransitionF = JAnimationStateViewCreationFunctor::TryConnectStateTransitionF;
 
 			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqCreateStateEvF, this));
 			createTransitionNode->RegisterSelectBind(std::make_unique<TryConnectStateTransitionF::CompletelyBind>(*creation->tryConnectStateTransF, this));
-			createTransitionNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
+			createTransitionNode->RegisterEnableBind(std::make_unique<PassPopupConditionF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 			destroyNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqDestroyEvF, this));
-			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
+			destroyNode->RegisterEnableBind(std::make_unique<PassPopupConditionF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
 			statePopup = std::make_unique<JEditorPopupMenu>(Private::StateViewName(GetName()), std::move(stateViewRootNode));
 			statePopup->AddPopupNode(std::move(createNewCilpStateNode));
@@ -154,7 +154,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(stateView->aniCont),
 					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JAnimationStateViewCreationFunctor* impl = stateView->creation.get();
 				impl->clip.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
@@ -183,7 +183,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(stateView->aniCont),
 					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JAnimationStateViewCreationFunctor* impl = stateView->creation.get();
 				impl->transition.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, std::move(fromGuid), std::move(toGuid));
@@ -202,7 +202,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(stateView->aniCont),
 					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JAnimationStateViewCreationFunctor* impl = stateView->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);

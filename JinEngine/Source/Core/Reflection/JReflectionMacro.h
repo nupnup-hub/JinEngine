@@ -57,18 +57,18 @@ namespace JinEngine
 	private:												\
 		static void InitLazyDestructionInfo()				\
 		{													\
-			void(*executePtr)(JinEngine::Core::JTypeBase*) = [](JinEngine::Core::JTypeBase* iden) {JinEngine::Core::JIdentifier::BeginDestroy(static_cast<JinEngine::Core::JIdentifier*>(iden)); };\
+			bool(*executePtr)(JinEngine::Core::JTypeBase*) = [](JinEngine::Core::JTypeBase* iden) {return JinEngine::Core::JIdentifier::BeginDestroy(static_cast<JinEngine::Core::JIdentifier*>(iden)); };\
 			bool(*canDestroyPtr)(JinEngine::Core::JTypeBase*) = [](JinEngine::Core::JTypeBase* iden)	\
 			{																		\
-				if constexpr(std::is_base_of_v<ThisType, JinEngine::JObject>)return !static_cast<JObject*>(iden)->HasFlag(OBJECT_FLAG_UNDESTROYABLE);\
+				if constexpr(std::is_base_of_v<JinEngine::JObject, ThisType>)return !static_cast<JObject*>(iden)->HasFlag(OBJECT_FLAG_UNDESTROYABLE);\
 				else return true;													\
 			};																		\
 			ThisType::StaticTypeInfo().SetDestructionInfo(std::make_unique<JinEngine::Core::JLazyDestructionInfo>(waitTime, executePtr, canDestroyPtr));\
-		}																																	\
+		}																																				\
 
 
 #define REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION											\
-		REGISTER_CLASS_IDENTIFIER_LAZY_DESTRUCTION(20)												\
+		REGISTER_CLASS_IDENTIFIER_LAZY_DESTRUCTION(10.0f)												\
 
 
 
@@ -200,7 +200,12 @@ namespace JinEngine
 		REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, __VA_ARGS__)										\
 		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)												\
 		REGISTER_CLASS_ALLOC_FUNC																	\
-																									
+									
+
+#define REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(typeName, ...)										\
+		REGISTER_CLASS_IDENTIFIER_LINE(typeName, __VA_ARGS__)										\
+		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION											\
+
 
 #define REGISTER_CLASS_IDENTIFIER_LINE_IMPL(typeName, ...)										\
 		REGISTER_IMPL_CLASS_INTERFACE_TYPE														\

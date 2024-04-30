@@ -7,7 +7,7 @@
 #include"../JResourceObjectHint.h"
 #include"../Mesh/JMeshGeometry.h" 
 #include"../Material/JMaterial.h"    
-#include"../../Component/Light/JLight.h"
+#include"../../Component/Light/JLight.h" 
 //#include"../JResourceManager.h" 
  
 #include"../../Component/JComponentHint.h"
@@ -28,11 +28,12 @@
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
-#include"../../../Core/File/JFileConstant.h" 
-#include"../../../Core/Geometry/Mesh/JMeshType.h"  
+#include"../../../Core/File/JFileConstant.h"  
 #include"../../../Core/Utility/JCommonUtility.h" 
 #include"../../../Graphic/Frameresource/JFrameUpdate.h" 
 #include<DirectXColors.h> 
+
+//#include"../../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine
 {
 	namespace
@@ -76,6 +77,7 @@ namespace JinEngine
 		const J_SCENE_USE_CASE_TYPE useCaseType;
 	public:
 		std::unique_ptr<Core::JGameTimer> sceneTimer;
+		bool requestInitialize = false;
 	public:
 		JSceneImpl(const InitData& initData, JScene* thisSceneRaw)
 			:debugRootGuid(Core::MakeGuid()), useCaseType(initData.useCaseType)
@@ -173,29 +175,63 @@ namespace JinEngine
 			return IsActivatedSceneTime() ? sceneTimer->DeltaTime() : 0;
 		}
 	public:
-		void SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& newOption)noexcept
+		void SetOctreeOption(const J_ACCELERATOR_LAYER layer, JOctreeOption newOption)noexcept
 		{
 			if (accelerator == nullptr)
 				return; 
 
+			if (newOption.commonOption.innerRoot == nullptr)
+				newOption.commonOption.innerRoot = root;
+			if (newOption.commonOption.debugRoot == nullptr)
+				newOption.commonOption.debugRoot = debugRoot;
+
 			accelerator->SetOctreeOption(layer, newOption);
 			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
 		}
-		void SetBvhOption(const J_ACCELERATOR_LAYER layer, const JBvhOption& newOption)noexcept
+		void SetBvhOption(const J_ACCELERATOR_LAYER layer, JBvhOption newOption)noexcept
 		{
 			if (accelerator == nullptr)
 				return;
+
+			if (newOption.commonOption.innerRoot == nullptr)
+				newOption.commonOption.innerRoot = root;
+			if (newOption.commonOption.debugRoot == nullptr)
+				newOption.commonOption.debugRoot = debugRoot;
 
 			accelerator->SetBvhOption(layer, newOption);
 			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
 		}
-		void SetKdTreeOption(const J_ACCELERATOR_LAYER layer, const JKdTreeOption& newOption)noexcept
+		void SetKdTreeOption(const J_ACCELERATOR_LAYER layer, JKdTreeOption newOption)noexcept
 		{
 			if (accelerator == nullptr)
 				return;
 
+			if (newOption.commonOption.innerRoot == nullptr)
+				newOption.commonOption.innerRoot = root;
+			if (newOption.commonOption.debugRoot == nullptr)
+				newOption.commonOption.debugRoot = debugRoot;
+
 			accelerator->SetKdTreeOption(layer, newOption);
 			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
+		}
+		void SetGpuAcceleratorBuildOption(const JGpuAcceleratorOption& option)
+		{
+			if (accelerator == nullptr || !thisPointer->IsMainScene())
+				return;
+
+			accelerator->SetGpuAccelerator(option);
+			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
+		}
+		void SetGpuAcceleratorOnlyOpaque()
+		{ 
+			if (accelerator == nullptr)
+				return;
+			  
+			JGpuAcceleratorOption buildOption;
+			buildOption.root = root;
+			buildOption.flag = Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_OPAQUE;
+			//Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE
+			SetGpuAcceleratorBuildOption(buildOption);
 		}
 	public:
 		bool IsActivatedSceneTime()const noexcept
@@ -338,15 +374,15 @@ namespace JinEngine
 			return false;
 		}
 	public:
-		void UpdateTransform(const JUserPtr<JGameObject>& owner)noexcept
+		void UpdateTransform(const JUserPtr<JComponent>& comp)noexcept
 		{
 			// && owner->GetRenderItem()->GetRenderLayer() != J_RENDER_LAYER::DEBUG
-			if (owner == nullptr || !owner->HasRenderItem())
+			if (comp == nullptr)
 				return;
 
 			if (thisPointer->IsActivated() && accelerator != nullptr)
-				accelerator->UpdateGameObject(owner);
-		}
+				accelerator->UpdateGameObject(comp);
+		} 
 	public:
 		bool RegisterComponent(const JUserPtr<JComponent>& component, CompSortPtr comparePtr)noexcept
 		{
@@ -382,14 +418,16 @@ namespace JinEngine
 
 			if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
 			{
-				JRenderItem* jRItem = static_cast<JRenderItem*>(component.Get());
+				JUserPtr<JRenderItem> jRItem = Core::ConnectChildUserPtr<JRenderItem>(component);
 				const J_RENDER_LAYER renderLayer = jRItem->GetRenderLayer();
 				const Core::J_MESHGEOMETRY_TYPE meshType = jRItem->GetMesh()->GetMeshGeometryType();
 				objectLayer[(int)renderLayer][(int)meshType].push_back(jRItem->GetOwner());
 
 				if (accelerator != nullptr)
-					accelerator->AddGameObject(jRItem->GetOwner());
+					accelerator->AddGameObject(jRItem);
 			} 
+			else if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT && accelerator != nullptr)
+				accelerator->AddGameObject(Core::ConnectChildUserPtr<JLight>(component));
 			return true;
 		}
 		bool DeRegisterComponent(const JUserPtr<JComponent>& component)noexcept
@@ -417,7 +455,7 @@ namespace JinEngine
 
 			if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
 			{
-				JRenderItem* jRItem = static_cast<JRenderItem*>(component.Get());
+				JUserPtr<JRenderItem> jRItem = Core::ConnectChildUserPtr<JRenderItem>(component);
 				JUserPtr<JGameObject> jOwner = jRItem->GetOwner();
 
 				const int rIndex = (int)jRItem->GetRenderLayer();
@@ -437,8 +475,10 @@ namespace JinEngine
 				}
 				//objectLayer[rIndex][mIndex].push_back(jOwner);
 				if (accelerator != nullptr)
-					accelerator->RemoveGameObject(jOwner);
+					accelerator->RemoveGameObject(jRItem);
 			} 
+			else if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT && accelerator != nullptr)
+				accelerator->RemoveGameObject(Core::ConnectChildUserPtr<JLight>(component));
 			cashVec.erase(cashVec.begin() + hitIndex); 
 			return true;
 		}
@@ -535,15 +575,16 @@ namespace JinEngine
 
 				//bvhDebugOption.commonOption.isDebugActivated = true;
 				//bvhDebugOption.commonOption.isDebugLeafOnly = true;
-
 				accelerator->SetBvhOption(debugLayer, bvhDebugOption); 
 				/*
-						JKdTreeOption kdDebugOption;
+				JKdTreeOption kdDebugOption;
 				kdDebugOption.commonOption.innerRoot = debugRoot;
 				kdDebugOption.commonOption.debugRoot = debugRoot;
 				kdDebugOption.commonOption.isAcceleratorActivated = true;
 				accelerator->SetKdTreeOption(debugLayer, kdOption);
 				*/
+				 
+				SetGpuAcceleratorOnlyOpaque();
 			}
 		}
 	public:
@@ -600,7 +641,10 @@ namespace JinEngine
 		}
 	public:
 		void StuffResource()
-		{
+		{ 			
+			if (requestInitialize)
+				Initialize();
+
 			if (!thisPointer->IsValid())
 			{
 				if (!thisPointer->HasFlag(OBJECT_FLAG_DO_NOT_SAVE))
@@ -643,25 +687,23 @@ namespace JinEngine
 			RegisterInterfacePointer();
 		}
 	public:
-		void Initialize(InitData* initData)
+		void Initialize()
 		{
-			//새로생성된 scene에 경우 기존에 파일을 가져오는게 불가능하므로
-			//Default Object 생성
-			if (!thisPointer->HasFile())
-			{
-				CreateDefaultGameObject();
-				CreateDebugRoot();
-				if (accelerator != nullptr)
-					InitializeAccelerator();
-				thisPointer->SetValid(true);
-			}
+			CreateDefaultGameObject();
+			CreateDebugRoot();
+			if (accelerator != nullptr)
+				InitializeAccelerator();
+			thisPointer->SetValid(true);
+			requestInitialize = false;
 		}
 		void RegisterThisPointer(JScene* scene)
 		{
 			thisPointer = Core::GetWeakPtr(scene);
 		}
 		void RegisterInterfacePointer()
-		{  
+		{
+			if (accelerator != nullptr)
+				accelerator->RegisterInterfacePointer();
 		}
 		static void RegisterTypeData()
 		{ 
@@ -719,7 +761,11 @@ namespace JinEngine
 	Core::JIdentifierPrivate& JScene::PrivateInterface()const noexcept
 	{
 		return sPrivate;
-	} 
+	}
+	const Graphic::JGpuAcceleratorUserInterface JScene::GpuAcceleratorUserInterface()const noexcept
+	{
+		return impl->accelerator != nullptr ? impl->accelerator->GpuAcceleratorUserInterface() : Graphic::JGpuAcceleratorUserInterface{};
+	}
 	J_RESOURCE_TYPE JScene::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -775,6 +821,10 @@ namespace JinEngine
 	std::vector<JUserPtr<JGameObject>> JScene::GetGameObjectVec()const noexcept
 	{
 		return impl->allObjects;
+	}
+	std::vector<JUserPtr<JGameObject>> JScene::GetGameObjectVec(const J_RENDER_LAYER layer, const Core::J_MESHGEOMETRY_TYPE mesh)const noexcept
+	{
+		return impl->objectLayer[(uint)layer][(uint)mesh];
 	}
 	std::vector<JUserPtr<JComponent>> JScene::GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept
 	{
@@ -846,6 +896,10 @@ namespace JinEngine
 	{
 		return impl->HasComponent(cType);
 	}
+	bool JScene::HasCanCullingAccelerator(const J_ACCELERATOR_LAYER layer)const noexcept
+	{
+		return impl->accelerator != nullptr && impl->accelerator->HasCanCullingAccelerator(layer);
+	}
 	bool JScene::AllowLightCulling()const noexcept
 	{
 		return impl->AllowLightCulling();
@@ -901,9 +955,10 @@ namespace JinEngine
 	}
 	JScene::JScene(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JSceneImpl>(initData, this))
-	{ }
+	{ 
+	}
 	JScene::~JScene()
-	{
+	{ 
 		impl.reset();
 	}
 
@@ -929,7 +984,8 @@ namespace JinEngine
 		JScene* scene = static_cast<JScene*>(createdPtr);
 		scene->impl->RegisterThisPointer(scene);
 		scene->impl->RegisterInterfacePointer();
-		scene->impl->Initialize(static_cast<JScene::InitData*>(initData));
+		//새로생성된 scene에 경우 기존에 파일을 가져오는게 불가능하므로 request default object creation
+		scene->impl->requestInitialize = !scene->HasFile(); 
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
@@ -1006,6 +1062,7 @@ namespace JinEngine
 					metadata.kdTreeOption[i].commonOption.debugRoot = newScene->impl->debugRoot;
 					newScene->SetKdTreeOption((J_ACCELERATOR_LAYER)i, metadata.kdTreeOption[i]);
 				}
+				newScene->impl->SetGpuAcceleratorOnlyOpaque();
 			} 
 		}
 		return newScene;
@@ -1075,6 +1132,9 @@ namespace JinEngine
 		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
+		if (!scene->IsValid())
+			MessageBoxA(0, "Invalid", 0, 0);
+
 		JObjectFileIOHelper::StoreEnumData(tool, scene->GetUseCaseType(), "UseCaseType:");
 		JObjectFileIOHelper::StoreAtomicData(tool, scene->IsValid(), Core::JFileConstant::GetLastOpenSymbol(JScene::StaticTypeInfo()));
 		JObjectFileIOHelper::StoreAtomicData(tool, scene->IsMainScene(), "IsMainScene:");
@@ -1135,12 +1195,12 @@ namespace JinEngine
 	bool OwnTypeInterface::RemoveGameObject(const JUserPtr<JGameObject>& gObject)noexcept
 	{
 		return gObject->GetOwnerScene()->impl->RemoveGameObject(gObject);
-	}
+	} 
 
-	void CompSettingInterface::UpdateTransform(const JUserPtr<JGameObject>& gObject)noexcept
+	void CompSettingInterface::UpdateTransform(const JUserPtr<JComponent>& comp)noexcept
 	{
-		gObject->GetOwnerScene()->impl->UpdateTransform(gObject);
-	}
+		comp->GetOwner()->GetOwnerScene()->impl->UpdateTransform(comp);
+	} 
 
 	bool CompRegisterInterface::RegisterComponent(const JUserPtr<JComponent>& comp, CompSortPtr comparePtr)noexcept
 	{
@@ -1193,7 +1253,7 @@ namespace JinEngine
 		scene->impl->BuildDebugTree(type, layer, tree);
 	}
 
-	uint FrameIndexInterface::GetPassFrameIndex(JScene* scene)
+	uint FrameIndexInterface::GetFrameIndex(JScene* scene)
 	{
 		return scene->impl->GetFrameIndex();
 	}

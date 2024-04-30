@@ -21,8 +21,7 @@ namespace JinEngine
 	class JTexturePrivate;
 	class JTexture final: public JResourceObject, public Graphic::JGraphicResourceUserAccess
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JTexture)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JTexture) 
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{
@@ -32,6 +31,7 @@ namespace JinEngine
 		public:
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 			Graphic::JMipmapGenerationDesc mipMapDesc;
+			Graphic::JConvertColorDesc convertDesc;
 			J_TEXTURE_RESOLUTION resoultion;
 		public:
 			InitData(const uint8 formatIndex,
@@ -59,6 +59,7 @@ namespace JinEngine
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
 			Graphic::JMipmapGenerationDesc mipMapDesc;
+			Graphic::JConvertColorDesc convertDesc;
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 			J_TEXTURE_RESOLUTION resoultion;
 		public:

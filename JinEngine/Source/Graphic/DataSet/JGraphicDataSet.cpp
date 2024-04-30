@@ -1,24 +1,36 @@
 #include"JGraphicDataSet.h"
 
 namespace JinEngine::Graphic
-{
-	JGraphicBaseDataSet::JGraphicBaseDataSet(const JGraphicInfo& info, const JGraphicOption& option)
-		:info(info), option(option)
+{ 
+	JGraphicDeviceInitSet::JGraphicDeviceInitSet(JGraphicResourceManager* graphicResourceM)
+		:graphicResourceM(graphicResourceM)
 	{}
 
-	JGraphicDeviceInitSet::JGraphicDeviceInitSet(const JGraphicInfo& info, const JGraphicOption& option, JGraphicResourceManager* graphicResourceM)
-		: info(info), option(option), graphicResourceM(graphicResourceM)
-	{}
+	JPostProcessEffectSet::JPostProcessEffectSet(JToneMapping* tm,
+		JBloom* bloom,
+		JAntialise* aa,
+		JPostProcessHistogram* histogram,
+		JPostProcessExposure* exposure,
+		JConvertColor* convertColor)
+		: tm(tm), bloom(bloom), aa(aa), histogram(histogram), exposure(exposure), convertColor(convertColor)
+	{ 
+		SetValid(tm != nullptr && bloom != nullptr && histogram != nullptr && exposure != nullptr && convertColor != nullptr);
+	}
 
 	JGraphicDrawReferenceSet::JGraphicDrawReferenceSet(const JGraphicInfo& info,
 		const JGraphicOption& option,
 		JGraphicDevice* device,
 		JGraphicResourceManager* graphicResourceM,
 		JCullingManager* cullingM,
+		JGpuAcceleratorManager* acceleratorM,
 		JFrameResource* currFrame,
 		JGraphicDebug* depthDebug,
 		JDepthTest* depthTest,
-		JImageProcessing* image,
+		JBlur* blur,
+		JDownSampling* downSample,
+		JSsao* ssao, 
+		JPostProcessEffectSet* postSet,
+		JGraphicResourceShareData* shareData, 
 		const int currFrameIndex,
 		const int nextFrameIndex)
 		: info(info), 
@@ -26,112 +38,128 @@ namespace JinEngine::Graphic
 		device(device),
 		graphicResourceM(graphicResourceM),
 		cullingM(cullingM),
+		acceleratorM(acceleratorM),
 		currFrame(currFrame),
 		depthDebug(depthDebug),
 		depthTest(depthTest),
-		image(image),
+		blur(blur),
+		downSample(downSample),
+		ssao(ssao), 
+		postSet(postSet),
+		shareData(shareData), 
 		currFrameIndex(currFrameIndex),
 		nextFrameIndex(nextFrameIndex)
 	{
 		if (device != nullptr && graphicResourceM != nullptr && cullingM != nullptr && currFrame != nullptr &&
-			depthDebug != nullptr && depthTest != nullptr && image != nullptr)
+			depthDebug != nullptr && depthTest != nullptr && blur != nullptr && downSample != nullptr && ssao != nullptr && 
+			postSet->IsValid())
 			SetValid(true);
 		else
 			SetValid(false);
 	}
 
-	JGraphicShaderCompileSet::JGraphicShaderCompileSet(JGraphicDevice* device, const JGraphicBaseDataSet& base)
-		:device(device), base(base)
+	JGraphicShaderCompileSet::JGraphicShaderCompileSet(JGraphicDevice* device)
+		:device(device)
 	{}
-	JGraphicShaderCompileSet::JGraphicShaderCompileSet(JGraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option)
-		: device(device), base(JGraphicBaseDataSet(info, option))
-	{}
-
-	JGraphicBindSet::JGraphicBindSet(JFrameResource* currFrame, JGraphicResourceManager* graphicResourceM, JCullingManager* cullingManager)
-		:currFrame(currFrame), graphicResourceM(graphicResourceM), cullingManager(cullingManager)
+ 
+	JGraphicBindSet::JGraphicBindSet(JCommandContext* context)
+		: context(context)
 	{}
 	 
-	JGraphicDepthMapDrawSet::JGraphicDepthMapDrawSet(JFrameResource* currFrame, JGraphicResourceManager* graphicResourceM, JCullingManager* cullingM)
-		: currFrame(currFrame), graphicResourceM(graphicResourceM), cullingM(cullingM)
+	JGraphicDepthMapDrawSet::JGraphicDepthMapDrawSet(JCommandContext* context)
+		: context(context)
 	{}
 	JGraphicDepthMapDrawSet::JGraphicDepthMapDrawSet(const JGraphicOccDrawSet* drawSet)
-		: currFrame(drawSet->currFrame), graphicResourceM(drawSet->graphicResourceM), cullingM(drawSet->cullingM)
+		: context(drawSet->context)
 	{}
  
-	JGraphicDebugRsComputeSet::JGraphicDebugRsComputeSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM)
-		: device(device), graphicResourceM(graphicResourceM)
+	JGraphicDebugRsComputeSet::JGraphicDebugRsComputeSet(JCommandContext* context)
+		: context(context)
 	{}	 
 
-	JGraphicSceneDrawSet::JGraphicSceneDrawSet(JGraphicDevice* device,
-		JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM)
-		:device(device), currFrame(currFrame), graphicResourceM(graphicResourceM), cullingM(cullingM)
+	JGraphicSceneDrawSet::JGraphicSceneDrawSet(JCommandContext* context)
+		: context(context)
 	{}
 
-	JGraphicShadowMapDrawSet::JGraphicShadowMapDrawSet(JGraphicDevice* device,
-		JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM,
-		JImageProcessing* image)
-		:device(device), currFrame(currFrame), graphicResourceM(graphicResourceM), cullingM(cullingM), image(image)
+	JGraphicShadowMapDrawSet::JGraphicShadowMapDrawSet(JCommandContext* context, JBlur* blur)
+		: context(context), blur(blur)
 	{}
 
-	JGraphicOccDrawSet::JGraphicOccDrawSet(JGraphicDevice* device,
-		JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM,
-		JDepthTest* depthTest)
-		:device(device),
-		currFrame(currFrame),
-		graphicResourceM(graphicResourceM),
-		cullingM(cullingM),
-		depthTest(depthTest)
+	JGraphicOccDrawSet::JGraphicOccDrawSet(JCommandContext* context, JDepthTest* depthTest)
+		: context(context), depthTest(depthTest)
 	{}
 	 
-	JGraphicHzbOccComputeSet::JGraphicHzbOccComputeSet(JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM)
-		:currFrame(currFrame),
-		graphicResourceM(graphicResourceM),
-		cullingM(cullingM)
+	JGraphicHzbOccComputeSet::JGraphicHzbOccComputeSet(JCommandContext* context)
+		: context(context)
 	{}
 
-	JGraphicHdOccExtractSet::JGraphicHdOccExtractSet(JCullingManager* cullingM)
-		:cullingM(cullingM)
+	JGraphicHdOccExtractSet::JGraphicHdOccExtractSet(JCommandContext* context)
+		: context(context)
 	{}
  
-	JGraphicOutlineDrawSet::JGraphicOutlineDrawSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM)
-		: device(device), graphicResourceM(graphicResourceM)
+	JGraphicOutlineDrawSet::JGraphicOutlineDrawSet(JCommandContext* context)
+		: context(context)
 	{}
 
-	JGraphicBlurComputeSet::JGraphicBlurComputeSet(JGraphicDevice* device, std::unique_ptr<JBlurDesc>&& desc)
-		: device(device), desc(std::move(desc))
+	JGraphicBlurComputeSet::JGraphicBlurComputeSet(JCommandContext* context, std::unique_ptr<JBlurDesc>&& desc)
+		: context(context), desc(std::move(desc))
 	{}
 
-	JGraphicDownSampleComputeSet::JGraphicDownSampleComputeSet(JGraphicDevice* device, 
-		JGraphicResourceManager* graphicResourceM, 
+	JGraphicDownSampleComputeSet::JGraphicDownSampleComputeSet(JCommandContext* context,
+		JBlur* blur,
 		std::unique_ptr<JDownSampleDesc>&& desc,
-		std::vector<Core::JDataHandle>&& handle)
-		: device(device), graphicResourceM(graphicResourceM), desc(std::move(desc)), handle(std::move(handle))
+		const std::vector<Core::JDataHandle>& handle)
+		: context(context), blur(blur), desc(std::move(desc)), handle(handle)
 	{}
 
-	JGraphicSsaoComputeSet::JGraphicSsaoComputeSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, JFrameResource* currFrame)
-		: device(device), graphicResourceM(graphicResourceM), currFrame(currFrame)
+	JGraphicSsaoComputeSet::JGraphicSsaoComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
+		: context(context), shareData(shareData)
+	{}
+	 
+	JGraphicAAComputeSet::JGraphicAAComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
+		: context(context), shareData(shareData)
 	{}
 
-	JGraphicLightCullingTaskSet::JGraphicLightCullingTaskSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingManager,
-		JFrameResource* currFrame)
-		: device(device), graphicResourceM(graphicResourceM), cullingManager(cullingManager), currFrame(currFrame)
+	JGraphicConvertColorComputeSet::JGraphicConvertColorComputeSet(JCommandContext* context, const JConvertColorDesc& desc)
+		: context(context), desc(desc)
 	{}
 
-	JGraphicLightCullingDebugDrawSet::JGraphicLightCullingDebugDrawSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM)
-		: device(device), graphicResourceM(graphicResourceM)
+	JPostProcessComputeSet::JPostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData)
+		: ppSet(ppSet), context(context), gm(gm), shareData(shareData)
 	{}
 
+	JGraphicLightCullingTaskSet::JGraphicLightCullingTaskSet(JCommandContext* context)
+		: context(context)
+	{}
+
+	JGraphicLightCullingDebugDrawSet::JGraphicLightCullingDebugDrawSet(JCommandContext* context)
+		: context(context)
+	{}
+
+	JGraphicRtAoComputeSet::JGraphicRtAoComputeSet(JCommandContext* context)
+		: context(context)
+	{}
+
+	JGraphicRtGiComputeSet::JGraphicRtGiComputeSet(JCommandContext* context)
+		: context(context)
+	{}
+
+	JGraphicRtDenoiseComputeSet::JGraphicRtDenoiseComputeSet(JCommandContext* context)
+		: context(context)
+	{}
+	 
 	JGraphicEndConditonSet::JGraphicEndConditonSet(const bool isSceneDrawn)
 		:isSceneDrawn(isSceneDrawn)
+	{}
+ 
+	JGraphicSubClassShareData::JGraphicSubClassShareData(JFrameIndexAccess* frameIndexAccess, PushGraphicEventPtr pushGraphicEventPtr)
+		: frameIndexAccess(frameIndexAccess), pushGraphicEventPtr(pushGraphicEventPtr)
+	{}
+
+	JGraphicInfoChangedSet::JGraphicInfoChangedSet(const JGraphicInfo& preInfo, const JGraphicInfo& newInfo)
+		: preInfo(preInfo), newInfo(newInfo)
+	{}
+	JGraphicOptionChangedSet::JGraphicOptionChangedSet(const JGraphicOption& preOption, const JGraphicOption& newOption)
+		: preOption(preOption), newOption(newOption)
 	{}
 }

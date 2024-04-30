@@ -11,6 +11,10 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		JFrustumCulling::~JFrustumCulling()
+		{
+			Clear();
+		}
 		void JFrustumCulling::Initialize()
 		{}
 		void JFrustumCulling::Clear()

@@ -4,7 +4,8 @@
 #include"JGraphicInfo.h" 
 #include"JGraphicEvent.h"
 #include"../Core/Event/JEventManager.h"   
- 
+#include"Command/JCommandContextLog.h"
+
 namespace JinEngine
 {
 	namespace Core
@@ -34,11 +35,17 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JGraphicImpl> impl;
 		public:
-			JGraphicInfo GetGraphicInfo()const noexcept;
-			JGraphicOption GetGraphicOption()const noexcept; 
+			JGraphicInfo GetGraphicInfo()const noexcept; 
+			const JGraphicInfo& GetGraphicInfoRef()const noexcept;
+			JGraphicOption GetGraphicOption()const noexcept;  
+			const JGraphicOption& GetGraphicOptionRef()const noexcept;
 			void GetLastDeviceErrorInfo(_Out_ std::wstring& errorCode, _Out_ std::wstring& errorMsg)const noexcept;
+			std::vector<JCommandContextLog> GetCpuDrawingLog()const noexcept;
 		public:
 			void SetGraphicOption(JGraphicOption newGraphicOption)noexcept;
+		public:
+			bool IsRaytracingSupported()const noexcept;
+			bool CanBuildGpuAccelerator()const noexcept;
 		public: 
 			GraphicEventInterface* EventInterface()noexcept; 
 		private:

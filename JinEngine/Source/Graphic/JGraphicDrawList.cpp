@@ -201,7 +201,7 @@ namespace JinEngine
 			for (const auto& data : sceneRequestor)
 			{
 				if (updateInfo->sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
-					data->canDrawThisFrame = true;
+					data->canDrawThisFrame = true; 
 			}
 			for (const auto& data : shadowRequestor)
 			{
@@ -299,7 +299,7 @@ namespace JinEngine
 			if (scene == nullptr || jLight == nullptr)
 				return;
 
-			int index = GetIndex(scene);
+			int index = GetIndex(scene); 
 			if (index == -1)
 				return;
 

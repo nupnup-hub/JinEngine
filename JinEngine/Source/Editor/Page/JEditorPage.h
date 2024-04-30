@@ -59,6 +59,8 @@ namespace JinEngine
 		private:
 			using OpenEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>; 
 			using CloseEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>; 
+			using RequestOpenEditorWindowF = OpenEditorWindowF;
+			using RequestCloseEditorWindowF = CloseEditorWindowF;
 			using PopupWndFuncTuple = std::tuple <J_EDITOR_POPUP_WINDOW_FUNC_TYPE, std::unique_ptr< Core::JBindHandleBase>>;
 		private:
 			J_EDITOR_PAGE_FLAG pageFlag;
@@ -77,7 +79,7 @@ namespace JinEngine
 			std::unique_ptr<WinodowMaximizeInfo> maximizeInfo;
 		private:
 			std::unique_ptr<OpenEditorWindowF::Functor> openEditorWindowFunctor; 
-			std::unique_ptr<CloseEditorWindowF::Functor> closeEditorWindowFunctor; 
+			std::unique_ptr<CloseEditorWindowF::Functor> closeEditorWindowFunctor;  
 		public:
 			JEditorPage(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_FLAG pageFlag);
 			~JEditorPage();
@@ -97,6 +99,11 @@ namespace JinEngine
 			std::vector<JEditorWindow*> GetWindowVec()const noexcept;
 			GuiID GetWindowID()const noexcept;
 			GuiID GetDockSpaceID()const noexcept;
+		protected:
+			OpenEditorWindowF::Functor* GetOpenEditorWindowFunctorPtr()noexcept;
+			CloseEditorWindowF::Functor* GetCloseEditorWindowFunctorPtr()noexcept;
+			std::unique_ptr<RequestOpenEditorWindowF::Functor> GetRequestOpenEditorWindowFunctorPtr()noexcept;
+			std::unique_ptr<RequestCloseEditorWindowF::Functor> GetRequestCloseEditorWindowFunctorPtr()noexcept;
 		public:
 			void SetPageFlag(const J_EDITOR_PAGE_FLAG flag)noexcept;
 			void SetNextPagePos(const JVector2F& pos)noexcept;
@@ -151,10 +158,14 @@ namespace JinEngine
 			void ClosePopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType);
 			void ClosePopupWindow(JEditorPopupWindow* popupWindow);
 		protected:
-			OpenEditorWindowF::Functor* GetOpenEditorWindowFunctorPtr()noexcept; 
-			CloseEditorWindowF::Functor* GetCloseEditorWindowFunctorPtr()noexcept; 
-		protected:
 			void PrintOpenWindowState();	//unuse
+		protected:
+			//Support undo redo
+			/**
+			* @brief open and activate
+			*/
+			void RequestOpenWindow(std::string windowName);
+			void RequestCloseWindow(std::string windowName);
 		protected:
 			void DoSetOpen()noexcept override;
 			void DoSetClose()noexcept override; 

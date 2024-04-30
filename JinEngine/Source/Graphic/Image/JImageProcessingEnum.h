@@ -16,6 +16,7 @@ namespace JinEngine
 		{
 			BOX,
 			GAUSIAAN,
+			KAISER,
 			//BILATERAL,
 			COUNT
 		}; 
@@ -61,5 +62,14 @@ namespace JinEngine
 				return Size<(J_KERNEL_SIZE)((uint)J_KERNEL_SIZE::COUNT - 1)>();
 			}
 		}; 
+		 
+		REGISTER_ENUM_CLASS(J_EXPOSURE_TYPE, int,
+			NONE,
+			DEFUALT,
+			AUTO)
+
+		REGISTER_ENUM_CLASS(J_BLOOM_QUALITY, int,
+			DEFUALT,
+			HIGH)
 	}
 }

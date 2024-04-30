@@ -13,8 +13,16 @@ namespace JinEngine
 			J_KERNEL_SIZE kernelSize;
 			int mipLevel = 0;
 		public:
-			JBlurDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevel = 0)
-				:imageSize(imageSize), kernelSize(kernelSize)
+			//additional
+			int blurCount = 1;
+			bool tryBlurSubResourcr = false;
+		public:
+			JBlurDesc(const JVector2F imageSize, 
+				const J_KERNEL_SIZE kernelSize, 
+				const int mipLevel = 0,
+				const int blurCount = 1,
+				bool tryBlurSubResourcr = false)
+				:imageSize(imageSize), kernelSize(kernelSize), mipLevel(mipLevel), blurCount(blurCount), tryBlurSubResourcr(tryBlurSubResourcr)
 			{}
 		public:
 			virtual J_BLUR_TYPE GetBlurType()const noexcept = 0;
@@ -45,61 +53,32 @@ namespace JinEngine
 				return J_BLUR_TYPE::GAUSIAAN;
 			}
 		};
+		struct JKaiserBlurDesc : public JBlurDesc
+		{
+		public:
+			float beta = 1.0f;
+		public:
+			JKaiserBlurDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const float beta = 1.0f)
+				:JBlurDesc(imageSize, kernelSize), beta(beta)
+			{}
+		public:
+			J_BLUR_TYPE GetBlurType()const noexcept
+			{
+				return J_BLUR_TYPE::KAISER;
+			}
+		};
 
 		struct JDownSampleDesc
 		{
 		public:
-			JVector2F imageSize;
-			J_KERNEL_SIZE kernelSize;
+			JVector2F imageSize; 
 			int mipLevelCount;
 		public:
-			JDownSampleDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevelCount)
-				:imageSize(imageSize), kernelSize(kernelSize), mipLevelCount(mipLevelCount)
+			JDownSampleDesc(const JVector2F imageSize, const int mipLevelCount)
+				:imageSize(imageSize), mipLevelCount(mipLevelCount)
 			{}
-		public:
-			virtual J_DOWN_SAMPLING_TYPE GetDownSampleType()const noexcept = 0;
-		};
-		struct JBoxDownSampleDesc : public JDownSampleDesc
-		{ 
-		public:
-			JBoxDownSampleDesc(const JVector2F imageSize, const int mipLevelCount)
-				:JDownSampleDesc(imageSize, J_KERNEL_SIZE::_3x3, mipLevelCount)
-			{}
-		public:
-			J_DOWN_SAMPLING_TYPE GetDownSampleType()const noexcept final
-			{
-				return J_DOWN_SAMPLING_TYPE::BOX;
-			}
-		};
-		struct JGaussianDownSampleDesc : public JDownSampleDesc
-		{
-		public:  
-			float sigma = 1.0f;
-		public:
-			JGaussianDownSampleDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevelCount, const float sigma)
-				:JDownSampleDesc(imageSize, kernelSize, mipLevelCount), sigma(sigma)
-			{}
-		public:
-			J_DOWN_SAMPLING_TYPE GetDownSampleType()const noexcept final
-			{
-				return J_DOWN_SAMPLING_TYPE::GAUSIAAN;
-			}
-		};
-		struct JKaiserDownSampleDesc : public JDownSampleDesc
-		{
-		public: 
-			float beta = 1.0f;
-		public:
-			JKaiserDownSampleDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevelCount, const float beta)
-				:JDownSampleDesc(imageSize, kernelSize, mipLevelCount), beta(beta)
-			{}
-		public:
-			J_DOWN_SAMPLING_TYPE GetDownSampleType()const noexcept final
-			{
-				return J_DOWN_SAMPLING_TYPE::KAISER;
-			}
-		};
- 
+		}; 
+
 		struct JSsaoDesc
 		{  
 		public:
@@ -137,5 +116,17 @@ namespace JinEngine
 					largeAoScale == desc.largeAoScale;
 			}
 		};  
+
+		//나중에 color curve 변경하는 기능 option 추가 할 것.
+		struct JConvertColorDesc
+		{
+		public:
+			bool reverseY = false;
+		public:
+			bool operator==(const JConvertColorDesc& rhs)
+			{
+				return reverseY == rhs.reverseY;
+			}
+		};
 	}
 }

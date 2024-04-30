@@ -79,14 +79,14 @@ Result BilateralBlurX(VertexOut pin) : SV_Target
 	float totalWeight = w;
 	float i = 1.0;
 	
-	ProcessRadius(i, centerDepth, pin.texC, float2(camInvRtSize.x, 0), totalAo, totalWeight);
-	ProcessRadius(i, centerDepth, pin.texC, float2(-camInvRtSize.x, 0), totalAo, totalWeight); 
+	ProcessRadius(i, centerDepth, pin.texC, float2(cbPass.camInvRtSize.x, 0), totalAo, totalWeight);
+	ProcessRadius(i, centerDepth, pin.texC, float2(-cbPass.camInvRtSize.x, 0), totalAo, totalWeight); 
 	return totalAo / totalWeight;
 }
 #else
 Result BilateralBlurY(VertexOut pin) : SV_Target
 {
-	SubtractViewportOrigin(pin, viewPortTopLeft, camInvRtSize);
+    SubtractViewportOrigin(pin, cbPass.viewPortTopLeft, cbPass.camInvRtSize);
 	float2 aoz = aoMap.SampleLevel(samPointClamp, pin.texC, 0).xy;
 	float centerDepth = aoz.y;
 
@@ -95,8 +95,8 @@ Result BilateralBlurY(VertexOut pin) : SV_Target
 	float totalWeight = w;
 	float i = 1.0; 
 	
-	ProcessRadius(i, centerDepth, pin.texC, float2(0, camInvRtSize.y), totalAo, totalWeight);
-	ProcessRadius(i, centerDepth, pin.texC, float2(0, -camInvRtSize.y), totalAo, totalWeight);
-	return pow(saturate(totalAo / totalWeight), sharpness);
+	ProcessRadius(i, centerDepth, pin.texC, float2(0, cbPass.camInvRtSize.y), totalAo, totalWeight);
+	ProcessRadius(i, centerDepth, pin.texC, float2(0, -cbPass.camInvRtSize.y), totalAo, totalWeight);
+    return pow(saturate(totalAo / totalWeight), cbPass.sharpness);
 }
 #endif

@@ -2,12 +2,7 @@
 #include"JLightPrivate.h"
 
 namespace JinEngine
-{
-	namespace Graphic
-	{
-		struct JSpotLightConstants;
-		struct JShadowMapDrawConstants; 
-	}
+{ 
 	class JSpotLight;
 	class JSpotLightPrivate : public JLightPrivate
 	{
@@ -40,32 +35,24 @@ namespace JinEngine
 			friend class Graphic::JGraphic;
 		private:
 			bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept final;
-			void UpdateFrame(JSpotLight* lit, Graphic::JSpotLightConstants& constant)noexcept;
-			void UpdateFrame(JSpotLight* lit, Graphic::JShadowMapDrawConstants& constant)noexcept;
+			void UpdateFrame(JLight* lit, Graphic::JLightConstantsSet& set)noexcept final;
 			void UpdateEnd(JLight* lit)noexcept final;
 		private:
-			int GetLitFrameIndex(JLight* lit)noexcept final;
-			int GetShadowMapFrameIndex(JLight* lit)noexcept final;
-			int GetDepthTestPassFrameIndex(JLight* lit)noexcept final;
-			int GetHzbOccComputeFrameIndex(JLight* lit)noexcept final;
+			int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept final;
+			int GetFrameIndexSize(JLight* lit, const uint layerIndex)noexcept final;
+			int GetShadowFrameLayerIndex(JLight* lit)noexcept final;
 		private:
 			//valid updating
-			bool IsHotUpdate(JLight* lit)noexcept final;
+			bool IsFrameHotDirted(JLight* lit)noexcept final;
 			//valid after update end
 			bool IsLastFrameHotUpdated(JLight* lit)noexcept final;
-			bool IsLastUpdated(JLight* lit)noexcept final;
-			bool HasLitRecopyRequest(JLight* lit)noexcept final;
-			bool HasShadowMapRecopyRequest(JLight* lit)noexcept final;
-			bool HasDepthTestPassRecopyRequest(JLight* lit)noexcept final;
-			bool HasHzbOccComputeRecopyRequest(JLight* lit)noexcept final;
+			bool IsLastUpdated(JLight* lit)noexcept final; 
 		};
 		class FrameIndexInterface final : public JLightPrivate::FrameIndexInterface
 		{ 
 		private:
-			int GetLitFrameIndex(JLight* lit)noexcept final;
-			int GetShadowMapFrameIndex(JLight* lit)noexcept final;
-			int GetDepthTestPassFrameIndex(JLight* lit)noexcept final;
-			int GetHzbOccComputeFrameIndex(JLight* lit)noexcept final;
+			int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept final; 
+			int GetShadowFrameLayerIndex(JLight* lit)noexcept final;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

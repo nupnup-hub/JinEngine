@@ -7,17 +7,20 @@ namespace JinEngine
 		class JFilter
 		{
 		public:
-			static float Box(const int x, const int y, const int size);
-			static float Gaus(const int x, const int y, const float sig);
+			static float Box1D(const int x, const int size);
+			static float Box2D(const int x, const int y, const int size);
+			static float Gaus1D(const int x, const float sig);
+			static float Gaus2D(const int x, const int y, const float sig);
+			static float Kaiser1D(const int x, const float beta, const int N);
 			/**
 			* @param beta controll sharpness
 			* @param N =  kenel(row or column) count - 1
 			* @brief 2-D window function => w(n1, n2) = w1(n1)w2(n2)
 			*/
-			static float Kaiser(const int x, const int y, const float beta, const int N);
+			static float Kaiser2D(const int x, const int y, const float beta, const int N);
 		public:
-			template<int calSize, int arraySize, bool zeroIsMiddle, typename ...Param >
-			static void ComputeFilter(float(&kenel)[arraySize][arraySize], float(*calKernel)(int, int, Param...), Param... param)
+			template<int calSize, int arraySize, typename ...Param >
+			static void ComputeFilter(float(&kenel)[arraySize], float(*calKernel)(int, Param...), Param... param)
 			{
 				constexpr static int radius = calSize / 2;
 				float sum = 0;
@@ -25,22 +28,54 @@ namespace JinEngine
 				int end = 0;
 				int offset = 0;
 
-				if constexpr (zeroIsMiddle)
+				if (calSize % 2)
 				{
-					if (calSize % 2)
-					{
-						start = -radius;
-						end = radius;
-					}
-					else
-					{
-						start = -radius + 1;
-						end = radius;
-					}
-					offset = -start;
+					start = -radius;
+					end = radius;
 				}
 				else
-					end = calSize - 1;
+				{
+					start = -radius + 1;
+					end = radius;
+				}
+				offset = -start;
+
+				for (int i = start; i <= end; ++i)
+				{
+					kenel[i + offset] = calKernel(i, param...);
+					sum += kenel[i + offset];
+				}
+				for (int i = 0; i < calSize; ++i)
+					kenel[i] /= sum;
+			}
+			template<int calSize, int arraySize, typename ...Param >
+			static void ComputeFilter(JVector4F(&v4)[arraySize], float(*calKernel)(int, Param...), Param... param)
+			{
+				float kenel[calSize];
+				ComputeFilter<calSize, calSize>(kenel, calKernel, param...);
+				for (uint i = 0; i < calSize; ++i)
+					v4[i].x = kenel[i];
+			}
+			template<int calSize, int arraySize, typename ...Param >
+			static void Compute2DFilter(float(&kenel)[arraySize][arraySize], float(*calKernel)(int, int, Param...), Param... param)
+			{
+				constexpr static int radius = calSize / 2;
+				float sum = 0;
+				int start = 0;
+				int end = 0;
+				int offset = 0;
+
+				if (calSize % 2)
+				{
+					start = -radius;
+					end = radius;
+				}
+				else
+				{
+					start = -radius + 1;
+					end = radius;
+				}
+				offset = -start;
 
 				for (int i = start; i <= end; ++i)
 				{
@@ -56,11 +91,11 @@ namespace JinEngine
 						kenel[i][j] /= sum;
 				} 
 			}		 
-			template<int calSize, int arraySize, bool zeroIsMiddle, typename ...Param >
-			static void ComputeFilter(JVector4F(&v4)[arraySize], float(*calKernel)(int, int, Param...), Param... param)
+			template<int calSize, int arraySize, typename ...Param >
+			static void Compute2DFilter(JVector4F(&v4)[arraySize], float(*calKernel)(int, int, Param...), Param... param)
 			{
 				float kenel[calSize][calSize];
-				ComputeFilter<calSize, calSize, zeroIsMiddle>(kenel, calKernel, param...);
+				Compute2DFilter<calSize, calSize>(kenel, calKernel, param...);
 				for (uint i = 0; i < calSize; ++i)
 				{
 					v4[i].x = kenel[i][0];
@@ -72,11 +107,11 @@ namespace JinEngine
 						v4[i].w = kenel[i][3];
 				}
 			}
-			template<int calSize, int arraySize, bool zeroIsMiddle, bool doTranspose, typename ...Param >
-			static void ComputeFilter(JMatrix4x2(&m42)[arraySize], float(*calKernel)(int, int, Param...), Param... param)
+			template<int calSize, int arraySize, bool doTranspose, typename ...Param >
+			static void Compute2DFilter(JMatrix4x2(&m42)[arraySize], float(*calKernel)(int, int, Param...), Param... param)
 			{
 				float kenel[calSize][calSize];
-				ComputeFilter<calSize, calSize, zeroIsMiddle>(kenel, calKernel, param...);
+				Compute2DFilter<calSize, calSize>(kenel, calKernel, param...);
 				for (uint i = 0; i < calSize; ++i)
 				{
 					if constexpr (doTranspose)

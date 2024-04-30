@@ -1,5 +1,6 @@
 #pragma once
 #include"../JDepthTest.h"
+#include"../../Shader/Dx/JDx12ShaderDataHolder.h"
 #include"../../../Core/Utility/JTypeTraitUtility.h" 
 #include"../../../Core/Geometry/Mesh/JMeshType.h"  
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
@@ -8,17 +9,21 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		class JDx12GraphicShaderDataHolder;
+	{ 
 		class JDx12FrameResource;
+		class JDx12CommandContext;
 		class JDx12DepthTest final : public JDepthTest
 		{
+		private:
+			using JDx12GraphicShaderDataHolder = JDx12GraphicShaderDataHolder<1>;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
 			Core::EnumCountArray<std::unique_ptr<JDx12GraphicShaderDataHolder>, TEST_TYPE> gShaderData;
 			//std::unique_ptr<JGraphicShaderData> gShaderData[(uint)TEST_TYPE::COUNT];
 		public:
-			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)final;
+			~JDx12DepthTest();
+		public:
+			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)final;
 			void Clear()final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
@@ -34,10 +39,13 @@ namespace JinEngine
 		public:
 			bool BindGraphicResource(const JGraphicBindSet* bindSet, const JDrawHelper& helper) final;
 		private:
-			bool BindGraphicResource(ID3D12GraphicsCommandList* cmdList, JDx12FrameResource* dx12Frame, const JDrawHelper& helper);
+			bool BindGraphicResource(JDx12CommandContext* context, const JDrawHelper& helper);
 		private:
+			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info);
 			void BuildRootSignature(ID3D12Device* device);
 			void BuildPso(ID3D12Device* device, const DXGI_FORMAT depthStencilFormat);
+		private:
+			void ClearResource();
 		};
 	}
 }

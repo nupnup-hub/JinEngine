@@ -11,14 +11,13 @@
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
-#include"../../../Core/Math/JMathHelper.h"
+#include"../../../Core/Math/JMathHelper.h" 
 #include"../../../Application/JApplicationProject.h"
 #include"../../../Graphic/JGraphicConstants.h"
 #include"../../../Graphic/Frameresource/JMaterialConstants.h"
 #include"../../../Graphic/Frameresource/JFrameUpdate.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include<fstream>
-  
+#include<fstream> 
 namespace JinEngine
 {
 	namespace
@@ -55,11 +54,13 @@ namespace JinEngine
 		JUserPtr<JShader> shader = nullptr;
 	public:
 		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0.0f, 1.0f))
-		float metallic = 0.25f;
+		float metallic = Core::JMaterialParameter::InitMetalic();
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0.0f, 1.0f))
-		float roughness = 0.75f;
+		float roughness = Core::JMaterialParameter::InitRoughness();
+		REGISTER_PROPERTY_EX(specularFactor, GetSpecular, SetSpecular, GUI_SLIDER(0.0f, 1.0f))
+		float specularFactor = Core::JMaterialParameter::InitSpecularFactor();
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-		JVector4<float> albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		JVector4<float> albedoColor = Core::JMaterialParameter::InitAlbedoColor();
 		JMatrix4x4 matTransform = JMatrix4x4::Identity();
 	public:
 		//Texture
@@ -75,6 +76,8 @@ namespace JinEngine
 		JUserPtr<JTexture>roughnessMap;
 		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JTexture> ambientOcclusionMap;
+		REGISTER_PROPERTY_EX(specularMap, GetSpecularMap, SetSpecularMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
+		JUserPtr<JTexture> specularMap;
 	public:
 		//Shader function option
 		//수정필요
@@ -85,16 +88,18 @@ namespace JinEngine
 		bool light = false;
 		REGISTER_PROPERTY_EX(albedoMapOnly, OnAlbedoOnly, SetAlbedoMapOnly, GUI_CHECKBOX())
 		bool albedoMapOnly = false; 
-		bool isSkyMateral = false;
+		REGISTER_PROPERTY_EX(skyMaterial, IsSkyMaterial, SetSkyMaterial, GUI_CHECKBOX())
+		bool skyMaterial = false;
 		bool isDebugMaterial = false;
 		bool alphaClip = false;
 	public:
-		JShaderCondition shaderCond; 
-	public:
 		bool canUpdateShader = true;		//데이터 로드할때 마지막에 쉐이더 업데이트하기 위한 용도
 	public:
+		JGraphicShaderCondition shaderCond;  
+	public:
 		JMaterialImpl(const InitData& initData, JMaterial* thisMatRaw)
-		{}
+		{ 
+		}
 		~JMaterialImpl()
 		{ 
 		}
@@ -106,6 +111,10 @@ namespace JinEngine
 		float GetRoughness() const noexcept
 		{
 			return roughness;
+		}
+		float GetSpecular() const noexcept
+		{
+			return specularFactor;
 		}
 		JVector4<float> GetAlbedoColor() const noexcept
 		{
@@ -139,10 +148,15 @@ namespace JinEngine
 		{
 			return ambientOcclusionMap;
 		}
+		JUserPtr<JTexture> GetSpecularMap() const noexcept
+		{
+			return specularMap;
+		}
 		J_GRAPHIC_SHADER_FUNCTION GetShaderGFunctionFlag()const noexcept
 		{ 
 			J_GRAPHIC_SHADER_FUNCTION gFunction = SHADER_FUNCTION_NONE;
 			if (albedoMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALBEDO_MAP);
+			if (specularMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SPECULAR_MAP);
 			if (normalMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_NORMAL_MAP);
 			if (heightMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_HEIGHT_MAP);
 			if (metallicMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_METALLIC_MAP);
@@ -151,24 +165,33 @@ namespace JinEngine
 			if (shadow) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SHADOW);
 			if (light) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_LIGHT);
 			if (albedoMapOnly) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALBEDO_MAP_ONLY);
-			if (isSkyMateral) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SKY);
+			if (skyMaterial) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SKY);
 			if (isDebugMaterial) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_DEBUG);
 			if (alphaClip) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALPHA_CLIP);
 			return gFunction;
 		}
-		JShaderCondition GetShaderCondition()const noexcept
+		JGraphicShaderCondition GetShaderCondition()const noexcept
 		{
 			return shaderCond;
+		}
+		int TryGetResourceArrayIndex(const JUserPtr<JTexture>& texture, const int failReturn = invalidIndex)const noexcept
+		{ 
+			return texture != nullptr ? texture->GraphicResourceUserInterface().GetFirstResourceArrayIndex() : failReturn;
 		}
 	public:
 		void SetMetallic(const float value) noexcept
 		{
-			metallic = value;
+			metallic = std::clamp(value, 0.0f, 1.0f);
 			SetFrameDirty();
 		}
 		void SetRoughness(const float value) noexcept
 		{
-			roughness = value;
+			roughness = std::clamp(value, 0.0f, 1.0f);
+			SetFrameDirty();
+		}
+		void SetSpecular(const float value) noexcept
+		{
+			specularFactor = std::clamp(value, 0.0f, 1.0f);
 			SetFrameDirty();
 		}
 		void SetAlbedoColor(const JVector4<float>& value)noexcept
@@ -182,8 +205,12 @@ namespace JinEngine
 			SetFrameDirty();
 		}
 		void SetAlbedoMap(JUserPtr<JTexture> newTexture) noexcept
-		{
+		{ 
 			SetTexture(albedoMap, newTexture, SHADER_FUNCTION_ALBEDO_MAP);
+		}
+		void SetSpecularMap(JUserPtr<JTexture> newTexture) noexcept
+		{
+			SetTexture(specularMap, newTexture, SHADER_FUNCTION_SPECULAR_MAP);
 		}
 		void SetNormalMap(JUserPtr<JTexture> newTexture) noexcept
 		{
@@ -204,7 +231,7 @@ namespace JinEngine
 		void SetAmbientOcclusionMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(ambientOcclusionMap, newTexture, SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP);
-		}
+		} 
 		void SetTexture(JUserPtr<JTexture>& existingTexture,
 			JUserPtr<JTexture> newTexture,
 			const J_GRAPHIC_SHADER_FUNCTION shaderFunction)
@@ -247,10 +274,13 @@ namespace JinEngine
 		}	 
 		void SetSkyMaterial(const bool value)noexcept
 		{
-			if (isSkyMateral == value)
+			if (skyMaterial == value)
 				return;
 
-			isSkyMateral = value;
+			skyMaterial = value;
+			SetNonCulling(true);
+			SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
+
 			SetFrameDirty();
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}
@@ -320,7 +350,7 @@ namespace JinEngine
 			if (shader != nullptr && shader->GetShaderGFunctionFlag() == newFunc)
 				return;
 
-			JShaderCondition subPos;
+			JGraphicShaderCondition subPos;
 			if (shader != nullptr)
 				subPos = shader->GetShaderCondition(); 
 
@@ -330,7 +360,7 @@ namespace JinEngine
 			 
 			SetShader(newShader);
 		}
-		void SetNewOption(const JShaderCondition newPso)
+		void SetNewOption(const JGraphicShaderCondition newPso)
 		{
 			if (!canUpdateShader)
 				return;
@@ -379,7 +409,7 @@ namespace JinEngine
 		}
 		bool IsSkyMaterial()const noexcept
 		{
-			return isSkyMateral;
+			return skyMaterial;
 		}
 		bool IsDebugMaterial()const noexcept
 		{
@@ -388,6 +418,10 @@ namespace JinEngine
 		bool HasAlbedoMapTexture() const noexcept
 		{
 			return albedoMap.IsValid();
+		}
+		bool HasSpecularMapTexture() const noexcept
+		{
+			return specularMap.IsValid();
 		}
 		bool HasNormalMapTexture() const noexcept
 		{
@@ -423,6 +457,8 @@ namespace JinEngine
 			const size_t tarGuid = texture->GetGuid();
 			if (HasAlbedoMapTexture() && albedoMap->GetGuid() == tarGuid)
 				SetAlbedoMap(JUserPtr<JTexture>{});
+			if (HasSpecularMapTexture() && specularMap->GetGuid() == tarGuid)
+				SetSpecularMap(JUserPtr<JTexture>{});
 			if (HasNormalMapTexture() && normalMap->GetGuid() == tarGuid)
 				SetNormalMap(JUserPtr<JTexture>{});
 			if (HasHeightMapTexture() && heightMap->GetGuid() == tarGuid)
@@ -463,11 +499,24 @@ namespace JinEngine
 			{
 				const size_t objGuid = jRobj->GetGuid(); 
 				if (jRobj->GetResourceType() == J_RESOURCE_TYPE::TEXTURE)
-					PopTexture(static_cast<JTexture*>(jRobj));
+				{
+					JTexture* texture = static_cast<JTexture*>(jRobj);
+					const int arrayIndex = texture->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
+
+					PopTexture(texture);
+					if (!IsFrameDirted() && (TryGetResourceArrayIndex(albedoMap) >= arrayIndex ||
+						TryGetResourceArrayIndex(normalMap) >= arrayIndex ||
+						TryGetResourceArrayIndex(heightMap) >= arrayIndex ||
+						TryGetResourceArrayIndex(metallicMap) >= arrayIndex ||
+						TryGetResourceArrayIndex(roughnessMap) >= arrayIndex ||
+						TryGetResourceArrayIndex(ambientOcclusionMap) >= arrayIndex ||
+						TryGetResourceArrayIndex(specularMap) >= arrayIndex))
+						SetFrameDirty();
+				}
 				else if (shader != nullptr && shader->GetGuid() == objGuid)
 					SetShader(nullptr);
 			}
-			else if (eventType == J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE && 
+			else if (eventType == J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE &&
 				jRobj->GetResourceType() == J_RESOURCE_TYPE::TEXTURE &&
 				desc != nullptr)
 			{ 
@@ -497,23 +546,21 @@ namespace JinEngine
 		}
 	public:
 		void UpdateFrame(Graphic::JMaterialConstants& constant)noexcept final
-		{  
+		{    
+			static constexpr uint missingIndex = Graphic::Constants::missingIndex;
+
 			constant.albedoColor = albedoColor;
-			constant.metalic = metallic;
+			constant.metallic = metallic;
 			constant.roughness = roughness;
+			constant.specularFactor = specularFactor;
 			constant.matTransform.StoreXM(XMMatrixTranspose(matTransform.LoadXM()));
-			if (albedoMap.IsValid())
-				constant.albedoMapIndex = albedoMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
-			if (normalMap.IsValid())
-				constant.normalMapIndex = normalMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
-			if (heightMap.IsValid())
-				constant.heightMapIndex = heightMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
-			if (metallicMap.IsValid())
-				constant.metallicMapIndex = metallicMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
-			if (roughnessMap.IsValid())
-				constant.roughnessMapIndex = roughnessMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
-			if (ambientOcclusionMap.IsValid())
-				constant.ambientOcclusionMapIndex = ambientOcclusionMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
+			constant.albedoMapIndex = TryGetResourceArrayIndex(albedoMap, missingIndex);
+			constant.normalMapIndex = TryGetResourceArrayIndex(normalMap, missingIndex);
+			constant.heightMapIndex = TryGetResourceArrayIndex(heightMap, missingIndex);
+			constant.metallicMapIndex = TryGetResourceArrayIndex(metallicMap, missingIndex);
+			constant.roughnessMapIndex = TryGetResourceArrayIndex(roughnessMap, missingIndex);
+			constant.ambientOcclusionMapIndex = TryGetResourceArrayIndex(ambientOcclusionMap, missingIndex);
+			constant.specularMapIndex = TryGetResourceArrayIndex(specularMap, missingIndex);		 
 			MaterialFrame::MinusMovedDirty();
 		}
 	public:
@@ -534,6 +581,7 @@ namespace JinEngine
 			J_SHADER_DEPTH_COMPARISON_FUNC sDepthComparesionFunc = J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT;
 			float sMetallic = 0;
 			float sRoughness = 0;
+			float sSpecularFactor = 0;
 			JVector4<float> sAlbedoColor;
 			JMatrix4x4 sMatTransform;
 
@@ -550,6 +598,7 @@ namespace JinEngine
 
 			JObjectFileIOHelper::LoadAtomicData(tool, sMetallic, "Metallic");
 			JObjectFileIOHelper::LoadAtomicData(tool, sRoughness, "Roughness");
+			JObjectFileIOHelper::LoadAtomicData(tool, sSpecularFactor, "Specular");
 
 			JObjectFileIOHelper::LoadVector4(tool, sAlbedoColor, "AlbedoColor");
 			JObjectFileIOHelper::LoadMatrix4x4(tool, sMatTransform, "Matransform");
@@ -560,6 +609,7 @@ namespace JinEngine
 			JUserPtr<JTexture> sMetallicMap =  JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "MetallicMap");
 			JUserPtr<JTexture> sRoughnessMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "RoughnessMap");
 			JUserPtr<JTexture> sAmbientOcclusionMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "AmbientOcclusionMap");
+			JUserPtr<JTexture> sSpecularMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "SpecularMap");
 			tool.Close();
 
 			canUpdateShader = false;
@@ -576,6 +626,7 @@ namespace JinEngine
 
 			SetMetallic(sMetallic);
 			SetRoughness(sRoughness);
+			SetSpecular(sSpecularFactor);
 			SetAlbedoColor(sAlbedoColor);
 			SetMatTransform(sMatTransform);
 
@@ -585,6 +636,7 @@ namespace JinEngine
 			SetMetallicMap(sMetallicMap);
 			SetRoughnessMap(sRoughnessMap);
 			SetAmbientOcclusionMap(sAmbientOcclusionMap);
+			SetSpecularMap(sSpecularMap);
 			canUpdateShader = true;
 			 
 			TryUpdateShader();
@@ -599,16 +651,17 @@ namespace JinEngine
 			JObjectFileIOHelper::StoreAtomicData(tool, shadow, "Shadow");
 			JObjectFileIOHelper::StoreAtomicData(tool, light, "Light");
 			JObjectFileIOHelper::StoreAtomicData(tool, albedoMapOnly, "AlbedoOnly");
-			JObjectFileIOHelper::StoreAtomicData(tool, isSkyMateral, "SkyMaterial");
+			JObjectFileIOHelper::StoreAtomicData(tool, skyMaterial, "SkyMaterial");
 			JObjectFileIOHelper::StoreAtomicData(tool, isDebugMaterial, "DebugMaterial");
 			JObjectFileIOHelper::StoreAtomicData(tool, alphaClip, "AlphaClip");
 
 			JObjectFileIOHelper::StoreAtomicData(tool, shaderCond.isCullModeNone, "NonCulling");
 			JObjectFileIOHelper::StoreEnumData(tool, shaderCond.primitiveType, "PrimitiveType");
 			JObjectFileIOHelper::StoreEnumData(tool, shaderCond.depthCompareFunc, "DepthComparesionFunc");
-
+			 
 			JObjectFileIOHelper::StoreAtomicData(tool, metallic, "Metallic");
 			JObjectFileIOHelper::StoreAtomicData(tool, roughness, "Roughness");
+			JObjectFileIOHelper::StoreAtomicData(tool, specularFactor, "Specular");
 
 			JObjectFileIOHelper::StoreVector4(tool, albedoColor, "AlbedoColor");
 			JObjectFileIOHelper::StoreMatrix4x4(tool, matTransform, "Matransform");
@@ -619,7 +672,8 @@ namespace JinEngine
 			JObjectFileIOHelper::_StoreHasIden(tool, metallicMap.Get(), "MetallicMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, roughnessMap.Get(), "RoughnessMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, ambientOcclusionMap.Get(), "AmbientOcclusionMap");
-
+			JObjectFileIOHelper::_StoreHasIden(tool, specularMap.Get(), "SpecularMap");
+			 
 			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
 		}
@@ -641,7 +695,7 @@ namespace JinEngine
 		}
 		void RegisterPostCreation()
 		{ 
-			auto vec = {J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE , J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE };
+			auto vec = {J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE , J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE };
 			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), vec);
 		}
 		void DeRegisterPreDestruction()
@@ -734,6 +788,10 @@ namespace JinEngine
 	{
 		return impl->GetRoughness();
 	}
+	float JMaterial::GetSpecularFactor() const noexcept
+	{
+		return impl->GetSpecular();
+	}
 	JVector4<float> JMaterial::GetAlbedoColor() const noexcept
 	{
 		return impl->GetAlbedoColor();
@@ -766,7 +824,11 @@ namespace JinEngine
 	{
 		return impl->GetAmbientOcclusionMap();
 	}
-	JShaderCondition JMaterial::GetShaderCondition()const noexcept
+	JUserPtr<JTexture> JMaterial::GetSpecularMap() const noexcept
+	{
+		return impl->GetSpecularMap();
+	}
+	JGraphicShaderCondition JMaterial::GetShaderCondition()const noexcept
 	{
 		return impl->shaderCond;
 	}
@@ -786,6 +848,10 @@ namespace JinEngine
 	{
 		impl->SetRoughness(value);
 	}
+	void JMaterial::SetSpecularFactor(const float value) noexcept
+	{
+		impl->SetSpecular(value);
+	}
 	void JMaterial::SetAlbedoColor(const JVector4<float>& value)noexcept
 	{
 		impl->SetAlbedoColor(value);
@@ -797,6 +863,10 @@ namespace JinEngine
 	void JMaterial::SetAlbedoMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetAlbedoMap(texture);
+	}
+	void JMaterial::SetSpecularMap(JUserPtr<JTexture> texture) noexcept
+	{
+		impl->SetSpecularMap(texture);
 	}
 	void JMaterial::SetNormalMap(JUserPtr<JTexture> texture) noexcept
 	{
@@ -817,7 +887,7 @@ namespace JinEngine
 	void JMaterial::SetAmbientOcclusionMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetAmbientOcclusionMap(texture);
-	}
+	} 
 	void JMaterial::SetShadow(const bool value)noexcept
 	{
 		impl->SetShadow(value);
@@ -882,9 +952,20 @@ namespace JinEngine
 	{
 		return impl->IsDebugMaterial();
 	}
+	bool JMaterial::IsSame(const Core::JMaterialParameter& param)const noexcept
+	{
+		return impl->metallic == param.metallic &&
+			impl->roughness == param.roughness &&
+			impl->specularFactor == param.specularFactor &&
+			impl->albedoColor == param.albedoColor;
+	}
 	bool JMaterial::HasAlbedoMapTexture() const noexcept
 	{
 		return impl->HasAlbedoMapTexture();
+	}
+	bool JMaterial::HasSpecularMapTexture() const noexcept
+	{
+		return impl->HasSpecularMapTexture();
 	}
 	bool JMaterial::HasNormalMapTexture() const noexcept
 	{
@@ -1052,7 +1133,7 @@ namespace JinEngine
 	}
 	void FrameUpdateInterface::UpdateEnd(JMaterial* mat)noexcept
 	{
-		if (mat->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+		if (mat->impl->IsFrameHotDirted())
 			mat->impl->SetLastFrameHotUpdatedTrigger(true);
 		mat->impl->SetLastFrameUpdatedTrigger(true);
 		mat->impl->UpdateFrameEnd();

@@ -2,6 +2,7 @@
 #include"../JGraphicConstants.h"
 #include"../Device/JGraphicDeviceUser.h"
 #include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicIndirectDataSet.h"
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include<memory>
@@ -9,42 +10,25 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		//Resource manage
-		class JGraphicDevice;
-		class JGraphicResourceManager;
-		class JCullingManager;
-		class JFrameResource;
-
+	{ 
 		//Draw object
-		class JGraphicDebug;
-		class JDepthTest;
-		class JShadowMap;
-		class JSceneDraw;
-		class JHardwareOccCulling;
-		class JHZBOccCulling;
-		class JLightCulling;
-		class JOutline;
-		class JImageProcessing;
 		class JGraphicResourceInfo;
-
+		class JCommandContextManager;
 		class JGraphicAdaptee : public JGraphicDeviceUser
 		{
 		public:
-			virtual std::unique_ptr<JGraphicDevice> CreateDevice() = 0;
-			virtual std::unique_ptr<JGraphicResourceManager> CreateGraphicResourceManager() = 0;
-			virtual std::unique_ptr<JCullingManager> CreateCullingManager() = 0;
-			virtual void CreateFrameResource(_Out_ std::unique_ptr<JFrameResource>(&frame)[Constants::gNumFrameResources]) = 0;
+			virtual void Initialize(JCommandContextManager* manager) = 0;
+			virtual void Clear() = 0;
 		public:
-			virtual std::unique_ptr<JGraphicDebug> CreateDebug() = 0;
-			virtual std::unique_ptr<JDepthTest> CreateDepthTest() = 0;
-			virtual std::unique_ptr<JShadowMap> CreateShadowMapDraw() = 0;
-			virtual std::unique_ptr<JSceneDraw> CreateSceneDraw() = 0;
-			virtual std::unique_ptr<JHardwareOccCulling> CreateHdOcc() = 0;
-			virtual std::unique_ptr<JHZBOccCulling> CreateHzbOcc() = 0;
-			virtual std::unique_ptr<JLightCulling> CreateLightCulling() = 0;
-			virtual std::unique_ptr<JOutline> CreateOutlineDraw() = 0;
-			virtual std::unique_ptr<JImageProcessing> CreateImageProcessing() = 0;
+			virtual std::unique_ptr<JGraphicDevice> CreateDevice(const JGraphicSubClassShareData& shareData) = 0;
+			virtual void CreateResourceManageSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set) = 0;
+			virtual void CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set) = 0;
+			virtual void CreateCullingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set) = 0;
+			virtual void CreateImageProcessingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set) = 0;
+			virtual void CreateRaytracingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set) = 0;
+		public:
+			virtual std::unique_ptr<JGraphicInfoChangedSet> CreateInfoChangedSet(const JGraphicInfo& preInfo, const JGraphicDrawReferenceSet& drawRefSet) = 0;
+			virtual std::unique_ptr<JGraphicOptionChangedSet> CreateOptionChangedSet(const JGraphicOption& preOption, const JGraphicDrawReferenceSet& drawRefSet) = 0;
 		public:
 			virtual void BeginUpdateStart(const JGraphicDrawReferenceSet& drawRefSet) = 0;
 		public:
@@ -74,20 +58,12 @@ namespace JinEngine
 			virtual bool ExecuteDrawSceneTask(const JGraphicDrawReferenceSet& drawRefSet) = 0;
 		public:
 			//common
-			virtual bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
-				const ResourceHandle from,
-				const ResourceHandle to,
-				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) = 0;
-			virtual bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
-				const JUserPtr<JGraphicResourceInfo>& info,
-				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) = 0;
-			virtual bool SettingMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet,
-				const JUserPtr<JGraphicResourceInfo>& srcInfo,
-				const JUserPtr<JGraphicResourceInfo>& modInfo,
-				std::unique_ptr<JDownSampleDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet) = 0; 
+			virtual bool BeginBlurTask(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicBlurTaskSettingSet& set) = 0;
+			virtual void EndBlurTask(const JGraphicDrawReferenceSet& drawRefSet) = 0;
+			virtual bool BeginMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicMipmapGenerationSettingSet& set) = 0;
+			virtual void EndMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet) = 0; 
+			virtual bool BeginConvertColorTask(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicConvetColorSettingSet& set) = 0;
+			virtual void EndConvertColorTask(const JGraphicDrawReferenceSet& drawRefSet) = 0;
 		};
 	}
 }

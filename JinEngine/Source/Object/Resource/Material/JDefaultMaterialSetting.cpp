@@ -18,8 +18,8 @@ namespace JinEngine
 	{
 		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
 		mat->SetSkyMaterial(true);
-		mat->SetNonCulling(true);
-		mat->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
+		//mat->SetNonCulling(true);
+		//mat->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
 		mat->SetAlbedoMap(texture);
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);

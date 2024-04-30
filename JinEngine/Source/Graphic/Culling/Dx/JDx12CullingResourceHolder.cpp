@@ -1,6 +1,6 @@
 #include"JDx12CullingResourceHolder.h"
 #include"../JCullingConstants.h"
-
+#include"../../../Core/Log/JLogMacro.h"
 namespace JinEngine::Graphic
 { 
 	/*
@@ -26,7 +26,7 @@ namespace JinEngine::Graphic
 		:target(target)
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-			readBack[i] = JDx12GraphicBuffer<ResultType>(L"FrustumReadBack" + std::to_wstring(i), J_GRAPHIC_BUFFER_TYPE::READ_BACK);
+			readBack[i] = JDx12GraphicBufferT<ResultType>(L"FrustumReadBack" + std::to_wstring(i), J_GRAPHIC_BUFFER_TYPE::READ_BACK);
 		current = &readBack[frameInedx];
 	}
 	JDx12FrustumCullingResultHolder::~JDx12FrustumCullingResultHolder()
@@ -42,9 +42,13 @@ namespace JinEngine::Graphic
 	{
 		memcpy(&cpuBuffer[stIndex], &current->GetCpuPointer()[stIndex], count * sizeof(ResultType));
 	}
-	uint JDx12FrustumCullingResultHolder::GetBufferSize()const noexcept
+	uint JDx12FrustumCullingResultHolder::GetElementSize()const noexcept
 	{
-		return current->GetElementCount();
+		return sizeof(ResultType);
+	}
+	uint JDx12FrustumCullingResultHolder::GetElementCount()const noexcept
+	{
+		return current == nullptr ? 0 : current->GetElementCount();
 	}
 	J_CULLING_TARGET JDx12FrustumCullingResultHolder::GetCullingTarget()const noexcept
 	{
@@ -54,6 +58,10 @@ namespace JinEngine::Graphic
 	{
 		return current->GetResource();
 	}  
+	JDx12GraphicResourceHolder* JDx12FrustumCullingResultHolder::GetHolder()const noexcept
+	{
+		return current->GetHolder();
+	}
 	bool JDx12FrustumCullingResultHolder::IsCulled(const uint index)const noexcept
 	{ 
 		//0 is cull
@@ -70,11 +78,9 @@ namespace JinEngine::Graphic
 	}
 	void JDx12FrustumCullingResultHolder::Build(JGraphicDevice* device, const uint newCapacity)
 	{
+		Clear();
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-		{
-			readBack[i].Clear();
 			readBack[i].Build(device, newCapacity);
-		} 
 		cpuBuffer = new ResultType[newCapacity]();
 		//memset(result.GetCpuPointer(), Constants::hdNonCullingValue, sizeof(uint64) * newCapacity);
 	}
@@ -82,7 +88,7 @@ namespace JinEngine::Graphic
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
 			readBack[i].Clear();
-		delete cpuBuffer;
+		delete[] cpuBuffer;
 		cpuBuffer = nullptr;
 	}
 	void JDx12FrustumCullingResultHolder::SutffClearValue(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* uploadBuffer)
@@ -96,7 +102,7 @@ namespace JinEngine::Graphic
 		:target(target)
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-			readBack[i] = JDx12GraphicBuffer<ResultType>(L"HzbOccReadBack" + std::to_wstring(i), J_GRAPHIC_BUFFER_TYPE::READ_BACK);
+			readBack[i] = JDx12GraphicBufferT<ResultType>(L"HzbOccReadBack" + std::to_wstring(i), J_GRAPHIC_BUFFER_TYPE::READ_BACK);
 		current = &readBack[frameInedx];
 	}
 	JHzbDx12CullingResultHolder::~JHzbDx12CullingResultHolder()
@@ -112,13 +118,25 @@ namespace JinEngine::Graphic
 	{
 		memcpy(&cpuBuffer[stIndex], &current->GetCpuPointer()[stIndex], count * sizeof(ResultType));
 	}
-	uint JHzbDx12CullingResultHolder::GetBufferSize()const noexcept
+	uint JHzbDx12CullingResultHolder::GetElementSize()const noexcept
 	{
-		return current->GetElementCount();
+		return sizeof(ResultType);
+	}
+	uint JHzbDx12CullingResultHolder::GetElementCount()const noexcept
+	{
+		return current == nullptr ? 0 : current->GetElementCount();
 	}
 	J_CULLING_TARGET JHzbDx12CullingResultHolder::GetCullingTarget()const noexcept
 	{
 		return target;
+	}
+	ID3D12Resource* JHzbDx12CullingResultHolder::GetResource()const noexcept
+	{
+		return current->GetResource();
+	}
+	JDx12GraphicResourceHolder* JHzbDx12CullingResultHolder::GetHolder()const noexcept
+	{
+		return current->GetHolder();
 	}
 	void JHzbDx12CullingResultHolder::SetCurrent(const uint frameIndex)
 	{
@@ -134,24 +152,18 @@ namespace JinEngine::Graphic
 		return current->GetElementCount() > index ? cpuBuffer[index] : false;
 		//return current->GetElementCount() > index ? current->GetCpuPointer()[index] : false;
 	}
-	ID3D12Resource* JHzbDx12CullingResultHolder::GetResource()const noexcept
-	{
-		return current->GetResource();
-	}
 	void JHzbDx12CullingResultHolder::Build(JGraphicDevice* device, const uint newCapacity)
 	{
+		Clear();
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-		{
-			readBack[i].Clear();
 			readBack[i].Build(device, newCapacity);
-		} 
 		cpuBuffer = new ResultType[newCapacity]();
 	}
 	void JHzbDx12CullingResultHolder::Clear()
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
 			readBack[i].Clear();
-		delete cpuBuffer;
+		delete[] cpuBuffer;
 		cpuBuffer = nullptr;
 	}
 	void JHzbDx12CullingResultHolder::SutffClearValue(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* uploadBuffer)
@@ -165,7 +177,7 @@ namespace JinEngine::Graphic
 		:target(target)
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-			readBack[i] = JDx12GraphicBuffer<ResultType>(L"HdOccReadBack" + std::to_wstring(i), J_GRAPHIC_BUFFER_TYPE::READ_BACK);
+			readBack[i] = JDx12GraphicBufferT<ResultType>(L"HdOccReadBack" + std::to_wstring(i), J_GRAPHIC_BUFFER_TYPE::READ_BACK);
 		current = &readBack[frameIndex]; 
 	}
 	JHdDx12CullingResultHolder::~JHdDx12CullingResultHolder()
@@ -178,12 +190,16 @@ namespace JinEngine::Graphic
 		return;
 	}
 	void JHdDx12CullingResultHolder::CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept
-	{  
+	{   
 		memcpy(&cpuBuffer[stIndex], &current->GetCpuPointer()[stIndex], count * sizeof(ResultType));
 	}
-	uint JHdDx12CullingResultHolder::GetBufferSize()const noexcept
+	uint JHdDx12CullingResultHolder::GetElementSize()const noexcept
 	{
-		return current->GetElementCount();
+		return sizeof(ResultType);
+	}
+	uint JHdDx12CullingResultHolder::GetElementCount()const noexcept
+	{
+		return current == nullptr ? 0 : current->GetElementCount();
 	}
 	J_CULLING_TARGET JHdDx12CullingResultHolder::GetCullingTarget()const noexcept
 	{
@@ -193,6 +209,10 @@ namespace JinEngine::Graphic
 	{
 		return current->GetResource();
 	} 
+	JDx12GraphicResourceHolder* JHdDx12CullingResultHolder::GetHolder()const noexcept
+	{
+		return current->GetHolder();
+	}
 	void JHdDx12CullingResultHolder::SetCurrent(const uint frameIndex)
 	{
 		if (frameIndex >= Constants::gNumFrameResources)
@@ -208,19 +228,17 @@ namespace JinEngine::Graphic
 	}
 	void JHdDx12CullingResultHolder::Build(JGraphicDevice* device, const uint newCapacity)
 	{
+		Clear();  
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-		{
-			readBack[i].Clear();
 			readBack[i].Build(device, newCapacity);
-		} 
 		cpuBuffer = new ResultType[newCapacity](); 
 		//memset(result.GetCpuPointer(), Constants::hdNonCullingValue, sizeof(uint64) * newCapacity);
 	}
 	void JHdDx12CullingResultHolder::Clear()
-	{
+	{ 
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
 			readBack[i].Clear();
-		delete cpuBuffer;
+		delete[] cpuBuffer;
 		cpuBuffer = nullptr;
 	}
 	void JHdDx12CullingResultHolder::SutffClearValue(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* uploadBuffer)

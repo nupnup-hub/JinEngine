@@ -1,6 +1,7 @@
 #pragma once 
 #include"JOutlineConstants.h"  
 #include"../JGraphicTaskInterface.h"
+#include"../JGraphicSubClassInterface.h"
 #include<memory> 
  
 namespace JinEngine
@@ -8,11 +9,11 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicResourceManager;
-		struct JDrawHelper;
-		class JOutline : public JGraphicTaskInterface
+		class JDrawHelper;
+		class JOutline : public JGraphicTaskInterface, public JGraphicSubClassInterface
 		{
 		public:
-			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
+			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM) = 0;
 			virtual void Clear() = 0;
 		public:
 			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;

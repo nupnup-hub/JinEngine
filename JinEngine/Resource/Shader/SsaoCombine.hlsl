@@ -13,7 +13,7 @@ SamplerState samPointClamp : register(s0);
 PixelOut SsaoCombine(VertexOut pin) : SV_Target
 {
 #ifndef USE_BLUR 
-	SubtractViewportOrigin(pin, viewPortTopLeft, camInvRtSize);
+    SubtractViewportOrigin(pin, cbPass.viewPortTopLeft, cbPass.camInvRtSize);
 #endif
 	
 	int2 fullResPos = int2(pin.posH.xy);
@@ -26,6 +26,6 @@ PixelOut SsaoCombine(VertexOut pin) : SV_Target
     float viewDepth = depthMap.Sample(samPointClamp, pin.texC);
     return float2(ao, viewDepth);
 #else    
-	return pow(saturate(ao), sharpness);
+    return pow(saturate(ao), cbPass.sharpness);
 #endif 
 }

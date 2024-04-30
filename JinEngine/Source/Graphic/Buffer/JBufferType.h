@@ -11,7 +11,7 @@ namespace JinEngine
 			UNORDERED_ACCEESS,
 			READ_BACK,
 			OCC_PREDICT,
-			COMMON,
+			COMMON, 
 			//----CPU
 			CPU
 		};

@@ -28,8 +28,7 @@ namespace JinEngine
 			float topRadius,
 			const float height, 
 			const uint slicecount,
-			const uint stackcount,
-			const bool isCone,
+			const uint stackcount, 
 			const float ySt = 0);
 		///<summary>
 		/// Creates an mxn grid in the xz-plane with m rows and n columns, centered
@@ -52,6 +51,7 @@ namespace JinEngine
 		std::unique_ptr<Core::JStaticMeshData> CreateBoundingFrustum();
 		std::unique_ptr<Core::JStaticMeshData> CreateCircle(float outRadius, float innerRadius);
 		std::unique_ptr<Core::JStaticMeshData> CreateLine(uint thickness);
+		std::unique_ptr<Core::JStaticMeshData> CreateCone(float height, float outRadius, uint bottomStack);
 		std::unique_ptr<Core::JStaticMeshData> CreateBoundingCone();
 	private:
 		void Subdivide(std::unique_ptr<Core::JStaticMeshData>& meshData);

@@ -117,7 +117,7 @@ namespace JinEngine
 			undoBindhandle.reset();
 		}
 		void JTransitionSetValueTask::Do()
-		{
+		{ 
 			Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_PRE);
 			doBindhandle->InvokeCompletelyBind();
 			Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_POST);
@@ -133,10 +133,16 @@ namespace JinEngine
 			return doBindhandle != nullptr && undoBindhandle != nullptr;
 		}
  
+		JTransition::TransitionTaskSet::TransitionTaskSet(std::unique_ptr<JTransitionTask> && task, const uint frameCount)
+			:task(std::move(task)), frameCount(frameCount)
+		{}
+
 		JTransition::JTransition(const std::string& name)
 			:name(name)
+		{}
+		void JTransition::Update()
 		{
-
+			++frame;
 		}
 		void JTransition::Log(Core::JLogBase log)
 		{
@@ -150,7 +156,7 @@ namespace JinEngine
 		{
 			Log(JCUtil::WstrToU8Str(title), JCUtil::WstrToU8Str(body));
 		}	
-		void JTransition::Execute(std::unique_ptr<JTransitionTask> task)
+		void JTransition::Execute(std::unique_ptr<JTransitionTask>&& task)
 		{
 			if (isLock)
 				return;
@@ -158,43 +164,46 @@ namespace JinEngine
 			ClearUndoQueue();
 
 			Log(task->GetDoTaskName(), task->GetDoTaskDesc());
-			doQueue[doIndex] = std::move(task);
-			doQueue[doIndex]->Do();
+			doQueue[doCount] = std::make_unique<TransitionTaskSet>(std::move(task), frame);
+			doQueue[doCount]->task->Do();
 
-			++doIndex;
-			if (doIndex >= taskCapacity)
-				doIndex = 0;
+			++doCount;
+			if (doCount >= taskCapacity)
+				doCount = 0;
 		}
 		void JTransition::Undo()
 		{
-			if (isLock)
+			int index = 0;
+			if (!UndoCommonProcess(index))
 				return;
 
-			if (undoIndex == invalidIndex)
-				undoIndex = doIndex;
-
-			int index = undoIndex - 1;
-			if (index < 0)
-				index = taskCapacity - 1;
-
-			if (doQueue[index] == nullptr || !doQueue[index]->IsValid())
-				return;
-
-			Log(doQueue[index]->GetUndoTaskName(), doQueue[index]->GetUndoTaskDesc());
-			doQueue[index]->Undo();
+			Log(doQueue[index]->task->GetUndoTaskName(), doQueue[index]->task->GetUndoTaskDesc());
+			doQueue[index]->task->Undo();
 			undoQueue.push_back(std::move(doQueue[index]));
 			undoIndex = index;
 		}
+		void JTransition::UndoPerFrame()
+		{
+			int index = 0;
+			if (!UndoCommonProcess(index))
+				return;
+
+			const uint frameCount = doQueue[index]->frameCount;
+			while (doQueue[index] != nullptr && doQueue[index]->task->IsValid() && frameCount == doQueue[index]->frameCount)
+			{
+				Undo(); 
+				index = undoIndex - 1;
+				if (index < 0)
+					index = taskCapacity - 1;
+			}
+		}
 		void JTransition::Redo()
 		{
-			if (isLock)
+			if (isLock || undoQueue.empty())
 				return;
 
-			if (undoQueue.empty())
-				return;
-
-			Log(undoQueue.back()->GetDoTaskName(), undoQueue.back()->GetDoTaskDesc());
-			undoQueue.back()->Do();
+			Log(undoQueue.back()->task->GetDoTaskName(), undoQueue.back()->task->GetDoTaskDesc());
+			undoQueue.back()->task->Do();
 
 			doQueue[undoIndex] = std::move(undoQueue.back());
 			undoQueue.pop_back();
@@ -203,10 +212,35 @@ namespace JinEngine
 			if (undoIndex >= taskCapacity)
 				undoIndex = 0;
 		} 
+		void JTransition::RedoPerFrame()
+		{
+			if (isLock || undoQueue.empty())
+				return; 
+
+			const uint frameCount = undoQueue.back()->frameCount;
+			while (undoQueue.size() > 0 && frameCount == undoQueue.back()->frameCount)
+				Redo();
+		}
+		bool JTransition::UndoCommonProcess(_Inout_ int& index)
+		{ 
+			if (isLock)
+				return false;
+
+			if (undoIndex == invalidIndex)
+				undoIndex = doCount;
+
+			index = undoIndex - 1;
+			if (index < 0)
+				index = taskCapacity - 1;
+
+			if (doQueue[index] == nullptr || !doQueue[index]->task->IsValid())
+				return false;
+			return true;
+		}
 		std::vector<JTransitonTaskInfo> JTransition::GetTaskInfo()noexcept
 		{
 			int undoIndexStart;
-			std::vector<JTransitionTask*> sortedTask = GetSortedTask(undoIndexStart);
+			std::vector<TransitionTaskSet*> sortedTask = GetSortedTask(undoIndexStart);
 			std::vector<JTransitonTaskInfo> taskInfo(sortedTask.size());
 			const uint taskCount = (uint)sortedTask.size();
 
@@ -216,12 +250,12 @@ namespace JinEngine
 				{
 					if (i < undoIndexStart)
 					{
-						taskInfo[i].taskName = sortedTask[i]->GetUndoTaskName();
+						taskInfo[i].taskName = sortedTask[i]->task->GetUndoTaskName();
 						taskInfo[i].isUndo = true;
 					}
 					else
 					{
-						taskInfo[i].taskName = sortedTask[i]->GetDoTaskName();
+						taskInfo[i].taskName = sortedTask[i]->task->GetDoTaskName();
 						taskInfo[i].isUndo = false;
 					}
 				}
@@ -230,7 +264,7 @@ namespace JinEngine
 			{
 				for (uint i = 0; i < taskCount; ++i)
 				{
-					taskInfo[i].taskName = sortedTask[i]->GetDoTaskName();
+					taskInfo[i].taskName = sortedTask[i]->task->GetDoTaskName();
 					taskInfo[i].isUndo = false;
 				}
 			}
@@ -246,7 +280,7 @@ namespace JinEngine
 				taskCapacity = GetMaxTaskCapacity();
 
 			doQueue.resize(taskCapacity);
-			doIndex = 0;
+			doCount = 0;
 		}
 		void JTransition::SetLock(const bool value)noexcept
 		{
@@ -268,28 +302,29 @@ namespace JinEngine
 			doQueue.clear();
 			undoQueue.clear();
 			logHandler.reset();
+			frame = 0;
 			isLock = false;
 		}
-		std::vector<JTransitionTask*> JTransition::GetSortedTask(_Out_ int& undoTaskStartIndex)noexcept
+		std::vector<JTransition::TransitionTaskSet*> JTransition::GetSortedTask(_Out_ int& undoTaskStartIndex)noexcept
 		{
 			const uint doQueueCount = (uint)doQueue.size();
 			const uint undoQueueCount = (uint)undoQueue.size();
 
-			std::vector<JTransitionTask*> res;
-			const bool isCirculateState = doQueue[doIndex] != nullptr;
+			std::vector<TransitionTaskSet*> res;
+			const bool isCirculateState = doQueue[doCount] != nullptr;
 			if (isCirculateState)
 			{
 				res.resize(doQueueCount + undoQueue.size());
-				for (uint i = doIndex; i < doQueueCount; ++i)
-					res[i - doIndex] = doQueue[i].get();
-				uint st = doQueueCount - doIndex;
-				for (uint i = 0; i < doIndex; ++i)
+				for (uint i = doCount; i < doQueueCount; ++i)
+					res[i - doCount] = doQueue[i].get();
+				uint st = doQueueCount - doCount;
+				for (uint i = 0; i < doCount; ++i)
 					res[i + st] = doQueue[i].get(); 
 			}
 			else
 			{
-				res.resize(doIndex + undoQueue.size());
-				for (uint i = 0; i < doIndex; ++i)
+				res.resize(doCount + undoQueue.size());
+				for (uint i = 0; i < doCount; ++i)
 					res[i] = doQueue[i].get(); 
 			}
 			if (undoQueueCount > 0)

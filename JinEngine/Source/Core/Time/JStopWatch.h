@@ -25,7 +25,7 @@ namespace JinEngine
 		private:
 			bool isStop = false;
 		public:
-			void Start()noexcept;
+			void Start()noexcept;  
 			void Stop()noexcept; 
 			void Reset()noexcept;
 			void Record()noexcept;

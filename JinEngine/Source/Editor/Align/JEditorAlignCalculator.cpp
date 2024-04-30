@@ -82,6 +82,9 @@ namespace JinEngine
 		{
 			const JVector2<float> alphaSize = JGui::GetAlphabetSize();
 			const JVector2<float> spaceSize = JGui::CalTextSize(" ");
+			if (lineLength <= alphaSize.x * 2.0f)
+				return text;
+
 			std::string srcText = text;
 			std::string result = "";
 			const float addtionalXFactor = dir == J_EDITOR_ALIGN_TYPE::LEFT ? 0.0f : (dir == J_EDITOR_ALIGN_TYPE::MID ? 0.5f : 1.0f);
@@ -90,7 +93,7 @@ namespace JinEngine
 			const float fontSize = JGui::GetFontSize();
 			while (!srcText.empty())
 			{
-				uint subStrCount = CalTextLengthRange(srcText, lineLength);
+				uint subStrCount = CalTextLengthRange(srcText, lineLength); 
 				std::string subStr = srcText.substr(0, subStrCount);
 				srcText = srcText.substr(subStrCount);
 

@@ -13,6 +13,10 @@ namespace JinEngine
 		{
 			return arrayIndex;
 		} 
+		uint JCullingInfo::GetResultBufferElementCount()const noexcept
+		{
+			return resultHolder->GetElementCount();
+		}
 		uint JCullingInfo::GetResultBufferSize()const noexcept
 		{
 			return resultHolder->GetBufferSize();

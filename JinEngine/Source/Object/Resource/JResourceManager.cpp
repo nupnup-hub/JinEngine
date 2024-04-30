@@ -251,7 +251,7 @@ namespace JinEngine
 			{
 				const J_DEFAULT_GRAPHIC_SHADER type = (J_DEFAULT_GRAPHIC_SHADER)i;
 				const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
-				const JShaderCondition psoCondition = JDefaultShader::GetShaderGraphicPso(type);
+				const JGraphicShaderCondition psoCondition = JDefaultShader::GetShaderGraphicPso(type);
 				const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
 				//use all default shader
 				const bool isUsed = JDefaultShader::IsDefaultUse(type);
@@ -281,7 +281,7 @@ namespace JinEngine
 					defaultData->RegisterDefaultResource(type, file, isUsed);
 				else
 				{
-					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JShaderCondition(), shaderF);
+					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JGraphicShaderCondition(), shaderF);
 					ThrowIfFailedN(newShader != nullptr);
 					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFileByFullName(newShader->GetName(), format), isUsed);
 				}
@@ -425,12 +425,19 @@ namespace JinEngine
 		{ 
 			auto createCubeLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCube(1, 1, 1, 3); };
 			auto createGridLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateGrid(40.0f, 60.0f, 60, 40); };
-			auto createSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(0.5f, 20, 20); };
+			auto createSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(0.5f, 20, 20); }; 
 			auto createCylinderLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20, false); };
 			auto createQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(-0.5f, -0.5f, 1.0f, 1.0f, 0.0f); };
 			auto createNdcQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(-1.0f, -1.0f, 2.0f, 2.0f, 0.0f); };
-			auto createLowConeLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(1.0f, 0, 1.0f, 6, 6, true, -0.5f); };
-			auto createLowSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(1.0f, 6, 6); };
+			auto createConeLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCone(1.0f, 1.0f, 64); };
+			auto createLowCube = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCube(1, 1, 1, 1); };
+			auto createLowConeLam = [](JDefaultGeometryGenerator& geoGen) 
+			{
+				auto data = geoGen.CreateCone(1.0f, 1.0f, 8);
+				data->AddPosition(JVector3F::Down());
+				return data;
+			};
+			auto createLowSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(1.0f, 7, 7); };
 			auto createLowHemiSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateHemiSphere(1.0f, 6, 6); };
 			auto createLineBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLineBoundingBox(); };
 			auto createTriangleBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateTriangleBoundingBox(); };
@@ -449,14 +456,19 @@ namespace JinEngine
 				JVector3<float> cyilinderOffset = JVector3<float>(0, cyilinderYOffset, 0);
 				JVector3<float> cubeOffset = JVector3<float>(0, cubeYOffset, 0);
 
-				cyilinderMesh->AddPositionOffset(cyilinderOffset);
-				cubeMesh->AddPositionOffset(cubeOffset);
+				cyilinderMesh->AddPosition(cyilinderOffset);
+				cubeMesh->AddPosition(cubeOffset);
 				cyilinderMesh->Merge(*cubeMesh);
 				cyilinderMesh->SetName(L"ScaleArrow");
 				return cyilinderMesh;
 			};
 			auto createLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLine(4); };
-			auto createBConeLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingCone(); };
+			auto createBConeLineLam = [](JDefaultGeometryGenerator& geoGen) 
+			{
+				auto data = geoGen.CreateBoundingCone();
+				data->AddPosition(JVector3F::Down());
+				return  data;
+			};
 
 			using CreateStaticMesh = Core::JStaticCallableType<std::unique_ptr<Core::JStaticMeshData>, JDefaultGeometryGenerator&>;
 			std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
@@ -467,6 +479,8 @@ namespace JinEngine
 				{J_DEFAULT_SHAPE::CYILINDER, (CreateStaticMesh::Ptr)createCylinderLam},
 				{J_DEFAULT_SHAPE::QUAD, (CreateStaticMesh::Ptr)createQuadLam},
 				{J_DEFAULT_SHAPE::FULL_SCREEN_QUAD, (CreateStaticMesh::Ptr)createNdcQuadLam},
+				{J_DEFAULT_SHAPE::CONE, (CreateStaticMesh::Ptr)createConeLam},
+				{J_DEFAULT_SHAPE::LOW_CUBE, (CreateStaticMesh::Ptr)createLowCube},
 				{J_DEFAULT_SHAPE::LOW_CONE, (CreateStaticMesh::Ptr)createLowConeLam},
 				{J_DEFAULT_SHAPE::LOW_SPHERE, (CreateStaticMesh::Ptr)createLowSphereLam},
 				{J_DEFAULT_SHAPE::LOW_HEMI_SPHERE, (CreateStaticMesh::Ptr)createLowHemiSphereLam},
@@ -570,8 +584,8 @@ namespace JinEngine
 								OBJECT_FLAG_UNCOPYABLE |
 								OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 
-							if (i >= JDefaultShape::debugTypeSt)
-								flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
+							if (i >= JDefaultShape::hiddenTypeSt)
+								flag = Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN);
 
 							JUserPtr<JStaticMeshGeometry> newMesh = JICI::Create<JStaticMeshGeometry>(meshName, guid, flag,
 								JMeshGeometry::GetDefaultFormatIndex(), projectDefualDir, std::move(group));

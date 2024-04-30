@@ -81,18 +81,18 @@ namespace JinEngine
 				}
 			}
 
-			if (doIdent)
-				JGui::Indent();
-			  
 			//const JVector2<float> itemSize = JGui::GetLastItemRectSize();
 			if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) || JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT))
-			{
-				if (!JGui::IsMouseInLastItem)
+			{ 
+				if (!JGui::IsMouseInLastItem())
 					Clear();
 			} 
+
+			if (doIdent)
+				JGui::Indent();
 		}
 		void JEditorRenameHelper::Activate(JUserPtr<Core::JIdentifier> newRenameTar)noexcept
-		{
+		{ 
 			renameTar = newRenameTar;
 			if(IsActivated())
 				renameBuff->SetBuff(JCUtil::WstrToU8Str(renameTar->GetName()));  

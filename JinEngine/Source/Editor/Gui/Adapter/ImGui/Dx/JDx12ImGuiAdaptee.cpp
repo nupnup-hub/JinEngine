@@ -27,6 +27,22 @@ namespace JinEngine::Editor
 		ImGui_ImplDX12_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 	} 
+	void JDx12ImGuiAdaptee::ReBuildGraphicBackend(std::unique_ptr<Graphic::JGuiInitData>&& initData) 
+	{
+		if (initData == nullptr)
+			return;
+
+		JDx12ImGuiInitData* dx12InitData = static_cast<JDx12ImGuiInitData*>(initData.get());
+		if (!IsSameGui(initData->GetGuiIdentification()) || !IsSameDevice(dx12InitData))
+			return;
+		 
+		ImGui_ImplDX12_Shutdown();
+		ImGui_ImplDX12_Init(dx12InitData->device, dx12InitData->numOfFrameCount,
+			dx12InitData->backbufferFormat,
+			dx12InitData->srvHeap,
+			dx12InitData->srvHeap->GetCPUDescriptorHandleForHeapStart(),
+			dx12InitData->srvHeap->GetGPUDescriptorHandleForHeapStart());
+	}
 	void JDx12ImGuiAdaptee::UpdateGuiBackend() 
 	{
 		ImGui_ImplDX12_NewFrame();

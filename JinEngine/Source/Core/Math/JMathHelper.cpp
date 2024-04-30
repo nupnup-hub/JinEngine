@@ -16,14 +16,7 @@ namespace JinEngine
 	}
 	uint JMathHelper::PowerOfTwoExponent(uint v)noexcept
 	{
-		uint res = 0;
-		float vF = v;
-		while (vF > 1)
-		{
-			vF *= 0.5f;
-			++res;
-		}
-		return res;
+		return std::round(std::log2(v)); 
 	}
 	uint JMathHelper::DivideTwo(uint v, int count)noexcept
 	{
@@ -34,7 +27,7 @@ namespace JinEngine
 			--count;
 		}
 		return vF;
-	}
+	} 
 	// Returns random float in [0, 1).
 	float JMathHelper::RandF()noexcept
 	{
@@ -138,6 +131,11 @@ namespace JinEngine
 
 			return XMVector3Normalize(v);
 		}
+	}
+	JVector2F JMathHelper::RandomRotationTrigger(float randomU)noexcept
+	{ 
+		float rotationAngle = 2.0f * randomU * Pi;
+		return JVector2F(cos(rotationAngle), sin(rotationAngle));
 	}
 	DirectX::XMVECTOR JMathHelper::QuaternionGap(const JVector4<float>& src, const JVector4<float>& des)noexcept
 	{

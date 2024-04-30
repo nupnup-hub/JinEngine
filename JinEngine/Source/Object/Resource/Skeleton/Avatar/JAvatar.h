@@ -11,7 +11,6 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JAvatarEditor;
-
 	} 
 	class JSkeletonAsset;
 	class JAvatar

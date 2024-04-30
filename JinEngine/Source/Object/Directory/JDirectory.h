@@ -41,7 +41,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JDirectoryImpl>impl;
 	public:
-		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 		std::wstring GetPath()const noexcept;
 		std::wstring GetMetaFilePath()const noexcept;
@@ -55,6 +55,7 @@ namespace JinEngine
 		JUserPtr<JFile> GetDirectoryFileByName(const std::wstring& name)const noexcept;
 		JUserPtr<JFile> GetDirectoryFileByFullName(const std::wstring& name, const std::wstring& format)const noexcept;	//full name is name + format
 		JUserPtr<JFile> GetRecentFile()const noexcept;
+		std::vector<JUserPtr<JDirectory>> GetChildDirctoryVec()const noexcept;
 		std::vector<JUserPtr<JFile>> GetDirectoryFileVec(const bool containChildFile)const noexcept; 
 		std::vector<JUserPtr<JFile>> GetDirectoryFileVec(const bool containChildFile, const J_RESOURCE_TYPE type)const noexcept;
 	public:
@@ -69,6 +70,8 @@ namespace JinEngine
 		JUserPtr<JFile> SearchFile(const std::wstring& name)const noexcept;	//search this dir -> subDir...
 		JUserPtr<JFile> SearchFile(const std::wstring& name, const std ::wstring& format)const noexcept;	//search this dir -> subDir...
 		static JUserPtr<JFile> SearchFile(const size_t resourceGuid)noexcept;	//use static file map
+	public:
+		static void AlignByName(std::vector<JUserPtr<JFile>>& vec, const bool isAscending = true)noexcept;
 	public:
 		std::wstring MakeUniqueFileName(const std::wstring& name, const std::wstring& format, const size_t guid)const noexcept;
 	private:

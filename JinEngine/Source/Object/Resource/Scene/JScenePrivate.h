@@ -17,7 +17,8 @@ namespace JinEngine
 		class JGraphic;
 		class JGraphicDrawList; 
 		class JFrustumCulling;
-		struct JDrawHelper;
+		class JFrameIndexAccess;
+		class JDrawHelper;
 	}
 	class JGameObject;
 	class JScene;
@@ -52,7 +53,7 @@ namespace JinEngine
 		class CashInterface
 		{
 		private:
-			friend struct Graphic::JDrawHelper;
+			friend class Graphic::JDrawHelper;
 			friend class Graphic::JGraphic;
 			friend class Editor::JSceneObserver; //Debug
 		private:
@@ -82,8 +83,9 @@ namespace JinEngine
 		{
 		private: 
 			friend class JTransform;
+			friend class JLight;
 		private: 
-			static void UpdateTransform(const JUserPtr<JGameObject>& gObject)noexcept;
+			static void UpdateTransform(const JUserPtr<JComponent>& comp)noexcept;
 		};
 		class CompRegisterInterface
 		{ 
@@ -129,9 +131,9 @@ namespace JinEngine
 		{
 		private:
 			friend class Graphic::JGraphic;
-			friend struct Graphic::JDrawHelper;
+			friend class Graphic::JFrameIndexAccess;
 		private:
-			static uint GetPassFrameIndex(JScene* scene);
+			static uint GetFrameIndex(JScene* scene);
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

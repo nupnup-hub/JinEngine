@@ -1,237 +1,268 @@
 #include"JDx12GraphicDataSet.h"
 #include"../../GraphicResource/JGraphicResourceManager.h"
+#include"../../GraphicResource/JGraphicResourceShareData.h"
 #include"../../Culling/JCullingManager.h"
 #include"../../FrameResource/JFrameResource.h"
 #include"../../DepthMap/JDepthTest.h"
 #include"../../Debug/JGraphicDebug.h"
-#include"../../Image/JImageProcessing.h"
+#include"../../Image/JBlur.h"
+#include"../../Image/JToneMapping.h"
+#include"../../Image/JConvertColor.h"
+#include"../../Command/JCommandContext.h"
 
 namespace JinEngine::Graphic
 {
-	JDx12GraphicBindSet::JDx12GraphicBindSet(JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingManager,
-		ID3D12GraphicsCommandList* cmdList)
-		: JGraphicBindSet(currFrame, graphicResourceM, cullingManager), cmdList(cmdList)
+	JDx12GraphicBindSet::JDx12GraphicBindSet(JCommandContext* context)
+		: JGraphicBindSet(context)
 	{
-		if (currFrame == nullptr || graphicResourceM == nullptr || cullingManager != nullptr || cmdList == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsAllSameDevice(currFrame, graphicResourceM, cullingManager));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicBindSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicDepthMapDrawSet::JDx12GraphicDepthMapDrawSet(JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM,
-		ID3D12GraphicsCommandList* cmdList)
-		:JGraphicDepthMapDrawSet(currFrame, graphicResourceM, cullingM), cmdList(cmdList)
+	JDx12GraphicDepthMapDrawSet::JDx12GraphicDepthMapDrawSet(JCommandContext* context)
+		:JGraphicDepthMapDrawSet(context)
 	{
-		if (currFrame == nullptr || graphicResourceM != nullptr || cullingM == nullptr || cmdList == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingM));
+		SetValid(IsAllSameDevice(context));
 	}
 	JDx12GraphicDepthMapDrawSet::JDx12GraphicDepthMapDrawSet(const JDx12GraphicOccDrawSet* drawSet)
-		:JGraphicDepthMapDrawSet(drawSet), cmdList(drawSet->cmdList)
-	{}
+		:JGraphicDepthMapDrawSet(drawSet)
+	{
+		SetValid(IsAllSameDevice(context));
+	}
 
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicDepthMapDrawSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicDebugRsComputeSet::JDx12GraphicDebugRsComputeSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM, ID3D12GraphicsCommandList* cmdList)
-		:JGraphicDebugRsComputeSet(gDevice, graphicResourceM), cmdList(cmdList)
+	JDx12GraphicDebugRsComputeSet::JDx12GraphicDebugRsComputeSet(JCommandContext* context)
+		:JGraphicDebugRsComputeSet(context)
 	{
-		SetValid(gDevice != nullptr && graphicResourceM != nullptr && IsSameDevice(gDevice) && IsSameDevice(graphicResourceM));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicDebugRsComputeSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 	 
-	JDx12GraphicSceneDrawSet::JDx12GraphicSceneDrawSet(JGraphicDevice* device,
-		JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM,
-		ID3D12GraphicsCommandList* cmdList) :
-		JGraphicSceneDrawSet(device, currFrame, graphicResourceM, cullingM), cmdList(cmdList)
+	JDx12GraphicSceneDrawSet::JDx12GraphicSceneDrawSet(JCommandContext* context) 
+		:JGraphicSceneDrawSet(context)
 	{
-		if (device == nullptr || currFrame == nullptr || graphicResourceM == nullptr || cullingM == nullptr || cmdList == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(device) && IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingM));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicSceneDrawSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicShadowMapDrawSet::JDx12GraphicShadowMapDrawSet(JGraphicDevice* device,
-		JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM,
-		JImageProcessing* image,
-		ID3D12GraphicsCommandList* cmdList) :
-		JGraphicShadowMapDrawSet(device, currFrame, graphicResourceM, cullingM, image), cmdList(cmdList)
+	JDx12GraphicShadowMapDrawSet::JDx12GraphicShadowMapDrawSet(JCommandContext* context, JBlur* blur):
+		JGraphicShadowMapDrawSet(context, blur)
 	{
-		if (device == nullptr || currFrame == nullptr || graphicResourceM == nullptr || cullingM == nullptr || image == nullptr || cmdList == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(device) && IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingM) && IsSameDevice(image));
+		SetValid(IsAllSameDevice(context, blur));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicShadowMapDrawSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicOccDrawSet::JDx12GraphicOccDrawSet(JGraphicDevice* device,
-		JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM,
-		JDepthTest* depthTest,
-		ID3D12GraphicsCommandList* cmdList) :
-		JGraphicOccDrawSet(device, currFrame, graphicResourceM, cullingM, depthTest), cmdList(cmdList)
+	JDx12GraphicOccDrawSet::JDx12GraphicOccDrawSet(JCommandContext* context, JDepthTest* depthTest)
+		:JGraphicOccDrawSet(context, depthTest)
 	{
-		if (device == nullptr || currFrame == nullptr || graphicResourceM == nullptr ||
-			cullingM == nullptr || cmdList == nullptr || depthTest == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(device) && IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingM) && IsSameDevice(depthTest));
+		SetValid(IsAllSameDevice(context, depthTest));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicOccDrawSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
  
-	JDx12GraphicHzbOccComputeSet::JDx12GraphicHzbOccComputeSet(JFrameResource* currFrame,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM,
-		ID3D12GraphicsCommandList* cmdList)
-		: JGraphicHzbOccComputeSet(currFrame, graphicResourceM, cullingM), cmdList(cmdList)
+	JDx12GraphicHzbOccComputeSet::JDx12GraphicHzbOccComputeSet(JCommandContext* context)
+		: JGraphicHzbOccComputeSet(context)
 	{
-		if (currFrame == nullptr || graphicResourceM == nullptr || cullingM == nullptr || cmdList == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingM));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicHzbOccComputeSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicHdOccExtractSet::JDx12GraphicHdOccExtractSet(JCullingManager* cullingM, ID3D12GraphicsCommandList* cmdList)
-		: JGraphicHdOccExtractSet(cullingM), cmdList(cmdList)
+	JDx12GraphicHdOccExtractSet::JDx12GraphicHdOccExtractSet(JCommandContext* context)
+		: JGraphicHdOccExtractSet(context)
 	{
-		if (cullingM == nullptr || cmdList == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(cullingM));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicHdOccExtractSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicOutlineDrawSet::JDx12GraphicOutlineDrawSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, ID3D12GraphicsCommandList* cmdList)
-		:JGraphicOutlineDrawSet(device, graphicResourceM), cmdList(cmdList), useHandle(false)
+	JDx12GraphicOutlineDrawSet::JDx12GraphicOutlineDrawSet(JCommandContext* context)
+		:JGraphicOutlineDrawSet(context), useHandle(false)
 	{
-		SetValid(device != nullptr && graphicResourceM != nullptr && cmdList != nullptr && IsSameDevice(device) && IsSameDevice(graphicResourceM));
+		SetValid(IsAllSameDevice(context));
 	}
-	JDx12GraphicOutlineDrawSet::JDx12GraphicOutlineDrawSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM,
-		ID3D12GraphicsCommandList* cmdList,
+	JDx12GraphicOutlineDrawSet::JDx12GraphicOutlineDrawSet(JCommandContext* context,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE stencilMapHandle)
-		: JGraphicOutlineDrawSet(device, graphicResourceM),
-		cmdList(cmdList),
+		: JGraphicOutlineDrawSet(context),
 		depthMapHandle(depthMapHandle),
 		stencilMapHandle(stencilMapHandle),
 		useHandle(true)
 	{
-		SetValid(device != nullptr && graphicResourceM != nullptr && cmdList != nullptr && IsSameDevice(device) && IsSameDevice(graphicResourceM));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicOutlineDrawSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicBlurComputeSet::JDx12GraphicBlurComputeSet(JGraphicDevice* device,
+	JDx12GraphicBlurComputeSet::JDx12GraphicBlurComputeSet(JCommandContext* context,
 		std::unique_ptr<JBlurDesc>&& desc,
-		ID3D12GraphicsCommandList* cmdList,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle)
-		:JGraphicBlurComputeSet(device, std::move(desc)), cmdList(cmdList), srcHandle(srcHandle), destHandle(destHandle)
+		:JGraphicBlurComputeSet(context, std::move(desc)),
+		srcHandle(srcHandle), 
+		destHandle(destHandle)
 	{
-		SetValid(device != nullptr && cmdList != nullptr && IsSameDevice(device));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicBlurComputeSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-
-	JDx12GraphicDownSampleComputeSet::JDx12GraphicDownSampleComputeSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM,
+	JDx12GraphicDownSampleComputeSet::JDx12GraphicDownSampleComputeSet(JCommandContext* context,
+		JBlur* blur,
 		std::unique_ptr<JDownSampleDesc>&& desc,
-		std::vector<Core::JDataHandle>&& handle,
-		ID3D12GraphicsCommandList* cmdList,
+		const std::vector<Core::JDataHandle>& handle, 
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle)
-		:JGraphicDownSampleComputeSet(device, graphicResourceM, std::move(desc), std::move(handle)),
-		cmdList(cmdList),
+		:JGraphicDownSampleComputeSet(context, blur, std::move(desc), handle),
 		srcHandle(srcHandle),
 		destHandle(destHandle)
 	{
-		SetValid(device != nullptr && graphicResourceM != nullptr && cmdList != nullptr && IsSameDevice(device) && IsSameDevice(graphicResourceM));
+		SetValid(IsAllSameDevice(context, blur));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicDownSampleComputeSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicSsaoComputeSet::JDx12GraphicSsaoComputeSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM,
-		JFrameResource* currFrame,
-		ID3D12GraphicsCommandList* cmdList)
-		:JGraphicSsaoComputeSet(device, graphicResourceM, currFrame),
-		cmdList(cmdList)
+	JDx12GraphicSsaoComputeSet::JDx12GraphicSsaoComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
+		:JGraphicSsaoComputeSet(context, shareData)
 	{
-		SetValid(device != nullptr && graphicResourceM != nullptr && currFrame != nullptr && cmdList != nullptr &&
-			IsSameDevice(device) && IsSameDevice(currFrame) && IsSameDevice(graphicResourceM));
+		SetValid(IsAllSameDevice(context, shareData));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicSsaoComputeSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicLightCullingTaskSet::JDx12GraphicLightCullingTaskSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingManager,
-		JFrameResource* currFrame,
-		ID3D12GraphicsCommandList* cmdList)
-		:JGraphicLightCullingTaskSet(device, graphicResourceM, cullingManager, currFrame), cmdList(cmdList)
+	JDx12GraphicAAComputeSet::JDx12GraphicAAComputeSet(JCommandContext* context,JGraphicResourceShareData* shareData)
+		:JGraphicAAComputeSet(context, shareData)
 	{
-		SetValid(device != nullptr && graphicResourceM != nullptr && currFrame != nullptr && cullingManager != nullptr && cmdList != nullptr &&
-			IsSameDevice(device) && IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingManager));
+		SetValid(IsAllSameDevice(context, shareData));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicAAComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12GraphicConvertColorComputeSet::JDx12GraphicConvertColorComputeSet(JCommandContext* context, const JConvertColorDesc& desc, JGraphicResourceInfo* srcInfo, JGraphicResourceInfo* destInfo)
+		:JGraphicConvertColorComputeSet(context, desc), srcInfo(srcInfo), destInfo(destInfo)
+	{
+		SetValid(IsAllSameDevice(context) && srcInfo != nullptr && destInfo != nullptr);
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicConvertColorComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12PostProcessComputeSet::JDx12PostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData)
+		:JPostProcessComputeSet(ppSet, context, gm, shareData)
+	{
+		SetValid(ppSet != nullptr && IsAllSameDevice(ppSet->tm, ppSet->convertColor, context, shareData));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12PostProcessComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12GraphicLightCullingTaskSet::JDx12GraphicLightCullingTaskSet(JCommandContext* context)
+		:JGraphicLightCullingTaskSet(context)
+	{
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicLightCullingTaskSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicLightCullingDebugDrawSet::JDx12GraphicLightCullingDebugDrawSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM,
-		ID3D12GraphicsCommandList* cmdList)
-		:JGraphicLightCullingDebugDrawSet(device, graphicResourceM), cmdList(cmdList)
+	JDx12GraphicLightCullingDebugDrawSet::JDx12GraphicLightCullingDebugDrawSet(JCommandContext* context)
+		:JGraphicLightCullingDebugDrawSet(context)
 	{
-		SetValid(device != nullptr && graphicResourceM != nullptr && cmdList != nullptr && IsSameDevice(device) && IsSameDevice(graphicResourceM));
+		SetValid(IsAllSameDevice(context));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicLightCullingDebugDrawSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12GraphicRtAoComputeSet::JDx12GraphicRtAoComputeSet(JCommandContext* context)
+		:JGraphicRtAoComputeSet(context)
+	{
+		SetValid(IsAllSameDevice(context));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicRtAoComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12GraphicRtGiComputeSet::JDx12GraphicRtGiComputeSet(JCommandContext* context, JGraphicDevice* device)
+		:JGraphicRtGiComputeSet(context), device(device)
+	{
+		SetValid(IsAllSameDevice(context, device));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicRtGiComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+ 
+	JDx12GraphicRtDenoiseComputeSet::JDx12GraphicRtDenoiseComputeSet(JCommandContext* context, JGraphicDevice* device, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData)
+		:JGraphicRtDenoiseComputeSet(context), device(device), gm(gm), shareData(shareData)
+	{
+		SetValid(IsAllSameDevice(context, device, gm, shareData));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicRtDenoiseComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12GraphicInfoChangedSet::JDx12GraphicInfoChangedSet(const JGraphicInfo& preInfo,
+		const JGraphicInfo& newInfo, 
+		JGraphicDevice* device,
+		JGraphicResourceManager* gm,
+		JCullingManager* cm)
+		: JGraphicInfoChangedSet(preInfo, newInfo), device(device), gm(gm), cm(cm)
+	{
+		SetValid(IsAllSameDevice(device, gm));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicInfoChangedSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12GraphicOptionChangedSet::JDx12GraphicOptionChangedSet(const JGraphicOption& preOption,
+		const JGraphicOption& newOption, 
+		JGraphicDevice* device,
+		JGraphicResourceManager* gm)
+		: JGraphicOptionChangedSet(preOption, newOption), device(device), gm(gm)
+	{
+		SetValid(IsAllSameDevice(device, gm));
+	} 
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicOptionChangedSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}

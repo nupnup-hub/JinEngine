@@ -2,7 +2,7 @@
 #include "../JCoreEssential.h"    
 #include<type_traits>  
 #include<atomic>    
-
+ 
 namespace JinEngine
 {
 	namespace Core
@@ -555,7 +555,7 @@ namespace JinEngine
 			bool ConnnectChild(const JUserPtr<ChildType>& child)
 			{
 				if constexpr (!CanConvertChildType<T>())
-					return nullptr;
+					return false;
 
 				if (!child.IsValid())
 					return false;
@@ -567,7 +567,7 @@ namespace JinEngine
 						UserDisConnect();
 						UserConnect(child);
 						return true;
-					}
+					} 
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
@@ -577,7 +577,7 @@ namespace JinEngine
 						UserConnect(child);
 						return true;
 					}
-				}
+				} 
 				return false;
 			}
 		private:

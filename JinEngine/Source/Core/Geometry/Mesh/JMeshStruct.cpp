@@ -160,11 +160,24 @@ namespace JinEngine
 		void JMeshData::AddIndex(const uint index)noexcept
 		{
 			indices.push_back(index);
-		}
-		void JMeshData::AddPositionOffset(const JVector3<float>& offsetPos)noexcept
+		} 
+		void JMeshData::AddPosition(const JVector3<float>& offset)noexcept
 		{
-			boundingBox.Center = (boundingBox.Center + offsetPos).ToSimilar<XMFLOAT3>();
-			boundingBox.Extents = (boundingBox.Extents + offsetPos).ToSimilar<XMFLOAT3>();
+			const uint vCount = GetVertexCount();
+			for (uint i = 0; i < vCount; ++i)
+				_AddPosition(i, offset);
+			CreateBoundingObject();
+		} 
+		void JMeshData::ReversePositionY()noexcept
+		{
+			ReversePosition(JVector3F(1.0f, -1.0f, 1.0f));
+		} 
+		void JMeshData::ReversePosition(const JVector3<float>& offset)noexcept
+		{
+			const uint vCount = GetVertexCount();
+			for (uint i = 0; i < vCount; ++i)
+				_MulPosition(i, offset);
+			CreateBoundingObject();
 		}
 		bool JMeshData::HasUV()const noexcept
 		{
@@ -268,12 +281,15 @@ namespace JinEngine
 		{
 			vertices.push_back(vertex);
 		}
-		void JStaticMeshData::AddPositionOffset(const JVector3<float>& offsetPos)noexcept
+		void JStaticMeshData::_AddPosition(const uint index, const JVector3<float>& offset)noexcept
 		{
-			const uint vCount = GetVertexCount();
-			for (uint i = 0; i < vCount; ++i)
-				vertices[i].position += offsetPos;
-			JMeshData::AddPositionOffset(offsetPos);
+			vertices[index].position += offset;
+		}
+		void JStaticMeshData::_MulPosition(const uint index, const JVector3<float>& offset)noexcept
+		{
+			vertices[index].position *= offset;
+			vertices[index].normal *= offset;
+			vertices[index].tangentU *= offset;
 		}
 		void JStaticMeshData::Merge(const JStaticMeshData& mesh)noexcept
 		{
@@ -322,12 +338,15 @@ namespace JinEngine
 				data.position.z *= rate;
 			}
 		}
-		void JSkinnedMeshData::AddPositionOffset(const JVector3<float>& offsetPos)noexcept
+		void JSkinnedMeshData::_AddPosition(const uint index, const JVector3<float>& offset)noexcept
 		{
-			const uint vCount = GetVertexCount();
-			for (uint i = 0; i < vCount; ++i)
-				vertices[i].position += offsetPos;
-			JMeshData::AddPositionOffset(offsetPos);
+			vertices[index].position += offset;
+		}
+		void JSkinnedMeshData::_MulPosition(const uint index, const JVector3<float>& offset)noexcept
+		{
+			vertices[index].position *= offset;
+			vertices[index].normal *= offset; 
+			vertices[index].tangentU *= offset;
 		}
 
 		JLowMeshData::JLowMeshData(const std::wstring& name,
@@ -362,12 +381,12 @@ namespace JinEngine
 		}
 		JVector3<float> JLowMeshData::GetPosition(const uint index)const noexcept
 		{
-
+			return vertices[index].position.XYZ();
 		}
 		J1BytePosVertex JLowMeshData::GetVertex(const uint index)const noexcept
 		{
 			return vertices[index];
-		}
+		} 
 		void JLowMeshData::SetVertex(const uint index, const J1BytePosVertex& vertex)const noexcept
 		{
 			vertices[index] = vertex;
@@ -381,12 +400,13 @@ namespace JinEngine
 				data.position.z *= rate;
 			}
 		} 
-		void JLowMeshData::AddPositionOffset(const JVector3<float>& offsetPos)noexcept
+		void JLowMeshData::_AddPosition(const uint index, const JVector3<float>& offset)noexcept
 		{
-			const uint vCount = GetVertexCount();
-			for (uint i = 0; i < vCount; ++i)
-				vertices[i].position += JVector4F(offsetPos, 0.0f);
-			JMeshData::AddPositionOffset(offsetPos);
+			vertices[index].position += JVector4<int8>(offset, 0.0f);
+		}
+		void JLowMeshData::_MulPosition(const uint index, const JVector3<float>& offset)noexcept
+		{
+			vertices[index].position *= JVector4<int8>(offset, 1.0f);
 		}
 		std::vector<J1BytePosVertex> JLowMeshData::ConvertVertex(const std::vector<JStaticMeshVertex>& staticVertex)
 		{

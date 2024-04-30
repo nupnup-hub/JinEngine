@@ -368,7 +368,7 @@ namespace JinEngine
 	}
 	std::vector<std::wstring> JSkeletonAsset::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::wstring> format{ L".skel", L".fbx" };
+		static std::vector<std::wstring> format{ L".skel", L".fbx" }; 
 		return format;
 	}
 	JUserPtr<JSkeleton> JSkeletonAsset::GetSkeleton()const noexcept

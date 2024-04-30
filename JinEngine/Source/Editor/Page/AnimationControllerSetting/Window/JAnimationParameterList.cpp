@@ -104,7 +104,7 @@ public:
 
 			createNewParameterNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqCreateStateEvF, this));
 			destroyParameterNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqDestroyEvF, this));
-			destroyParameterNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
+			destroyParameterNode->RegisterEnableBind(std::make_unique<PassPopupConditionF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
 			parameterListPopup = std::make_unique<JEditorPopupMenu>(Private::ParameterListName(GetName()), std::move(parameterListRootNode));
 			parameterListPopup->AddPopupNode(std::move(createNewParameterNode));
@@ -130,7 +130,7 @@ public:
 					Core::JTypeInstanceSearchHint(paramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, paramList->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JAnimationParameterListCreationFunctor* impl = paramList->creation.get();
 				impl->creation.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
@@ -149,7 +149,7 @@ public:
 					Core::JTypeInstanceSearchHint(paramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, paramList->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JAnimationParameterListCreationFunctor* impl = paramList->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);

@@ -18,6 +18,7 @@
 #include"../../../../Core/Identity/JIdenCreator.h"
 #include"../../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
+#include"../../../../Core/Log/JLogMacro.h"
 #include"../../../../Graphic/Frameresource/JAnimationConstants.h"
 #include<DirectXMath.h>
 #include<fstream>
@@ -144,7 +145,7 @@ namespace JinEngine
 			JDiagramData& diagramData = updateData->diagramData[layerNumber];
 			float rate = diagramData.blender.GetBlnederValue(updateData->timer->TotalTime());
 			if (rate > 1.0f)
-				MessageBox(0, L"Over", std::to_wstring(rate).c_str(), 0);
+				J_LOG_PRINT_OUT("Cross fading error", "blender rate is over 1.0f");
 			XMVECTOR stS;
 			XMVECTOR stQ;
 			XMVECTOR stT;

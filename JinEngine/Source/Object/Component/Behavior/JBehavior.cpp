@@ -95,6 +95,10 @@ namespace JinEngine
 	}
 	void JBehavior::DoActivate()noexcept
 	{
+		//Caution 
+		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
+		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
+		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
 		JComponent::DoActivate();
 		RegisterComponent(impl->thisPointer); 
 		NotifyActivate();

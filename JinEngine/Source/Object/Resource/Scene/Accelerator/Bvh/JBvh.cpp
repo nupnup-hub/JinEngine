@@ -24,7 +24,7 @@ namespace JinEngine
 	};
 
 	JBvh::JBvh(const J_ACCELERATOR_LAYER layer)
-		:JAccelerator(layer)
+		:JCpuAccelerator(layer)
 	{}
 	JBvh::~JBvh() {}
 	void JBvh::Build()noexcept
@@ -79,9 +79,8 @@ namespace JinEngine
 		innerGameObjectCandidate = nullptr; 
 	}
 	void JBvh::Clear()noexcept
-	{
-		UnBuild();
-		JAccelerator::Clear();
+	{ 
+		JCpuAccelerator::Clear();
 	}
 	void JBvh::OnDebugGameObject()noexcept
 	{
@@ -260,7 +259,7 @@ namespace JinEngine
 	}
 	JBvhOption JBvh::GetBvhOption()const noexcept
 	{
-		return JBvhOption(buildType, splitType, JAccelerator::GetCommonOption());
+		return JBvhOption(buildType, splitType, JCpuAccelerator::GetCommonOption());
 	}
 	DirectX::BoundingBox JBvh::GetRootBoundingBox()const noexcept
 	{

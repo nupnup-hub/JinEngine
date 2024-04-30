@@ -35,7 +35,7 @@ namespace JinEngine
 	public:
 		void NotifyUpdateEvent(JResourceObject* rObj, std::unique_ptr<JResourceEventDesc>&& desc = nullptr)
 		{
-			NotifyEvent(rObj->GetGuid(), J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE, rObj, desc.get());
+			NotifyEvent(rObj->GetGuid(), J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE, rObj, desc.get());
 		}
 		void NotifyEraseEvent(JResourceObject* rObj, std::unique_ptr<JResourceEventDesc>&& desc = nullptr)
 		{
@@ -109,7 +109,7 @@ namespace JinEngine
 				{
 					if (JCUtil::Contain(guide, guidSymbol))
 					{
-						const uint index = guide.find(guidSymbol);
+						const uint index = (uint)guide.find(guidSymbol);
 						const size_t storedGuid = JCUtil::WstringToInt(JCUtil::EraseSideWChar(guide.substr(index), L' '));
 						auto guidData = guidMap.find(storedGuid);
 
@@ -148,7 +148,7 @@ namespace JinEngine
 			{
 				if (JCUtil::Contain(guide, guidSymbol))
 				{
-					const uint index = guide.find(guidSymbol);
+					const uint index = (uint)guide.find(guidSymbol);
 					toStream << guide.substr(0, index + guidSymbol.size()) << guid << '\n';
 				}
 				else
@@ -603,7 +603,7 @@ namespace JinEngine
 			rEv.NotifyEraseEvent(rObj, std::move(desc));
 			break;
 		}
-		case JinEngine::J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE:
+		case JinEngine::J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE:
 		{
 			rEv.NotifyUpdateEvent(rObj, std::move(desc));
 			break;

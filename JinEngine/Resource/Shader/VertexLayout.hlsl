@@ -3,11 +3,22 @@
 struct VertexIn
 {
 	float3 posL    : POSITION;
+	float2 texC : TEXCOORD;
 };
 struct VertexOut
 {
 	float4 posH    : SV_POSITION; 
-	float3 dir : DIRECTION;
+	float2 texC : TEXCOORD; 
+};
+#elif defined(FULL_SCREEN_TRIANGLE)
+struct VertexIn
+{
+	float3 posL    : POSITION;
+};
+struct VertexOut
+{
+	float4 posH : SV_POSITION;
+	float2 texC : TEXCOORD; 
 };
 #elif defined(DEBUG)
 struct VertexIn

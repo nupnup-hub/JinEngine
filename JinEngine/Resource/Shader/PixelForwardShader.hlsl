@@ -1,36 +1,39 @@
+#pragma once
 #include "PixelLayout.hlsl"
 #include "ShadowCompute.hlsl"
-
+#include"ColorSpaceUtility.hlsl"
+ 
 typedef float4 PixelOut;
 #if defined(DEBUG)
 PixelOut PS(PixelIn pin) : SV_Target
 {
-	return materialData[objMaterialIndex].albedoColor;
+	return materialData[cbObject.materialIndex].albedoColor;
 }
 #elif defined(SKY)
 PixelOut PS(PixelIn pin) : SV_Target
 { 
-	const uint albedoTexIndex =  materialData[objMaterialIndex].albedoMapIndex; 
-	return materialData[objMaterialIndex].albedoColor * cubeMap[albedoTexIndex].Sample(samLinearWrap, pin.posL); 
+	const uint albedoTexIndex = materialData[cbObject.materialIndex].albedoMapIndex; 
+	return materialData[cbObject.materialIndex].albedoColor * cubeMap[albedoTexIndex].Sample(samLinearWrap, pin.posL); 
 }
 #elif defined(ALBEDO_MAP_ONLY)
 PixelOut PS(PixelIn pin) : SV_Target
 { 
-	const uint albedoTexIndex = materialData[objMaterialIndex].albedoMapIndex;
-	return materialData[objMaterialIndex].albedoColor * textureMaps[albedoTexIndex].Sample(samAnisotropicWrap, pin.texC);
+	const uint albedoTexIndex = materialData[cbObject.materialIndex].albedoMapIndex;
+	return materialData[cbObject.materialIndex].albedoColor * textureMaps[albedoTexIndex].Sample(samAnisotropicWrap, pin.texC);
 }
 #else
 PixelOut PS(PixelIn pin) : SV_Target
 {
-	MaterialData matData = materialData[objMaterialIndex];
-	float4 albedoColor = matData.albedoColor;
+    MaterialData matData = materialData[cbObject.materialIndex];
+    float4 albedoColor = matData.albedoColor;
 	//float roughness = textureMaps[matData.roughnessMapIndex].Sample(gsamAnisotropicClamp, pin.TexC).r;
 #ifdef ALBEDO_MAP
 	albedoColor *= textureMaps[matData.albedoMapIndex].Sample(samAnisotropicWrap, pin.texC);
 #endif
-	float3 normalW = normalize(pin.normalW);
-	float3 toEyeW = normalize(camEyePosW - pin.posW);
-	float2 texC = pin.texC;
+ 
+    float3 normalW = normalize(pin.normalW);
+    float3 toEyeW = normalize(cbCam.eyePosW - pin.posW);
+    float2 texC = pin.texC;
 	
 #ifdef NORMAL_MAP
 	float3x3 TBN = CalTBN(normalW, pin.tangentW);
@@ -48,7 +51,7 @@ PixelOut PS(PixelIn pin) : SV_Target
 #ifdef METALLIC_MAP
 	float metallic = textureMaps[matData.metallicMapIndex].Sample(samLinearWrap, texC).x;
 #else
-	float metallic = matData.metallic;
+    float metallic = matData.metallic;
 #endif
 #ifdef ROUGHNESS_MAP
 	float roughness = textureMaps[matData.roughnessMapIndex].Sample(samLinearWrap, texC).x;
@@ -56,32 +59,39 @@ PixelOut PS(PixelIn pin) : SV_Target
 #ifdef NORMAL_MAP
 	float roughness = matData.roughness * normalMapSample.a;
 #else
-	float roughness = matData.roughness;
+    float roughness = matData.roughness;
 #endif
 #endif
 	
-	Material mat = { albedoColor, metallic, roughness };
+    float specularFactor = 0.0f;
+#ifdef SPECULAR_MAP	
+	specularFactor = RGBToLuminance(textureMaps[matData.specularMapIndex].Sample(samAnisotropicWrap, texC).xyz * metallic);
+#else
+    specularFactor = ComputeDefaultSpecularFactor(albedoColor.xyz, metallic);
+#endif
+	
+    float4 specularColor = float4(specularFactor, specularFactor, specularFactor, 1.0f);
+    Material mat = { albedoColor, specularColor, metallic, roughness, 0.0f };
 #ifdef LIGHT_CLUSTER
 	float3 directLight = ComputeLight(mat, pin.posW, normalW, pin.tangentW, toEyeW, pin.posH.xy, pin.posH.z);
 	//float3 directLight = ComputeLight(mat, pin.posW, normalW, pin.tangentW, toEyeW, pin.posH.xy, depth);
 #else
-	float3 directLight = ComputeLight(mat, pin.posW, normalW, pin.tangentW, toEyeW);
+    float3 directLight = ComputeLight(mat, pin.posW, normalW, pin.tangentW, toEyeW);
 #endif  
+	
+    float aoFactor = 1;
+#ifdef AMBIENT_OCCLUSION_MAP
+	aoFactor= textureMaps[matData.ambientMapIndex].Sample(samLinearWrap, texC).x; 
+#endif
+    directLight = CombineApproxGlobalLight(directLight, mat.albedoColor.xyz, aoFactor);
+	
 	//float3 reflectLight = reflect(-toEyeW, normalW);
 	//float4 reflectionColor = cubeMap[0].Sample(samLinearWrap, reflectLight);
 	//float3 fresnelFactor = SchlickFresnel(reflectionColor.xyz, normalW, reflectLight, matData.metallic);
-	float4 litColor = float4(directLight, albedoColor.a);
+    float4 litColor = float4(directLight, albedoColor.a);
 	//litColor.rgb += roughness * fresnelFactor; 
-//#ifdef USE_SSAO
-//	normalMap[pin.posH.xy] = normalW.xy;
-//#endif
-	
-#ifdef AMBIENT_OCCLUSION_MAP
-	float ambientFactor = textureMaps[matData.ambientMapIndex].Sample(samLinearWrap, texC).x;
-	return litColor * ambientFactor;
-#else
-	return litColor;
+ 
+    return litColor;
 	//return float4(normalW, 1.0f);
-#endif 
 }
 #endif

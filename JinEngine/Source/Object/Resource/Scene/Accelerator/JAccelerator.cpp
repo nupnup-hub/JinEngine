@@ -1,43 +1,85 @@
 #include"JAccelerator.h"
 #include"../../../GameObject/JGameObject.h"
 #include"../../../Component/RenderItem/JRenderItem.h"
+#include"../../../Component/Light/JLight.h"
 
 namespace JinEngine
 {
-	JAccelerator::JAccelerator(const J_ACCELERATOR_LAYER layer)
+	namespace Private
+	{
+		static bool IsValidLayer(const J_RENDER_LAYER objLayer, const J_ACCELERATOR_LAYER layer)noexcept
+		{
+			return ConvertAcceleratorLayer(objLayer) == layer;
+		}
+		static void FindInnerObject(std::vector<JUserPtr<JGameObject>>& vec, const JUserPtr<JGameObject>& parent, const J_ACCELERATOR_LAYER layer) noexcept
+		{
+			if (layer == J_ACCELERATOR_LAYER::INVALID)
+				return;
+
+			if (parent == nullptr)
+				return;
+
+			auto rItem = parent->GetRenderItem();
+			if (rItem != nullptr && rItem->IsActivated() && rItem->GetMesh() != nullptr && IsValidLayer(rItem->GetRenderLayer(), layer))
+				vec.push_back(parent);
+
+			std::vector<JUserPtr<JGameObject>> children = parent->GetChildren();
+			for (const auto& data : children)
+				FindInnerObject(vec, data, layer);
+		} 
+		static void FindInnerNonDeltaLight(std::vector<JUserPtr<JGameObject>>& vec, const JUserPtr<JGameObject>& parent) noexcept
+		{ 
+			if (parent == nullptr)
+				return;
+
+			auto light = parent->GetComponents(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+			for (const auto& data : light)
+			{
+				JUserPtr<JLight> lit = Core::ConnectChildUserPtr<JLight>(data);
+				if (lit->GetLightType() == J_LIGHT_TYPE::RECT)
+					vec.push_back(lit->GetOwner());
+			}
+
+			std::vector<JUserPtr<JGameObject>> children = parent->GetChildren();
+			for (const auto& data : children)
+				FindInnerNonDeltaLight(vec, data);
+		}
+	}
+	JCpuAccelerator::JCpuAccelerator(const J_ACCELERATOR_LAYER layer)
 		:layer(layer)
 	{}
-	void JAccelerator::Clear()noexcept
+	void JCpuAccelerator::Clear()noexcept
 	{
+		UnBuild();
 		innerRoot = nullptr;
 		debugRoot = nullptr;
 		isAcceleratorActivated = false;
 		isDebugActivated = false;
 		isDebugLeafOnly = true;
 	}
-	J_ACCELERATOR_LAYER JAccelerator::GetLayer()const noexcept
+	J_ACCELERATOR_LAYER JCpuAccelerator::GetLayer()const noexcept
 	{
 		return layer;
 	}
-	std::vector<JUserPtr<JGameObject>> JAccelerator::GetInnerObject()const noexcept
+	std::vector<JUserPtr<JGameObject>> JCpuAccelerator::GetInnerObject()const noexcept
 	{
 		std::vector<JUserPtr<JGameObject>> innerVec;
-		FindInnerObject(innerVec, innerRoot);
+		Private::FindInnerObject(innerVec, innerRoot, layer);
 		return innerVec;
 	}
-	JUserPtr<JGameObject> JAccelerator::GetInnerRoot()const noexcept
+	JUserPtr<JGameObject> JCpuAccelerator::GetInnerRoot()const noexcept
 	{
 		return innerRoot;
 	}
-	JUserPtr<JGameObject> JAccelerator::GetDebugRoot()const noexcept
+	JUserPtr<JGameObject> JCpuAccelerator::GetDebugRoot()const noexcept
 	{
 		return debugRoot;
 	}
-	JAcceleratorOption JAccelerator::GetCommonOption()const noexcept
+	JAcceleratorOption JCpuAccelerator::GetCommonOption()const noexcept
 	{
 		return JAcceleratorOption(innerRoot, debugRoot, isAcceleratorActivated, isDebugActivated, isDebugLeafOnly, isCullingActivated);
 	}
-	void JAccelerator::SetInnerRoot(const JUserPtr<JGameObject>& newInnerRoot)noexcept
+	void JCpuAccelerator::SetInnerRoot(const JUserPtr<JGameObject>& newInnerRoot)noexcept
 	{
 		if (layer == J_ACCELERATOR_LAYER::INVALID)
 			return;
@@ -65,7 +107,7 @@ namespace JinEngine
 				Build();
 		}
 	}
-	void JAccelerator::SetDebugRoot(const JUserPtr<JGameObject>& newDebugRoot)noexcept
+	void JCpuAccelerator::SetDebugRoot(const JUserPtr<JGameObject>& newDebugRoot)noexcept
 	{
 		if (layer == J_ACCELERATOR_LAYER::INVALID)
 			return;
@@ -93,7 +135,7 @@ namespace JinEngine
 				OnDebugGameObject();
 		}
 	}
-	void JAccelerator::SetAcceleratorActivate(bool value)noexcept
+	void JCpuAccelerator::SetAcceleratorActivate(bool value)noexcept
 	{
 		if (layer == J_ACCELERATOR_LAYER::INVALID)
 			return;
@@ -110,7 +152,7 @@ namespace JinEngine
 			}
 		}
 	}
-	void JAccelerator::SetDebugActivated(bool value)noexcept
+	void JCpuAccelerator::SetDebugActivated(bool value)noexcept
 	{
 		if (layer == J_ACCELERATOR_LAYER::INVALID)
 			return;
@@ -130,7 +172,7 @@ namespace JinEngine
 			}
 		}
 	}
-	void JAccelerator::SetDebugLeafOnly(bool value)noexcept
+	void JCpuAccelerator::SetDebugLeafOnly(bool value)noexcept
 	{
 		if (layer == J_ACCELERATOR_LAYER::INVALID)
 			return;
@@ -148,7 +190,7 @@ namespace JinEngine
 			}
 		}
 	}
-	void JAccelerator::SetCullingActivate(bool value)noexcept
+	void JCpuAccelerator::SetCullingActivate(bool value)noexcept
 	{
 		if (layer == J_ACCELERATOR_LAYER::INVALID)
 			return;
@@ -156,7 +198,7 @@ namespace JinEngine
 		if (isCullingActivated != value)
 			isCullingActivated = value;
 	}
-	void JAccelerator::SetCommonOption(const JAcceleratorOption& newOption)noexcept
+	void JCpuAccelerator::SetCommonOption(const JAcceleratorOption& newOption)noexcept
 	{
 		if (layer == J_ACCELERATOR_LAYER::INVALID)
 			return;
@@ -168,67 +210,106 @@ namespace JinEngine
 		SetDebugLeafOnly(newOption.isDebugLeafOnly);
 		SetCullingActivate(newOption.isCullingActivated);
 	}
-	bool JAccelerator::IsInnerRoot(const JUserPtr<JGameObject>& gameObj)const noexcept
+	bool JCpuAccelerator::IsInnerRoot(const JUserPtr<JGameObject>& gameObj)const noexcept
 	{
 		if (innerRoot == nullptr)
 			return false;
 		return gameObj->GetGuid() == innerRoot->GetGuid();
 	}
-	bool JAccelerator::IsDebugRoot(const JUserPtr<JGameObject>& gameObj)const noexcept
+	bool JCpuAccelerator::IsDebugRoot(const JUserPtr<JGameObject>& gameObj)const noexcept
 	{
 		if (debugRoot == nullptr)
 			return false;
 		return gameObj->GetGuid() == debugRoot->GetGuid();
 	}
-	bool JAccelerator::IsAcceleratorActivated()const noexcept
+	bool JCpuAccelerator::IsAcceleratorActivated()const noexcept
 	{
 		return isAcceleratorActivated;
 	}
-	bool JAccelerator::IsDebugActivated()const noexcept
+	bool JCpuAccelerator::IsDebugActivated()const noexcept
 	{
 		return isDebugActivated;
 	}
-	bool JAccelerator::IsDebugLeafOnly()const noexcept
+	bool JCpuAccelerator::IsDebugLeafOnly()const noexcept
 	{
 		return isDebugLeafOnly;
 	}
-	bool JAccelerator::IsCullingActivated()const noexcept
+	bool JCpuAccelerator::IsCullingActivated()const noexcept
 	{
 		return isCullingActivated;
 	}
-	bool JAccelerator::IsValidLayer(const J_RENDER_LAYER objLayer)const noexcept
+	bool JCpuAccelerator::IsValidLayer(const J_RENDER_LAYER objLayer)const noexcept
 	{
-		return ConvertAcceleratorLayer(objLayer) == layer;
+		return Private::IsValidLayer(objLayer, layer);
 	}
-	bool JAccelerator::HasInnerRoot()const noexcept
+	bool JCpuAccelerator::HasInnerRoot()const noexcept
 	{
 		return innerRoot != nullptr;
 	}
-	bool JAccelerator::HasDebugRoot()const noexcept
+	bool JCpuAccelerator::HasDebugRoot()const noexcept
 	{
 		return debugRoot != nullptr;
 	}
-	bool JAccelerator::CanAddGameObject(const JUserPtr<JGameObject>& gameObj)const noexcept
+	bool JCpuAccelerator::CanAddGameObject(const JUserPtr<JGameObject>& gameObj)const noexcept
 	{
 		return gameObj->HasRenderItem() &&
 			((gameObj->GetRenderItem()->GetAcceleratorMask() & ACCELERATOR_ALLOW_BUILD) > 0) &&
 			(ConvertAcceleratorLayer(gameObj->GetRenderItem()->GetRenderLayer()) == layer) &&
 			innerRoot->IsParentLine(gameObj);
 	}
-	void JAccelerator::FindInnerObject(std::vector<JUserPtr<JGameObject>>& vec, const JUserPtr<JGameObject>& parent)const noexcept
+
+	JGpuAccelerator::JGpuAccelerator()
 	{
-		if (layer == J_ACCELERATOR_LAYER::INVALID)
-			return;
+		RegisterInterfacePointer();
+	}
+	void JGpuAccelerator::Build()noexcept
+	{ 
+		Graphic::JGpuAcceleratorBuildDesc desc;
+		desc.flag = option.flag;
+		Private::FindInnerObject(desc.obj, option.root, J_ACCELERATOR_LAYER::COMMON_OBJECT);
+		if (Core::HasSQValueEnum(desc.flag, Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE))
+			Private::FindInnerNonDeltaLight(desc.localLight, option.root);
+		JGpuAcceleratorInterface::CreateGpuAccelerator(desc);
+	}
+	void JGpuAccelerator::UnBuild()noexcept
+	{
+		JGpuAcceleratorInterface::DestroyGpuAccelerator();
+	}
+	void JGpuAccelerator::Clear()noexcept
+	{
+		UnBuild();
+	}
+	void JGpuAccelerator::UpdateTransform(const JUserPtr<JComponent>& comp)noexcept
+	{
+		JGpuAcceleratorInterface::UpdateTransform(comp);
+	}
+	void JGpuAccelerator::AddComponent(const JUserPtr<JComponent>& newComp)noexcept
+	{
+		JGpuAcceleratorInterface::AddComponent(newComp);
+	}
+	void JGpuAccelerator::RemoveComponent(const JUserPtr<JComponent>& comp)noexcept
+	{
+		JGpuAcceleratorInterface::RemoveComponent(comp);
+	}
+	JGpuAcceleratorOption JGpuAccelerator::GetOption()const noexcept
+	{
+		return option;
+	}
+	void JGpuAccelerator::SetOption(const JGpuAcceleratorOption& newOption)
+	{
+		if (JGpuAcceleratorInterface::HasInfo())
+			UnBuild();
 
-		if (parent == nullptr)
-			return;
-
-		auto rItem = parent->GetRenderItem();
-		if (rItem != nullptr && rItem->IsActivated() && rItem->GetMesh() != nullptr && IsValidLayer(rItem->GetRenderLayer()))
-			vec.push_back(parent);
-
-		std::vector<JUserPtr<JGameObject>> children = parent->GetChildren();
-		for (const auto& data : children)
-			FindInnerObject(vec, data);
+		option = newOption;
+		Build();
+	}
+	bool JGpuAccelerator::CanBuild()noexcept
+	{
+		return JGpuAcceleratorInterface::CanBuildGpuAccelerator();
+	}
+	void JGpuAccelerator::RegisterInterfacePointer()
+	{
+		Graphic::JGpuAcceleratorInterface::SetInterfacePointer(this);
 	}
 }
+ 

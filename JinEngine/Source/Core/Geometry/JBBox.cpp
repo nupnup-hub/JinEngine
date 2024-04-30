@@ -8,6 +8,13 @@ namespace JinEngine
 	namespace Core
 	{ 
 		using namespace DirectX; 
+		namespace
+		{
+			static BoundingBox Convert(const JBBox2D& b)
+			{
+				return BoundingBox(JVector3F((b.minP + b.maxP) * 0.5f, 0).ToSimilar<XMFLOAT3>(), JVector3F((b.maxP - b.minP) * 0.5f, 0).ToSimilar<XMFLOAT3>());
+			}
+		}
 		 
 		JBBox2D::JBBox2D(const JVector2<float>& minP, const JVector2<float>& maxP)
 			: minP(minP), maxP(maxP)
@@ -15,6 +22,10 @@ namespace JinEngine
 		bool JBBox2D::Contain(const JVector2<float>& p)const noexcept
 		{
 			return p.x >= minP.x && p.x <= maxP.x && p.y >= minP.y && p.y <= maxP.y;
+		}
+		bool JBBox2D::Intersect(const JBBox2D& b)const noexcept
+		{  
+			return Convert(*this).Intersects(Convert(b));
 		}
 		bool JBBox2D::Intersect(const JRay2D& ray, JVector2<float>* hitPoint)const noexcept
 		{
@@ -40,22 +51,22 @@ namespace JinEngine
 		JBBox::JBBox(const JVector3<float>& minP, const JVector3<float>& maxP)
 			:minP(minP), maxP(maxP)
 		{}
-		JBBox::JBBox(const DirectX::XMFLOAT3& minP, const DirectX::XMFLOAT3& maxP)
+		JBBox::JBBox(const XMFLOAT3& minP, const XMFLOAT3& maxP)
 			:minP(minP), maxP(maxP)
 		{}
-		JBBox::JBBox(const DirectX::BoundingBox& boundBox)
+		JBBox::JBBox(const BoundingBox& boundBox)
 		{
-			DirectX::XMFLOAT3 xmMin;
-			DirectX::XMFLOAT3 xmMax;
+			XMFLOAT3 xmMin;
+			XMFLOAT3 xmMax;
 			JDirectXCollisionEx::BoundingBoxMinMax(boundBox, xmMin, xmMax);
 
 			minP = xmMin;
 			maxP = xmMax;
 		}
 		JBBox::~JBBox() {}
-		DirectX::BoundingBox JBBox::Convert()const noexcept
+		BoundingBox JBBox::Convert()const noexcept
 		{  
-			return DirectX::BoundingBox(Center().ToSimilar<XMFLOAT3>(), Extent().ToSimilar<XMFLOAT3>());
+			return BoundingBox(Center().ToSimilar<XMFLOAT3>(), Extent().ToSimilar<XMFLOAT3>());
 		}
 		void JBBox::Coners(_Out_ JVector3<float>(&outCorners)[8])const noexcept
 		{
@@ -114,7 +125,7 @@ namespace JinEngine
 		{
 			return (maxP - minP) == JVector3<float>(0, 0, 0);
 		}
-		JBBox JBBox::Union(_In_ const JBBox& box, _In_ const DirectX::XMFLOAT3& point)noexcept
+		JBBox JBBox::Union(_In_ const JBBox& box, _In_ const XMFLOAT3& point)noexcept
 		{
 			JVector3<float> minP;
 			JVector3<float> maxP;

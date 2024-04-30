@@ -5,6 +5,7 @@
 #include"../../../../Core/Geometry/JGeometryEnum.h" 
 #include"../../../../Core/JCoreEssential.h"
 #include"../../../../Graphic/Culling/JCullingInterface.h"
+#include"../../../../Graphic/Accelerator/JGpuAcceleratorType.h"
 #include<fstream>
 #include<DirectXCollision.h>
 
@@ -197,5 +198,13 @@ namespace JinEngine
 			const bool allowIntersect = true);
 	public:
 		void EraseOverlap();
+	};
+
+	struct JGpuAcceleratorOption
+	{
+	public:
+		JUserPtr<JGameObject> root;
+		J_ACCELERATOR_LAYER layer = J_ACCELERATOR_LAYER::COMMON_OBJECT;
+		Graphic::J_GPU_ACCELERATOR_BUILD_OPTION flag = Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_NONE;
 	};
 }

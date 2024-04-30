@@ -37,11 +37,11 @@ void GS(triangle GsIn input[3], inout TriangleStream<GsOut> stream)
 	gsOut.vertexPosV[1] = input[1].posV;
 	gsOut.vertexPosV[2] = input[2].posV;
 #endif  
-	gsOut.posH = mul(float4(input[0].posV, 1.0f), camProj);
+	gsOut.posH = mul(float4(input[0].posV, 1.0f), cbCam.proj);
 	stream.Append(gsOut);
-	gsOut.posH = mul(float4(input[1].posV, 1.0f), camProj);
+    gsOut.posH = mul(float4(input[1].posV, 1.0f), cbCam.proj);
 	stream.Append(gsOut);
-	gsOut.posH = mul(float4(input[2].posV, 1.0f), camProj);
+    gsOut.posH = mul(float4(input[2].posV, 1.0f), cbCam.proj);
 	stream.Append(gsOut);
 }
 

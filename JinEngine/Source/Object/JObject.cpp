@@ -1,6 +1,6 @@
 #include"JObject.h"
 #include"JObjectPrivate.h" 
-#include"../Core/Reflection/JTypeImplBase.h"
+#include"../Core/Reflection/JTypeImplBase.h" 
 
 namespace JinEngine
 {

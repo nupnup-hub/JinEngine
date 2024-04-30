@@ -8,22 +8,20 @@ namespace JinEngine
 		class JDx12Adaptee final : public JGraphicAdaptee
 		{
 		public:
+			void Initialize(JCommandContextManager* manager) final;
+			void Clear() final;
+		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		public:
-			std::unique_ptr<JGraphicDevice> CreateDevice() final;
-			std::unique_ptr<JGraphicResourceManager> CreateGraphicResourceManager() final;
-			std::unique_ptr<JCullingManager> CreateCullingManager() final;
-			void CreateFrameResource(_Out_ std::unique_ptr<JFrameResource>(&frame)[Constants::gNumFrameResources]) final;
-		public:
-			std::unique_ptr<JGraphicDebug> CreateDebug() final;
-			std::unique_ptr<JDepthTest> CreateDepthTest() final;
-			std::unique_ptr<JShadowMap> CreateShadowMapDraw() final;
-			std::unique_ptr<JSceneDraw> CreateSceneDraw() final;
-			std::unique_ptr<JHardwareOccCulling> CreateHdOcc() final;
-			std::unique_ptr<JHZBOccCulling> CreateHzbOcc() final;
-			std::unique_ptr<JLightCulling> CreateLightCulling() final;
-			std::unique_ptr<JOutline> CreateOutlineDraw() final;
-			std::unique_ptr<JImageProcessing> CreateImageProcessing()final;
+			std::unique_ptr<JGraphicDevice> CreateDevice(const JGraphicSubClassShareData& shareData) final;
+			void CreateResourceManageSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set) final;
+			void CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set) final;
+			void CreateCullingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set) final;
+			void CreateImageProcessingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set) final;
+			void CreateRaytracingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set) final;
+		public:		
+			std::unique_ptr<JGraphicInfoChangedSet> CreateInfoChangedSet(const JGraphicInfo& preInfo, const JGraphicDrawReferenceSet& drawRefSet)final;
+			std::unique_ptr<JGraphicOptionChangedSet> CreateOptionChangedSet(const JGraphicOption& preOption, const JGraphicDrawReferenceSet& drawRefSet)final;
 		public:
 			void BeginUpdateStart(const JGraphicDrawReferenceSet& drawRefSet) final;
 		public:
@@ -52,21 +50,13 @@ namespace JinEngine
 			bool ExecuteDrawShadowMapTask(const JGraphicDrawReferenceSet& drawRefSet) final; 
 			bool ExecuteDrawSceneTask(const JGraphicDrawReferenceSet& drawRefSet) final;
 		public:
-			//common(others) 
-			bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
-				const ResourceHandle from,
-				const ResourceHandle to,
-				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) final;
-			bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
-				const JUserPtr<JGraphicResourceInfo>& info,
-				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) final;
-			bool SettingMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet,
-				const JUserPtr<JGraphicResourceInfo>& srcInfo,
-				const JUserPtr<JGraphicResourceInfo>& modInfo,
-				std::unique_ptr<JDownSampleDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet) final; 
+			//use public command
+			bool BeginBlurTask(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicBlurTaskSettingSet& set)final;
+			void EndBlurTask(const JGraphicDrawReferenceSet& drawRefSet)final;
+			bool BeginMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicMipmapGenerationSettingSet& set)final;
+			void EndMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet)final; 
+			bool BeginConvertColorTask(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicConvetColorSettingSet& set)final;
+			void EndConvertColorTask(const JGraphicDrawReferenceSet& drawRefSet)final;
 		};
 	}
 }

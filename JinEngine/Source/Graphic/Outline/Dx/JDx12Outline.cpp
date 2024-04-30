@@ -1,11 +1,12 @@
 #include"JDx12Outline.h"
 #include"../../JGraphicUpdateHelper.h"
+#include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h" 
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h" 
-#include"../../Shader/Dx/JDx12ShaderDataHolder.h"
+#include"../../DataSet/Dx/JDx12GraphicDataSet.h"  
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
-#include"../../Utility/Dx/JD3DUtility.h"
+#include"../../Utility/Dx/JDx12Utility.h"
+#include"../../Utility/Dx/JDx12ObjectCreation.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Camera/JCamera.h"
 #include"../../../Object/Resource/JResourceManager.h"
@@ -20,29 +21,44 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		void JDx12Outline::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
+		JDx12Outline::~JDx12Outline()
+		{
+			ClearResource();
+		}
+		void JDx12Outline::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)
 		{
 			if (!IsSameDevice(device) || !IsSameDevice(gM))
 				return;
 
-			ID3D12Device* d3d12Device = static_cast<JDx12GraphicDevice*>(device)->GetDevice();
-			DXGI_FORMAT backBufferFormat = static_cast<JDx12GraphicResourceManager*>(gM)->GetBackBufferFormat();
-			DXGI_FORMAT depthStencilFormat = static_cast<JDx12GraphicResourceManager*>(gM)->GetDepthStencilFormat();
-
-			BuildRootSignature(d3d12Device);
-			BuildPso(d3d12Device, backBufferFormat, depthStencilFormat);
-			BuildUploadBuffer(device);
-			UpdatePassBuf(info.width, info.height, Constants::commonStencilRef);
+			BuildResource(device);
 		}
 		void JDx12Outline::Clear()
 		{
-			outlineCB.reset();
-			mRootSignature.Reset();
-			gShaderData.reset();
+			ClearResource(); 
 		} 
 		J_GRAPHIC_DEVICE_TYPE JDx12Outline::GetDeviceType()const noexcept
 		{
 			return J_GRAPHIC_DEVICE_TYPE::DX12;
+		} 
+		bool JDx12Outline::HasDependency(const JGraphicInfo::TYPE type)const noexcept
+		{
+			return false;
+		}
+		bool JDx12Outline::HasDependency(const JGraphicOption::TYPE type)const noexcept
+		{
+			return type == JGraphicOption::TYPE::RENDERING;
+		}
+		void JDx12Outline::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
+		{ 
+		}
+		void JDx12Outline::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
+		{
+			if (set.preOption.rendering.renderTargetFormat != set.newOption.rendering.renderTargetFormat)
+			{
+				auto dx12Set = static_cast<const JDx12GraphicOptionChangedSet&>(set);
+				Clear();
+				Initialize(dx12Set.device, dx12Set.gm);
+			}
 		}
 		void JDx12Outline::UpdatePassBuf(const uint width, const uint height, const uint stencilRefOffset)
 		{
@@ -69,39 +85,20 @@ namespace JinEngine
 				return;
 
 			const JDx12GraphicOutlineDrawSet* dx12Set = static_cast<const JDx12GraphicOutlineDrawSet*>(drawSet);
-			JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(dx12Set->device);
-			JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
-			ID3D12GraphicsCommandList* cmdList = dx12Set->cmdList;
-
+			JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12Set->context);
+ 
 			auto gRInterface = helper.cam->GraphicResourceUserInterface();
-			const uint rtDataIndex = gRInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-			const uint dsDataIndex = gRInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-
-			const int rtvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtDataIndex);
-			const int rtvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_BIND_TYPE::RTV, rtDataIndex);
-
-			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsDataIndex);
-			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, dsDataIndex);
-	
-			JDx12GraphicResourceInfo* depthInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
-			ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
-			D3D12_RESOURCE_DESC desc = rtResource->GetDesc();
-
-			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv = dx12Gm->GetCpuRtvDescriptorHandle(rtvHeapIndex);
-			JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-			D3D12_VIEWPORT viewPort;
-			D3D12_RECT rect;
-			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), true, viewPort, rect);
-			cmdList->RSSetViewports(1, &viewPort);
-			cmdList->RSSetScissorRects(1, &rect);
-			cmdList->OMSetRenderTargets(1, &rtv, true, nullptr);
-
-			DrawOutline(cmdList,
-				dx12Gm,
-				dx12Gm->GetGpuSrvDescriptorHandle(depthInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
-				dx12Gm->GetGpuSrvDescriptorHandle(depthInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV) + 1));
-			JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
+			auto rtSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+			auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+  
+			context->Transition(rtSet.holder, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+			context->SetViewportAndRect(rtSet.info->GetResourceSize());
+			context->SetRenderTargetView(rtSet);
+  
+			//stencil srv
+			dsSet.viewOffset += 1;
+			DrawOutline(context, rtSet.GetGpuSrvHandle(), dsSet.GetGpuSrvHandle());
+			context->Transition(rtSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 		}
 		void JDx12Outline::DrawOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper)
 		{
@@ -109,51 +106,40 @@ namespace JinEngine
 				return;
 
 			const JDx12GraphicOutlineDrawSet* dx12Set = static_cast<const JDx12GraphicOutlineDrawSet*>(drawSet);
-			JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
-			ID3D12GraphicsCommandList* cmdList = dx12Set->cmdList;
+			JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12Set->context);
+
 			if (!dx12Set->useHandle)
 				return;
 
-			DrawOutline(cmdList, dx12Gm, dx12Set->depthMapHandle, dx12Set->stencilMapHandle);
+			DrawOutline(context, dx12Set->depthMapHandle, dx12Set->stencilMapHandle);
 		}
-		void JDx12Outline::DrawOutline(ID3D12GraphicsCommandList* cmdList,
-			JDx12GraphicResourceManager* dx12Gm,
+		void JDx12Outline::DrawOutline(JDx12CommandContext* context,
 			const CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle,
 			const CD3DX12_GPU_DESCRIPTOR_HANDLE stencilMapHandle)
 		{
-			cmdList->SetGraphicsRootSignature(mRootSignature.Get());
-			cmdList->SetGraphicsRootDescriptorTable(0, depthMapHandle);
-			cmdList->SetGraphicsRootDescriptorTable(1, stencilMapHandle);
-			cmdList->SetGraphicsRootConstantBufferView(2, outlineCB->GetResource()->GetGPUVirtualAddress());
-			cmdList->SetPipelineState(gShaderData->pso.Get());
-
-			JUserPtr<JMeshGeometry> mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::FULL_SCREEN_QUAD);
-
-			const D3D12_VERTEX_BUFFER_VIEW vertexPtr = dx12Gm->VertexBufferView(mesh);
-			const D3D12_INDEX_BUFFER_VIEW indexPtr = dx12Gm->IndexBufferView(mesh);
- 
-			cmdList->IASetVertexBuffers(0, 1, &vertexPtr);
-			cmdList->IASetIndexBuffer(&indexPtr);
-			cmdList->IASetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-			cmdList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(0), 1, mesh->GetSubmeshStartIndexLocation(0), mesh->GetSubmeshBaseVertexLocation(0), 0);
+			context->SetGraphicsRootSignature(mRootSignature.Get());
+			context->SetPipelineState(gShaderData.get());
+			context->SetGraphicsRootDescriptorTable(0, depthMapHandle);
+			context->SetGraphicsRootDescriptorTable(1, stencilMapHandle);
+			context->SetGraphicsRootConstantBufferView(2, outlineCB->GetResource()->GetGPUVirtualAddress());
+			context->DrawFullScreenTriangle();
+		}
+		void JDx12Outline::BuildResource(JGraphicDevice* device)
+		{ 
+			ID3D12Device* d3d12Device = static_cast<JDx12GraphicDevice*>(device)->GetDevice(); 
+			BuildRootSignature(d3d12Device);
+			BuildPso(d3d12Device);
+			BuildUploadBuffer(device);
+			UpdatePassBuf(GetGraphicInfo().width, GetGraphicInfo().height, Constants::commonStencilRef);
 		}
 		void JDx12Outline::BuildRootSignature(ID3D12Device* device)
 		{
 			static constexpr int slotCount = 3;
-
-			CD3DX12_DESCRIPTOR_RANGE depthMap;
-			depthMap.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-			CD3DX12_DESCRIPTOR_RANGE stencilMap;
-			stencilMap.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-
-			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
-			slotRootParameter[0].InitAsDescriptorTable(1, &depthMap);
-			slotRootParameter[1].InitAsDescriptorTable(1, &stencilMap);
-			slotRootParameter[2].InitAsConstantBufferView(0);
-
-			std::vector<CD3DX12_STATIC_SAMPLER_DESC> samDesc
+			JDx12RootSignatureBuilder2<slotCount, 1> builder;
+			builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);		//depthMap
+			builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);		//stencilMap
+			builder.PushConstantsBuffer(0);									//passCB
+			std::vector<CD3DX12_STATIC_SAMPLER_DESC> sam 
 			{
 				CD3DX12_STATIC_SAMPLER_DESC(0,
 				D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
@@ -165,45 +151,33 @@ namespace JinEngine
 				D3D12_COMPARISON_FUNC_LESS_EQUAL,
 				D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
 			};
-
-			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-			// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-			Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
-			Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-			HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-				serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-			if (errorBlob != nullptr)
-			{
-				::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-			}
-			ThrowIfFailedHr(hr);
-			ThrowIfFailedHr(device->CreateRootSignature(
-				0,
-				serializedRootSig->GetBufferPointer(),
-				serializedRootSig->GetBufferSize(),
-				IID_PPV_ARGS(mRootSignature.GetAddressOf())));
-
-			mRootSignature->SetName(L"Outline RootSignature");
+			for (const auto& data : sam)
+				builder.PushSampler(data);
+			builder.Create(device, L"Outline RootSignature", mRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);
 		}
-		void JDx12Outline::BuildPso(ID3D12Device* device, const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat)
-		{ 
-			std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\Outline.hlsl";
+		void JDx12Outline::BuildPso(ID3D12Device* device)
+		{
+			const DXGI_FORMAT rtvFormat = Constants::GetRenderTargetFormat(GetGraphicOption().rendering.renderTargetFormat);
+			const DXGI_FORMAT dsvHformat = Constants::GetDepthStencilFormat();
+
+			//const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat
+			std::wstring vertexPath = JApplicationEngine::ShaderPath() + L"\\FullScreenTriangleVs.hlsl";
+			std::wstring pixelPath = JApplicationEngine::ShaderPath() + L"\\Outline.hlsl";
 
 			gShaderData = std::make_unique<JDx12GraphicShaderDataHolder>();
-			gShaderData->vs = JDxShaderDataUtil::CompileShader(gShaderPath, L"VS", L"vs_6_0");
-			gShaderData->ps = JDxShaderDataUtil::CompileShader(gShaderPath, L"PS", L"ps_6_0");
-			gShaderData->inputLayout =
+			gShaderData->vs = JDxShaderDataUtil::CompileShader(vertexPath, L"FullScreenTriangleVS", L"vs_6_0");
+			gShaderData->ps = JDxShaderDataUtil::CompileShader(pixelPath, L"PS", L"ps_6_0");
+			/*gShaderData->inputLayout =
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-			};
+			};*/
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-			newShaderPso.InputLayout = { gShaderData->inputLayout.data(), (uint)gShaderData->inputLayout.size() };
+			//newShaderPso.InputLayout = { gShaderData->inputLayout.data(), (uint)gShaderData->inputLayout.size() };
+			newShaderPso.InputLayout.NumElements = 0;
 			newShaderPso.pRootSignature = mRootSignature.Get();
 			newShaderPso.VS =
 			{
@@ -243,12 +217,18 @@ namespace JinEngine
 			//newShaderPso.DSVFormat = dsvFormat;
 			newShaderPso.DSVFormat = DXGI_FORMAT_UNKNOWN;
 
-			ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(gShaderData->pso.GetAddressOf())));
+			ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(gShaderData->GetPsoAddress())));
 		}
 		void JDx12Outline::BuildUploadBuffer(JGraphicDevice* device)
 		{
-			outlineCB = std::make_unique<JDx12GraphicBuffer<JOutlineConstants>>(L"OutLine", J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
+			outlineCB = std::make_unique<JDx12GraphicBufferT<JOutlineConstants>>(L"OutLine", J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
 			outlineCB->Build(device, 1);
+		}
+		void JDx12Outline::ClearResource()
+		{
+			outlineCB.reset();
+			mRootSignature.Reset();
+			gShaderData.reset();
 		}
 	}
 }

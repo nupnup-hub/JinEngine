@@ -1,16 +1,12 @@
 #include"JGraphicResourceManager.h"   
+#include"JGraphicResourceUserAccess.h"
+#include"JGraphicResourceInterface.h"
 #include"../../Window/JWindow.h"
 #include"../../Window/JWindowPrivate.h"
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		namespace Private
-		{
-			static constexpr uint occlusionMipmapViewCapacity = 10;
-			static constexpr uint minOcclusionSize = 8;
-		}	
-
+	{  
 		/*
 		* create resource senario
 		1. Create resource and info(Owner Pointer)
@@ -54,14 +50,13 @@ namespace JinEngine
 		{
 			return count < capacity;
 		}
+		JGraphicResourceInfo* JGraphicResourceManager::GetInfo(JGraphicResourceUserAccess* access, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE task)const noexcept
+		{
+			if (access == nullptr)
+				return nullptr;
 
-		uint JGraphicResourceManager::GetOcclusionMipmapViewCapacity()noexcept
-		{
-			return Private::occlusionMipmapViewCapacity;
-		}
-		uint JGraphicResourceManager::GetOcclusionMinSize()noexcept
-		{
-			return Private::minOcclusionSize;
+			const int arrayIndex = access->GraphicResourceUserInterface().GetResourceArrayIndex(rType, task);
+			return arrayIndex != invalidIndex ? GetInfo(rType, arrayIndex) : nullptr;
 		}
 		HWND JGraphicResourceManager::GetWindowHandle()noexcept
 		{

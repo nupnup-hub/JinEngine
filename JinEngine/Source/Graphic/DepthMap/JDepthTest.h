@@ -1,5 +1,6 @@
 #pragma once
 #include"../JGraphicTaskInterface.h" 
+#include"../JGraphicSubClassInterface.h"
 #include"../../Core/Pointer/JOwnerPtr.h" 
 #include<vector>
 
@@ -11,10 +12,10 @@ namespace JinEngine
 	{
 		class JGraphicDevice;
 		class JGraphicResourceManager;
-		struct JDrawHelper;
+		class JDrawHelper;
 		struct JDrawCondition;
 
-		class JDepthTest : public JGraphicTaskInterface
+		class JDepthTest : public JGraphicTaskInterface, public JGraphicSubClassInterface
 		{
 		public:
 			enum class TEST_TYPE
@@ -25,7 +26,7 @@ namespace JinEngine
 				COUNT
 			}; 
 		public:
-			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
+			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM) = 0;
 			virtual void Clear() = 0;
 		public:
 			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;

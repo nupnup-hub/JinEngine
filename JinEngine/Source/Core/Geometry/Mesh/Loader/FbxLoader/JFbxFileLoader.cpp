@@ -6,7 +6,7 @@
 #include"../../../../Animation/Joint.h" 
 #include"../../../../../Object/Resource/Material/JMaterial.h"
 #include"../../../../../Core/Identity/JIdenCreator.h"
-
+#include"../../../../../Core/Log/JLogMacro.h"
 //#include"../../../../../Develop/Debug/JDevelopDebug.h"
 //#include"../../File/JFileIOHelper.h"
 using namespace DirectX;
@@ -47,7 +47,7 @@ namespace JinEngine
 				fbxManager->Destroy();
 			}
 		}
-		J_FBXRESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup, JFbxMaterialMap& materialMap)
+		J_FBX_RESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup, JFbxMaterialMap& materialMap)
 		{
 			if (fbxManager == nullptr)
 			{
@@ -61,7 +61,7 @@ namespace JinEngine
 			{
 				printf("Call to Fbx::Initialize() failed.\n");
 				printf("Error returned: %s\n\n", importer->GetStatus().GetErrorString());
-				return J_FBXRESULT::FAIL;
+				return J_FBX_RESULT_FAIL;
 			}
 			FbxScene* scene = FbxScene::Create(fbxManager, "JScene");
 
@@ -85,12 +85,12 @@ namespace JinEngine
 
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
-				J_FBXRESULT result;
+				J_FBX_RESULT result;
 				  
 				LoadMaterial(scene);
 				LoadNode(rootNode, meshGroup, materialMap);
 				if (meshGroup.GetMeshDataCount() > 0)
-					result = J_FBXRESULT::HAS_MESH;
+					result = J_FBX_RESULT_HAS_MESH;
 				 
 				scene->Destroy();
 				importer->Destroy();
@@ -101,10 +101,10 @@ namespace JinEngine
 			{
 				scene->Destroy();
 				importer->Destroy();
-				return J_FBXRESULT::FAIL;
+				return J_FBX_RESULT_FAIL;
 			}
 		}
-		J_FBXRESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, JFbxMaterialMap& materialMap)
+		J_FBX_RESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, JFbxMaterialMap& materialMap)
 		{
 			if (fbxManager == nullptr)
 			{ 
@@ -118,7 +118,7 @@ namespace JinEngine
 			{
 				printf("Call to Fbx::Initialize() failed.\n");
 				printf("Error returned: %s\n\n", importer->GetStatus().GetErrorString());
-				return J_FBXRESULT::FAIL;
+				return J_FBX_RESULT_FAIL;
 			}
 			FbxScene* scene = FbxScene::Create(fbxManager, "JScene");
 		 
@@ -140,7 +140,7 @@ namespace JinEngine
 				 
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
-				J_FBXRESULT result;
+				J_FBX_RESULT result;
 				 
 				//hasRootJoint = true;
 				LoadMaterial(scene);
@@ -157,7 +157,7 @@ namespace JinEngine
 				{
 					StuffSkletonData(fbxSkeleton, joint);
 					CheckModelAxis(meshGroup, joint);
-					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_SKELETON);
+					result = (J_FBX_RESULT)((int)result | (int)J_FBX_RESULT_HAS_SKELETON);
 				}
 				fbxSkeleton.joint.clear(); 
 				scene->Destroy();
@@ -169,10 +169,10 @@ namespace JinEngine
 			{
 				scene->Destroy();
 				importer->Destroy();
-				return J_FBXRESULT::FAIL;
+				return J_FBX_RESULT_FAIL;
 			}
 		}
-		J_FBXRESULT JFbxFileLoader::LoadFbxAnimationFile(const std::string& path, JFbxAnimationData& jfbxAniData)
+		J_FBX_RESULT JFbxFileLoader::LoadFbxAnimationFile(const std::string& path, JFbxAnimationData& jfbxAniData)
 		{
 			if (fbxManager == nullptr)
 			{
@@ -186,7 +186,7 @@ namespace JinEngine
 			{
 				printf("Call to Fbx::Initialize() failed.\n");
 				printf("Error returned: %s\n\n", importer->GetStatus().GetErrorString());
-				return J_FBXRESULT::FAIL;
+				return J_FBX_RESULT_FAIL;
 			}
 			FbxScene* scene = FbxScene::Create(fbxManager, "JScene");
 
@@ -200,7 +200,7 @@ namespace JinEngine
 
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
-				J_FBXRESULT result;
+				J_FBX_RESULT result;
 				 
 				//hasRootJoint = true;
 				 
@@ -215,7 +215,7 @@ namespace JinEngine
 
 				if (hasSkeleton)
 				{ 
-					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_SKELETON);
+					result = (J_FBX_RESULT)((int)result | (int)J_FBX_RESULT_HAS_SKELETON);
 					std::wstring totalName;
 					for (uint i = 0; i < fbxSkeleton.jointCount; ++i)
 						totalName += JCUtil::U8StrToWstr(fbxSkeleton.joint[i].name);
@@ -231,7 +231,7 @@ namespace JinEngine
 			{
 				scene->Destroy();
 				importer->Destroy();
-				return J_FBXRESULT::FAIL;
+				return J_FBX_RESULT_FAIL;
 			}
 		}
 		JFbxFileLoader::FbxFileTypeInfo JFbxFileLoader::GetFileTypeInfo(const std::string& path)
@@ -254,25 +254,23 @@ namespace JinEngine
 			if (importer->Import(scene))
 			{
 				FbxFileTypeInfo res;
-
-				FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>();
-				if (animStack)
-				{
-					res.animName = animStack->GetName();
-					res.typeInfo = J_FBXRESULT::HAS_ANIMATION;
-				}
-
 				res.meshCount = 0;
 				res.jointCount = 0;
 				res.materialCount = scene->GetMaterialCount();
 				GetMeshCount(scene->GetRootNode(), res.meshCount, res);
 				GetJointCount(scene->GetRootNode(), res.jointCount, res);
+				 
+				FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>();
+				if (animStack != nullptr && res.jointCount > 0)
+				{
+					res.animName = animStack->GetName();
+					res.typeInfo = J_FBX_RESULT_HAS_ANIMATION;
+				}
 
 				if (res.meshCount > 0)
-					res.typeInfo = (J_FBXRESULT)((int)res.typeInfo | (int)J_FBXRESULT::HAS_MESH);
+					res.typeInfo = Core::AddSQValueEnum(res.typeInfo, J_FBX_RESULT_HAS_MESH);
 				if (res.jointCount > 0)
-					res.typeInfo = (J_FBXRESULT)((int)res.typeInfo | (int)J_FBXRESULT::HAS_SKELETON);
-
+					res.typeInfo = Core::AddSQValueEnum(res.typeInfo, J_FBX_RESULT_HAS_SKELETON);  
 				scene->Destroy();
 				importer->Destroy();
 				return res;
@@ -369,7 +367,7 @@ namespace JinEngine
 			if (nodeAttribute && nodeAttribute->GetAttributeType() == FbxNodeAttribute::eSkeleton)
 			{
 				if (parentIndex == 0 && skeleton.joint.size() == 0)
-				{
+				{ 
 					JFbxJoint rootjoint;
 					rootjoint.parentIndex = -1;
 					rootjoint.name = node->GetParent()->GetName();
@@ -893,11 +891,11 @@ namespace JinEngine
 				}
 			}
 		}
-		J_FBXRESULT JFbxFileLoader::LoadAnimationClip(FbxScene* scene, FbxNode* node, JFbxSkeleton& skeleton, bool hasSkeleton, JFbxAnimationData& fbxAniData)
+		J_FBX_RESULT JFbxFileLoader::LoadAnimationClip(FbxScene* scene, FbxNode* node, JFbxSkeleton& skeleton, bool hasSkeleton, JFbxAnimationData& fbxAniData)
 		{
 			FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>();
 			if (!animStack)
-				return J_FBXRESULT::FAIL;
+				return J_FBX_RESULT_FAIL;
 
 			int animStackcnt = scene->GetSrcObjectCount< FbxAnimStack>();
 			FbxString animStackName = animStack->GetName();
@@ -940,7 +938,7 @@ namespace JinEngine
 					fbxAniData.animationSample[i].jointPose.emplace_back(mat, (float)currTime.GetSecondDouble());
 				}
 			}
-			return J_FBXRESULT::HAS_ANIMATION;
+			return J_FBX_RESULT_HAS_ANIMATION;
 		}
 		void JFbxFileLoader::LoadMaterial(FbxScene* scene)
 		{ 
@@ -963,14 +961,14 @@ namespace JinEngine
 				if (fbxMaterial->GetClassId().Is(FbxSurfaceLambert::ClassId))
 				{
 					FbxSurfaceLambert* lam = FbxCast< FbxSurfaceLambert>(fbxMaterial);
-					newMaterial.albedoColor = JVector4F(Private::Convert(lam->Diffuse), lam->DiffuseFactor); 
+					newMaterial.mParam.albedoColor = JVector4F(Private::Convert(lam->Diffuse), 1.0f);
 					//Develop::JDevelopDebug::PushLog("Lambert Material: " + name);
 				}
 				else if (fbxMaterial->GetClassId().Is(FbxSurfacePhong::ClassId))
 				{
-					FbxSurfacePhong* phong = FbxCast< FbxSurfacePhong>(fbxMaterial);
-					newMaterial.albedoColor = JVector4F(Private::Convert(phong->Diffuse), phong->DiffuseFactor);
-					newMaterial.roughness = std::clamp((float)(1.0f - phong->Shininess.Get()), 0.0f, 1.0f); 
+					FbxSurfacePhong* phong = FbxCast<FbxSurfacePhong>(fbxMaterial);
+					newMaterial.mParam.albedoColor = JVector4F(Private::Convert(phong->Diffuse), phong->DiffuseFactor);
+					newMaterial.mParam.roughness = std::clamp((float)(1.0f - phong->Shininess.Get()), 0.0f, 1.0f);
 					//Develop::JDevelopDebug::PushLog("Phong Material: " + name);
 				}
 				else
@@ -1050,6 +1048,12 @@ namespace JinEngine
 				newMaterial.metalicMapName = reflectionName;
 				newMaterial.roughnessMapName = shininessName;
 				newMaterial.ambientMapName = ambientName;
+				newMaterial.specularName = specularName; 
+
+				//shininess, specularFactor등 값들의 정확한 범위를 파악하고나서 대입 코드추가할것.
+				//newMaterial.roughness = 1.0f - shininess;
+				//newMaterial.specularFactor;
+
 				/*			
 				Develop::JDevelopDebug::PushLog("emissive: " + emissiveName);
 				Develop::JDevelopDebug::PushLog("emissiveFactor: " + emissiveFactorName);
@@ -1120,7 +1124,7 @@ namespace JinEngine
 			const uint textureCount = prop.GetSrcObjectCount(FbxCriteria::ObjectType(FbxTexture::ClassId));
 			if (textureCount == 0)
 				return false; 
-
+			 ;
 			FbxFileTexture* texture = FbxCast<FbxFileTexture>(prop.GetSrcObject(FbxCriteria::ObjectType(FbxTexture::ClassId), 0));
 			path = texture->GetFileName();
 			return true;
@@ -1212,7 +1216,7 @@ namespace JinEngine
 		{
 			if (!inNode)
 			{
-				MessageBox(0, L"Null for mesh geometry", 0, 0);
+				J_LOG_PRINT_OUT("", "Invalid geometry"); 
 				throw std::exception("Null for mesh geometry");
 			}
 

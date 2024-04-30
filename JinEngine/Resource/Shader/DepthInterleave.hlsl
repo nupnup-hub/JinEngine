@@ -20,8 +20,8 @@ PixelOut DepthInterleave(VertexOut pin)
 {
 	PixelOut pout;
 
-	pin.posH.xy = floor(pin.posH.xy) * 4.0f + (posOffset + 0.5f);
-	pin.texC = pin.posH.xy * camInvRtSize;
+	pin.posH.xy = floor(pin.posH.xy) * 4.0f + (cbSlice.posOffset + 0.5f);
+	pin.texC = pin.posH.xy * cbPass.camInvRtSize;
 
     // Gather sample ordering: (-,+),(+,+),(+,-),(-,-),
 	float4 s0 = depthMap.GatherRed(samPointClamp, pin.texC);

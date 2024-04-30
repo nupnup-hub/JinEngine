@@ -24,8 +24,7 @@
 namespace JinEngine::Editor
 {
 	namespace Private
-	{
-		
+	{	
 		class JGuiImpl final : public Graphic::JGuiBackendInterface
 		{
 		private:
@@ -53,6 +52,12 @@ namespace JinEngine::Editor
 			void Clear()
 			{
 				adaptee->Clear();
+			}
+		public:
+			void ReBuildGraphicBackend(std::unique_ptr<Graphic::JGuiInitData>&& initData)
+			{
+				assert(adaptee != nullptr);
+				adaptee->ReBuildGraphicBackend(std::move(initData));
 			}
 		public:
 			Graphic::GuiIdentification GetGuiIdentification()const noexcept final
@@ -656,7 +661,8 @@ namespace JinEngine::Editor
 	}
 	bool JGui::IsMouseInLastItem()noexcept
 	{
-		return IsMouseInRect(GetLastItemRectPos() - GetWindowScrollPos(), GetLastItemRectSize());
+		return IsMouseInRect(GetLastItemRectPos(), GetLastItemRectSize());
+		//return IsMouseInRect(GetLastItemRectPos() - GetWindowScrollPos(), GetLastItemRectSize());
 	}
 	bool JGui::IsMouseInRectMM(const JVector2<float>& min, const JVector2<float>& max)noexcept
 	{
@@ -690,7 +696,7 @@ namespace JinEngine::Editor
 	{
 		return Private::Adaptee()->BeginDragDropSource(flag);
 	}
-	bool JGui::SetDragDropPayload(const std::string& typeName, Core::JTypeInstanceSearchHint* draggingHint, J_GUI_CONDIITON cond)
+	bool JGui::SetDragDropPayload(const std::string& typeName, JDragDropData* draggingHint, J_GUI_CONDIITON cond)
 	{
 		return Private::Adaptee()->SetDragDropPayload(typeName, draggingHint, cond);
 	}
@@ -702,13 +708,17 @@ namespace JinEngine::Editor
 	{
 		return Private::Adaptee()->BeginDragDropTarget();
 	}
-	Core::JTypeInstanceSearchHint* JGui::TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag)
+	JDragDropData* JGui::TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag)
 	{
 		return Private::Adaptee()->TryGetTypeHintDragDropPayload(typeName, flag);
 	}
 	void JGui::EndDragDropTarget()
 	{
 		Private::Adaptee()->EndDragDropTarget();
+	}
+	bool JGui::IsDragDropActivated()
+	{
+		return Private::Adaptee()->IsDragDropActivated();
 	}
 #pragma endregion
 #pragma region JGui
@@ -822,12 +832,12 @@ namespace JinEngine::Editor
 	{
 		Private::Adaptee()->TreePop();
 	}
-	bool JGui::Selectable(const std::string& name, bool* pSelected, J_GUI_SELECTABLE_FLAG_ flags, const JVector2<float>& sizeArg)
+	bool JGui::Selectable(const std::string& name, bool* pSelected, J_GUI_SELECTABLE_FLAG_ flags, const JVector2F sizeArg)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SELECTALBE);
 		return Private::Adaptee()->Selectable(name, pSelected, (J_GUI_SELECTABLE_FLAG)flags, sizeArg);
 	}
-	bool JGui::Selectable(const std::string& name, bool selected, J_GUI_SELECTABLE_FLAG_ flags, const JVector2<float>& sizeArg)
+	bool JGui::Selectable(const std::string& name, bool selected, J_GUI_SELECTABLE_FLAG_ flags, const JVector2F sizeArg)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SELECTALBE);
 		return Private::Adaptee()->Selectable(name, selected, (J_GUI_SELECTABLE_FLAG)flags, sizeArg);
@@ -858,11 +868,39 @@ namespace JinEngine::Editor
 		SetNextItemWidth(GetAlphabetSize().x * (std::numeric_limits<float>::digits * 0.375f * inputWidthRate));
 		return Private::Adaptee()->InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step);
 	}
-	bool JGui::InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG_ flags, int step, uint inputWidthRate)
+	bool JGui::InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG_ flags, uint step, uint inputWidthRate)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
 		SetNextItemWidth(GetAlphabetSize().x * (std::numeric_limits<float>::digits * 0.375f * inputWidthRate));
 		return Private::Adaptee()->InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step);
+	}
+	bool JGui::InputIntClamp(const std::string& name, int* value, const int minV, const int maxV, J_GUI_INPUT_TEXT_FLAG_ flags, int step, uint inputWidthRate)
+	{
+		bool isInput = InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step, inputWidthRate);
+		if (isInput)
+			*value = std::clamp(*value, minV, maxV);
+		return isInput;
+	}
+	bool JGui::InputIntClamp(const std::string& name, uint* value, const uint minV, const uint maxV, J_GUI_INPUT_TEXT_FLAG_ flags, uint step, uint inputWidthRate)
+	{
+		bool isInput = InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step, inputWidthRate);
+		if (isInput)
+			*value = std::clamp(*value, minV, maxV);
+		return isInput;
+	}
+	bool JGui::InputIntClamp(const std::string& name, Core::JRestrictedRangeVar<int>& value, J_GUI_INPUT_TEXT_FLAG_ flags , int step, uint inputWidthRate)
+	{
+		bool isInput = InputInt(name, value.GetPtr(), (J_GUI_INPUT_TEXT_FLAG)flags, step, inputWidthRate);
+		if (isInput)
+			value.Set(value.Get());
+		return isInput; 
+	}
+	bool JGui::InputIntClamp(const std::string& name, Core::JRestrictedRangeVar<uint>& value, J_GUI_INPUT_TEXT_FLAG_ flags, uint step, uint inputWidthRate)
+	{
+		bool isInput = InputInt(name, value.GetPtr(), (J_GUI_INPUT_TEXT_FLAG)flags, step, inputWidthRate);
+		if (isInput)
+			value.Set(value.Get());
+		return isInput;
 	}
 	bool JGui::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step, uint inputWidthRate)
 	{
@@ -872,10 +910,17 @@ namespace JinEngine::Editor
 	}
 	bool JGui::InputFloatClamp(const std::string& name, float* value, const float minV, const float maxV, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step, uint inputWidthRate)
 	{  
-		bool isInput = InputFloat(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, formatDigit, step);
+		bool isInput = InputFloat(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, formatDigit, step, inputWidthRate);
 		if (isInput)
 			*value = std::clamp(*value, minV, maxV);
 		return isInput;
+	}
+	bool JGui::InputFloatClamp(const std::string& name, Core::JRestrictedRangeVar<float>& value, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step, uint inputWidthRate)
+	{
+		bool isInput = InputFloat(name, value.GetPtr(), (J_GUI_INPUT_TEXT_FLAG)flags, formatDigit, step, inputWidthRate);
+		if (isInput)
+			value.Set(value.Get());
+		return isInput;	 
 	}
 	bool JGui::SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags)
 	{
@@ -996,6 +1041,15 @@ namespace JinEngine::Editor
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::COMBO);
 		return Private::Adaptee()->BeginCombo(name, preview, (J_GUI_COMBO_FLAG)flags);
 	}
+	bool JGui::BeginComboEx(const std::string& name,
+		const std::string& preview,
+		J_GUI_COMBO_FLAG_ flags,
+		J_GUI_CARDINAL_DIR initDir,
+		J_GUI_CARDINAL_DIR activateDir)
+	{
+		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::COMBO);
+		return Private::Adaptee()->BeginComboEx(name, preview, (J_GUI_COMBO_FLAG)flags, initDir, activateDir);
+	}
 	void JGui::EndCombo()
 	{
 		Private::Adaptee()->EndCombo();
@@ -1068,7 +1122,7 @@ namespace JinEngine::Editor
 				info.dataIndex = i;
 				const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, i);
 				for (uint j = 0; j < viewCount; ++j)
-				{
+				{ 
 					info.bIndex = j;
 					Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::IMAGE);
 					Private::Adaptee()->Image(info, size, uv0, uv1, tintCol, borderCol);
@@ -1616,7 +1670,10 @@ namespace JinEngine::Editor
 		Private::Adaptee()->SetNextWindowPos(pos, flag);
 	}
 	void JGui::SetNextWindowSize(const JVector2<float>& size, J_GUI_CONDIITON flag)noexcept
-	{
+	{ 
+		if (size <= JVector2F::Zero())
+			return;
+
 		Private::Adaptee()->SetNextWindowSize(size, flag);
 	}
 	void JGui::SetNextWindowFocus()noexcept
@@ -1730,13 +1787,10 @@ namespace JinEngine::Editor
 	{
 		Private::Adaptee()->PopItemWidth();
 	}
-	float JGui::GetSliderRightAlignPosX(bool hasScrollbar)noexcept
-	{
-		const float posX = GetWindowSize().x - GetSliderWidth() - JGui::GetFramePadding().x - JGui::GetItemSpacing().x;
-		if (hasScrollbar)
-			return posX - JGui::GetScrollBarSize();
-		else
-			return posX;
+	float JGui::GetSliderRightAlignPosX(float width , bool hasScrollbar)noexcept
+	{ 
+		const float posX = GetWindowSize().x - width - GetFramePadding().x - GetItemSpacing().x - JGui::GetScrollBarSize();	 
+		return posX < 0 ? GetWindowSize().x : (hasScrollbar ? posX - JGui::GetScrollBarSize() : posX);
 	}
 	float JGui::GetSliderWidth()noexcept
 	{
@@ -1758,8 +1812,9 @@ namespace JinEngine::Editor
 	{
 		return Private::Impl()->option.enableSelector;
 	}
-	void JGui::ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<std::string>& strVec)
+	bool JGui::ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<std::string>& strVec)
 	{
+		bool isOpen = false;
 		if (BeginCombo(uniqueLabel, strVec[selectedIndex].c_str(), J_GUI_COMBO_FLAG_HEIGHT_LARGE))
 		{
 			const uint count = (uint)strVec.size();
@@ -1774,7 +1829,9 @@ namespace JinEngine::Editor
 					SetLastItemDefaultFocus();
 			}
 			EndCombo();
+			isOpen = true;
 		}
+		return isOpen;
 	}
 
 #pragma endregion

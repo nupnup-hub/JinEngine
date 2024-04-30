@@ -108,15 +108,22 @@ namespace JinEngine
 			DirectX::BoundingSphere GetBSphere()const noexcept;
 			virtual J_MESHGEOMETRY_TYPE GetMeshType()const noexcept = 0;
 			virtual uint GetVertexCount()const noexcept = 0;
-			virtual JVector3<float> GetPosition(uint i)const noexcept = 0;
+			virtual JVector3<float> GetPosition(uint i)const noexcept = 0; 
 		public:
 			void SetName(const std::wstring& newName)noexcept;
 			void SetMaterial(JUserPtr<JIdentifier> material)noexcept;
 			virtual void SetVertexPositionScale(const float rate)noexcept = 0;
 		public:
 			void AddIndex(const uint index)noexcept;
-		protected:
-			virtual void AddPositionOffset(const JVector3<float>& offsetPos)noexcept;
+			void AddPosition(const JVector3<float>& offset)noexcept;
+			/**
+			* @brief position을 뒤집는 과정에서 positio을 제외한 다른 데이터들에 유효성이 없어지므로 가급적 사용하지말것
+			*/ 		
+			void ReversePositionY()noexcept; 		
+		private:
+			void ReversePosition(const JVector3<float>& offset)noexcept;
+			virtual void _AddPosition(const uint index, const JVector3<float>& offset)noexcept = 0;
+			virtual void _MulPosition(const uint index, const JVector3<float>& offset)noexcept = 0;
 		public:
 			bool HasUV()const noexcept;
 			bool HasNormal()const noexcept;
@@ -125,7 +132,7 @@ namespace JinEngine
 		public:
 			void CreateBoundingObject()noexcept;
 		protected:
-			void Merge(const JMeshData& mesh);
+			void Merge(const JMeshData& mesh); 
 		};
 		struct JStaticMeshData : public JMeshData
 		{
@@ -147,14 +154,16 @@ namespace JinEngine
 		public:
 			J_MESHGEOMETRY_TYPE GetMeshType()const noexcept final;
 			uint GetVertexCount()const noexcept;
-			JVector3<float> GetPosition(const uint index)const noexcept;
-			JStaticMeshVertex GetVertex(const uint index)const noexcept;
+			JVector3<float> GetPosition(const uint index)const noexcept final;
+			JStaticMeshVertex GetVertex(const uint index)const noexcept; 
 		public:
 			void SetVertex(const uint index, const JStaticMeshVertex& vertex)const noexcept;
 			void SetVertexPositionScale(const float rate)noexcept final;
 		public:
 			void AddVertex(const JStaticMeshVertex& vertex)noexcept;
-			void AddPositionOffset(const JVector3<float>& offsetPos)noexcept final;
+		private:
+			void _AddPosition(const uint index, const JVector3<float>& offset)noexcept final;
+			void _MulPosition(const uint index, const JVector3<float>& offset)noexcept final;
 		public:
 			void Merge(const JStaticMeshData& mesh)noexcept;
 		};
@@ -174,12 +183,13 @@ namespace JinEngine
 			J_MESHGEOMETRY_TYPE GetMeshType()const noexcept final;
 			uint GetVertexCount()const noexcept final;
 			JVector3<float> GetPosition(const uint index)const noexcept final;
-			JSkinnedMeshVertex GetVertex(const uint index)const noexcept;
+			JSkinnedMeshVertex GetVertex(const uint index)const noexcept; 
 		public:
 			void SetVertex(const uint index, const JSkinnedMeshVertex& vertex)const noexcept;
 			void SetVertexPositionScale(const float rate)noexcept final;
-		public:
-			void AddPositionOffset(const JVector3<float>& offsetPos)noexcept final;
+		private:
+			void _AddPosition(const uint index, const JVector3<float>& offset)noexcept final;
+			void _MulPosition(const uint index, const JVector3<float>& offset)noexcept final;
 		}; 
 		struct JLowMeshData : public JMeshData
 		{
@@ -207,12 +217,13 @@ namespace JinEngine
 			J_MESHGEOMETRY_TYPE GetMeshType()const noexcept final;
 			uint GetVertexCount()const noexcept final;
 			JVector3<float> GetPosition(const uint index)const noexcept final;
-			J1BytePosVertex GetVertex(const uint index)const noexcept;
+			J1BytePosVertex GetVertex(const uint index)const noexcept; 
 		public:
 			void SetVertex(const uint index, const J1BytePosVertex& vertex)const noexcept;
 			void SetVertexPositionScale(const float rate)noexcept final;
-		public: 
-			void AddPositionOffset(const JVector3<float>& offsetPos)noexcept final; 
+		private: 
+			void _AddPosition(const uint index, const JVector3<float>& offset)noexcept final;
+			void _MulPosition(const uint index, const JVector3<float>& offset)noexcept final;
 		public:
 			static std::vector<J1BytePosVertex> ConvertVertex(const std::vector<JStaticMeshVertex>& staticVertex);
 		};

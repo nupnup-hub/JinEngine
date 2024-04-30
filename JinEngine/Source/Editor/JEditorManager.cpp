@@ -149,14 +149,18 @@ namespace JinEngine
 		} 
 		void JEditorManager::Update()
 		{ 
+			if (!JWindow::IsActivated())
+				return;
+
 			if (JGuiPrivate::StartGuiUpdate())
-			{ 
+			{
+				JEditorTransition::Instance().Update();
 				if (JGui::IsKeyPressed(Core::J_KEYCODE::CONTROL))
 				{
 					if (JGui::IsKeyDown(Core::J_KEYCODE::Z))
-						JEditorTransition::Instance().Undo();
+						JEditorTransition::Instance().UndoPerFrame();
 					else if (JGui::IsKeyDown(Core::J_KEYCODE::Y))
-						JEditorTransition::Instance().Redo();
+						JEditorTransition::Instance().RedoPerFrame();
 				}
 				JEditorEvent::ExecuteEvent(); 
 				for (const auto& data : opendEditorPage)

@@ -16,7 +16,7 @@ namespace JinEngine
 		class JEditorStringMap;
 		class JEditorRenameHelper;
 		class JEditorPopupMenu;
-		class JEditorSearchBarHelper;
+		class JEditorSearchBar;
 		class JEditorTreeStructure;
 
 		class JObjectExplorerCreationFunctor;
@@ -27,12 +27,14 @@ namespace JinEngine
 			JUserPtr<JGameObject> root;   
 			std::unique_ptr<JEditorStringMap>editorString;
 			std::unique_ptr<JEditorRenameHelper>renameHelper;
-			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
+			std::unique_ptr<JEditorSearchBar> searchBarHelper;
 			std::unique_ptr<JEditorPopupMenu>explorerPopup; 
 			std::unique_ptr<JEditorTreeStructure> treeStrcture;
 		private:
 			std::unique_ptr<JObjectExplorerCreationFunctor> creation;
 			std::unique_ptr<JObjectExplorerSettingFunctor> setting;
+		private:
+			bool isFocusedThisFrame = false;
 		public:
 			JObjectExplorer(const std::string& name, 
 				std::unique_ptr<JEditorAttribute> attribute, 

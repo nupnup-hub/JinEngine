@@ -120,7 +120,7 @@ namespace JinEngine::Editor
 		const BoundingFrustum localFrustum(p);
  
 		//to world frustum
-		JMatrix4x4 worldM = cam->GetTransform()->GetWorldMatrix4x4();
+		JMatrix4x4 worldM = cam->GetTransform()->GetWorldMatrix();
 		BoundingFrustum worldFrustum;
 		localFrustum.Transform(worldFrustum, worldM.LoadXM());
 

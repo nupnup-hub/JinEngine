@@ -1,6 +1,7 @@
 #pragma once 
 #include"JCullingType.h"
 #include"JCullingInfo.h"
+#include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"
 #include"../../Core/Reflection/JReflection.h" 
 #include<vector>
@@ -21,14 +22,14 @@ namespace JinEngine
 			bool useGpu = true;
 		};
 		//Manage culling resource(buffer)
-		class JCullingManager : public JGraphicDeviceUser
+		class JCullingManager : public JGraphicDeviceUser, public JGraphicSubClassInterface
 		{
 		private:
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCullingManager)
 		private: 
 			std::vector<JOwnerPtr<JCullingInfo>> cullingInfo[(uint)J_CULLING_TYPE::COUNT];
 		public:
-			~JCullingManager() = default;
+			~JCullingManager();
 		public:
 			uint GetCullingInfoCount(const J_CULLING_TYPE type)const noexcept;
 			JUserPtr<JCullingInfo> GetCullingInfo(const J_CULLING_TYPE type, const uint index)const noexcept;   
@@ -56,6 +57,8 @@ namespace JinEngine
 			virtual bool TryStreamOutCullingBuffer(JCullingInfo* info, const std::string& logName) = 0;
 		public:
 			virtual void Clear();
+		private:
+			void ClearResource();
 		public:
 			static void RegisterTypeData();
 		};

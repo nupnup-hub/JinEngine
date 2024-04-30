@@ -15,7 +15,7 @@ namespace JinEngine
 	{
 		class JEditorBinaryTreeView;
 	} 
-	class JBvh : public JAccelerator
+	class JBvh : public JCpuAccelerator
 	{
 	private:
 		//root node allways existing until call unbuld or clear

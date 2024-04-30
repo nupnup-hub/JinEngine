@@ -18,17 +18,17 @@ namespace JinEngine
 }
 #define ThrowIfFailedW(b)                                                        \
 {                                                                                \
-    BOOL b_ = (b);                                                               \
+    bool b_ = (b);                                                               \
     if(!b_) {throw Core::JWindowException(__LINE__, __FILE__); }                       \
 }
 #define ThrowIfFailedNM(b, msg)                                                  \
 {                                                                                \
-    BOOL b_ = (b);                                                               \
+    bool b_ = (b);                                                               \
     if(!b_) {throw Core::JNormalException(__LINE__, __FILE__, msg); }                   \
 }
 #define ThrowIfFailedN(b)                                                        \
 {                                                                                \
-    BOOL b_ = (b);                                                               \
+    bool b_ = (b);                                                               \
     if(!b_) {throw Core::JNormalException(__LINE__, __FILE__); }                       \
 }
 #define ThrowIfFailedG(hr)                                                       \
@@ -38,7 +38,7 @@ namespace JinEngine
 }
 #define ThrowIfFailedC(err)                                                       \
 {                                                                                 \
-    BOOL b_ = (err);                                                              \
+    bool b_ = (err);                                                              \
     if(b_) {throw Core::JCudaException(__LINE__, __FILE__, err); }              \
 }
 #endif
@@ -53,17 +53,17 @@ namespace JinEngine
 
 #define ReturnIfFailedW(b, ret)                                                  \
 {                                                                                \
-    BOOL b_ = (b);                                                               \
+    bool b_ = (b);                                                               \
     if(!b_) {WindowException(__LINE__, __FILE__); return ret;}                        \
 }
 #define ReturnIfFailedNM(b, msg, ret)                                            \
 {                                                                                \
-    BOOL b_ = (b);                                                               \
+    bool b_ = (b);                                                               \
     if(!b_) {throw JNormalException(__LINE__, __FILE__, msg); return ret;}        \
 }
 #define ReturnIfFailedN(b, ret)                                                  \
 {                                                                                \
-    BOOL b_ = (b);                                                               \
+    bool b_ = (b);                                                               \
     if(!b_) {JNormalException(__LINE__, __FILE__); return ret;}                   \
 }
 #define ReturnIfFailedG(hr, ret)                                                 \

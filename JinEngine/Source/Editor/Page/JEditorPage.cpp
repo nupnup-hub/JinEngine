@@ -85,6 +85,7 @@ namespace JinEngine
 				else
 					*selectedWindow->GetOpenPtr() = true;
 			};
+ 
 			openEditorWindowFunctor = std::make_unique<OpenEditorWindowF::Functor>(openEditorWindowLam); 
 			closeEditorWindowFunctor = std::make_unique<CloseEditorWindowF::Functor>(closeEditorWindowLam); 
 		}
@@ -146,6 +147,24 @@ namespace JinEngine
 			JGuiDockNodeInfo info;
 			JGui::GetDockNodeInfo(GetDockNodeName(), info);
 			return info.dockID;
+		}
+		JEditorPage::OpenEditorWindowF::Functor* JEditorPage::GetOpenEditorWindowFunctorPtr()noexcept
+		{
+			return openEditorWindowFunctor.get();
+		}
+		JEditorPage::CloseEditorWindowF::Functor* JEditorPage::GetCloseEditorWindowFunctorPtr()noexcept
+		{
+			return closeEditorWindowFunctor.get();
+		}
+		std::unique_ptr<JEditorPage::RequestOpenEditorWindowF::Functor> JEditorPage::GetRequestOpenEditorWindowFunctorPtr()noexcept
+		{
+			auto requestOpenEditorWindowLam = [](JEditorPage& page, const std::string windowName){page.RequestOpenWindow(windowName);};
+			return std::make_unique<JEditorPage::RequestOpenEditorWindowF::Functor>(requestOpenEditorWindowLam);
+		}
+		std::unique_ptr<JEditorPage::RequestCloseEditorWindowF::Functor> JEditorPage::GetRequestCloseEditorWindowFunctorPtr()noexcept
+		{
+			auto requestCloseEditorWindowLam = [](JEditorPage& page, const std::string windowName){page.RequestCloseWindow(windowName);};
+			return std::make_unique<JEditorPage::RequestCloseEditorWindowF::Functor>(requestCloseEditorWindowLam);
 		}
 		void JEditorPage::SetPageFlag(const J_EDITOR_PAGE_FLAG flag)noexcept
 		{
@@ -592,14 +611,6 @@ namespace JinEngine
 				opendPopupWindow = nullptr;
 			}
 		}
-		JEditorPage::OpenEditorWindowF::Functor* JEditorPage::GetOpenEditorWindowFunctorPtr()noexcept
-		{
-			return openEditorWindowFunctor.get();
-		} 
-		JEditorPage::CloseEditorWindowF::Functor* JEditorPage::GetCloseEditorWindowFunctorPtr()noexcept
-		{
-			return closeEditorWindowFunctor.get();
-		} 
 		void JEditorPage::PrintOpenWindowState()
 		{
 			const uint openWindowCount = (uint)opendWindow.size();
@@ -624,6 +635,36 @@ namespace JinEngine
 					JGui::Text("Focus Off");
 			}
 			JGui::EndWindow();
+		}
+		void JEditorPage::RequestOpenWindow(std::string windowName)
+		{
+			JEditorWindow* selectedWindow = FindEditorWindow(windowName);
+			if (selectedWindow ==nullptr || selectedWindow->IsOpen())
+				return;
+
+			std::string taskName = "Open window";
+			std::string taskDesc = "window name: " + windowName;
+ 
+			auto doBinder = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, std::string(windowName));
+			auto undoBinder = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, std::string(windowName));
+			auto task = std::make_unique<Core::JTransitionSetValueTask>(taskName, taskDesc, std::move(doBinder), std::move(undoBinder));
+  
+			JEditorTransition::Instance().Execute(std::move(task));
+		}
+		void JEditorPage::RequestCloseWindow(std::string windowName)
+		{
+			JEditorWindow* selectedWindow = FindEditorWindow(windowName);
+			if (selectedWindow == nullptr || !selectedWindow->IsOpen())
+				return;
+
+			std::string taskName = "Close window";
+			std::string taskDesc = "window name: " + windowName;
+
+			auto doBinder = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, std::string(windowName));
+			auto undoBinder = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, std::string(windowName));
+			auto task = std::make_unique<Core::JTransitionSetValueTask>(taskName, taskDesc, std::move(doBinder), std::move(undoBinder));
+
+			JEditorTransition::Instance().Execute(std::move(task));
 		}
 		void JEditorPage::DoSetOpen()noexcept
 		{

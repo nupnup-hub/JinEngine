@@ -1,5 +1,6 @@
 #pragma once 
 #include"JOccCulling.h"
+#include"../../JGraphicSubClassInterface.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
 #include"../../../Core/Math/JVector.h"
 
@@ -12,10 +13,10 @@ namespace JinEngine
 		/**
 		* Hd IsOccluder trigger에 관계없이 Object에 Occlude 여부를 검사한다
 		*/
-		class JHardwareOccCulling : public JOccCulling
+		class JHardwareOccCulling : public JOccCulling, public JGraphicSubClassInterface
 		{
 		public:
-			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
+			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM) = 0;
 			virtual void Clear() = 0;
 		public:
 			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;

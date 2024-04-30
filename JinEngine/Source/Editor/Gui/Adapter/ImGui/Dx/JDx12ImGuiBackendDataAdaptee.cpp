@@ -5,6 +5,7 @@
 #include"../../../../../Graphic/GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../../../../Graphic/FrameResource/Dx/JDx12FrameResource.h" 
 #include"../../../../../Graphic/JGraphicConstants.h" 
+#include"../../../../../Graphic/GraphicResource/Dx/JDx12GraphicResourceConstants.h" 
 #include"d3dx12.h"
 
 namespace JinEngine::Editor
@@ -15,6 +16,7 @@ namespace JinEngine::Editor
 	} 
 	std::unique_ptr<Graphic::JGuiInitData> JDx12ImGuiBackendDataAdaptee::CreateInitData(_In_ Graphic::JGraphicDevice* device,
 		_In_ Graphic::JGraphicResourceManager* gm,
+		_In_ const Graphic::JGraphicOption& option,
 		_In_ const Graphic::GuiIdentification guiIden)
 	{
 		if (!IsSameDevice(device) || !IsSameDevice(gm))
@@ -26,7 +28,7 @@ namespace JinEngine::Editor
 		return std::make_unique<JDx12ImGuiInitData>(dx12Device->GetSwapChainOutputWindowHandle(),
 			dx12Device->GetDevice(),
 			dx12Gm->GetDescriptorHeap(Graphic::J_GRAPHIC_BIND_TYPE::SRV),
-			dx12Gm->GetBackBufferFormat(),
+			Graphic::Constants::GetBackBufferFormat(option.postProcess.useHdr),
 			Graphic::Constants::gNumFrameResources);
 	}
 	std::unique_ptr<Graphic::JGuiDrawData> JDx12ImGuiBackendDataAdaptee::CreateDrawData(_In_ Graphic::JGraphicDevice* device,

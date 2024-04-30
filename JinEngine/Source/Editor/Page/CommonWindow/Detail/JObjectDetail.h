@@ -15,7 +15,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JReflectionGuiWidgetHelper;
-		class JEditorSearchBarHelper;
+		class JEditorSearchBar;
 
 		class JObjectDetail final : public JEditorWindow, public JObjectModifyInterface
 		{
@@ -23,7 +23,7 @@ namespace JinEngine
 			JUserPtr<Core::JIdentifier> selected;
 		private:
 			std::unique_ptr<JReflectionGuiWidgetHelper> guiHelper;
-			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper; 
+			std::unique_ptr<JEditorSearchBar> searchBarHelper; 
 		public:
 			JObjectDetail(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,

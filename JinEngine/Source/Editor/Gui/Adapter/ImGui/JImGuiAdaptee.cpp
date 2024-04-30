@@ -88,12 +88,12 @@ namespace JinEngine::Editor
 			colors[ImGuiCol_TitleBgCollapsed] = JVector4F(JVector3F(Graphic::Constants::BackBufferClearColor().xyz) * 0.325f, 1.0f);	 //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);							   //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);
 			colors[ImGuiCol_MenuBarBg] = JVector4F(0.15f, 0.15f, 0.17f, 1.00f);
 			colors[ImGuiCol_ScrollbarBg] = JVector4F(0.05f, 0.05f, 0.05f, 0.54f);
-			colors[ImGuiCol_ScrollbarGrab] = JVector4F(0.34f, 0.34f, 0.34f, 0.74f);
-			colors[ImGuiCol_ScrollbarGrabHovered] = JVector4F(0.40f, 0.40f, 0.40f, 0.74f);
-			colors[ImGuiCol_ScrollbarGrabActive] = JVector4F(0.56f, 0.56f, 0.56f, 0.74f);
+			colors[ImGuiCol_ScrollbarGrab] = colors[ImGuiCol_FrameBgHovered] + JVector4F(0.05f, 0.05f, 0.05f, 0.05f); //JVector4F(0.34f, 0.34f, 0.34f, 0.74f);
+			colors[ImGuiCol_ScrollbarGrabHovered] = colors[ImGuiCol_ScrollbarGrab] + JVector4F(0.05f, 0.05f, 0.05f, 0.05f); //JVector4F(0.60f, 0.60f, 0.60f, 1.0f);
+			colors[ImGuiCol_ScrollbarGrabActive] = JVector4F(0.86f, 0.86f, 0.86f, 1.0f);
 			colors[ImGuiCol_CheckMark] = JVector4F(0.33f, 0.67f, 0.86f, 1.00f);
-			colors[ImGuiCol_SliderGrab] = JVector4F(0.34f, 0.34f, 0.34f, 0.74f);
-			colors[ImGuiCol_SliderGrabActive] = JVector4F(0.56f, 0.56f, 0.56f, 0.74f);
+			colors[ImGuiCol_SliderGrab] = colors[ImGuiCol_FrameBgHovered] + JVector4F(0.05f, 0.05f, 0.05f, 0.05f);//JVector4F(0.34f, 0.34f, 0.34f, 0.74f);
+			colors[ImGuiCol_SliderGrabActive] = JVector4F(0.86f, 0.86f, 0.86f, 1.0f);
 			colors[ImGuiCol_Button] = JVector4F(0.05f, 0.05f, 0.05f, 0.54f);
 			colors[ImGuiCol_ButtonHovered] = JVector4F(0.19f, 0.19f, 0.19f, 0.74f);
 			colors[ImGuiCol_ButtonActive] = JVector4F(0.20f, 0.22f, 0.23f, 1.00f);
@@ -280,6 +280,11 @@ namespace JinEngine::Editor
 				imguiFlag |= ImGuiSelectableFlags_AllowDoubleClick;
 			if (Core::HasSQValueEnum(flag, J_GUI_SELECTABLE_FLAG_SPAN_ALL_COLUMNS))
 				imguiFlag |= ImGuiSelectableFlags_SpanAllColumns;
+			if (Core::HasSQValueEnum(flag, J_GUI_SELECTABLE_DONT_CLOSE_POPUP))
+				imguiFlag |= ImGuiSelectableFlags_DontClosePopups;
+			if (Core::HasSQValueEnum(flag, J_GUI_SELECTABLE_SELECT_ON_CLICK))
+				imguiFlag |= ImGuiSelectableFlags_SelectOnClick;
+			 
 			return (ImGuiSelectableFlags_)imguiFlag;
 		}
 		static ImGuiInputTextFlags_ ConvertInputTextFlag(const J_GUI_INPUT_TEXT_FLAG flag)noexcept
@@ -636,13 +641,13 @@ namespace JinEngine::Editor
 
 		SetGuiStyle(data.get());
 		LoadFontFile(data.get());
-		IntiailizeBackend(imguiInitData);
+		IntiailizeBackend(imguiInitData); 
 	}
 	void JImGuiAdaptee::Clear()
 	{
 		ClearBackend();
 		ImGui::DestroyContext();
-		data.reset();
+		data = nullptr;
 	}
 	void JImGuiAdaptee::LoadGuiData()
 	{ 
@@ -993,41 +998,43 @@ namespace JinEngine::Editor
 	{
 		return ImGui::BeginDragDropSource(ConvertDragFlag((J_GUI_DRAG_DROP_FLAG)flag));
 	}
-	bool JImGuiAdaptee::SetDragDropPayload(const std::string& typeName, Core::JTypeInstanceSearchHint* draggingHint, J_GUI_CONDIITON cond)
+	bool JImGuiAdaptee::SetDragDropPayload(const std::string& typeName, JDragDropData* draggingHint, J_GUI_CONDIITON cond)
 	{
-		return ImGui::SetDragDropPayload(typeName.c_str(), draggingHint, sizeof(Core::JTypeInstanceSearchHint));
+		return ImGui::SetDragDropPayload(typeName.c_str(), draggingHint, sizeof(JDragDropData));
 	}
 	void JImGuiAdaptee::EndDragDropSource()
-	{
+	{ 
 		ImGui::EndDragDropSource();
 	}
 	bool JImGuiAdaptee::BeginDragDropTarget()
 	{
 		return ImGui::BeginDragDropTarget();
 	}
-	Core::JTypeInstanceSearchHint* JImGuiAdaptee::TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag)
+	JDragDropData* JImGuiAdaptee::TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag)
 	{
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(typeName.c_str(), ImGuiDragDropFlags_None);
 		if (payload == nullptr)
 			return nullptr;
 
-		if (payload->DataSize != sizeof(Core::JTypeInstanceSearchHint))
+		if (payload->DataSize != sizeof(JDragDropData))
 			return nullptr;
 
-		return static_cast<Core::JTypeInstanceSearchHint*>(payload->Data);
+		return static_cast<JDragDropData*>(payload->Data);
 	}
 	void JImGuiAdaptee::EndDragDropTarget()
 	{
-
+		ImGui::EndDragDropTarget();
+	}
+	bool JImGuiAdaptee::IsDragDropActivated() const noexcept
+	{
+		ImGuiContext& g = *GImGui;
+		return g.DragDropActive;
 	}
 #pragma endregion
 #pragma region Widget
 	bool JImGuiAdaptee::BeginWindow(const std::string& name, bool* pOpen, J_GUI_WINDOW_FLAG flags)
 	{ 
-		if (pOpen)
-			return ImGui::Begin(name.c_str(), pOpen, ConvertWindowFlag(flags));
-		else
-			return ImGui::Begin(name.c_str(), 0, ConvertWindowFlag(flags));
+		return ImGui::Begin(name.c_str(), pOpen == nullptr ? 0 : pOpen, ConvertWindowFlag(flags));
 	}
 	void JImGuiAdaptee::EndWindow()
 	{
@@ -1166,7 +1173,7 @@ namespace JinEngine::Editor
 	{  
 		return ImGui::InputInt(name.c_str(), value, step, 100, ConvertInputTextFlag(flags));
 	}
-	bool JImGuiAdaptee::InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG flags, int step)
+	bool JImGuiAdaptee::InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG flags, uint step)
 	{
 		return ImGui::InputInt(name.c_str(), value, step, 100, ConvertInputTextFlag(flags));
 	}
@@ -1277,6 +1284,14 @@ namespace JinEngine::Editor
 	bool JImGuiAdaptee::BeginCombo(const std::string& name, const std::string& preview, J_GUI_COMBO_FLAG flags)
 	{
 		return ImGui::BeginCombo(name.c_str(), preview.c_str(), ConvertComboFlag(flags));
+	}
+	bool JImGuiAdaptee::BeginComboEx(const std::string& name,
+		const std::string& preview,
+		J_GUI_COMBO_FLAG flags,
+		J_GUI_CARDINAL_DIR initDir,
+		J_GUI_CARDINAL_DIR activateDir)
+	{ 
+		return ImGui::BeginComboEx(name.c_str(), preview.c_str(), ConvertComboFlag(flags), ConvertDirType(initDir), ConvertDirType(activateDir));
 	}
 	void JImGuiAdaptee::EndCombo()
 	{

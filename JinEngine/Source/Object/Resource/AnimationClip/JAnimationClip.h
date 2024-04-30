@@ -14,8 +14,7 @@ namespace JinEngine
 	}
 	class JAnimationClip final : public JResourceObject
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JAnimationClip)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JAnimationClip) 
 	public: 
 		class InitData final: public JResourceObject::InitData
 		{

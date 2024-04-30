@@ -68,7 +68,7 @@ namespace JinEngine
 		void JEditorGuiCoordGrid::Draw()
 		{
 			JVector2<uint> canvasP0 = JGui::GetCursorScreenPos();
-			JVector2<uint> canvasSz = JGui::GetRestWindowContentsSize();
+			JVector2<float> canvasSz = JGui::GetRestWindowContentsSize();
 			if (canvasSz.x < 50.0f) canvasSz.x = 50.0f;
 			if (canvasSz.y < 50.0f) canvasSz.y = 50.0f;
 			JVector2<uint> canvasP1(canvasP0.x + canvasSz.x, canvasP0.y + canvasSz.y);

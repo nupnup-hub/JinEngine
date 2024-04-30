@@ -32,7 +32,7 @@ struct DirectionalLightData
 	float shadowMapSize;
 	float shadowMapInvSize;
 	float tanAngle;
-	float bias; 
+	float bias;  
 };
 //336byte
 struct CsmData
@@ -97,16 +97,18 @@ struct RectLightData
 	float3 origin;
 	float power;
 	float3 axis[3];
-	float3 color;  
+    float3 direction;
+	float3 color;
+    float frustumNear;	
 	float2 extents;
+    float frustumFar;
+    float barndoorLength;
+    float barndoorCosAngle;
+    int shadowMapIndex;
+    uint hasShadowMap;
 	int sourceTextureIndex;
-	float frustumNear;
-	float frustumFar;
-	float barndoorLength;
-	float barndoorCosAngle;
-	int shadowMapIndex;
-	uint hasShadowMap;
+    int ltcMatTextureIndex;
+    int ltcAmpTextureIndex;
 	int rLightPad00;
-	int rLightPad01;
-	int rLightPad02;
+    int rLightPad01;
 };

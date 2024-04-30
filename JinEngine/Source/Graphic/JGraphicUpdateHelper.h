@@ -4,6 +4,7 @@
 #include"FrameResource/JFrameResourceEnum.h"
 #include"Culling/JCullingInterface.h"   
 #include"Culling/JCullingUserAccess.h"   
+#include"FrameResource/JFrameIndexAccess.h"
 #include"../Object/Component/JComponentType.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"
 #include"../Core/Geometry/Mesh/JMeshType.h"
@@ -31,14 +32,12 @@ namespace JinEngine
 		class JGraphic; 
 
 		using GameObjectVec = std::vector<JUserPtr<JGameObject>>;
-		struct JUpdateHelper
+		class JUpdateHelper
 		{
 		public:
 			using GetElementCountT = Core::JStaticCallableType<uint>; 
 			using GetElementCapacityT = Core::JStaticCallableType<uint>;
 			using ReBuildUploadDataT = Core::JStaticCallableType<uint>;
-			using NotifyUpdateCapacityT = Core::JStaticCallableType<void>; 
-			using ExtraUpdateListenerT = Core::JStaticCallableType<void>;
 		public:
 			using SetCapacityT = Core::JStaticCallableType<void>;
 		public:
@@ -65,8 +64,7 @@ namespace JinEngine
 			struct UploadUpdateData : public UpdateDataBase
 			{
 			public:
-				std::unique_ptr<GetElementCountT::Callable> getElement = nullptr;
-				std::vector<std::unique_ptr<NotifyUpdateCapacityT::Callable>> notifyUpdateCapacity;
+				std::unique_ptr<GetElementCountT::Callable> getElement = nullptr; 
 			public: 
 				uint uploadCountPerTarget = 0;
 				uint uploadOffset = 0;
@@ -87,10 +85,9 @@ namespace JinEngine
 		public:
 			UploadUpdateData uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];	//frame upload resource 
 			BindingTextureData bData[(int)J_GRAPHIC_RESOURCE_TYPE::COUNT];
-			bool hasRebuildCondition;
-			bool hasRecompileShader; 
-		public:
-			std::vector<std::unique_ptr<ExtraUpdateListenerT::Callable>> extraUpdateListener;
+			bool hasUploadDataDirty;
+			bool hasBindingDataDirty; 
+		public: 
 			//std::vector<std::unique_ptr<GetElementMultiCountT::Callable>> getElementMultiCount;
 		public:
 			void BeginUpdatingDrawTarget();
@@ -100,12 +97,9 @@ namespace JinEngine
 			void RegisterCallable(J_UPLOAD_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr getCountPtr);
 			void RegisterCallable(J_GRAPHIC_RESOURCE_TYPE type, GetElementCountT::Ptr* getCountPtr, GetElementCapacityT::Ptr* getCapaPtr);
 			//void RegisterCallable(GetElementMultiCountT::Ptr getMultiCountPtr);
-			void RegisterListener(J_UPLOAD_FRAME_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner);
-			void RegisterExListener(std::unique_ptr<ExtraUpdateListenerT::Callable>&& callable);
-			void WriteGraphicInfo(JGraphicInfo& info)const noexcept;
-			void NotifyUpdateFrameCapacity(JGraphic& grpahic);
+			void WriteGraphicInfo(JGraphicInfo& info)const noexcept; 
 		}; 
-		struct JGameObjectBuffer
+		class JGameObjectBuffer
 		{
 		public:
 			using OpaqueVec = std::vector<JUserPtr<JGameObject>>;
@@ -117,7 +111,7 @@ namespace JinEngine
 			void ClearAlignedVecElement();
 		};
 		//draw data
-		struct JDrawHelper
+		class JDrawHelper : public JFrameIndexAccess
 		{
 		private:
 			friend class JGraphic;
@@ -161,6 +155,9 @@ namespace JinEngine
 			bool allowLightCulling = false;
 			bool allowLightCullingDebug = false; 
 			bool allowSsao = false;
+			bool allowPostProcess = false;
+			bool allowRtGi = false;
+			bool allowTemporalProcess = false;
 		public:
 			bool RefelectOtherCamCullig(const uint rItemIndex)const noexcept;  
 		public:
@@ -169,19 +166,11 @@ namespace JinEngine
 			JCullingUserAccess* GetCullingUserAccess()const noexcept;
 			DRAW_TYPE GetDrawType()const noexcept;
 		public:
-			int GetPassFrameIndex()const noexcept;
-			int GetCamFrameIndex()const noexcept;
-			int GetCamDepthTestPassFrameIndex()const noexcept;
-			int GetCamHzbOccComputeFrameIndex()const noexcept;
-			int GetCamSsaoFrameIndex()const noexcept;
-			int GetShadowMapDrawFrameIndex()const noexcept;
-			int GetLitDepthTestPassFrameIndex()const noexcept;
-			int GetLitHzbOccComputeFrameIndex()const noexcept;
+			int GetSceneFrameIndex()const noexcept;
+			int GetCamFrameIndex(const uint frameLayerIndex)const noexcept;
+			int GetLitFrameIndex(const uint frameLayerIndex)const noexcept;
+			int GetLitShadowFrameIndex()const noexcept;
 			const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept;
-		public:
-			static int GetObjectFrameIndex(JRenderItem* rItem)noexcept;
-			static int GetBoundingFrameIndex(JRenderItem* rItem)noexcept;
-			static int GetAnimationFrameIndex(JAnimator* ani)noexcept;
 		public:
 			void SetDrawTarget(JGraphicDrawTarget* drawTarget)noexcept;
 			void SetTheadInfo(const uint threadCount, const uint threadIndex)noexcept;
@@ -195,7 +184,7 @@ namespace JinEngine
 		public:  
 			bool CanDispatchWorkIndex()const noexcept; 
 			bool UsePerspectiveProjection()const noexcept;
-		public:
+		public: 
 			void DispatchWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept;
 		public:
 			static JDrawHelper CreateDrawSceneHelper(const JDrawHelper& ori, const JWeakPtr<JCamera>& cam)noexcept;
@@ -208,14 +197,20 @@ namespace JinEngine
 		};
 		//draw detail condition
 		struct JDrawCondition
-		{ 
+		{
+		public:
+			//for i = drawSt, i < drawEd, 
+			uint drawSt = 0;
+			uint drawEd = 0;
+		public:
+			bool restrictRange = false;
 		public:
 			bool allowAnimation = false;
 		public: 
 			bool allowCulling = false;
 			bool allowOcclusionCulling = false; 
 		public:
-			bool allowDebugOutline = false;
+			bool allowOutline = false;
 			bool allowAllCullingResult = false;	//for check other cam spacespatial    
 		public:
 			bool onlyDrawOccluder = false; //it is valid in hzb, hd occluder draw
@@ -226,6 +221,10 @@ namespace JinEngine
 				const bool newAllowCulling,
 				const bool newAllowDebugOutline,
 				const bool onlyDrawOccluder = false);
+		public:
+			void SetRestrictRange(const uint st, const uint count);
+		public:
+			bool IsValidDrawingIndex(const uint drawIndex)const noexcept;
 		}; 
 	}
 }

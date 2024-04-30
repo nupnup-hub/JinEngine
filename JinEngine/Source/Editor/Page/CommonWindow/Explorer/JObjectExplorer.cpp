@@ -8,7 +8,7 @@
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"   
 #include"../../../EditTool/JEditorRenameHelper.h"
-#include"../../../EditTool/JEditorSearchBarHelper.h"
+#include"../../../EditTool/JEditorSearchBar.h"
 #include"../../../EditTool/JEditorTreeStructure.h"
 #include"../../../../Object/Component/JComponentCreator.h" 
 #include"../../../../Object/GameObject/JGameObject.h" 
@@ -106,7 +106,7 @@ namespace JinEngine
 		{
 			editorString = std::make_unique<JEditorStringMap>();
 			renameHelper = std::make_unique<JEditorRenameHelper>();
-			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
+			searchBarHelper = std::make_unique<JEditorSearchBar>(false);
 			treeStrcture = std::make_unique<JEditorTreeStructure>();
 
 			for (const auto& data : listenWindowGuidVec)
@@ -201,9 +201,9 @@ namespace JinEngine
 			createRectLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::RECT));
 
 			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creation->reqDestructionEvF, this));
-			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
+			destroyNode->RegisterEnableBind(std::make_unique<PassPopupConditionF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 			renameNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*setting->renameF, this));
-			renameNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
+			renameNode->RegisterEnableBind(std::make_unique<PassPopupConditionF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 
 			explorerPopup = std::make_unique<JEditorPopupMenu>("explorerPopup", std::move(explorerPopupRootNode));
 			explorerPopup->AddPopupNode(std::move(createGameObjectNode));
@@ -248,7 +248,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(parent->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 				 
 				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->gameObject.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), std::move(shapeType));
@@ -266,7 +266,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(parent->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->model.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), mesh->GetGuid());
@@ -285,7 +285,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(parent->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->light.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), std::move(lightType));
@@ -304,7 +304,7 @@ namespace JinEngine
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(explorer->root->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
-				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification);
 
 				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
@@ -417,11 +417,12 @@ namespace JinEngine
  
 			if (IsActivated() && root.IsValid())
 			{ 
+				isFocusedThisFrame = JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW);
 				UpdateMouseClick();
 				searchBarHelper->UpdateSearchBar();			 
 				treeStrcture->Begin();
 				BuildObjectExplorer();
-				treeStrcture->End();  
+				treeStrcture->End();   
 			}
 			CloseWindow();
 		}
@@ -448,7 +449,7 @@ namespace JinEngine
 
 			//if(!isSelected && gObj->IsSelectedbyEditor())
 			//	RequestPushSelectObject(Core::GetUserPtr(gObj));
-			 
+			  
 			const bool canOnScreen = searchBarHelper->CanSrcNameOnScreen(objName);
 			if (canOnScreen)
 			{
@@ -477,22 +478,24 @@ namespace JinEngine
 					if (isNodeOpen)
 					{
 						TryBeginDragging(gObj);
-						JUserPtr<Core::JIdentifier> dragResult = TryGetDraggingTarget();
-
-						if (dragResult.IsValid())
+						auto dragResult = TryGetDraggingTarget();
+						for (const auto& data : dragResult)
 						{
-							Core::JTypeInfo& typeInfo = dragResult->GetTypeInfo();
-							JObject* obj = typeInfo.IsChildOf<JObject>() ? static_cast<JObject*>(dragResult.Get()) : nullptr;
+							if (!data.IsValid())
+								continue;
+
+							Core::JTypeInfo& typeInfo = data->GetTypeInfo();
+							JObject* obj = typeInfo.IsChildOf<JObject>() ? static_cast<JObject*>(data.Get()) : nullptr;
 							if (obj != nullptr && obj->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT)
 							{
-								JUserPtr<JGameObject> selectedObj; 
-								selectedObj.ConnnectChild(dragResult);
+								JUserPtr<JGameObject> selectedObj;
+								selectedObj.ConnnectChild(data);
 
 								using ChangeParentF = JObjectExplorerSettingFunctor::ChangeParentF;
-								 
+
 								std::string taskName = "Change parent";
 								std::string taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " + selectedObj->GetName() + L" to " + gObj->GetName());
-
+									
 								auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*setting->changeParentF, this, JUserPtr<JGameObject>(selectedObj), JUserPtr<JGameObject>(gObj));
 								auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*setting->changeParentF, this, JUserPtr<JGameObject>(selectedObj), selectedObj->GetParent());
 								auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind));
@@ -502,7 +505,7 @@ namespace JinEngine
 							else if (obj != nullptr && obj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 							{
 								JUserPtr<JMeshGeometry> sMesh;
-								sMesh.ConnnectChild(dragResult);
+								sMesh.ConnnectChild(data);
 								if (sMesh.IsValid())
 									creation->reqModelCreationEvF->Invoke(this, gObj, sMesh);
 							}
@@ -542,7 +545,7 @@ namespace JinEngine
 			JGui::DrawCircleFilledColor(centerPos, radius, color, true);
 			if (gObj != nullptr)
 			{
-				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) && isHover)
+				if (isFocusedThisFrame && JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) && isHover)
 				{
 					using ActivateF = JObjectExplorerSettingFunctor::ActivateF;
 

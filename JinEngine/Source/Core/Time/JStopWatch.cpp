@@ -23,19 +23,19 @@ namespace JinEngine
 		}
 		void JStopWatch::Start()noexcept
 		{
-			time = std::chrono::high_resolution_clock::now();
 			isStop = false;
-		}
+			time = std::chrono::high_resolution_clock::now();
+		} 
 		void JStopWatch::Stop()noexcept
 		{  
 			prevTime += (float)std::chrono::duration<double, std::nano>(std::chrono::high_resolution_clock::now() - time).count();
 			isStop = true;
 		}
 		void JStopWatch::Reset()noexcept
-		{
-			time = std::chrono::high_resolution_clock::now(); 
+		{ 
 			prevTime = 0;
 			isStop = false;
+			time = std::chrono::high_resolution_clock::now();
 		}
 		void JStopWatch::Record()noexcept
 		{	 

@@ -28,10 +28,39 @@ namespace JinEngine
 			public:
 				FaceInfo(const std::vector<JVector3<int>>& ptn);
 			};
+			struct LoadDataSet
+			{
+			public:
+				ObjMaterialVec materialVec;		//store material
+				ObjMaterialRefMap materialMap;	//store material ref key is material name
+			public: 
+				std::vector<std::wstring> meshName;
+				std::vector<std::wstring> materialName;
+				std::vector<JVector3<float>> position;
+				std::vector<JVector2<float>> texture;
+				std::vector<JVector3<float>> normal;
+				std::vector<uint> index;
+				std::vector<uint> vertexCount;
+				std::vector<uint> indexCount;
+				std::vector<std::vector<FaceInfo>> faceInfo;
+				std::unordered_map<size_t, uint> vertexIndexMap;
+			public:
+				std::wstring materialLibName;
+			public:
+				int meshCount = 0;
+				int faceCount = 0;
+			public:
+				bool hasMaterial = false;
+			};
+		private:
+			std::unique_ptr<LoadDataSet> set;
 		public:
 			bool LoadObjFile(const JFileImportHelpData& pathData, JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData);
 		private:
-			bool LoadMatFile(const std::wstring& path, ObjMaterialVec& materialVec, ObjMaterialRefMap& materialMap);
+			bool LoadMesh(const JFileImportHelpData& pathData);
+			bool LoadMaterial();
+			bool CreateMeshGroup(JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData);
+		private:
 			void GetVectorIndex(const std::wstring& wstr, int& posIndex, int& uvIndex, int& normalIndex)const noexcept;
 			std::wstring GetMaterialPath(const std::wstring& folderPath, const std::wstring& name)const noexcept;
 		private:

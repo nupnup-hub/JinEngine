@@ -209,26 +209,42 @@ namespace JinEngine
 		class JTransition
 		{  
 		private:
+			struct TransitionTaskSet
+			{
+			public:
+				std::unique_ptr<JTransitionTask> task;
+				const uint frameCount = 0;
+			public:
+				TransitionTaskSet(std::unique_ptr<JTransitionTask>&& task, const uint frameCount);
+			};
+		private:
 			std::string name;
 		private:
-			std::deque<std::unique_ptr<JTransitionTask>> doQueue;
-			std::deque<std::unique_ptr<JTransitionTask>> undoQueue;
+			std::deque<std::unique_ptr<TransitionTaskSet>> doQueue;
+			std::deque<std::unique_ptr<TransitionTaskSet>> undoQueue;
 			//static std::stack<std::unique_ptr<JTransitionTask>> undoStack;
 			std::unique_ptr<JPublicLogHolder> logHandler;
 		private:
-			int doIndex = 0;
+			int doCount = 0;
 			int undoIndex = invalidIndex;
-			uint8 taskCapacity = 20;
+			uint8 taskCapacity = 25;
+			size_t frame = 0;
 			bool isLock = false;
 		public:
 			JTransition(const std::string& name);
 		public:
+			void Update();
+		public:
 			void Log(Core::JLogBase log);
 			void Log(const std::string& title, const std::string& body = "");
 			void Log(const std::wstring& title, const std::wstring& body = L"");
-			void Execute(std::unique_ptr<JTransitionTask> task);
+			void Execute(std::unique_ptr<JTransitionTask>&& task);
 			void Undo();
+			void UndoPerFrame();
 			void Redo(); 
+			void RedoPerFrame();
+		private:
+			bool UndoCommonProcess(_Inout_ int& index);
 		public:
 			static constexpr uint8 GetMaxTaskCapacity() noexcept
 			{
@@ -246,7 +262,7 @@ namespace JinEngine
 			void Initialize();
 			void Clear();
 		private:
-			std::vector<JTransitionTask*> GetSortedTask(_Out_ int& undoTaskStartIndex)noexcept;
+			std::vector<TransitionTaskSet*> GetSortedTask(_Out_ int& undoTaskStartIndex)noexcept;
 		private:
 			void ClearDoQueue()noexcept;
 			void ClearUndoQueue()noexcept;

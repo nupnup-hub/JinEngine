@@ -13,7 +13,7 @@ namespace JinEngine::Editor
 		auto typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
 		if (typeInfo == nullptr || !typeInfo->IsChildOf<Core::JIdentifier>())
 			return;
-
+		 
 		if (dataSet.callWindowAutomatically)
 		{
 			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_TITLE_BAR | J_GUI_WINDOW_FLAG_NO_SAVE | J_GUI_WINDOW_FLAG_NO_DOCKING;

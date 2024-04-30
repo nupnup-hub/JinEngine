@@ -8,7 +8,7 @@ namespace JinEngine
 		struct JLazyDestructionInfo
 		{
 		public:
-			using ExecuteDestroy = void(*)(JTypeBase*);
+			using ExecuteDestroy = bool(*)(JTypeBase*);
 			using CanDestroy = bool(*)(JTypeBase*);
 			using NotifyExecuteLazy = void(*)(JTypeBase*);
 			using NotifyCancelLazy = void(*)(JTypeBase*);

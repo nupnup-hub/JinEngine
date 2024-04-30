@@ -34,7 +34,7 @@ namespace JinEngine
 		{}
 		bool JEditorRequestHint::IsValid()const noexcept
 		{
-			return addEventPtr != nullptr && clearTaskFunctor != nullptr;
+			return addEventPtr != nullptr;
 		}
 
 		JEditorObjectDestroyInterface::JEditorObjectDestroyInterface()
@@ -101,6 +101,10 @@ namespace JinEngine
 				JEditorTransition::Instance().Log("Destruction Fail invalid guid typeName: " + Core::JIdentifier::StaticTypeInfo().Name());
 				return;
 			}
+			if (userPtr->GetTypeInfo().IsChildOf<JObject>() &&
+				Core::HasSQValueEnum(static_cast<JObject*>(userPtr.Get())->GetFlag(), OBJECT_FLAG_UNDESTROYABLE))
+				return;
+
 			DestroyPreProccess(userPtr.Get(), useTransition, creationHint);
 
 			const std::wstring logContents = userPtr->GetNameWithType();
@@ -268,7 +272,7 @@ namespace JinEngine
 			}
 			if (guidVec.size() == 0)
 				return;
-
+			 
 			if (useTransition)
 			{
 				auto doBind = std::make_unique<DestroyMultiUseTransitionF::Bind>(*destructionInterface.GetMultiUseTransitionFunctor(),
@@ -280,11 +284,15 @@ namespace JinEngine
 					Core::empty, Core::empty,
 					std::move(creationHint));
 
+				const bool hasClearFunc = requestHint.clearTaskFunctor != nullptr;
 				size_t evGuid;
+
 				using DestroyTEv = JEditorTCreateBindFuncEvStruct<DataHandleStructure, DestroyMultiUseTransitionF::Bind, UndoDestroyF::Bind, true>;
 				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyTEv>
-					("Destroy group task", "use transition", creationHint.editorWnd->GetOwnerPageType(), std::move(doBind), std::move(undoBind), dS), evGuid);
-				(*requestHint.clearTaskFunctor)(std::vector<size_t>{evGuid});
+					("Destroy group task", "use transition", creationHint.editorWnd->GetOwnerPageType(), std::move(doBind), std::move(undoBind), dS), evGuid, hasClearFunc);
+				
+				if (hasClearFunc)
+					(*requestHint.clearTaskFunctor)(std::vector<size_t>{evGuid});
 				(creationHint.editorWnd->*requestHint.addEventPtr)(*JEditorEvent::EvInterface(), creationHint.editorWnd->GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 			}
 			else
@@ -293,8 +301,8 @@ namespace JinEngine
 					std::move(guidVec),
 					true,
 					std::move(creationHint));
-				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>
-					(std::move(doBind), creationHint.editorWnd->GetOwnerPageType()));
+
+				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>(std::move(doBind), creationHint.editorWnd->GetOwnerPageType()));
 				static_cast<JEditorBindFuncEvStruct*>(evStruct)->SetLog(std::make_unique < Core::JLogBase>("Destroy task", "don't use transition"));
 				(creationHint.editorWnd->*requestHint.addEventPtr)(*JEditorEvent::EvInterface(), creationHint.editorWnd->GetGuid(), J_EDITOR_EVENT::BIND_FUNC, evStruct);
 			}

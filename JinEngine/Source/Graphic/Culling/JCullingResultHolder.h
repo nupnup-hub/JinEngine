@@ -17,7 +17,9 @@ namespace JinEngine
 		public:
 			virtual void Culling(const uint index, const bool value)noexcept = 0;
 		public:
-			virtual uint GetBufferSize()const noexcept = 0; 
+			uint GetBufferSize()const noexcept;
+			virtual uint GetElementSize()const noexcept = 0;
+			virtual uint GetElementCount()const noexcept = 0;
 			virtual J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept = 0;
 			virtual J_CULLING_TARGET GetCullingTarget()const noexcept = 0;
 		public:
@@ -42,7 +44,8 @@ namespace JinEngine
 			*/
 			void Culling(const uint index, const bool value)noexcept final;
 		public:
-			uint GetBufferSize()const noexcept final;
+			uint GetElementSize()const noexcept final;
+			uint GetElementCount()const noexcept final;
 			J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept final;
 			J_CULLING_TARGET GetCullingTarget()const noexcept final;
 		public:

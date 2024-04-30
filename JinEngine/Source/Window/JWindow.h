@@ -30,6 +30,7 @@ namespace JinEngine
 			static uint GetMaxDisplayFrequency()noexcept;
 		public:
 			static bool IsFullScreen()noexcept;
+			static bool IsActivated()noexcept;
 			static bool HasStorageSpace(const std::wstring& dirPath, size_t capacity)noexcept;
 		public:
 			static bool SelectDirectory(_Out_ std::wstring& dirPath, const std::wstring& guide)noexcept;

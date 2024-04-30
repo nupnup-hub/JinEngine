@@ -10,13 +10,13 @@
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Utility/JCommonUtility.h"
+#include"../../../Core/Log/JLogMacro.h"
 #include"../../../Graphic/JGraphic.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include"../../../Application/JApplicationProject.h" 
 #include<memory>
 #include<fstream>
-#include<io.h> 
-
+#include<io.h>  
 namespace JinEngine
 {
 	namespace
@@ -38,6 +38,34 @@ namespace JinEngine
 		static constexpr float maxMipmapSharpness = 32;
 	}
 	
+	namespace
+	{
+		REGISTER_ENUM_CLASS(J_TEXTURE_TYPE, int, TEXTURE_2D, TEXTURE_CUBE)
+		static J_TEXTURE_TYPE Convert(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType)
+		{
+			switch (rType)
+			{
+			case Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+				return J_TEXTURE_TYPE::TEXTURE_2D;
+			case Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+				return J_TEXTURE_TYPE::TEXTURE_CUBE;
+			default:
+				return J_TEXTURE_TYPE::TEXTURE_2D;
+			}
+		}
+		static Graphic::J_GRAPHIC_RESOURCE_TYPE Convert(const J_TEXTURE_TYPE rType)
+		{
+			switch (rType)
+			{
+			case J_TEXTURE_TYPE::TEXTURE_2D:
+				return Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+			case J_TEXTURE_TYPE::TEXTURE_CUBE:
+				return Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
+			default:
+				return Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+			}
+		}
+	}
 
 	class JTexture::JTextureImpl : public Core::JTypeImplBase,
 		public JClearableInterface, 
@@ -48,10 +76,13 @@ namespace JinEngine
 		JWeakPtr<JTexture> thisPointer = nullptr;
 	public: 
 		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+	public:
+		REGISTER_PROPERTY_EX(innerTextureType, GetInnerTextureType, SetInnerTextureType, GUI_ENUM_COMBO(J_TEXTURE_TYPE))
+		J_TEXTURE_TYPE innerTextureType = J_TEXTURE_TYPE::TEXTURE_2D;
 		REGISTER_PROPERTY_EX(resolution, GetTextureResolution, SetTextureResolution, GUI_ENUM_COMBO(J_TEXTURE_RESOLUTION, "-a {v} x {v}; -c {v} != 0;"))
 		J_TEXTURE_RESOLUTION resolution = J_TEXTURE_RESOLUTION::ORIGINAL;
 		REGISTER_METHOD(GetTextureResolutionS)
-		REGISTER_METHOD_READONLY_GUI_WIDGET(OriginalResolution, GetTextureResolutionS, GUI_READONLY_TEXT())
+		REGISTER_METHOD_READONLY_GUI_WIDGET(ResolutionDetail, GetTextureResolutionS, GUI_READONLY_TEXT())
 	public:
 		Graphic::JMipmapGenerationDesc mipMapGenerateDesc = Private::InitMipmapGenerateDesc();
 		REGISTER_GUI_ENUM_CONDITION(TextureMipmapType, Graphic::J_GRAPHIC_MIP_MAP_TYPE, GetMipmapType, true)
@@ -59,14 +90,25 @@ namespace JinEngine
 		REGISTER_METHOD_GUI_WIDGET(MipmapKernelSize, GetMipmapKernelSize, SetMipmapKernelSize, GUI_ENUM_COMBO(Graphic::J_KERNEL_SIZE))
 		REGISTER_METHOD_GUI_WIDGET(MipmapSharpness, GetMipmapSharpnessFactor, SetMipmapSharpnessFactor, GUI_SLIDER(Private::minMipmapSharpness, Private::maxMipmapSharpness, true))
 	public:
+		Graphic::JConvertColorDesc convertDesc;
+		REGISTER_METHOD_GUI_WIDGET(ReverseY, IsReverseY, SetReverseY,  GUI_CHECKBOX())
+	public:
 		JTextureImpl(const InitData& initData, JTexture* thisTexRaw)
 		{
 			if (IsValidTextureType(initData.textureType))
 				textureType = initData.textureType;
 			else
 				textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
-			resolution = initData.resoultion;
+
+			innerTextureType = Convert(textureType);
+			resolution = initData.resoultion;			 
 			mipMapGenerateDesc = initData.mipMapDesc; 
+			/**
+			* 현재는 convertDesc결과가 assetdata에 반영되어서 load시 추가적인 작업이 없지만
+			* 추후에 texture load할때 추가적인 작업이 필요하다면 Set함수를 수정하고 
+			* Texture Read시 변경사항을 감지할수있는 방법을 추가할 필요가있다.
+			*/
+			convertDesc = initData.convertDesc;
 		}
 		~JTextureImpl()
 		{}
@@ -82,6 +124,10 @@ namespace JinEngine
 		std::string GetTextureResolutionS()const noexcept
 		{
 			return std::to_string(GetTextureWidth()) + "x" + std::to_string(GetTextureHeight());
+		}
+		J_TEXTURE_TYPE GetInnerTextureType()const noexcept
+		{
+			return innerTextureType;
 		}
 		J_TEXTURE_RESOLUTION GetTextureResolution()const noexcept
 		{
@@ -109,12 +155,25 @@ namespace JinEngine
 			if (textureType != newTextureType)
 			{
 				textureType = newTextureType;
+				innerTextureType = Convert(textureType);
 				if (thisPointer->IsValid())
 				{
 					ClearResource();
 					StuffResource();
+					JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
+						J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE,
+						std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
 				}
 			}
+		}
+		void SetInnerTextureType(const J_TEXTURE_TYPE type)
+		{
+			//임시코드
+			//추후에 cube map생성절차에 대해서 추가적인 구현을 할시에 수정할것
+			if (type == J_TEXTURE_TYPE::TEXTURE_CUBE && thisPointer->GetFormat() != L".dds")
+				return;
+
+			SetTextureType(Convert(type));
 		}
 		void SetTextureResolution(const J_TEXTURE_RESOLUTION newResolution)
 		{
@@ -127,7 +186,7 @@ namespace JinEngine
 				DestroyGraphicResource();
 				ReadTextureData();
 				JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
-					J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE,
+					J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE,
 					std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
 			}	
 		}
@@ -147,14 +206,16 @@ namespace JinEngine
 					newDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE;
 				const bool isToNone = mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE &&
 					newDesc.type == Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE;
+				const bool isOtherToApi = mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT &&
+					newDesc.type == Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
 
-				if (isNoneTo || isToNone)
+				if (isNoneTo || isToNone || isOtherToApi)
 				{
 					mipMapGenerateDesc = newDesc;
 					DestroyGraphicResource();
 					ReadTextureData();
 					JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
-						J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE,
+						J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE,
 						std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
 				}
 				else
@@ -187,10 +248,32 @@ namespace JinEngine
 			newDesc.sharpnessFactor = std::clamp(sharpness, Private::minMipmapSharpness, Private::maxMipmapSharpness);
 			SetMipmapDesc(newDesc);
 		}
+		void SetConvertDesc(const Graphic::JConvertColorDesc& newConvertDesc)
+		{
+			auto gInfo = GetFirstGraphicInfo();
+			if (convertDesc == newConvertDesc || gInfo == nullptr)
+				return;
+
+			SetTextureDetail(GetFirstGraphicInfo(), newConvertDesc);
+			convertDesc = newConvertDesc;
+			JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
+				J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE,
+				std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
+		}
+		void SetReverseY(const bool value)
+		{
+			Graphic::JConvertColorDesc newConvertDesc = convertDesc;
+			newConvertDesc.reverseY = value;
+			SetConvertDesc(newConvertDesc);
+		}
 	public:
 		static bool IsValidTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE type)
 		{
 			return type == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || type == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
+		}
+		bool IsReverseY()const noexcept
+		{
+			return convertDesc.reverseY;
 		}
 	private:
 		void AdjustResoultion()noexcept
@@ -360,8 +443,9 @@ namespace JinEngine
 						Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT :
 						Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE;
 				}
-
-				return { Core::ConvertChildUserPtr<JTexture>(JICI::Create(std::move(initData))) };
+ 
+				//return { JICI::Create<JTexture>(std::move(initData)) }; 
+				return { JUserPtr<JTexture>::ConvertChild(JICI::Create(std::move(initData))) };
 			};
 			
 			auto foramatVec = JTexture::GetAvailableFormat();
@@ -435,6 +519,14 @@ namespace JinEngine
 	std::vector<std::wstring> JTexture::GetAvailableFormat()noexcept
 	{
 		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp", L".tif", L".tiff"};
+		static bool hasUpperCase = false;
+		if (!hasUpperCase)
+		{
+			const uint existCount = (uint)format.size(); 
+			for (uint i = 0; i < existCount; ++i)
+				format.push_back(JCUtil::ToUppercase(format[i]));
+			hasUpperCase = true;
+		}
 		return format;
 	}
 	uint JTexture::GetTextureWidth()const noexcept
@@ -537,6 +629,7 @@ namespace JinEngine
 
 			initData->resoultion = metadata.resoultion;
 			initData->mipMapDesc = metadata.mipMapDesc;
+			initData->convertDesc = metadata.convertDesc;
 
 			auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &tPrivate);
 			newTex.ConnnectChild(idenUser); 
@@ -566,6 +659,7 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->mipMapDesc.type, "MipmapType");
 		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->mipMapDesc.kernelSize, "MipmapKernelSize");
 		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->mipMapDesc.sharpnessFactor, "MipmapSharpnessFactor");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->convertDesc.reverseY, "ReverseComponentY");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -573,10 +667,10 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
-
+	 
 		auto storeData = static_cast<JTexture::StoreData*>(data);
 		JUserPtr<JTexture> tex = Core::ConnectChildUserPtr<JTexture>(storeData->obj);
-
+	 
 		JFileIOTool tool;
 		if (!tool.Begin(tex->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -589,6 +683,7 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreEnumData(tool, tex->impl->mipMapGenerateDesc.type, "MipmapType");
 		JObjectFileIOHelper::StoreEnumData(tool, tex->impl->mipMapGenerateDesc.kernelSize, "MipmapKernelSize");
 		JObjectFileIOHelper::StoreAtomicData(tool, tex->impl->mipMapGenerateDesc.sharpnessFactor, "MipmapSharpnessFactor");
+		JObjectFileIOHelper::StoreAtomicData(tool, tex->impl->convertDesc.reverseY, "ReverseComponentY");
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

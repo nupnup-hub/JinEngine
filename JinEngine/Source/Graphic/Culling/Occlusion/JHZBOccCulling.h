@@ -1,6 +1,7 @@
 #pragma once 
 #include"JOccCulling.h"
 #include"../../Shader/JShaderDataHandler.h"
+#include"../../JGraphicSubClassInterface.h"
 #include<vector>
 
 namespace JinEngine
@@ -14,10 +15,10 @@ namespace JinEngine
 		/**
 		* Hzb는 IsOccluder trigger가 켜진 object에 가려진 대상을 Occlude한다.
 		*/
-		class JHZBOccCulling : public JOccCulling
+		class JHZBOccCulling : public JOccCulling, public JGraphicSubClassInterface
 		{ 
 		public:
-			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
+			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM) = 0;
 			virtual void Clear() = 0;
 		public:
 			virtual bool CanReadBackDebugInfo()const noexcept = 0; 

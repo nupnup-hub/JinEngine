@@ -20,6 +20,7 @@
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Core/Identity/JIdenCreator.h" 
+#include"../../../../Core/Log/JLogMacro.h" 
 
 namespace JinEngine
 { 
@@ -84,7 +85,7 @@ namespace JinEngine
 		}
 		if (!res)
 		{
-			MessageBox(0, L"½ÇÆĞ", resource->GetName().c_str(), 0);
+			J_LOG_PRINT_OUTW(L"Create resource preview scene fail", resource->GetName());
 			Clear();
 		}
 		return res;

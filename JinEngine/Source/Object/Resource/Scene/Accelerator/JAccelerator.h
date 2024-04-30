@@ -2,21 +2,37 @@
 #include"JAcceleratorType.h" 
 #include"JAcceleratorOption.h" 
 #include"../../../../Core/Geometry/JRay.h"
-#include"../../../../Core/Geometry/JBBox.h"
-#include"../../../../Core/JCoreEssential.h"
+#include"../../../../Core/Geometry/JBBox.h" 
+#include"../../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
 #include<DirectXCollision.h>
 #include<vector>
 
 namespace JinEngine
 {
-	class JGameObject; 
+	class JGameObject;
+	class JComponent;
 	struct JAcceleratorCullingInfo;
+	namespace Graphic
+	{
+		class JGpuAcceleratorInfo;
+	}
+
 	class JAccelerator
+	{
+	public:
+		virtual ~JAccelerator() = default;
+	protected:
+		virtual void Build()noexcept = 0;
+		virtual void UnBuild()noexcept = 0;
+	public:
+		virtual void Clear()noexcept = 0;
+	};
+	class JCpuAccelerator : public JAccelerator
 	{
 	private:
 		JUserPtr<JGameObject>innerRoot = nullptr;
 		JUserPtr<JGameObject> debugRoot = nullptr;
-
+	private:
 		bool isAcceleratorActivated = false;
 		bool isDebugActivated = false;
 		bool isDebugLeafOnly = true;
@@ -24,12 +40,10 @@ namespace JinEngine
 	private:
 		const J_ACCELERATOR_LAYER layer;
 	public:
-		JAccelerator(const J_ACCELERATOR_LAYER layer);
-		virtual ~JAccelerator() = default;
-	protected:
-		virtual void Build()noexcept = 0;
-		virtual void UnBuild()noexcept = 0;
-		virtual void Clear()noexcept;
+		JCpuAccelerator(const J_ACCELERATOR_LAYER layer);
+		~JCpuAccelerator() = default;
+	protected: 
+		void Clear()noexcept override;
 		virtual void OnDebugGameObject()noexcept = 0;
 		virtual void OffDebugGameObject()noexcept = 0;
 	public:
@@ -60,9 +74,7 @@ namespace JinEngine
 		bool IsValidLayer(const J_RENDER_LAYER objLayer)const noexcept;
 		bool HasInnerRoot()const noexcept;
 		bool HasDebugRoot()const noexcept;
-		bool CanAddGameObject(const JUserPtr<JGameObject>& gameObj)const noexcept;
-	private:
-		void FindInnerObject(std::vector<JUserPtr<JGameObject>>& vec, const JUserPtr<JGameObject>& parent)const noexcept;
+		bool CanAddGameObject(const JUserPtr<JGameObject>& gameObj)const noexcept; 
 	public:
 		virtual void Culling(JAcceleratorCullingInfo& info)noexcept = 0;
 		virtual void Intersect(JAcceleratorIntersectInfo& info)const noexcept = 0;
@@ -73,5 +85,30 @@ namespace JinEngine
 	public:
 		virtual void AddGameObject(const JUserPtr<JGameObject>& newGameObject)noexcept = 0;
 		virtual void RemoveGameObject(const JUserPtr<JGameObject>& gameObj)noexcept = 0;
+	};
+	class JGpuAccelerator : public JAccelerator, public Graphic::JGpuAcceleratorInterface
+	{
+	private:
+		JGpuAcceleratorOption option;
+	public:
+		JGpuAccelerator();
+	protected:
+		void Build()noexcept final;
+		void UnBuild()noexcept final;
+	public:
+		void Clear()noexcept final;
+	public:
+		void UpdateTransform(const JUserPtr<JComponent>& comp)noexcept;
+	public:
+		void AddComponent(const JUserPtr<JComponent>& newComp)noexcept;
+		void RemoveComponent(const JUserPtr<JComponent>& comp)noexcept;
+	public:
+		JGpuAcceleratorOption GetOption()const noexcept;
+	public:
+		void SetOption(const JGpuAcceleratorOption& newOption);
+	public:
+		static bool CanBuild()noexcept;
+	public:
+		void RegisterInterfacePointer();
 	};
 }

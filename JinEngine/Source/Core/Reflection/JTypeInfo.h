@@ -372,6 +372,8 @@ namespace JinEngine
 			JTypeInstanceSearchHint();
 			JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid);
 			JTypeInstanceSearchHint(JUserPtr<JTypeBase> iden);
+		public: 
+			JTypeInstanceSearchHint& operator=(JUserPtr<JTypeBase> iden); 
 		public:
 			~JTypeInstanceSearchHint();
 		};

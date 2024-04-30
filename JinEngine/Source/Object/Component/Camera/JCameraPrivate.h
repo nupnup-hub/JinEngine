@@ -5,17 +5,11 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		struct JCameraConstants;
-		struct JDepthTestPassConstants;
-		struct JHzbOccComputeConstants;
-		struct JSsaoConstants;
+	{ 
+		struct JCameraConstantsSet;
 		struct JDrawCondition; 
-		struct JDrawHelper;
-		class JGraphic;
-		class JSceneDraw;
-		class JHZBOccCulling;
-		class JDepthTest;
+		class JFrameIndexAccess;
+		class JGraphic; 
 	}
 	namespace Editor
 	{
@@ -55,33 +49,20 @@ namespace JinEngine
 			friend class Graphic::JGraphic;
 		private: 
 			static bool UpdateStart(JCamera* cam, const bool isUpdateForced)noexcept;
-			static void UpdateFrame(JCamera* cam, Graphic::JCameraConstants& constants)noexcept;
-			static void UpdateFrame(JCamera* cam, Graphic::JDepthTestPassConstants& constant)noexcept;
-			static void UpdateFrame(JCamera* cam, Graphic::JHzbOccComputeConstants& constant, const uint queryCount, const uint queryOffset)noexcept;
-			static void UpdateFrame(JCamera* cam, Graphic::JSsaoConstants& constant)noexcept;
+			static void UpdateFrame(JCamera* cam, Graphic::JCameraConstantsSet& set)noexcept; 
 			static void UpdateEnd(JCamera* cam)noexcept; 
 		private:
-			static int GetCamFrameIndex(JCamera* cam)noexcept;
-			static int GetDepthTestPassFrameIndex(JCamera* cam)noexcept;
-			static int GetHzbOccComputeFrameIndex(JCamera* cam)noexcept;
-			static int GetSsaoFrameIndex(JCamera* cam)noexcept;
+			static int GetFrameIndex(JCamera* cam, const uint layerIndex)noexcept;
 		private:
 			static bool IsLastFrameHotUpdated(JCamera* cam)noexcept;
 			static bool IsLastUpdated(JCamera* cam)noexcept;
-			static bool HasCamRecopyRequest(JCamera* cam)noexcept;
-			static bool HasDepthTestPassRecopyRequest(JCamera* cam)noexcept; 
-			static bool HasHzbOccComputeRecopyRequest(JCamera* cam)noexcept;
-			static bool HasSsaoRecopyRequest(JCamera* cam)noexcept;
 		};
 		class FrameIndexInterface final
 		{
 		private: 
-			friend struct Graphic::JDrawHelper;
+			friend class Graphic::JFrameIndexAccess;
 		private:
-			static int GetCamFrameIndex(JCamera* cam)noexcept;
-			static int GetDepthTestPassFrameIndex(JCamera* cam)noexcept;
-			static int GetHzbOccComputeFrameIndex(JCamera* cam)noexcept;
-			static int GetSsaoFrameIndex(JCamera* cam)noexcept;
+			static int GetFrameIndex(JCamera* cam, const uint layerIndex)noexcept;
 		};
 		class EditorSettingInterface final
 		{

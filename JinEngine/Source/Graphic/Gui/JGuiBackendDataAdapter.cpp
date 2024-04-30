@@ -1,5 +1,6 @@
 #include"JGuiBackendDataAdapter.h"
 #include"JGuiBackendDataAdaptee.h"
+#include"../JGraphicOption.h"
 #include<Windows.h>
 
 namespace JinEngine::Graphic
@@ -16,28 +17,28 @@ namespace JinEngine::Graphic
 	}
 	std::unique_ptr<JGuiInitData> JGuiBackendDataAdapter::CreateInitData(_In_ JGraphicDevice* device,
 		_In_ JGraphicResourceManager* gm,
-		_In_ const J_GRAPHIC_DEVICE_TYPE deviceType,
+		_In_ const JGraphicOption& option,
 		_In_ const GuiIdentification guiIden)
 	{
 		if (device == nullptr || gm == nullptr)
 			return nullptr;
 
-		auto mapData = adapteeMap[(uint)deviceType].find(guiIden);
+		auto mapData = adapteeMap[(uint)option.deviceType].find(guiIden);
 		if (mapData == adapteeMap->end())
 			return nullptr;
 		 
-		return mapData->second->CreateInitData(device, gm, guiIden);
+		return mapData->second->CreateInitData(device, gm, option, guiIden);
 	}
 	std::unique_ptr<JGuiDrawData> JGuiBackendDataAdapter::CreateDrawData(_In_ JGraphicDevice* device,
 		_In_ JGraphicResourceManager* gm,
 		_In_ JFrameResource* frame,
-		_In_ const J_GRAPHIC_DEVICE_TYPE deviceType,
+		_In_ const JGraphicOption& option,
 		_In_ const GuiIdentification guiIden)
 	{
 		if (device == nullptr || gm == nullptr || frame == nullptr)
 			return nullptr;
 
-		auto mapData = adapteeMap[(uint)deviceType].find(guiIden);
+		auto mapData = adapteeMap[(uint)option.deviceType].find(guiIden);
 		if (mapData == adapteeMap->end())
 			return nullptr;
 

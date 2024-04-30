@@ -3,6 +3,7 @@
 #include"../Event/JEditorEventType.h"   
 #include"../Event/JEditorEventStruct.h"  
 #include"../Gui/JGuiType.h"
+#include"../DragAndDrop/JDragDropData.h"
 #include<memory>
 
 namespace JinEngine
@@ -60,8 +61,8 @@ namespace JinEngine
 			static void SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept;  
 		public:
 			//Dragging 
-			static Core::JTypeInstanceSearchHint* RegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType, Core::JIdentifier* iden)noexcept;
-			static void DeRegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType)noexcept;
+			static JDragDropData* RegisterDragDropHint(const J_EDITOR_PAGE_TYPE pageType, std::unique_ptr<JDragDropData>&& data)noexcept;
+			static void DeRegisterDragDropHint(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 		public:
 			static void Clear()noexcept; 
 		};

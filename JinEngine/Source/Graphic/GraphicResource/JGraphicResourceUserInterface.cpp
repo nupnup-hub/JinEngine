@@ -22,7 +22,7 @@ namespace JinEngine
 		{
 			return gI.GetResourceArrayIndex();
 		}
-		uint JGraphicResourceUserInterface::CallGetHeapIndexStart(JGraphicResourceHandleUserInterface& gI, const J_GRAPHIC_BIND_TYPE bType)const noexcept
+		int JGraphicResourceUserInterface::CallGetHeapIndexStart(JGraphicResourceHandleUserInterface& gI, const J_GRAPHIC_BIND_TYPE bType)const noexcept
 		{
 			return gI.GetHeapIndexStart(bType);
 		}

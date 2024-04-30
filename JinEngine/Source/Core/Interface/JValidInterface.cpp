@@ -4,6 +4,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		JValidInterface::~JValidInterface(){}
 		bool JValidInterface::IsValid()const noexcept
 		{
 			return isValid;

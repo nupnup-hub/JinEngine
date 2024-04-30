@@ -16,7 +16,7 @@ namespace JinEngine
 	{
 		class JEditorBinaryTreeView;
 	} 
-	class JKdTree : public JAccelerator
+	class JKdTree : public JCpuAccelerator
 	{
 	private:
 		JKdTreeNode* root = nullptr;

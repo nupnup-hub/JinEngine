@@ -9,7 +9,8 @@ namespace JinEngine
 		private:
 			bool isValid = false;
 		public:
-			virtual ~JValidInterface() = default;
+			JValidInterface() = default;
+			virtual ~JValidInterface();
 		public:
 			virtual bool IsValid()const noexcept;
 			bool IsValidTriggerOn()const noexcept;

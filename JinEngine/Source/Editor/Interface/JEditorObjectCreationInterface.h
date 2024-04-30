@@ -71,7 +71,7 @@ namespace JinEngine
 			AddEventPtr addEventPtr;
 			ClearTaskFunctor* clearTaskFunctor;
 		public:
-			JEditorRequestHint(AddEventPtr addEventPtr, ClearTaskFunctor* clearTaskFunctor);
+			JEditorRequestHint(AddEventPtr addEventPtr, ClearTaskFunctor* clearTaskFunctor = nullptr);
 		public:
 			bool IsValid()const noexcept;
 		};
@@ -375,12 +375,15 @@ namespace JinEngine
 						true,
 						std::move(creationHint));
 
+					const bool hasClearFunc = requestHint.clearTaskFunctor != nullptr;
 					size_t evGuid;
 
 					using CreateTransitionTEv = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateUseTransitionF::Bind, DestroyUseTransitionF::Bind, false>;
 					auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateTransitionTEv>
-						("Create task", "use transition",creationHint.editorWnd->GetOwnerPageType(), std::move(doBind), std::move(undoBind), dS), evGuid);
-					(*requestHint.clearTaskFunctor)(std::vector<size_t>{evGuid});
+						("Create task", "use transition",creationHint.editorWnd->GetOwnerPageType(), std::move(doBind), std::move(undoBind), dS), evGuid, hasClearFunc);
+					
+					if(requestHint.clearTaskFunctor != nullptr)
+						(*requestHint.clearTaskFunctor)(std::vector<size_t>{evGuid});
 					(creationHint.editorWnd->*requestHint.addEventPtr)(*JEditorEvent::EvInterface(), creationHint.editorWnd->GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 				}
 				else
@@ -390,8 +393,7 @@ namespace JinEngine
 						std::move(creationHint),
 						std::forward<Param>(var)...);
 
-					auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>
-						(std::move(doBind), creationHint.editorWnd->GetOwnerPageType()));
+					auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>(std::move(doBind), creationHint.editorWnd->GetOwnerPageType()));
 					static_cast<JEditorBindFuncEvStruct*>(evStruct)->SetLog(std::make_unique<Core::JLogBase>("Create task", "Don't use transition"));
 					(creationHint.editorWnd->*requestHint.addEventPtr)(*JEditorEvent::EvInterface(), creationHint.editorWnd->GetGuid(), J_EDITOR_EVENT::BIND_FUNC, evStruct);
 				}
