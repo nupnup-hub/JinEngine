@@ -1,4 +1,4 @@
-## JinEngine
+# JinEngine
 
 Game engine for studying graphics and software architecture 
 
@@ -7,3 +7,20 @@ Game engine for studying graphics and software architecture
 
 
 ## Features
+### Graphis
+- Dynamic global illumination
+  - Restir gi
+  - SVGF denoiser
+- Physical based local illumination
+- Ambient occlusion
+  - SSAO
+  - HBAO+
+- Shadow
+  - hard, soft shadow map
+- Image processing
+  - Bloom
+  - Tone mapping
+- Anti alise
+  -Fxaa
+
+### Editor
