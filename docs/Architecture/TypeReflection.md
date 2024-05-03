@@ -15,7 +15,7 @@
 
 ## Class overview
 - JReflectionInfo 
-    - Manage type per event
+    - Manage type per event(called by main loop)
 - JTypeInfo
     - Own type per data 
 - JMethodInfo
@@ -25,4 +25,6 @@
     - Own parameter get set callable 
     - Own parameter return type hint
 
-## View
+## Diagram
+![TypeReflection](https://github.com/nupnup-hub/JinEngine/assets/59456231/95e3a76b-8046-4952-982f-30926246b0ba)
+
