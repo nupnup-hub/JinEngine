@@ -13,7 +13,7 @@
     - Lazy destruction
 - Can access type unique data with interface pointer easily
 - Can access registered parameter or method callable by name
-- Consists list structure(child own parent pointer)
+- Consists list structure(child type info own parent type info pointer)
 - Use static structure construction func for register
 
 
