@@ -20,9 +20,12 @@
 ## Use case
 - Component Creation
 
-  ![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/844be91f-ef00-4ac8-8479-6690af79003c)
+![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/844be91f-ef00-4ac8-8479-6690af79003c)
     
 - Resouce Destruction
+
+![ResourceDestruction](https://github.com/nupnup-hub/JinEngine/assets/59456231/a91fada7-2f6a-48f0-9e56-96d1352a6c59)
+
 
   
 
