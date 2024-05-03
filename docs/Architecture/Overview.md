@@ -32,13 +32,12 @@
 - Controll engine flow 
 ![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/f79bf500-36bd-43c8-b0bb-be63ac4c9411)
 
-  - Update wait: 
-  - Update reflection:
-  - Update thread:
-  - Update editor:
-  - Update frame resource
-  - draw:
-  - 
+  - Update wait: Wait for the command to complete to a certain point in gpu
+  - Update reflection: 
+  - Update thread: Manage enable cpu thread
+  - Update editor: Do update editor process ... details [추가필요]
+  - Update frame resource: Do update graphic frame resource used by scene object ... details [추가필요]
+  - draw: Scene rendering and display ... details [추가필요]
   
 
 
