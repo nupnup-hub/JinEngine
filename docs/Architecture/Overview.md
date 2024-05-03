@@ -1,9 +1,8 @@
 # Overview
-
+- module diagram
+  
 ![dir_274a967828c2c6b04a4f42b9857d59f3_dep](https://github.com/nupnup-hub/JinEngine/assets/59456231/19e55b64-b7e7-407a-ad3a-1c8d7a717d09) 
-
-(doxygen diagram) 
-
+ 
 #  The behavior of modules
 
 ## Core
