@@ -31,7 +31,7 @@
 
 ## Main
 - Controll engine flow 
-![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/7282110a-6334-44db-96cd-c8df0863d928)
+![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/f79bf500-36bd-43c8-b0bb-be63ac4c9411)
 
   - Update wait: 
   - Update reflection:
