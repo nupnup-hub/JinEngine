@@ -33,7 +33,7 @@
 ![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/f79bf500-36bd-43c8-b0bb-be63ac4c9411)
 
   - Update wait: Wait for the command to complete to a certain point in gpu
-  - Update reflection: Update reflection event ... [reflection system detail](https://github.com/nupnup-hub/JinEngine/tree/Main/docs/Architecture)
+  - Update reflection: Update reflection event ... [reflection system detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/TypeReflection.md)
   - Update thread: Manage enable cpu thread
   - Update editor: Do update editor process ... [editor detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
   - Update frame resource: Do update graphic frame resource used by scene object ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
