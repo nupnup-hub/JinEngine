@@ -30,4 +30,16 @@
 - Providing GUI for users to access engine resources
 
 ## Main
-- Controll engine flow
+- Controll engine flow 
+![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/7282110a-6334-44db-96cd-c8df0863d928)
+
+  - Update wait: 
+  - Update reflection:
+  - Update thread:
+  - Update editor:
+  - Update frame resource
+  - draw:
+  - 
+  
+
+
