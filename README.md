@@ -20,7 +20,25 @@ Game engine for studying graphics and software architecture
 - Image processing
   - Bloom
   - Tone mapping
-- Anti alise
-  -Fxaa
+- Anti alising
+  - Fxaa
+- Culling
+  - Hardware culling using graphics API
+  - HZB
+  - Frustum culling with scene accelerator Structure(cpu) 
 
-### Editor
+### Engine
+- Manage engine resource(Load, store, import)
+- Manage program memory
+- Edit scene object
+
+
+## Platform
+|  |Directx12|...|
+|------|---|---|
+|Window| :heavy_check_mark: | |
+|...| | | 
+
+## Guide
+ 
+
