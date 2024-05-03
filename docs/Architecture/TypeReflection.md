@@ -25,6 +25,8 @@
     - Own parameter get set callable 
     - Own parameter return type hint
 
-## Diagram
-![TypeReflection](https://github.com/nupnup-hub/JinEngine/assets/59456231/95e3a76b-8046-4952-982f-30926246b0ba)
+## Diagram 
+![TypeReflection](https://github.com/nupnup-hub/JinEngine/assets/59456231/ab63c3ae-685b-47f3-998e-cdbb9e0c7748)
+
+
 
