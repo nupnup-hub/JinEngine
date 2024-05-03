@@ -42,5 +42,6 @@ Game engine for studying graphics and software architecture
 |...| | | 
 
 ## Guide
- 
+ [Overview]([https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Overview.md))
+ [Documentation](https://github.com/nupnup-hub/JinEngine/tree/Main/docs)
 
