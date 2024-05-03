@@ -17,5 +17,3 @@
   - Own and manage the file that owns metadata on the Resource
   - Depending on the frequency of use, resources exist in real memory or as metadata in file data
 
-## Use case
-
