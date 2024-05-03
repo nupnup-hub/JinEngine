@@ -1,6 +1,6 @@
 # Object
 
-- Component diagram    
+- Component dependency     
 ![ObjectDiagram](https://github.com/nupnup-hub/JinEngine/assets/59456231/a92badc9-d3cb-42cb-89f8-b5afb1b0c7ee)
  
 ## Detail 
