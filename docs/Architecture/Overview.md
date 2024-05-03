@@ -35,9 +35,9 @@
   - Update wait: Wait for the command to complete to a certain point in gpu
   - Update reflection: 
   - Update thread: Manage enable cpu thread
-  - Update editor: Do update editor process ... details [추가필요]
-  - Update frame resource: Do update graphic frame resource used by scene object ... details [추가필요]
-  - draw: Scene rendering and display ... details [추가필요]
+  - Update editor: Do update editor process ... [detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
+  - Update frame resource: Do update graphic frame resource used by scene object ... details [detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
+  - draw: Scene rendering and display ... [detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md)
   
 
 
