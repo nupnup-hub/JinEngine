@@ -14,18 +14,6 @@
 - Use static structure construction func for register
 
 ## Class overview
-- JReflectionInfo 
-    - Manage type per event(called by main loop)
-- JTypeInfo
-    - Own type per data 
-- JMethodInfo
-    - Own method callable 
-    - Own method parameter and return type hint
-- JParameterInfo
-    - Own parameter get set callable 
-    - Own parameter return type hint
-
-## Diagram 
 ![TypeReflection](https://github.com/nupnup-hub/JinEngine/assets/59456231/ab63c3ae-685b-47f3-998e-cdbb9e0c7748)
 
 
