@@ -13,7 +13,9 @@ namespace JinEngine
 {
 	namespace Graphic
 	{ 
+		class JCullingUserInterface;
 		class JDx12CullingResourceHolder;
+		class JDx12GraphicResourceHolder;
 		class JDx12CullingManager final : public JCullingManager
 		{
 		private:
@@ -21,10 +23,18 @@ namespace JinEngine
 		private:
 			std::vector<Microsoft::WRL::ComPtr<ID3D12QueryHeap>> occQueryHeap;
 		public:
+			~JDx12CullingManager();
+		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 			JDx12CullingResourceHolder* GetDxHolder(const J_CULLING_TYPE type, int index)const noexcept;
 			ID3D12Resource* GetResource(const J_CULLING_TYPE type, int index)const noexcept;
 			ID3D12QueryHeap* GetQueryHeap(const uint index)const noexcept;
+		private:
+			bool HasDependency(const JGraphicInfo::TYPE type)const noexcept final;
+			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final;
+		private:
+			void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)final;
+			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;
 		public:
 			void UpdateFrameResourceIndex(const uint frameIndex);
 			//for hd occ ... 분할 업데이트를 수행하기때문에 매 프레임마다 update된 영역을 cpu로 복사
@@ -43,6 +53,25 @@ namespace JinEngine
 			bool TryStreamOutCullingBuffer(JCullingInfo* info, const std::string& logName)final;
 		public:
 			void Clear() final;
+		private:
+			void ClearResource();
+		};
+
+		class JDx12CullingResourceComputeSet
+		{
+		public:
+			JDx12CullingManager* cm = nullptr;
+			JCullingInfo* info = nullptr;
+			JDx12CullingResourceHolder* cHolder = nullptr;
+			JDx12GraphicResourceHolder* gHolder = nullptr;
+			ID3D12Resource* resource = nullptr;
+		public:
+			JDx12CullingResourceComputeSet() = default;
+			JDx12CullingResourceComputeSet(JDx12CullingManager* cm, JCullingInfo* info);
+			JDx12CullingResourceComputeSet(JDx12CullingManager* cm, const JUserPtr<JCullingInfo>&info);
+			JDx12CullingResourceComputeSet(JDx12CullingManager* cm, const JCullingUserInterface& cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget);
+		public:
+			bool IsValid()const noexcept;
 		};
 	}
 }

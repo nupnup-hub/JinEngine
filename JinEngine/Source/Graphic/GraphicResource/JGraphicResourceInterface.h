@@ -43,10 +43,14 @@ namespace JinEngine
 			bool DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE option);
 		protected:
 			/**
-			* @no mipmap일 경우와 graphic api defined로 mipmap을 변경하고 싶은경우 해당하는 resource를 다시 만들 필요가있으며
-			* @그밖에 경우에만 desc에 맞는 새로운 mipmap을 생성
+			* @brief non mipmap일 경우와 graphic api defined로 mipmap을 변경하고 싶은경우 해당하는 resource를 다시 만들 필요가있으며
+			* 그밖에 경우에만 desc에 맞는 새로운 mipmap을 생성
 			*/
 			bool SetMipmap(const JUserPtr<JGraphicResourceInfo>& info, const JTextureCreationDesc& createDesc);
+			/**
+			* @brief color curve를 조정하며 현재는 reverseY만 추가된상태.
+			*/
+			bool SetTextureDetail(const JUserPtr<JGraphicResourceInfo>& info, const JConvertColorDesc& convertDesc);
 		private:
 			virtual void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo) = 0;
 		public:
@@ -357,9 +361,7 @@ namespace JinEngine
 			{
 				int multiIndex = GetMultiVecIndex(rType);
 				if (multiIndex != invalidIndex)
-				{
 					return multiIndex != invalidIndex ? (multiInfo[multiIndex].size() > dataIndex ? multiInfo[multiIndex][dataIndex] : nullptr) : nullptr;
-				}
 				else
 				{
 					int index = GetSingleInfoIndex(rType);
@@ -499,6 +501,7 @@ namespace JinEngine
 			JVector2F GetResourceSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			JVector2F GetResourceInvSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			int GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
+			int GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept;
 			int GetHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;
 			int GetOptionHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;

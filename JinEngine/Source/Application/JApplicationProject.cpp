@@ -11,6 +11,7 @@
 #include"../Core/Binary/JEngineTool.h"
 #include"../Core/Platform/JPlatformInfo.h"
 #include"../Core/Utility/JCommonUtility.h"
+#include"../Core/Log/JLogMacro.h"
 #include<Windows.h> 
 #include <direct.h>	 
 #include<fstream>  
@@ -171,7 +172,7 @@ namespace JinEngine
 				std::wstring dllPath = ProjectDllPath();
 				auto m = _JModuleManager::Instance().TryAddModule(dllPath, true);
 				if (m == nullptr)
-					MessageBox(0, L"Fail add module", 0, 0);
+					J_LOG_PRINT_OUT("", "Fail add module"); 
 			}
 			static void CreateProjectPlugin()
 			{
@@ -187,7 +188,7 @@ namespace JinEngine
 
 				auto p = _JPluginManager::Instance().TryAddPlugin(name, folderPath, modVec, desc);
 				if (p == nullptr)
-					MessageBox(0, L"Fail add plugin", 0, 0);
+					J_LOG_PRINT_OUT("", "Fail add plugin");
 			}
 
 			static void DestroyProjectPreviewAsset(const std::wstring& ddsPath, const bool destroyDDs)
@@ -633,10 +634,10 @@ namespace JinEngine
 		{
 			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Config";
 		}
-		std::wstring JApplicationProject::ProjectResourcePath()noexcept
+		std::wstring JApplicationProject::ProjectPrivateResourcePath()noexcept
 		{
 			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Resource";
-		}
+		} 
 		std::wstring JApplicationProject::BinaryPath()noexcept
 		{
 			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Binary";
@@ -653,6 +654,10 @@ namespace JinEngine
 		std::wstring JApplicationProject::ContentResourcePath()noexcept
 		{
 			return ContentsPath() + L"\\" + L"Resource";
+		}
+		std::wstring JApplicationProject::DefaultResourcePath()noexcept
+		{
+			return ContentsPath() + L"\\" + L"Default";
 		}
 		//Log
 		std::wstring JApplicationProject::LogPath()noexcept
@@ -673,19 +678,14 @@ namespace JinEngine
 		{
 			return JApplicationProjectImpl::Instance().ProjectVersionFilePath();
 		}
-
-		//ProjectResourcePath
-		std::wstring JApplicationProject::DefaultResourcePath()noexcept
-		{
-			return ProjectResourcePath() + L"\\" + L"Default";
-		}
+		  
 		std::wstring JApplicationProject::ShaderMetafilePath()noexcept
 		{
-			return ProjectResourcePath() + L"\\" + L"ShaderMetafile";
+			return ProjectPrivateResourcePath() + L"\\" + L"ShaderMetafile";
 		}
 		std::wstring JApplicationProject::ModResourceCachePath()noexcept
 		{
-			return ProjectResourcePath() + L"\\" + L"ModResourceCache";
+			return ProjectPrivateResourcePath() + L"\\" + L"ModResourceCache";
 		}
 		std::wstring JApplicationProject::ProjectBinaryPath()noexcept
 		{
@@ -733,17 +733,17 @@ namespace JinEngine
 					ContentsPath(),
 					DocumentPath(),
 					ConfigPath(),
-					ProjectResourcePath(),
+					ProjectPrivateResourcePath(),
 					BinaryPath(),
 					SolutionPath(),
-					ShaderMetafilePath(),
-					DefaultResourcePath(),
+					ShaderMetafilePath(), 
 					ModResourceCachePath(),
 					EditoConfigPath(),
 					LogPath(),
 					DevelopLogPath(),
 					ContentScenePath(),
 					ContentResourcePath(),
+					DefaultResourcePath(),
 					ProjectBinaryPath(),
 					SouceCodePath()
 			};

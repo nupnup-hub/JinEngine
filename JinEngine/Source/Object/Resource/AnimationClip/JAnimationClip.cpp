@@ -523,11 +523,11 @@ namespace JinEngine
 				std::vector<JUserPtr<JResourceObject>> res;
 				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
 				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
-				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
+				if (HasSQValueEnum(info.typeInfo, Core::J_FBX_RESULT_HAS_SKELETON))
 				{
 					Core::JFbxAnimationData jfbxAniData;
-					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxAnimationFile(importPathData.oriFilePath, jfbxAniData);
-					if (loadRes == Core::J_FBXRESULT::FAIL)
+					Core::J_FBX_RESULT loadRes = JFbxFileLoader::Instance().LoadFbxAnimationFile(importPathData.oriFilePath, jfbxAniData);
+					if (loadRes == Core::J_FBX_RESULT_FAIL)
 						return { nullptr };
 
 					JUserPtr<JDirectory> fileDir = dir->GetChildDirctoryByName(importPathData.name);
@@ -536,7 +536,7 @@ namespace JinEngine
 					
 					JUserPtr<JDirectory> animationDir = JICI::Create<JDirectory>(L"Animation", Core::MakeGuid(), OBJECT_FLAG_NONE, fileDir);
 					//Animation
-					if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_ANIMATION))
+					if (HasSQValueEnum(info.typeInfo, Core::J_FBX_RESULT_HAS_ANIMATION))
 					{
 						res.push_back(JICI::Create<JAnimationClip>(importPathData.name,
 							Core::MakeGuid(),
@@ -617,7 +617,7 @@ namespace JinEngine
 	}
 	std::vector<std::wstring> JAnimationClip::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::wstring> format{ L".fbx" };
+		static std::vector<std::wstring> format{ L".fbx" }; 
 		return format;
 	}
 	void JAnimationClip::SetClipSkeletonAsset(JUserPtr<JSkeletonAsset> newClipSkeletonAsset)noexcept

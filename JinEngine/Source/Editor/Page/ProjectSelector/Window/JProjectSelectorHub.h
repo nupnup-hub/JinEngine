@@ -12,7 +12,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		struct SelectorValues;
-		class JEditorSearchBarHelper;
+		class JEditorSearchBar;
 		class JEditorDynamicSpotColor;
 		class JProjectSelectorHubCreationFunctor;
 		class JProjectSelectorHub : public JEditorWindow, public JResourceEventManager::Listener
@@ -30,7 +30,7 @@ namespace JinEngine
 		private:
 			//last project rendering scene
 			std::vector<JUserPtr<JTexture>> lastRSVec;
-			std::unique_ptr<JEditorSearchBarHelper> searchHelper;
+			std::unique_ptr<JEditorSearchBar> searchHelper;
 			std::unique_ptr<JEditorDynamicSpotColor> dynamicCol;
 		private:
 			std::unique_ptr<SelectorValues> values;

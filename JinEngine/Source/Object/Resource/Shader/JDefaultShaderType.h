@@ -1,7 +1,6 @@
-#pragma once
-#include"JShaderEnum.h"
-#include"JShaderCondition.h"
+#pragma once 
 #include"../../JObjectFlag.h"
+#include"../../../Graphic/Shader/JShaderType.h"
 
 namespace JinEngine
 {
@@ -26,7 +25,7 @@ namespace JinEngine
 	{
 	public:
 		static J_GRAPHIC_SHADER_FUNCTION GetShaderFunction(const J_DEFAULT_GRAPHIC_SHADER sType)
-		{
+		{ 
 			switch (sType)
 			{
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADER:
@@ -49,13 +48,13 @@ namespace JinEngine
 				return SHADER_FUNCTION_NONE;
 			}
 		}
-		static JShaderCondition GetShaderGraphicPso(const J_DEFAULT_GRAPHIC_SHADER sType)
-		{
+		static JGraphicShaderCondition GetShaderGraphicPso(const J_DEFAULT_GRAPHIC_SHADER sType)
+		{ 
 			switch (sType)
 			{
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SKY_SHADER:
 			{
-				JShaderCondition pso;
+				JGraphicShaderCondition pso;
 				pso.cullModeCondition = J_SHADER_APPLIY_CONDITION::APPLY;
 				pso.isCullModeNone = true;
 				pso.depthCompareCondition = J_SHADER_APPLIY_CONDITION::APPLY;
@@ -64,22 +63,23 @@ namespace JinEngine
 			}
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER:
 			{
-				JShaderCondition pso;
+				JGraphicShaderCondition pso;
 				pso.primitiveCondition = J_SHADER_APPLIY_CONDITION::APPLY;
 				pso.primitiveType = J_SHADER_PRIMITIVE_TYPE::LINE; 
 				return pso;
 			}
 			default:
-				return JShaderCondition{};
+				return JGraphicShaderCondition{};
 			}
 		}
 		static J_COMPUTE_SHADER_FUNCTION GetComputeShaderFunction(const J_DEFAULT_COMPUTE_SHADER cType)
 		{
-			switch (cType)
-			{ 
-			default:
-				return J_COMPUTE_SHADER_FUNCTION::NONE;
-			}
+			return J_COMPUTE_SHADER_FUNCTION::NONE;
+			//switch (cType)
+			//{ 
+			//default:
+			//	return J_COMPUTE_SHADER_FUNCTION::NONE;
+			//}
 		}
 		static J_OBJECT_FLAG GetObjectFlag(const J_DEFAULT_GRAPHIC_SHADER sType)
 		{
@@ -111,11 +111,12 @@ namespace JinEngine
 		}
 		static bool IsDefaultUsed(const J_DEFAULT_COMPUTE_SHADER cType)
 		{
-			switch (cType)
-			{ 
-			default:
-				return false;
-			}
+			return false;
+			//switch (cType)
+			///{ 
+			//default:
+			//	return false;
+			//}
 		}
 	};
 }

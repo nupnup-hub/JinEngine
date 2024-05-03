@@ -46,8 +46,11 @@ namespace JinEngine
 		JUserPtr<JTransform> GetTransform()noexcept;
 		DirectX::XMMATRIX GetView()const noexcept;
 		JMatrix4x4 GetView4x4()const noexcept;
+		DirectX::XMMATRIX GetInvView()const noexcept; 
 		DirectX::XMMATRIX GetProj()const noexcept;  
 		JMatrix4x4 GetProj4x4()const noexcept; 
+		DirectX::XMMATRIX GetPreViewProj()const noexcept;
+		void GetUvToView(JVector2F& a, JVector2F& b)const noexcept;
 		/*
 		* @return world bounding frustum
 		*/
@@ -55,7 +58,7 @@ namespace JinEngine
 		/*
 		* @return local bounding frustum
 		*/
-		DirectX::BoundingFrustum GetLocalBoundingLoFrustum()const noexcept;
+		DirectX::BoundingFrustum GetLocalBoundingFrustum()const noexcept;
 		float GetNear()const noexcept;
 		float GetFar()const noexcept;
 		float GetFovX()const noexcept;
@@ -70,6 +73,7 @@ namespace JinEngine
 		float GetFarViewWidth()const noexcept;
 		float GetFarViewHeight()const noexcept;
 		J_CAMERA_STATE GetCameraState()const noexcept; 
+		JVector2F GetRenderTargetSize()const noexcept;
 		JVector2F GetRenderTargetRate()const noexcept;
 		Graphic::JSsaoDesc GetSsaoDesc()const noexcept; 
 	public:
@@ -106,6 +110,8 @@ namespace JinEngine
 		bool AllowLightCulling()const noexcept final;
 		bool AllowDisplayLightCullingDebug()const noexcept;
 		bool AllowSsao()const noexcept;
+		bool AllowPostProcess()const noexcept;
+		bool AllowRaytracingGI()const noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

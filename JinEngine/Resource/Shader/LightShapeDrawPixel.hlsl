@@ -67,7 +67,7 @@ float2 min_max(float2 depth_min_max, in float depth)
 	depth_min_max.y = max(depth_min_max.y, depth);
 	
 	return depth_min_max;
-}
+} 
 
 float2 PS(PsIn pin, bool isFrontFace : SV_IsFrontFace) : SV_TARGET
 {
@@ -80,21 +80,17 @@ float2 PS(PsIn pin, bool isFrontFace : SV_IsFrontFace) : SV_TARGET
 	float3 vert1 = pin.vertexPosV[1];
 	float3 vert2 = pin.vertexPosV[2];
 #endif
-	 
-	/*
-	uint index = pin.rtIndex + litOffset; 
-	float farZ = light[index].frustumFar;
-	*/
-	float farZ = camFarZ;
+	  
+	float farZ = cbCam.farZ;
 	float2 depthMinMax = float2(farZ, 0.0f);
 
 	const float ey = tan(PI / 4.0f * 0.5f);
-	const float ex = ey * camRenderTargetSize.x / camRenderTargetSize.y;
+    const float ex = ey * cbCam.renderTargetSize.x / cbCam.renderTargetSize.y;
 
-	const float3 left_plane = normalize(float3(1.0f, 0.0f, (1.0f - 2.0f * floor(pin.posH.x) / CLUSTER_DIM_X) * ex));
-	const float3 right_plane = -normalize(float3(1.0f, 0.0f, (1.0f - 2.0f * floor(pin.posH.x + 1.0f) / CLUSTER_DIM_X) * ex));
-	const float3 top_plane = normalize(float3(0.0f, -1.0f, (1.0f - 2.0f * floor(pin.posH.y) / CLUSTER_DIM_Y) * ey));
-	const float3 bottom_plane = -normalize(float3(0.0f, -1.0f, (1.0f - 2.0f * floor(pin.posH.y + 1.0f) / CLUSTER_DIM_Y) * ey));
+	const float3 left_plane		= normalize(float3(1.0f, 0.0f, (1.0f - 2.0f * floor(pin.posH.x) / CLUSTER_DIM_X) * ex));
+	const float3 right_plane	= -normalize(float3(1.0f, 0.0f, (1.0f - 2.0f * floor(pin.posH.x + 1.0f) / CLUSTER_DIM_X) * ex));
+	const float3 top_plane		= normalize(float3(0.0f, -1.0f, (1.0f - 2.0f * floor(pin.posH.y) / CLUSTER_DIM_Y) * ey));
+	const float3 bottom_plane	= -normalize(float3(0.0f, -1.0f, (1.0f - 2.0f * floor(pin.posH.y + 1.0f) / CLUSTER_DIM_Y) * ey));
 	
 	////////////////////////////////////////////////////////////////////////
 	//Case where the min/max depth is one of the corners of the tile
@@ -143,7 +139,7 @@ float2 PS(PsIn pin, bool isFrontFace : SV_IsFrontFace) : SV_TARGET
 	// Look up the light list for the cluster
 	const float min_depth = log2(NEAR_CLUST);
 	const float max_depth = log2(farZ);
-
+	 
 	const float scale = 1.0f / (max_depth - min_depth) * (CLUSTER_DIM_Z - 1.0f);
 	const float bias = 1.0f - min_depth * scale;
 	 

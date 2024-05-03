@@ -12,7 +12,7 @@ namespace JinEngine
 	//초기화까지만 구현
 	//dynamic 추가 삭제 구현 필요
 	class JGameObject;
-	class JOctree : public JAccelerator
+	class JOctree : public JCpuAccelerator
 	{
 	private:
 		JOctreeNode* rootNodeCash = nullptr;

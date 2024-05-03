@@ -60,13 +60,14 @@ namespace JinEngine
 			static std::wstring ContentsPath()noexcept;
 			static std::wstring DocumentPath()noexcept;
 			static std::wstring ConfigPath()noexcept;
-			static std::wstring ProjectResourcePath()noexcept;
+			static std::wstring ProjectPrivateResourcePath()noexcept; 
 			static std::wstring BinaryPath()noexcept;  
 			static std::wstring SolutionPath()noexcept;
 		public:
 			//Contents
 			static std::wstring ContentScenePath()noexcept; 
 			static std::wstring ContentResourcePath()noexcept;
+			static std::wstring DefaultResourcePath()noexcept;
 		public:
 			//Documtent
 			static std::wstring LogPath()noexcept;
@@ -75,9 +76,7 @@ namespace JinEngine
 			//Config
 			static std::wstring EditoConfigPath()noexcept;
 			static std::wstring ProjectVersionFilePath()noexcept;
-		public:
-			//ProjectResourcePath
-			static std::wstring DefaultResourcePath()noexcept;	//ProjectResourcePath() \\ DefulatResource
+		public:   
 			static std::wstring ShaderMetafilePath()noexcept;
 			static std::wstring ModResourceCachePath()noexcept;
 		public:

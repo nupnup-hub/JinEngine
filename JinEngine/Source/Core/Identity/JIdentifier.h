@@ -60,6 +60,23 @@ namespace JinEngine
 			{
 				return GetDefaultName(T::StaticTypeInfo());
 			}
+		public:
+			template<typename T, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, T>, int> = 0>
+			static void AlignByName(std::vector<JUserPtr<T>>& vec, const bool isAscending = true)noexcept
+			{
+				auto aSortLam = [](const JUserPtr<JIdentifier>& a, const JUserPtr<JIdentifier>& b)
+				{
+					return tolower(a->GetName()[0]) < tolower(b->GetName()[0]);
+				};
+				auto dSortLam = [](const JUserPtr<JIdentifier>& a, const JUserPtr<JIdentifier>& b)
+				{
+					return tolower(a->GetName()[0]) > tolower(b->GetName()[0]);
+				};
+				if (isAscending)
+					std::sort(vec.begin(), vec.end(), aSortLam);
+				else
+					std::sort(vec.begin(), vec.end(), dSortLam);
+			}
 		protected:
 			JIdentifier(const InitData& initData);
 			~JIdentifier();

@@ -25,7 +25,7 @@ namespace JinEngine
 			std::unique_ptr<GetPageFlagF::Functor> getFlagF;
 			std::unique_ptr<GetPublicStateF::Functor> getPublicStateF;
 		public:
-			std::unique_ptr<Core::JTypeInstanceSearchHint> draggingHint;
+			std::unique_ptr<JDragDropData> draggingHint;
 		public:
 			ShareData(std::unique_ptr<GetGuiIDF::Functor>&& getPageGuiIDF,
 				std::unique_ptr<GetDockSpaceIDF::Functor>&&  getPageDockSpaceIDF,
@@ -118,15 +118,15 @@ namespace JinEngine
 		{
 			pageData[(int)evStruct->pageType]->openObject = evStruct->GetOpenSeleted();
 		}
-		Core::JTypeInstanceSearchHint* JEditorPageShareData::RegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType, Core::JIdentifier* iden)noexcept
+		JDragDropData* JEditorPageShareData::RegisterDragDropHint(const J_EDITOR_PAGE_TYPE pageType, std::unique_ptr<JDragDropData>&& data)noexcept
 		{
-			pageData[(int)pageType]->draggingHint = std::make_unique<Core::JTypeInstanceSearchHint>(Core::GetUserPtr(iden));
-			return pageData[(int)pageType]->draggingHint.get();
+			pageData[(int)pageType]->draggingHint = std::move(data);
+			return 	pageData[(int)pageType]->draggingHint.get();
 		}
-		void JEditorPageShareData::DeRegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		void JEditorPageShareData::DeRegisterDragDropHint(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
-			pageData[(int)pageType]->draggingHint.reset();
-		}
+			pageData[(int)pageType]->draggingHint = nullptr;
+		} 
 		void JEditorPageShareData::Clear()noexcept
 		{
 			for (uint i = 0; i < (int)J_EDITOR_PAGE_TYPE::COUNT; ++i)

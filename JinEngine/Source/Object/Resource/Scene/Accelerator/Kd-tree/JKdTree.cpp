@@ -36,7 +36,7 @@ namespace JinEngine
 	};
 
 	JKdTree::JKdTree(const J_ACCELERATOR_LAYER layer)
-		:JAccelerator(layer)
+		:JCpuAccelerator(layer)
 	{}
 	JKdTree::~JKdTree() {}
 	void JKdTree::Build()noexcept
@@ -57,9 +57,8 @@ namespace JinEngine
 		allNodes.clear(); 
 	}
 	void JKdTree::Clear()noexcept
-	{
-		UnBuild();
-		JAccelerator::Clear();
+	{ 
+		JCpuAccelerator::Clear();
 	}
 	void JKdTree::OnDebugGameObject()noexcept
 	{

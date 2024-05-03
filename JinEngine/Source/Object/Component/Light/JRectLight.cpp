@@ -9,6 +9,7 @@
 #include"../../Resource/Scene/JScenePrivate.h"
 #include"../../Resource/Texture/JTexture.h" 
 #include"../../Resource/JResourceObjectUserInterface.h"
+#include"../../Resource/JResourceManager.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Func/JFuncList.h" 
@@ -16,8 +17,7 @@
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Graphic/JGraphic.h"  
 #include"../../../Graphic/JGraphicPrivate.h"
-#include"../../../Graphic/Frameresource/JLightConstants.h"  
-#include"../../../Graphic/Frameresource/JShadowMapConstants.h"   
+#include"../../../Graphic/Frameresource/JLightConstants.h"     
 #include"../../../Graphic/Frameresource/JFrameUpdate.h"
 #include"../../../Graphic/Culling/JCullingInterface.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
@@ -44,6 +44,10 @@ namespace JinEngine
 		static constexpr float maxPower = 8.0f;
 		static constexpr float frustumNear = 1.0f;	 
 		static constexpr float maxBarndoorLength = 64;
+
+		using GetFrameDataPtr = Graphic::JFrameUpdateData* (*)(JLight*);
+		static GetFrameDataPtr getFrameDataPtr[Graphic::LightFrameLayer::setCount];
+
 		static constexpr float InitPower()noexcept
 		{
 			return 1.0f;
@@ -76,7 +80,7 @@ namespace JinEngine
 		public LitFrameUpdate,
 		public JResourceObjectUserInterface,
 		public Graphic::JGraphicWideSingleResourceHolder<2>,	//shadowMap, debug
-		//public Graphic::JGraphicTypePerSingleResourceHolder,
+		//public Graphic::JGraphicTypePerSingleResourceHolder, 
 		public Graphic::JGraphicDrawListCompInterface,
 		public JCullingSingleHolder
 	{
@@ -112,8 +116,11 @@ namespace JinEngine
 	public:
 		REGISTER_PROPERTY_EX(sourceTexture, GetSourceTexture, SetSourceTexture, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, false))
 		JUserPtr<JTexture> sourceTexture;
+		JUserPtr<JTexture> ltcMat;
+		JUserPtr<JTexture> ltcAmp;
 	public:
 		JVector3F worldAxis[3]; 
+		JVector3F worldDir;
 		JMatrix4x4 view;
 		JMatrix4x4 proj;
 	public:
@@ -158,6 +165,25 @@ namespace JinEngine
 			bbox.Center = GetTransform()->GetWorldPosition().ToSimilar<XMFLOAT3>();
 			bbox.Extents = XMFLOAT3(areaSize.x, areaSize.y, range);
 			return bbox;
+		}
+		JUserPtr<JMeshGeometry> GetMesh()const noexcept
+		{
+			return _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::LOW_HEMI_SPHERE);
+		}
+		DirectX::XMMATRIX GetMeshWorldM(const bool restrictScaledZ)const noexcept
+		{
+			JUserPtr<JTransform> t = GetTransform();
+			JVector3F p;
+			JVector4F q;
+			JVector3F s;
+			t->GetWorldPQS(p, q, s);
+
+			XMVECTOR qv = DirectX::XMQuaternionRotationAxis(JVector3F::Right().ToXmV(), JMathHelper::DegToRad * 90.0f);
+			qv = XMQuaternionMultiply(qv, q.ToXmV());
+			 
+			//barndoorAngle에 대한 적용필요.
+			s = JVector3F(areaSize.x * 1.025f, areaSize.y * 1.025f, restrictScaledZ ? 1 : range);
+			return DirectX::XMMatrixAffineTransformation(s.ToXmV(), JVector4F::Zero().ToXmV(), qv, p.ToXmV());
 		}
 		JUserPtr<JTransform> GetTransform()const noexcept
 		{
@@ -212,6 +238,8 @@ namespace JinEngine
 
 			areaSize = JVector2F::Clamp(newAreaSize, 0, Constants::localLightMaxDistance);
 			SetFrameDirty();
+
+			JLightPrivate::ChildInterface::UpdateLightShape(thisPointer);
 		}
 		/*
 		void SetTwoSide(const bool value)noexcept
@@ -226,6 +254,8 @@ namespace JinEngine
 		{
 			range = std::clamp(newRange, Constants::localLightMinDistance, Constants::localLightMaxDistance);
 			SetFrameDirty();
+
+			JLightPrivate::ChildInterface::UpdateLightShape(thisPointer);
 		} 
 		void SetBarndoorLength(const float newLength)noexcept
 		{ 
@@ -234,6 +264,8 @@ namespace JinEngine
 
 			barndoorLength = std::clamp(newLength, 0.0f, Private::maxBarndoorLength);
 			SetFrameDirty();
+
+			JLightPrivate::ChildInterface::UpdateLightShape(thisPointer);
 		}
 		void SetBarndoorAngle(const float newAngle)noexcept
 		{
@@ -242,6 +274,8 @@ namespace JinEngine
 
 			barndoorAngle = std::clamp(newAngle, 0.0f, 90.0f);
 			SetFrameDirty();
+
+			JLightPrivate::ChildInterface::UpdateLightShape(thisPointer);
 		}
 		void SetSourceTexture(const JUserPtr<JTexture>& newSourceTexture)noexcept
 		{
@@ -279,7 +313,7 @@ namespace JinEngine
 		bool AllowDisplayOccCullingDepthMap()const noexcept
 		{
 			return false;
-		}
+		} 
 	public:
 		void CreateShadowMapResource()noexcept
 		{
@@ -316,7 +350,9 @@ namespace JinEngine
 		{
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			SetFuncList().InvokeAll(this, true, true);
-			SetFrameDirty(); 
+			SetFrameDirty();  
+			ltcMat = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_MAT);	
+			ltcAmp = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_AMP);
 		}
 		void DeActivate()noexcept
 		{
@@ -325,10 +361,13 @@ namespace JinEngine
 			SetFuncList().InvokeAll(this, true, false);
 			DestroyAllCullingData();
 			DestroyAllTexture();
+			ltcMat = nullptr;
+			ltcAmp = nullptr;
 		}
 	public:
 		void UpdateFrame(Graphic::JRectLightConstants& constant)noexcept final
-		{  
+		{
+			static constexpr uint missingIndex = Graphic::Constants::missingIndex;
 			const XMMATRIX projM = proj.LoadXM();
 			const XMMATRIX ndcM = JMatrix4x4::NdcToTextureSpaceXM();
 			  
@@ -338,7 +377,8 @@ namespace JinEngine
 			constant.axis[0] = worldAxis[0];
 			constant.axis[1] = worldAxis[1];
 			constant.axis[2] = worldAxis[2];
-			constant.color = thisPointer->GetColor();
+			constant.direction = worldDir;
+			constant.color = thisPointer->GetColor();		 
 			constant.power = thisPointer->GetPower();  
 			constant.frustumNear = GetFrustumNear();
 			constant.frustumFar = GetFrustumFar();
@@ -347,7 +387,12 @@ namespace JinEngine
 			//constant.isTwoSide = isTwoSide;
 			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
 			constant.hasShadowMap = IsShadowActivated(); 
-			constant.sourceTextureIndex = sourceTexture != nullptr ? sourceTexture->GraphicResourceUserInterface().GetFirstResourceArrayIndex() : invalidIndex;
+			constant.sourceTextureIndex = sourceTexture != nullptr ? sourceTexture->GraphicResourceUserInterface().GetFirstResourceArrayIndex() : missingIndex;
+ 
+			auto ltcMatInterface = ltcMat->GraphicResourceUserInterface();
+			auto ltcAmpInterface = ltcAmp->GraphicResourceUserInterface();
+			constant.ltcMatTextureIndex = ltcMatInterface.GetFirstResourceArrayIndex();
+			constant.ltcAmpTextureIndex = ltcAmpInterface.GetFirstResourceArrayIndex();
 			RectLitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapDrawConstants& constant)noexcept final
@@ -363,6 +408,7 @@ namespace JinEngine
 			worldAxis[0] = t->GetWorldRight();
 			worldAxis[1] = t->GetWorldUp();
 			worldAxis[2] = t->GetWorldFront();
+			worldDir = Private::CalLightWorldDir(t);
 		}
 	public:
 		static bool DoCopy(JRectLight* from, JRectLight* to)
@@ -384,7 +430,7 @@ namespace JinEngine
 				if (sourceTexture != nullptr && sourceTexture->GetGuid() == jRobj->GetGuid())
 					SetSourceTexture(nullptr);
 			}
-			else if (eventType == J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE)
+			else if (eventType == J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE)
 			{
 				if (sourceTexture != nullptr && sourceTexture->GetGuid() == jRobj->GetGuid())
 					SetFrameDirty();
@@ -395,8 +441,8 @@ namespace JinEngine
 		{
 			if (thisPointer.IsValid())
 			{
-				JLightPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
-				JLightPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
+				JLightPrivate::ChildInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
+				JLightPrivate::ChildInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
 			}
 			RegisterInterfacePointer();
 
@@ -417,8 +463,8 @@ namespace JinEngine
 		void RegisterPostCreation()
 		{
 			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
-			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE);
-			JLightPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
+			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE);
+			JLightPrivate::ChildInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
 		}
 		void RegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
 		{
@@ -431,7 +477,7 @@ namespace JinEngine
 		{
 			RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 			if (thisPointer != nullptr)
-				JLightPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
+				JLightPrivate::ChildInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
 		}
 		void DeRegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
 		{
@@ -483,6 +529,12 @@ namespace JinEngine
 			SetFuncList().Register(std::make_unique<SetCallable>(setShadowMapLam), std::make_unique<CondCallable>(&JRectLightImpl::IsShadowActivated), MANAGED_SET_SHADOW_MAP);
 			SetFuncList().Register(std::make_unique<SetCallable>(setDisplayShadowMapLam), std::make_unique<CondCallable>(&JRectLightImpl::AllowDisplayShadowMap), MANAGED_SET_DISPLAY_SHADOW_MAP);
 			SetFuncList().Register(std::make_unique<SetCallable>(setFrustumCullingLam), std::make_unique<CondCallable>(&JRectLightImpl::AllowFrustumCulling), MANAGED_SET_FRUSTUM_CULLING);
+		
+			auto getRectFrameLam = [](JLight* lit)->JFrameUpdateData* {return (RectLitFrame*)(static_cast<JRectLight*>(lit)->impl.get()); };
+			auto getShadowMapFrame = [](JLight* lit)->JFrameUpdateData* {return (ShadowMapDrawFrame*)(static_cast<JRectLight*>(lit)->impl.get()); };
+
+			Private::getFrameDataPtr[Graphic::LightFrameLayer::light] = getRectFrameLam;
+			Private::getFrameDataPtr[Graphic::LightFrameLayer::shadowMap] = getShadowMapFrame;
 		}
 	};
 
@@ -541,6 +593,14 @@ namespace JinEngine
 	DirectX::BoundingBox JRectLight::GetBBox()const noexcept
 	{
 		return impl->GetBBox();
+	}
+	JUserPtr<JMeshGeometry> JRectLight::GetMesh()const noexcept
+	{
+		return impl->GetMesh();
+	}
+	DirectX::XMMATRIX JRectLight::GetMeshWorldM(const bool restrictScaledZ)const noexcept
+	{
+		return impl->GetMeshWorldM(restrictScaledZ);
 	}
 	JVector3F JRectLight::GetDirection()const noexcept
 	{
@@ -629,15 +689,21 @@ namespace JinEngine
 	bool JRectLight::AllowDisplayOccCullingDepthMap()const noexcept
 	{
 		return impl->AllowDisplayOccCullingDepthMap();
-	}
+	} 
 	void JRectLight::DoActivate()noexcept
-	{
+	{		
+		//Caution 
+		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
+		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
+		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
 		JLight::DoActivate();
 		impl->Activate();
 		impl->SetFrameDirty();
+		RegisterComponent(impl->thisPointer, GetLitTypeComparePtr());
 	}
 	void JRectLight::DoDeActivate()noexcept
 	{
+		DeRegisterComponent(impl->thisPointer);
 		impl->DeActivate();
 		impl->OffFrameDirty();
 		JLight::DoDeActivate();
@@ -770,57 +836,73 @@ namespace JinEngine
 
 		dLit->impl->SetLastFrameUpdatedTrigger(false);
 		dLit->impl->SetLastFrameHotUpdatedTrigger(false);
-		if (dLit->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+		if (dLit->impl->IsFrameHotDirted())
 			dLit->impl->UpdateLightTransform();
 		return dLit->impl->IsFrameDirted();
 	}
-	void FrameUpdateInterface::UpdateFrame(JRectLight* lit, Graphic::JRectLightConstants& constant)noexcept
+	void FrameUpdateInterface::UpdateFrame(JLight* lit, Graphic::JLightConstantsSet& set)noexcept
 	{
-		lit->impl->UpdateFrame(constant);
+		auto impl = static_cast<JRectLight*>(lit)->impl.get();
+		if (set.updateStart)
+		{
+			impl->UpdateFrame(set.rectLight);
+			set.SetUpdated(Graphic::LightFrameLayer::light, impl->RectLitFrame::GetFrameIndex());
+
+			if (impl->ShadowMapDrawFrame::HasValidFrameIndex())
+			{
+				impl->UpdateFrame(set.shadowMap);
+				set.SetUpdated(Graphic::LightFrameLayer::shadowMap, impl->ShadowMapDrawFrame::GetFrameIndex());
+			}
+		}
+		else
+		{
+			if (impl->ShadowMapDrawFrame::HasMovedDirty())
+			{
+				impl->UpdateFrame(set.shadowMap);
+				set.SetUpdated(Graphic::LightFrameLayer::shadowMap, impl->ShadowMapDrawFrame::GetFrameIndex());
+			}
+			if (impl->RectLitFrame::HasMovedDirty() || set.isUpdated[Graphic::LightFrameLayer::shadowMap])
+			{
+				/*
+				* 	light constants에는 shadow map index에 대한 변수가 있으므로
+				*	shadow map update시 light constants와 shadow constants를 동시에
+				*	Update해줄 필요가 있다. ex)graphic resource destroy인한 index변경 반영
+				*/
+				impl->UpdateFrame(set.rectLight);
+				set.SetUpdated(Graphic::LightFrameLayer::light, impl->RectLitFrame::GetFrameIndex());
+			}
+		}
 	}
-	void FrameUpdateInterface::UpdateFrame(JRectLight* lit, Graphic::JShadowMapDrawConstants& constant)noexcept
-	{
-		lit->impl->UpdateFrame(constant);
-	}
+
 	void FrameUpdateInterface::UpdateEnd(JLight* lit)noexcept
 	{
 		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
 			return;
 
 		JRectLight* dLit = static_cast<JRectLight*>(lit);
-		if (dLit->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+		if (dLit->impl->IsFrameHotDirted())
 			dLit->impl->SetLastFrameHotUpdatedTrigger(true);
 		dLit->impl->SetLastFrameUpdatedTrigger(true);
 		dLit->impl->UpdateFrameEnd();
 	}
-	int FrameUpdateInterface::GetLitFrameIndex(JLight* lit)noexcept
+	int FrameUpdateInterface::GetFrameIndex(JLight* lit, const uint layerIndex)noexcept
 	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
-			return -1;
-
-		return static_cast<JRectLight*>(lit)->impl->RectLitFrame::GetFrameIndex();
+		return Private::getFrameDataPtr[layerIndex](lit)->GetFrameIndex();
 	}
-	int FrameUpdateInterface::GetShadowMapFrameIndex(JLight* lit)noexcept
+	int FrameUpdateInterface::GetFrameIndexSize(JLight* lit, const uint layerIndex)noexcept
 	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
-			return -1;
-
-		return static_cast<JRectLight*>(lit)->impl->ShadowMapDrawFrame::GetFrameIndex();
+		return Private::getFrameDataPtr[layerIndex](lit)->GetFrameIndexSize();
 	}
-	int FrameUpdateInterface::GetDepthTestPassFrameIndex(JLight* lit)noexcept
+	int FrameUpdateInterface::GetShadowFrameLayerIndex(JLight* lit)noexcept
 	{
-		return -1;
+		return Graphic::LightFrameLayer::shadowMap;
 	}
-	int FrameUpdateInterface::GetHzbOccComputeFrameIndex(JLight* lit)noexcept
-	{
-		return -1;
-	}
-	bool FrameUpdateInterface::IsHotUpdate(JLight* lit)noexcept
+	bool FrameUpdateInterface::IsFrameHotDirted(JLight* lit)noexcept
 	{
 		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
 			return false;
 
-		return static_cast<JRectLight*>(lit)->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources;
+		return static_cast<JRectLight*>(lit)->impl->IsFrameHotDirted();
 	}
 	bool FrameUpdateInterface::IsLastFrameHotUpdated(JLight* lit)noexcept
 	{
@@ -836,50 +918,14 @@ namespace JinEngine
 
 		return static_cast<JRectLight*>(lit)->impl->IsLastFrameUpdated();
 	}
-	bool FrameUpdateInterface::HasLitRecopyRequest(JLight* lit)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
-			return false;
 
-		return static_cast<JRectLight*>(lit)->impl->RectLitFrame::HasMovedDirty();
-	}
-	bool FrameUpdateInterface::HasShadowMapRecopyRequest(JLight* lit)noexcept
+	int FrameIndexInterface::GetFrameIndex(JLight* lit, const uint layerIndex)noexcept
 	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
-			return false;
-
-		return static_cast<JRectLight*>(lit)->impl->ShadowMapDrawFrame::HasMovedDirty();
-	}
-	bool FrameUpdateInterface::HasDepthTestPassRecopyRequest(JLight* lit)noexcept
+		return Private::getFrameDataPtr[layerIndex](lit)->GetFrameIndex();
+	}  
+	int FrameIndexInterface::GetShadowFrameLayerIndex(JLight* lit)noexcept
 	{
-		return false;
-	}
-	bool FrameUpdateInterface::HasHzbOccComputeRecopyRequest(JLight* lit)noexcept
-	{
-		return false;
-	}
-
-	int FrameIndexInterface::GetLitFrameIndex(JLight* lit)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
-			return -1;
-
-		return static_cast<JRectLight*>(lit)->impl->RectLitFrame::GetFrameIndex();
-	}
-	int FrameIndexInterface::GetShadowMapFrameIndex(JLight* lit)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
-			return -1;
-
-		return static_cast<JRectLight*>(lit)->impl->ShadowMapDrawFrame::GetFrameIndex();
-	}
-	int FrameIndexInterface::GetDepthTestPassFrameIndex(JLight* lit)noexcept
-	{
-		return -1;
-	}
-	int FrameIndexInterface::GetHzbOccComputeFrameIndex(JLight* lit)noexcept
-	{
-		return -1;
+		return Graphic::LightFrameLayer::shadowMap;
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JRectLightPrivate::GetCreateInstanceInterface()const noexcept

@@ -8,9 +8,7 @@
 cbuffer cbPass : register(b0)
 {
 	uint lightType;
-	uint lightOffset;
-	uint passPad00;
-	uint passPad01;
+	uint lightOffset;  
 }
 
 //This array has NUM_LIGHTS slices and contains the near and far cluster z for each tile
@@ -23,19 +21,19 @@ RWStructuredBuffer<LinkedLightID> linkedLightList : register(u1);
 RWStructuredBuffer<uint> outBuffer : register(u2);
 
 #ifdef CLEAR_BUFFER
-[numthreads(THREAD_DIM_X, THREAD_DIM_Y, 1)]
+[numthreads(DIMX, DIMY, DIMZ)]
 void CS(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
 	const uint address = LINKED_LIST_INDEX_PER_BYTE * (dispatchThreadID.x + CLUSTER_DIM_X * dispatchThreadID.y + CLUSTER_DIM_X * CLUSTER_DIM_Y * dispatchThreadID.z);	 
 	startOffsetBuffer.Store(address, OFFER_BUFFER_CLEAR_VALUE);
 }
 #else
-[numthreads(THREAD_DIM_X, THREAD_DIM_Y, 1)]
+[numthreads(DIMX, DIMY, DIMZ)]
 void CS(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
 	//Load near and far values(x is near and y is far)
-	float2 nearAndFar = conservativeRTs.Load(int4(dispatchThreadID, 0));
-
+	float2 nearAndFar = conservativeRTs.Load(int4(dispatchThreadID, 0)); 
+	
 	//Inactive tile, return
 	if (nearAndFar.x == 1.0f && nearAndFar.y == 1.0f)
 		return;

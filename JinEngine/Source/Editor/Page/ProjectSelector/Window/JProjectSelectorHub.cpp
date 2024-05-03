@@ -3,7 +3,7 @@
 #include"../../../Gui/JGui.h" 
 #include"../../../Gui/JGuiImageInfo.h"
 #include"../../../Align/JEditorAlignCalculator.h"
-#include"../../../EditTool/JEditorSearchBarHelper.h"
+#include"../../../EditTool/JEditorSearchBar.h"
 #include"../../../EditTool/JEditorInputBuffHelper.h"
 #include"../../../EditTool/JEditorDynamicColor.h"
 #include"../../../Event/JEditorEvent.h"
@@ -11,6 +11,7 @@
 #include"../../../../Core/Utility/JMacroUtility.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Math/JVectorExtend.h"
+#include"../../../../Core/Log/JLogMacro.h"
 #include"../../../../Application/JApplicationEngine.h" 
 #include"../../../../Application/JApplicationProject.h" 
 #include"../../../../Application/JApplicationProjectPrivate.h" 
@@ -216,7 +217,7 @@ namespace JinEngine
 			pInterface(std::move(newPInterface))
 		{
 			creation = std::make_unique<JProjectSelectorHubCreationFunctor>();
-			searchHelper = std::make_unique<JEditorSearchBarHelper>(false);
+			searchHelper = std::make_unique<JEditorSearchBar>(false);
 			dynamicCol = std::make_unique<JEditorDynamicSpotColor>();
 			values = std::make_unique<SelectorValues>();
 			InitializeCreationImpl();
@@ -249,14 +250,15 @@ namespace JinEngine
 			return J_EDITOR_WINDOW_TYPE::PROJECT_SELECTOR_HUB;
 		}
 		void JProjectSelectorHub::UpdateWindow()
-		{
+		{ 
 			//ImGuiCond_FirstUseEver
-			JGui::SetNextWindowSize(JWindow::GetClientSize(), J_GUI_CONDIITON_ONCE);
-			JGui::SetNextWindowPos(JWindow::GetClientPosition(), J_GUI_CONDIITON_ONCE);
+			JGui::SetNextWindowSize(JWindow::GetClientSize());
+			JGui::SetNextWindowPos(JWindow::GetClientPosition());
 
 			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_SCROLL_BAR |
 				J_GUI_WINDOW_FLAG_NO_COLLAPSE |
 				J_GUI_WINDOW_FLAG_NO_MOVE |
+				J_GUI_WINDOW_FLAG_NO_RESIZE | 
 				J_GUI_WINDOW_FLAG_NO_TITLE_BAR;
 
 			JGui::PushStyle(J_GUI_STYLE::WINDOW_ROUNDING, 0.0f);
@@ -280,7 +282,7 @@ namespace JinEngine
 				if (values->GetTrigger(J_PS_TRIGGER::DESTROY_PROJECT))
 					RequestDestroyProject();
 				if (values->GetTrigger(J_PS_TRIGGER::OPTION))
-					OptionOnScreen();
+					OptionOnScreen(); 
 			}
 			CloseWindow();
 		}
@@ -653,6 +655,7 @@ namespace JinEngine
 		void JProjectSelectorHub::GuideButtonOnScreen()
 		{
 			JGui::SetCurrentWindowFontScale(0.9f);
+			//최소 최대 dispaly size에 대한 정의 필요 ... 낮은 우선순위
 			struct LayoutData
 			{
 			public:
@@ -748,7 +751,7 @@ namespace JinEngine
 					auto projInfo = JApplicationProject::GetProjectInfo(value.GetSelectedIndex());
 					if (projInfo == nullptr)
 					{
-						MessageBox(0, L"Fail get project info", 0, 0);
+						J_LOG_PRINT_OUT("Start project error", "Fail get project info"); 
 						return;
 					}
 					(*pInterface->startProjectF)(projInfo->CreateReplica()); 
@@ -834,7 +837,7 @@ namespace JinEngine
 					{
 						if (JCUtil::IsOverlappedDirectoryPath(JCUtil::U8StrToWstr(values->GetNameHelper()->result),
 							JCUtil::U8StrToWstr(values->GetPathHelper()->result)))
-							MessageBox(0, L"Overlapped Project Name", 0, 0);
+							J_LOG_PRINT_OUT("Create proejct error", "Overlapped Project Name"); 
 						else
 						{
 							CreateProjectProccess();

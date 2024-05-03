@@ -4,6 +4,7 @@
 #include"../JGuiImageInfo.h" 
 #include"../JGuiWindow.h"
 #include"../Data/JGuiPrivateData.h" 
+#include"../../DragAndDrop/JDragDropData.h"
 #include"../../Align/JEditorAlignType.h"
 #include"../../Page/JEditorPageEnum.h"
 #include"../../../Core/Math/JVector.h"
@@ -27,7 +28,9 @@ namespace JinEngine
 		{
 		public:
 			virtual void Initialize(std::unique_ptr<Graphic::JGuiInitData>&& initData) = 0;
-			virtual void Clear() = 0;
+			virtual void Clear() = 0; 
+		public:
+			virtual void ReBuildGraphicBackend(std::unique_ptr<Graphic::JGuiInitData>&& initData) = 0;
 		public:
 			virtual void UpdateGuiBackend() = 0;
 		public:
@@ -112,11 +115,12 @@ namespace JinEngine
 			virtual bool IsKeyDown(const Core::J_KEYCODE key)const noexcept = 0;
 		public:
 			virtual bool BeginDragDropSource(J_GUI_DRAG_DROP_FLAG_ flag) = 0;
-			virtual bool SetDragDropPayload(const std::string& typeName, Core::JTypeInstanceSearchHint* draggingHint, J_GUI_CONDIITON cond) = 0;
+			virtual bool SetDragDropPayload(const std::string& typeName, JDragDropData* draggingHint, J_GUI_CONDIITON cond) = 0;
 			virtual void EndDragDropSource() = 0;
 			virtual bool BeginDragDropTarget() = 0;
-			virtual Core::JTypeInstanceSearchHint* TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag) = 0;
+			virtual JDragDropData* TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag) = 0;
 			virtual void EndDragDropTarget() = 0;
+			virtual bool IsDragDropActivated() const noexcept = 0;
 #pragma endregion
 #pragma region Widget
 		public:
@@ -144,7 +148,7 @@ namespace JinEngine
 			virtual bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG flags) = 0;
 			virtual bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG flags) = 0;
 			virtual bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG flags, int step) = 0;
-			virtual bool InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG flags, int step) = 0;
+			virtual bool InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG flags, uint step) = 0;
 			virtual bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step) = 0;
 		public:
 			virtual bool SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags) = 0;
@@ -177,6 +181,11 @@ namespace JinEngine
 			virtual bool MenuItem(const std::string& name, const std::string& shortcut, bool selected, bool enabled) = 0;
 		public:
 			virtual bool BeginCombo(const std::string& name, const std::string& preview, J_GUI_COMBO_FLAG flags) = 0;
+			virtual bool BeginComboEx(const std::string& name,
+				const std::string& preview,
+				J_GUI_COMBO_FLAG flags,
+				J_GUI_CARDINAL_DIR initDir,
+				J_GUI_CARDINAL_DIR activateDir) = 0;
 			virtual void EndCombo() = 0;
 		public:
 			virtual bool BeginListBox(const std::string& name, const JVector2<float> size) = 0;

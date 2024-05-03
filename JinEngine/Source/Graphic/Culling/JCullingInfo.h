@@ -42,6 +42,7 @@ namespace JinEngine
 			bool canCulling = true;  
 		public:
 			int GetArrayIndex()const noexcept; 
+			uint GetResultBufferElementCount()const noexcept;
 			uint GetResultBufferSize()const noexcept;
 			uint GetUpdatedInfoCount()const noexcept;
 			JCullingUpdatedInfo GetUpdateddInfo(const uint index)const noexcept;

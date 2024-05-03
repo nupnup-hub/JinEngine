@@ -27,8 +27,7 @@ namespace JinEngine
 	class JMeshGeometry : public JResourceObject,
 		public Graphic::JGraphicResourceUserAccess
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JMeshGeometry)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JMeshGeometry) 
 	public: 
 		class InitData : public JResourceObject::InitData
 		{

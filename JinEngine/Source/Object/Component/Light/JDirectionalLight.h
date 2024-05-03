@@ -31,6 +31,8 @@ namespace JinEngine
 		float GetFrustumNear()const noexcept final;
 		float GetFrustumFar()const noexcept final;
 		DirectX::BoundingBox GetBBox()const noexcept final;
+		JUserPtr<JMeshGeometry> GetMesh()const noexcept final;
+		DirectX::XMMATRIX GetMeshWorldM(const bool restrictScaledZ = false)const noexcept final;
 		uint GetCsmSplitCount()const noexcept;
 		float GetCsmSplitBlendRate()const noexcept;
 		float GetCsmShadowDistance()const noexcept;
@@ -52,8 +54,7 @@ namespace JinEngine
 		bool AllowFrustumCulling()const noexcept final;
 		bool AllowHzbOcclusionCulling()const noexcept final;
 		bool AllowHdOcclusionCulling()const noexcept final;
-		bool AllowDisplayOccCullingDepthMap()const noexcept final;
-
+		bool AllowDisplayOccCullingDepthMap()const noexcept final; 
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

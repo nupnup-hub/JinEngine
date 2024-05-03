@@ -1,8 +1,7 @@
 #include"JLazyDestruction.h"
 #include"../Identity/JIdentifier.h"
 #include"../Time/JGameTimer.h" 
-#include"../Utility/JCommonUtility.h" 
- 
+#include"../Utility/JCommonUtility.h"   
 namespace JinEngine
 {
 	namespace Core
@@ -35,7 +34,7 @@ namespace JinEngine
 				for (int i = 0; i < objectVec.size(); ++i)
 				{
 					if (!objectVec[i]->user.IsValid())
-					{
+					{ 
 						objectVec.erase(objectVec.begin() + i);
 						--i;
 					}

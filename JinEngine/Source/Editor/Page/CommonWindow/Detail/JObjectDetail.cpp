@@ -2,7 +2,7 @@
 #include"../../JEditorPageShareData.h"
 #include"../../JEditorAttribute.h"
 #include"../../../EditTool/JReflectionGuiWidgetHelper.h"  
-#include"../../../EditTool/JEditorSearchBarHelper.h"  
+#include"../../../EditTool/JEditorSearchBar.h"  
 #include"../../../Gui/JGui.h"
 #include"../../../../Core/FSM/JFSMinterface.h" 
 #include"../../../../Core/Utility/JCommonUtility.h"    
@@ -23,7 +23,7 @@ namespace JinEngine
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{
 			guiHelper = std::make_unique<JReflectionGuiWidgetHelper>(this);
-			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
+			searchBarHelper = std::make_unique<JEditorSearchBar>(false);
 		}
 		JObjectDetail::~JObjectDetail() {}
 		J_EDITOR_WINDOW_TYPE JObjectDetail::GetWindowType()const noexcept
@@ -96,6 +96,7 @@ namespace JinEngine
 				} 
 			}
 
+			JGui::Text("ChildCount: " + std::to_string(gObj->GetChildrenCount()));
 			if (JGui::Button("AddComponent"))
 				JGui::OpenPopup("##AddComponentPopup");
 

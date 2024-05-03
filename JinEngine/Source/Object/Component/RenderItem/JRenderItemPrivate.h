@@ -1,5 +1,5 @@
 #pragma once
-#include"../JComponentPrivate.h"
+#include"../JComponentPrivate.h" 
 
 namespace JinEngine
 {
@@ -8,14 +8,9 @@ namespace JinEngine
 	class JBvh;
 	namespace Graphic
 	{
-		class JGraphic; 
-		class JShadowMap;
-		class JHZBOccCulling; 
-		class JSceneDraw;
-		struct JObjectConstants;
-		struct JBoundingObjectConstants;
-		struct JHzbOccObjectConstants;
-		struct JDrawHelper;
+		class JGraphic;   
+		class JFrameIndexAccess; 
+		struct JObjectConstantsSet;
 	}
 	//Debug
 	/*
@@ -52,14 +47,10 @@ namespace JinEngine
 		class FrameUpdateInterface final
 		{
 		private:
-			friend class Graphic::JGraphic;
-			friend class Graphic::JShadowMap;
-			friend class Graphic::JHZBOccCulling;
+			friend class Graphic::JGraphic; 
 		private:   
 			static bool UpdateStart(JRenderItem* rItem, const bool isUpdateForced)noexcept;
-			static void UpdateFrame(JRenderItem* rItem, Graphic::JObjectConstants& constant, const uint submeshIndex)noexcept;
-			static void UpdateFrame(JRenderItem* rItem, Graphic::JBoundingObjectConstants& constant)noexcept;
-			static void UpdateFrame(JRenderItem* rItem, Graphic::JHzbOccObjectConstants& constant)noexcept;
+			static void UpdateFrame(JRenderItem* rItem, Graphic::JObjectConstantsSet& set)noexcept;
 			static void UpdateEnd(JRenderItem* rItem)noexcept;
 		private:
 			//Count submesh
@@ -67,26 +58,23 @@ namespace JinEngine
 			//Count ritem	 
 			static int GetBoundingFrameIndex(JRenderItem* rItem)noexcept;
 			static int GetOccObjectFrameIndex(JRenderItem* rItem)noexcept;
+			static int GetRefInfoFrameIndex(JRenderItem* rItem)noexcept;
 		private:
 			static bool IsLastFrameHotUpdated(JRenderItem* rItem)noexcept;
-			static bool IsLastUpdated(JRenderItem* rItem)noexcept;
-			static bool HasObjectRecopyRequest(JRenderItem* rItem)noexcept;
-			static bool HasBoundingRecopyRequest(JRenderItem* rItem)noexcept;
-			static bool HasOccObjectRecopyRequest(JRenderItem* rItem)noexcept;
+			static bool IsLastUpdated(JRenderItem* rItem)noexcept; 
 		};
 		class FrameIndexInterface
 		{
 		private: 
 			friend class JAcceleratorNode;
-			friend class JBvh; 
-			//Debug
-			//friend class Editor::JSceneObserver;
-			friend struct Graphic::JDrawHelper;
+			friend class JBvh;  
+			friend class Graphic::JFrameIndexAccess;
 		private:
-			//Count submesh
+			//per submesh
 			static int GetObjectFrameIndex(JRenderItem* rItem)noexcept;
-			//Count ritem	 
+			//per ritem	 
 			static int GetBoundingFrameIndex(JRenderItem* rItem)noexcept;
+			static int GetRefInfoFrameIndex(JRenderItem* rItem)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

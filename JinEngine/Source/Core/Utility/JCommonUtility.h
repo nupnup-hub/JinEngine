@@ -58,8 +58,19 @@ namespace JinEngine
 		static std::wstring EraseSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept;
 		static std::string EraseSideChar(const std::string& str, const char ch)noexcept;
 
+		//ch가아닌 문자가 나올때까지 ch제거
+		static std::wstring EraseLeftSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept;
+		static std::string EraseLeftSideChar(const std::string& str, const char ch)noexcept;
+
+		//ch가아닌 문자가 나올때까지 ch제거
+		static std::wstring EraseRightSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept;
+		static std::string EraseRightSideChar(const std::string& str, const char ch)noexcept;
+
 		static std::wstring ChangeWord(const std::wstring& oriSentence, const std::wstring& fromWord, const std::wstring& toWord);
 		static std::string ChangeWord(const std::string& oriSentence, const std::string& fromWord, const std::string& toWord);
+
+		static std::wstring ToUppercase(std::wstring oriSentence, uint st = 0);
+		static std::string ToUppercase(std::string oriSentence, uint st = 0);
 
 		static std::wstring ToLowercase(std::wstring oriSentence, uint st = 0);
 		static std::string ToLowercase(std::string oriSentence, uint st = 0);
@@ -111,6 +122,9 @@ namespace JinEngine
 		static bool FindFirstFilePathByFormat(const std::wstring& folderPath, const std::wstring& format, _Out_ std::wstring& filePath, const bool allowSearchChildDir = true);
 		static void FindFilePathByFormat(const std::wstring& folderPath, const std::wstring& format, _Out_ std::vector<std::wstring>& filePath, const bool allowSearchChildDir = true);
 		static void FindFilePathByFormat(const std::string& folderPath, const std::string& format, _Out_ std::vector<std::string>& filePath, const bool allowSearchChildDir = true);
+	public:
+		static uint CalDimIndex(const uint d1, const uint d2, const uint d1Range)noexcept;
+		static uint CalDimIndex(const uint d1, const uint d2, const uint d3, const uint d1Range, const uint d2Range)noexcept;
 	public:
 		template <class T>
 		static inline void hash_combine(std::size_t& s, const T& v)
@@ -410,34 +424,30 @@ namespace JinEngine
 			for (uint i = st; i < objectCount; ++i)
 				callable(nullptr, static_cast<T*>(objectVec[i]), i, std::forward<Param>(var)...);
 		}
-		template<typename ...Param>
-		static void TraversalTreeNode(Core::JTreeInterface* node, void(*func)(Core::JTreeInterface*, Param...), Param&&... var)
+		template<typename T, typename ...Param>
+		static bool IsAllSame(const T value, Param... param)
 		{
-			if (node == nullptr)
-				return;
-
-			if (func != nullptr)
-				func(node, std::forward<Param>(var)...);
-			
-			const uint count = node->GetChildrenCount();
-			for(uint i = 0; i < count; ++i)
-				TraversalTreeNode(node->GetChild(i), func, std::forward<Param>(var)...);
+			return ((value == param) && ...);
 		}
-		template<typename EntryBind, typename ExitBind>
-		static void TraversalTreeNode(Core::JTreeInterface* node, EntryBind* entryB, ExitBind* exitB)
+		template<typename T, typename ...Param>
+		static bool IsAnySame(const T value, Param... param)
 		{
-			if (node == nullptr)
-				return;
-
-			if (entryB != nullptr)
-				(*entryB)(node);
-
-			const uint count = node->GetChildrenCount();
-			for (uint i = 0; i < count; ++i)
-				TraversalTreeNode(node->GetChild(i), entryB, exitB);
-
-			if (exitB != nullptr)
-				(*exitB)(node);
+			return ((value == param) || ...);
+		} 
+		template<typename T, size_t ...Is>
+		static bool IsAnySame(const T value, T* arrayPointer, std::index_sequence<Is...>)
+		{
+			return ((value == arrayPointer[Is]) || ...);
+		}
+		template<typename T, size_t ...Is>
+		static void InsertValue(T* vPtr, T value, std::index_sequence<Is...>)
+		{
+			((vPtr[Is] = value), ...);
+		}
+		template<typename T, typename U, size_t ...Is>
+		static void AddValue(T* vPtr, U& value, std::index_sequence<Is...>)
+		{  
+			((value += vPtr[Is]), ...); 
 		} 
 	};
 

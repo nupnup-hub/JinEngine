@@ -233,8 +233,8 @@ namespace JinEngine
 					wndVec[i]->GetOpenPtr(),
 					windowNodePtr);
 
-				auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
-				auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
+				auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(GetRequestOpenEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
+				auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(GetRequestCloseEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
 
 				newNode->RegisterBindHandle(std::move(openBind), std::move(closeBind));
 				menuBar->AddNode(std::move(newNode));

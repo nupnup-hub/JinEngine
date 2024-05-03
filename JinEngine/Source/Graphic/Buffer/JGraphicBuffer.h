@@ -15,15 +15,16 @@ namespace JinEngine
 		public:
 			virtual ~JGraphicBufferBase() = default;
 		public:
-			virtual void Build(JGraphicDevice* device, const uint elementcount) = 0; 
+			virtual void Build(JGraphicDevice* device, const uint elementcount) = 0;
 			virtual void Clear()noexcept = 0;
 		public:
-			virtual void CopyData(const int elementIndex, const void* data) = 0;
+			virtual void CopyData(const uint elementIndex, const void* data) = 0;
+			virtual void CopyData(const uint elementIndex, const uint count, const void* data) = 0;
 		public:
-			virtual uint GetElementCount()const noexcept = 0;
-			virtual BYTE* GetCpuBytePointer()const noexcept = 0;
 			virtual J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept = 0;
-			virtual J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept = 0;
+			virtual uint GetElementCount()const noexcept = 0;
+			virtual uint GetElementByteSize()const noexcept = 0;
+			virtual BYTE* GetCpuBytePointer()const noexcept = 0;
 		public:
 			virtual bool CanMappedCpuPointer()const noexcept = 0;
 		};

@@ -31,13 +31,15 @@ namespace JinEngine
 			D3D12_RECT scissorRect; 
 		private: 
 			Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue;
+		private:
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> publicCmdListAlloc;
 			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> publicCmdList;
 		private:
 			Microsoft::WRL::ComPtr<IDXGIFactory4> dxgiFactory;
 			Microsoft::WRL::ComPtr<ID3D12Device> d3dDevice;
-			Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain;
-			Microsoft::WRL::ComPtr<ID3D12Fence> fence;
+			Microsoft::WRL::ComPtr<ID3D12Device5> raytracingDevice;
+			Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain;
+			Microsoft::WRL::ComPtr<ID3D12Fence> fence; 
 		private:
 			UINT64 currentFence = 0; 
 			int currBackBuffer = 0;
@@ -49,19 +51,24 @@ namespace JinEngine
 			int syncInterval = 0;
 		private:
 			bool stCommand = false;
+			bool isRaytracingSupported = false;
 		public:
 			JDx12GraphicDevice() = default;
-			~JDx12GraphicDevice() = default;
+			~JDx12GraphicDevice();
 		public:
 			bool CreateDeviceObject() final;
-			bool CreateRefResourceObject(const JGraphicDeviceInitSet& dataSet) final;
-			void Clear() final;
+			bool CreateRefResourceObject(const JGraphicDeviceInitSet& dataSet)final;
+		public:
+			void Clear()noexcept final;
+		private:
+			void ClearResource()noexcept;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 			std::unique_ptr<JGraphicDevice::RefSet> GetDeviceRefSet()const noexcept final; 
 			GraphicFence GetFenceValue()const noexcept final;
 			void GetLastDeviceError(_Out_ std::wstring& errorCode, _Out_ std::wstring& errorMsg)final;
 			ID3D12Device* GetDevice()const noexcept; 
+			ID3D12Device5* GetRaytracingDevice()const noexcept;
 			ID3D12CommandQueue* GetCommandQueue()const noexcept; 
 			ID3D12GraphicsCommandList* GetPublicCmdList()const noexcept;
 			HWND GetSwapChainOutputWindowHandle()const noexcept;
@@ -76,7 +83,9 @@ namespace JinEngine
 		public: 
 			bool IsSupportPublicCommand()const noexcept final; 
 			bool IsPublicCommandStared()const noexcept final;
+			bool IsRaytracingSupported()const noexcept final;
 			bool CanStartPublicCommand()const noexcept final;
+			bool CanBuildGpuAccelerator()const noexcept final;
 		public:
 			void CalViewportAndRect(const JVector2F rtSize, const bool restrictRange, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept;
 		public: 
@@ -89,13 +98,14 @@ namespace JinEngine
 		public:
 			void UpdateWait(const GraphicFence frameFence) final;
 		private: 
-			void LogAdapters(const JGraphicDeviceInitSet& refSet);
-			void LogAdapterOutputs(const JGraphicDeviceInitSet& refSet, IDXGIAdapter* adapter);
+			void LogAdapters(const JGraphicDeviceInitSet& dataSet);
+			void LogAdapterOutputs(const JGraphicDeviceInitSet& dataSet, IDXGIAdapter* adapter);
 			void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 			void CreateCommandObjects();
-			void CreateSwapChain(const JGraphicDeviceInitSet& refSet);
+			void CreateSwapChain(const JGraphicDeviceInitSet& dataSet);
 		public:
-			void ResizeWindow(const JGraphicDeviceInitSet& refSet) final;
+			void ResizeWindow(const JGraphicDeviceInitSet& dataSet) final;
+			void NotifyChangedBackBufferFormat(const JGraphicDeviceInitSet& dataSet) final;
 		};
 	}
 }

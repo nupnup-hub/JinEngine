@@ -4,8 +4,7 @@
 #include"JResourceObjectType.h"   
 #include"Material/JDefaultMaterialType.h"
 #include"Mesh/JDefaultShapeType.h"
-#include"Shader/JDefaultShaderType.h"
-#include"Shader/JShaderEnum.h"
+#include"Shader/JDefaultShaderType.h" 
 #include"Texture/JDefaulTextureType.h"   
 #include"../../Core/Func/Functor/JFunctor.h"
 

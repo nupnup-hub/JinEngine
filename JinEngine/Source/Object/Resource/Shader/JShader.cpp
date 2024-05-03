@@ -1,6 +1,5 @@
 #include"JShader.h" 
-#include"JShaderPrivate.h"
-#include"JShaderDataHolderBase.h"
+#include"JShaderPrivate.h" 
 #include"../JResourceObjectHint.h"
 #include"../JResourceManager.h" 
 #include"../../Directory/JDirectory.h"
@@ -12,12 +11,14 @@
 #include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h"
 #include"../../../Graphic/JGraphicPrivate.h"
+#include"../../../Graphic/Shader/JShaderDataHolder.h"
+#include"../../../Graphic/Shader/JShaderType.h"
 #include"../../../Application/JApplicationEngine.h"
 #include"../../../Application/JApplicationProject.h"
 #include<fstream> 
 
 namespace JinEngine
-{
+{ 
 	namespace
 	{ 
 		static JShaderPrivate sPrivate;
@@ -30,7 +31,7 @@ namespace JinEngine
 			return _JResourceManager::Instance().GetDirectory(JApplicationProject::ShaderMetafilePath());
 		}
 		/*
-		static JShader* FindOverlapShader(const J_GRAPHIC_SHADER_FUNCTION newFunc, const JShaderCondition& condition)
+		static JShader* FindOverlapShader(const J_GRAPHIC_SHADER_FUNCTION newFunc, const JGraphicShaderCondition& condition)
 		{
 			uint count;
 			std::vector<JResourceObject*>::const_iterator st = _JResourceManager::Instance().Instance().GetResourceVectorHandle<JShader>(count);
@@ -61,7 +62,7 @@ namespace JinEngine
 			return file != nullptr ? Core::ConvertChildUserPtr<JShader>(file->TryGetResourceUser()) : nullptr;
 		}
 		static std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-			const JShaderCondition& condition,
+			const JGraphicShaderCondition& condition,
 			const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept
 		{
 			if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::NONE)
@@ -78,17 +79,17 @@ namespace JinEngine
 		JWeakPtr<JShader> thisPointer = nullptr;
 	public: 
 		//graphic forward
-		JOwnerPtr<JGraphicShaderDataHolderBase> gFShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
+		JOwnerPtr<Graphic::JShaderDataHolder> gFShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
 		//graphic deferred geometry
-		JOwnerPtr<JGraphicShaderDataHolderBase> gDGShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
+		JOwnerPtr<Graphic::JShaderDataHolder> gDGShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
 	public:
 		//compute
-		JOwnerPtr<JComputeShaderDataHolderBase> cShaderData = nullptr; 
+		JOwnerPtr<Graphic::JShaderDataHolder> cShaderData = nullptr;
 	public:
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
 		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
 	public:
-		JShaderCondition condition;
+		JGraphicShaderCondition condition;
 	public:
 		JShaderImpl(const InitData& initData, JShader* thisShaderRaw)
 			:gFunctionFlag(initData.gFunctionFlag),
@@ -183,7 +184,7 @@ namespace JinEngine
 					gFShaderData[i][j] = GResourceInterface::StuffGraphicShaderPso(initHelper);
 				}
 			}
-			if (!JGraphic::Instance().GetGraphicOption().allowDeferred)
+			if (!JGraphic::Instance().GetGraphicOption().rendering.allowDeferred)
 				return;
 			    
 			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
@@ -210,14 +211,13 @@ namespace JinEngine
 		}
 		static void StuffInitHelper(_Out_ JGraphicShaderInitData& initHelper,
 			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
-			const JShaderCondition& cond)noexcept
+			const JGraphicShaderCondition& cond)noexcept
 		{
 			//앞으로 graphic shader에 macro는 JGraphicShaderDataHandler에 하위클래스에서 stuff 하도록한다. --2023/12/28--
 			initHelper.gFunctionFlag = gFunctionFlag;
 			initHelper.condition = cond;
 		} 
-		static void StuffInitHelper(_Out_ JComputeShaderInitData& initHelper,
-			J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
+		static void StuffInitHelper(_Out_ JComputeShaderInitData& initHelper, J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		{
 			//앞으로 hzb에 대한 shader option control은 JShader객체를 통해서가아닌
 			//Graphic Option을 통해서 이루어지게 한다.
@@ -242,7 +242,7 @@ namespace JinEngine
 			auto InitHZBMaps = [](_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 			{
 				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
-				Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
+				JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
 
 				//수정필요
 				//thread per group factor가 하드코딩됨
@@ -338,7 +338,7 @@ namespace JinEngine
 
 	JShader::InitData::InitData(const J_OBJECT_FLAG flag, 
 		const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-		const JShaderCondition condition,
+		const JGraphicShaderCondition condition,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		:JResourceObject::InitData(JShader::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), GetShaderDirectory()),
 		gFunctionFlag(gFunctionFlag), 
@@ -355,7 +355,7 @@ namespace JinEngine
 		const size_t& guid,
 		const J_OBJECT_FLAG flag,
 		const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-		const JShaderCondition condition,
+		const JGraphicShaderCondition condition,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		: JResourceObject::InitData(JShader::StaticTypeInfo(), name, guid, flag, GetDefaultFormatIndex(), GetStaticResourceType(), GetShaderDirectory()),
 		gFunctionFlag(gFunctionFlag),
@@ -386,29 +386,25 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".shader" };
 		return format;
 	}
-	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<Graphic::JShaderDataHolder> JShader::GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
 		if (processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY)
 			return impl->gDGShaderData[(uint)type][(uint)vertexLayout];
 		else
 			return impl->gFShaderData[(uint)type][(uint)vertexLayout];
 	}
-	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<Graphic::JShaderDataHolder> JShader::GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
 		return impl->gFShaderData[(uint)type][(uint)vertexLayout];
 	}
-	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<Graphic::JShaderDataHolder> JShader::GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
 		return impl->gDGShaderData[(uint)type][(uint)vertexLayout];
 	} 
-	JUserPtr<JComputeShaderDataHolderBase> JShader::GetComputeData()const noexcept
+	JUserPtr<Graphic::JShaderDataHolder> JShader::GetComputeData()const noexcept
 	{
 		return impl->cShaderData;
-	}
-	JVector3<uint> JShader::GetComputeGroupDim()const noexcept
-	{
-		return IsComputeShader() ? impl->cShaderData->dispatchInfo.groupDim : JVector3<uint>(0, 0, 0);
-	}
+	} 
 	J_GRAPHIC_SHADER_FUNCTION JShader::GetShaderGFunctionFlag()const noexcept
 	{
 		return impl->gFunctionFlag;
@@ -417,7 +413,7 @@ namespace JinEngine
 	{
 		return impl->cFunctionFlag;
 	}
-	JShaderCondition JShader::GetShaderCondition()const noexcept
+	JGraphicShaderCondition JShader::GetShaderCondition()const noexcept
 	{
 		return impl->condition;
 	} 
@@ -426,7 +422,7 @@ namespace JinEngine
 		return impl->IsComputeShader();
 	}
 	JUserPtr<JShader> JShader::FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-		const JShaderCondition condition,
+		const JGraphicShaderCondition condition,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 	{
 		return FindOverlapShader(MakeName(gFunctionFlag, condition, cFunctionFlag));

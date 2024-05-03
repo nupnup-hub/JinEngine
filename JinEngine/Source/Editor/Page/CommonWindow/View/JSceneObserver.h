@@ -27,7 +27,7 @@ namespace JinEngine
 		class JEditorGeometryTool;
 		class JEditorMenuBar;
 		class JEditorMenuNode;
-		class JEditorMouseIdenDragBox;
+		class JEditorMouseDragSceneBox;
 		class JEditorIdentifierList;
 
 		class JSceneObserver final : public JEditorWindow, public JObjectModifyInterface
@@ -126,7 +126,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
 			std::unique_ptr<JEditorBinaryTreeView> editBTreeView;
 			std::unique_ptr<JEditorCameraControl> editCamCtrl;
-			std::unique_ptr<JEditorMouseIdenDragBox> mouseBBox;
+			std::unique_ptr<JEditorMouseDragSceneBox> mouseBBox;
 			std::unique_ptr<JEditorIdentifierList> idenList;
 			std::unique_ptr<JEditorTransformTool> positionTool;
 			std::unique_ptr<JEditorTransformTool> rotationTool;
@@ -135,7 +135,7 @@ namespace JinEngine
 		private:
 			std::vector<JUserPtr<JTexture>> menuIconTexture;	//cashing
 			std::vector<JUserPtr<JTexture>> sceneIconTexture;	//cashing
-			std::vector<JEditorTransformTool*> toolVec;
+			std::vector<JEditorTransformTool*> toolVec; 
 		private:
 			std::unique_ptr<TextureDebug> textureDebug;
 		private:

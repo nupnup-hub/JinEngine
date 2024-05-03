@@ -31,13 +31,12 @@ namespace JinEngine
 		JVector3<float> GetPosition()const noexcept;
 		//Euler
 		JVector3<float> GetRotation()const noexcept;  
-		DirectX::XMVECTOR GetQuaternion()const noexcept;
+		JVector4<float> GetQuaternion()const noexcept;
 		JVector3<float> GetScale()const noexcept;
 		JVector3<float> GetWorldPosition()const noexcept;
 		JVector3<float> GetWorldRotation()const noexcept;
 		JVector4<float> GetWorldQuaternion()const noexcept;
-		JMatrix4x4 GetWorldMatrix4x4()const noexcept; 
-		DirectX::XMMATRIX GetWorldMatrix()const noexcept;
+		JMatrix4x4 GetWorldMatrix()const noexcept;  
 		JVector3<float> GetRight()const noexcept;
 		JVector3<float> GetUp()const noexcept;
 		JVector3<float> GetFront()const noexcept;
@@ -45,9 +44,11 @@ namespace JinEngine
 		JVector3<float> GetWorldUp()const noexcept;
 		JVector3<float> GetWorldFront()const noexcept;
 		float GetDistance(const JUserPtr<JTransform>& t)const noexcept;
+		void GetWorldPQS(_Inout_ JVector3<float>& p, _Inout_ JVector4<float>& q, _Inout_ JVector3<float>& s);
 	public:
-		void SetTransform(const JMatrix4x4& transform)noexcept;
+		void SetTransform(const JMatrix4x4& transform)noexcept; 
 		void SetTransform(const JVector3<float>& position, const JVector3<float>& rotation, const JVector3<float>& scale)noexcept;
+		void SetTransform(const JVector3<float>& position, const JVector4<float>& quaternion, const JVector3<float>& scale)noexcept;
 		void SetPosition(const JVector3<float>& value)noexcept;
 		//Euler
 		void SetRotation(const JVector3<float>& value)noexcept;

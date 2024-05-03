@@ -14,10 +14,11 @@ namespace JinEngine
 		public:
 			JVector2<float> minP;
 			JVector2<float> maxP;
-		public: 
-			JBBox2D(const JVector2<float>& minP, const JVector2<float>& maxP);
+		public:  
+			JBBox2D(const JVector2<float>& minP = JVector2F::Zero(), const JVector2<float>& maxP = JVector2F::Zero());
 		public:
-			bool Contain(const JVector2<float>& p)const noexcept;
+			bool Contain(const JVector2<float>& p)const noexcept; 
+			bool Intersect(const JBBox2D& b)const noexcept;
 			bool Intersect(const JRay2D& ray, JVector2<float>* hitPoint = nullptr)const noexcept; 
 			JVector2<float> Extent()const noexcept;
 			JVector2<float> Center()const noexcept;

@@ -1,11 +1,9 @@
 #include"DepthFunc.hlsl"
-
-//64
+ 
 cbuffer cbObject : register(b0)
 {
 	float4x4 objWorld;
-};
-//64
+}; 
 cbuffer cbPass: register(b1)
 { 
 	float4x4 viewProj;

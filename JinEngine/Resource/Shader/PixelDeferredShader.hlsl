@@ -1,42 +1,56 @@
-#include "PixelLayout.hlsl"
-#include "ShadowCompute.hlsl"
- 
+#include"PixelLayout.hlsl" 
+#include"ShadowCompute.hlsl"
+  
 typedef float4 PixelOut;
-PixelOut PS(PixelIn pin) :SV_Target
-{   
-	int2 samplePos = int2(pin.posH.xy);
-	float depth = depthMap.Load(int3(samplePos, 0)).r; 
+PixelOut PS(PixelIn pin) : SV_Target
+{
+    int2 samplePos = int2(pin.posH.xy);
+    int3 mapLocation = int3(samplePos, 0);
+    float4 albedoColor = gBuffer[G_BUFFER_ALBEDO_COLOR].Load(mapLocation);
+    float4 lightProp = gBuffer[G_BUFFER_LIGHT_PROP].Load(mapLocation);
+    float4 normalAndTangent = gBuffer[G_BUFFER_NORMAL_AND_TANGENT].Load(mapLocation);
+     
+    if (IsInvalidLightPropLayer(lightProp) && IsInvalidNormalLayer(normalAndTangent))
+        return albedoColor;
 	
-	float4 albedoColor = gBuffer[G_BUFFER_ALBEDO_COLOR].Load(int3(samplePos, 0));
-	float4 normalG = gBuffer[G_BUFFER_NORMAL].Load(int3(samplePos, 0));
-	 
+    float depth = depthMap.Load(mapLocation).r;
 	//early return albedo only case
-	if (length(normalG) == 0)
-		return albedoColor;
-	
-	float3 normalW = DecodeOct(normalG.xy);
-	float gBufferFlag = normalG.w;
-	 
-	if (gBufferFlag == G_BUFFER_ALBEDO_ONLY_TYPE)
-		return albedoColor;
-	else
-	{ 
-		float linearDepth = camProj[3][2] / (depth - camProj[2][2]); 
-		float3 posW = RestructionPosition(pin.dir, linearDepth);
-		posW = mul(float4(posW, 1.0f), camInvView).xyz;
-		//mul(float4(posV, 1.0f), camInvView).xyz;
-		
-		float3 tangentW = DecodeOct(gBuffer[G_BUFFER_TANGENT].Load(int3(samplePos, 0)).xy);
-		float4 lightProp = gBuffer[G_BUFFER_LIGHT_PROP].Load(int3(samplePos, 0));
-
-		float3 toEyeW = normalize(camEyePosW - posW);
-		Material mat = { albedoColor, lightProp.x, lightProp.y };
+    if (length(normalAndTangent) == 0)
+        return albedoColor;
+	   
+    float3 normalW;
+    float3 tangentW;
+    UnpackNormalAndTangentLayer(normalAndTangent, normalW, tangentW);
+    
+    //float linearDepth = camProj[3][2] / (depth - camProj[2][2]);
+	//float3 posW = RestructionPosition(pin.dir, linearDepth); 
+    //	return ((far * near) / (far - v * (far - near)) - near) / (far - near);
+    float viewZ = NdcToViewPZ(depth); 
+    float3 posV = UVToViewSpace(pin.texC, viewZ, cbCam.uvToViewA, cbCam.uvToViewB);
+    float3 posW = mul(float4(posV, 1.0f), cbCam.invView).xyz;
+    float3 toEyeW = normalize(cbCam.eyePosW - posW);
+       
+    float4 specularColor;
+    float metalic;
+    float roughness;
+    float aoFactor;   
+    UnpackLightPropLayer(lightProp, specularColor, metalic, roughness, aoFactor);
+     
+    Material mat = { albedoColor, specularColor, metalic, roughness, 0.0f };
 #ifdef LIGHT_CLUSTER
-		float3 directLight = ComputeLight(mat, posW, normalW, tangentW, toEyeW, samplePos, depth);
+	float3 directLight = ComputeLight(mat, posW, normalW, tangentW, toEyeW, samplePos, depth);
 #else
-		float3 directLight = ComputeLight(mat, posW, normalW, tangentW, toEyeW);
-#endif 
-		return float4(directLight, albedoColor.a);
-		//return float4(normalW, 1.0f);
-	}
+    float3 directLight = ComputeLight(mat, posW, normalW, tangentW, toEyeW);
+#endif  
+    if (cbCam.hasAoTexture)
+        aoFactor = ambientOcclusionMap.Sample(samLinearWrap, pin.texC);
+     
+#ifdef GLOBAL_ILLUMINATION
+     directLight = CombineGlobalLight(directLight, mat.albedoColor.xyz, giMap.Load(mapLocation).xyz, aoFactor);
+#else 
+     directLight = CombineApproxGlobalLight(directLight, mat.albedoColor.xyz, aoFactor);
+#endif
+		
+    return float4(directLight, albedoColor.a);
+	//return float4(normalW, 1.0f);
 }

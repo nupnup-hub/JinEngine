@@ -6,12 +6,9 @@
 #include"../Object/Component/JComponent.h"
 #include"../Object/Component/Camera/JCamera.h"
 #include"../Object/Component/Camera/JCameraPrivate.h"
-#include"../Object/Component/Light/JLight.h"  
-#include"../Object/Component/Light/JLightPrivate.h"  
-#include"../Object/Component/RenderItem/JRenderItemPrivate.h"
-#include"../Object/Component/Animator/JAnimatorPrivate.h"
+#include"../Object/Component/Light/JLight.h"    
+#include"../Object/Component/Light/JLightPrivate.h"    
 #include"../Object/Resource/Scene/JScenePrivate.h"
-
 
 namespace JinEngine
 {
@@ -22,10 +19,7 @@ namespace JinEngine
 			using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
 			using SceneCashInterface = JScenePrivate::CashInterface;
 			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface; 
-			using CamFrameIndexInterface = JCameraPrivate::FrameIndexInterface;
-			using RItemFrameIndexInterface = JRenderItemPrivate::FrameIndexInterface;
-			using AniFrameIndexInterface = JAnimatorPrivate::FrameIndexInterface;
-			using LitFrameIndexInterface = JLightPrivate::FrameIndexInterface;
+			using CamFrameIndexInterface = JCameraPrivate::FrameIndexInterface;  
 		}
 		namespace
 		{
@@ -78,8 +72,7 @@ namespace JinEngine
 				bData[i].capacity = 0;
 				bData[i].reAllocCondition = J_UPLOAD_CAPACITY_CONDITION::KEEP;
 			}
-			hasRebuildCondition = false;
-			hasRecompileShader = false;
+			hasUploadDataDirty = hasBindingDataDirty = false; 
 		}
 		void JUpdateHelper::RegisterCallable(J_UPLOAD_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr getCountPtr)
 		{
@@ -105,67 +98,47 @@ namespace JinEngine
 		{
 			getElementMultiCount.push_back(std::make_unique<GetElementMultiCountT::Callable>(getMultiCountPtr));
 		}
-		*/
-		void JUpdateHelper::RegisterListener(J_UPLOAD_FRAME_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner)
-		{
-			uData[(int)type].notifyUpdateCapacity.push_back(std::move(listner));
-		}
-		void JUpdateHelper::RegisterExListener(std::unique_ptr<ExtraUpdateListenerT::Callable>&& callable)
-		{
-			extraUpdateListener.push_back(std::move(callable));
-		}
+		*/ 
 		void JUpdateHelper::WriteGraphicInfo(JGraphicInfo& info)const noexcept
 		{
-			info.upObjCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT].count;
-			info.upEnginePassCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ENGINE_PASS].count;
-			info.upScenePassCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].count;
-			info.upAniCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].count;
-			info.upCameraCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].count;
-			info.upDLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].count;
-			info.upPLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].count;
-			info.upSLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].count;
-			info.upRLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].count;
-			info.upCsmCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO].count;
-			info.upCubeShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW].count;
-			info.upNormalShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW].count;
-			info.upMaterialCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].count;
+			info.frame.upObjCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT].count;
+			info.frame.upBoundingObjCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT].count;
+			info.frame.upHzbObjCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].count;
+			info.frame.upScenePassCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].count;
+			info.frame.upAniCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].count;
+			info.frame.upCameraCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].count;
+			info.frame.upDLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].count;
+			info.frame.upPLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].count;
+			info.frame.upSLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].count;
+			info.frame.upRLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].count;
+			info.frame.upCsmCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO].count;
+			info.frame.upCubeShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW].count;
+			info.frame.upNormalShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW].count;
+			info.frame.upMaterialCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].count;
 
-			info.upObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT].capacity;
-			info.upEnginePassCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ENGINE_PASS].capacity;
-			info.upScenePassCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].capacity;
-			info.upAniCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].capacity;
-			info.upCameraCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].capacity; 
-			info.upDLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].capacity;
-			info.upPLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].capacity;
-			info.upSLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].capacity;
-			info.upRLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].capacity;
-			info.upMaterialCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].capacity;
+			info.frame.upObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT].capacity;
+			info.frame.upBoundingObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT].capacity;
+			info.frame.upHzbObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].capacity;
+			info.frame.upScenePassCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].capacity;
+			info.frame.upAniCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].capacity;
+			info.frame.upCameraCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].capacity;
+			info.frame.upDLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].capacity;
+			info.frame.upPLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].capacity;
+			info.frame.upSLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].capacity;
+			info.frame.upRLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].capacity;
+			info.frame.upMaterialCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].capacity;
 
-			info.binding2DTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].count;
-			info.bindingCubeMapCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].count;
-			info.bindingShadowTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].count;
-			info.bindingShadowTextureArrayCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY].count;
-			info.bindingShadowTextureCubeCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE].count;
+			info.resource.binding2DTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].count;
+			info.resource.bindingCubeMapCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].count;
+			info.resource.bindingShadowTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].count;
+			info.resource.bindingShadowTextureArrayCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY].count;
+			info.resource.bindingShadowTextureCubeCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE].count;
 
-			info.binding2DTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].capacity;
-			info.bindingCubeMapCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].capacity;
-			info.bindingShadowTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].capacity;
-			info.bindingShadowTextureArrayCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY].capacity;
-			info.bindingShadowTextureCubeCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE].capacity;
-		}
-		void JUpdateHelper::NotifyUpdateFrameCapacity(JGraphic& grpahic)
-		{
-			for (uint i = 0; i < (uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT; ++i)
-			{
-				if (uData[i].reAllocCondition != J_UPLOAD_CAPACITY_CONDITION::KEEP)
-				{
-					const uint listenerCount = (uint)uData[i].notifyUpdateCapacity.size();
-					for (uint j = 0; j < listenerCount; ++j)
-						(*uData[i].notifyUpdateCapacity[j])(nullptr);
-				}
-			}
-			for (const auto& data : extraUpdateListener)
-				(*data)(nullptr);
+			info.resource.binding2DTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].capacity;
+			info.resource.bindingCubeMapCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].capacity;
+			info.resource.bindingShadowTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].capacity;
+			info.resource.bindingShadowTextureArrayCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY].capacity;
+			info.resource.bindingShadowTextureCubeCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE].capacity;
 		}
 		
 		void JGameObjectBuffer::ClearAlignedVecElement()
@@ -256,58 +229,27 @@ namespace JinEngine
 		JDrawHelper::DRAW_TYPE JDrawHelper::GetDrawType()const noexcept
 		{
 			return drawType;
-		}
-		int JDrawHelper::GetPassFrameIndex()const noexcept
-		{
-			return SceneFrameIndexInterface::GetPassFrameIndex(scene.Get());
-		}
-		int JDrawHelper::GetCamFrameIndex()const noexcept
-		{
-			return CamFrameIndexInterface::GetCamFrameIndex(cam.Get());
-		}
-		int JDrawHelper::GetCamDepthTestPassFrameIndex()const noexcept
-		{
-			return CamFrameIndexInterface::GetDepthTestPassFrameIndex(cam.Get());
-		}
-		int JDrawHelper::GetCamHzbOccComputeFrameIndex()const noexcept
-		{
-			return CamFrameIndexInterface::GetHzbOccComputeFrameIndex(cam.Get());
 		} 
-		int JDrawHelper::GetCamSsaoFrameIndex()const noexcept
+		int JDrawHelper::GetSceneFrameIndex()const noexcept
 		{
-			return CamFrameIndexInterface::GetSsaoFrameIndex(cam.Get());
+			return JFrameIndexAccess::GetSceneFrameIndex(scene.Get());
 		}
-		int JDrawHelper::GetShadowMapDrawFrameIndex()const noexcept
-		{ 
-			JLightPrivate* lp = static_cast<JLightPrivate*>(&lit->PrivateInterface());
-			return lp->GetFrameIndexInterface().GetShadowMapFrameIndex(lit.Get());
-		}
-		int JDrawHelper::GetLitDepthTestPassFrameIndex()const noexcept
+		int JDrawHelper::GetCamFrameIndex(const uint frameLayerIndex)const noexcept
 		{
-			JLightPrivate* lp = static_cast<JLightPrivate*>(&lit->PrivateInterface());
-			return lp->GetFrameIndexInterface().GetDepthTestPassFrameIndex(lit.Get());
-		}
-		int JDrawHelper::GetLitHzbOccComputeFrameIndex()const noexcept
+			return JFrameIndexAccess::GetCamFrameIndex(cam.Get(), frameLayerIndex);
+		} 
+		int JDrawHelper::GetLitFrameIndex(const uint frameLayerIndex)const noexcept
 		{
-			JLightPrivate* lp = static_cast<JLightPrivate*>(&lit->PrivateInterface());
-			return lp->GetFrameIndexInterface().GetHzbOccComputeFrameIndex(lit.Get()); 
+			return JFrameIndexAccess::GetLitFrameIndex(lit.Get(), frameLayerIndex);
+		} 
+		int JDrawHelper::GetLitShadowFrameIndex()const noexcept
+		{
+			return JFrameIndexAccess::GetLitShadowFrameIndex(lit.Get()); ;
 		}
 		const std::vector<JUserPtr<JGameObject>>& JDrawHelper::GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept
 		{
 			return SceneCashInterface::GetGameObjectCashVec(scene, rLayer, meshType);
 		} 
-		int JDrawHelper::GetObjectFrameIndex(JRenderItem* rItem)noexcept
-		{
-			return RItemFrameIndexInterface::GetObjectFrameIndex(rItem);
-		}
-		int JDrawHelper::GetBoundingFrameIndex(JRenderItem* rItem)noexcept
-		{
-			return RItemFrameIndexInterface::GetBoundingFrameIndex(rItem);
-		}
-		int JDrawHelper::GetAnimationFrameIndex(JAnimator* ani)noexcept
-		{
-			return AniFrameIndexInterface::GetFrameIndex(ani);
-		}
 		void JDrawHelper::SetDrawTarget(JGraphicDrawTarget* drawTarget)noexcept
 		{
 			JDrawHelper::drawTarget = drawTarget;
@@ -320,7 +262,7 @@ namespace JinEngine
 		}
 		void JDrawHelper::SetAllowMultithreadDraw(const bool value)noexcept
 		{
-			allowMutilthreadDraw = option.allowMultiThread && value;
+			allowMutilthreadDraw = option.rendering.allowMultiThread && value;
 		}
 		void JDrawHelper::SettingDrawShadowMap(const JWeakPtr<JLight>& lit)noexcept
 		{
@@ -343,6 +285,9 @@ namespace JinEngine
 			allowHdOcclusionCulling = cam->AllowHdOcclusionCulling();
 			allowDrawOccDepthMap = (allowHzbOcclusionCulling || allowHdOcclusionCulling) && cam->AllowDisplayOccCullingDepthMap();
 			allowSsao = cam->AllowSsao() && option.CanUseSSAO();
+			allowPostProcess = cam->AllowPostProcess();
+			allowRtGi = cam->AllowRaytracingGI();
+			allowTemporalProcess = allowRtGi;
 		}
 		void JDrawHelper::SettingFrustumCulling(const JWeakPtr<JComponent>& comp)noexcept
 		{
@@ -379,7 +324,7 @@ namespace JinEngine
 
 			if (userAccess != nullptr)
 			{
-				const bool isOcclusionActivated = option.isOcclusionQueryActivated;
+				const bool isOcclusionActivated = option.culling.isOcclusionQueryActivated;
 				allowFrustumCulling = userAccess->AllowFrustumCulling();
 				if (isOcclusionActivated)
 				{
@@ -393,8 +338,8 @@ namespace JinEngine
 		{
 			JDrawHelper::cam = cam;
 			drawType = DRAW_TYPE::LIT_CULLING;
-			allowLightCulling = cam->AllowLightCulling() && option.isLightCullingActivated;
-			allowLightCullingDebug = cam->AllowDisplayLightCullingDebug() && option.allowDebugLightCulling;
+			allowLightCulling = cam->AllowLightCulling() && option.culling.isLightCullingActivated;
+			allowLightCullingDebug = cam->AllowDisplayLightCullingDebug() && option.debugging.allowDisplayLightCullingResult;
 		}
 		bool JDrawHelper::CanDispatchWorkIndex()const noexcept
 		{
@@ -423,6 +368,13 @@ namespace JinEngine
 		}	
 		void JDrawHelper::DispatchWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept
 		{
+			if (!CanDispatchWorkIndex())
+			{
+				stIndex = 0;
+				edIndex = count;
+				return;
+			}
+
 			if (count == 0)
 			{
 				stIndex = 0;
@@ -494,10 +446,20 @@ namespace JinEngine
 		{
 			allowAnimation = newAllowAnimation; 
 			allowCulling = newAllowCulling; 
-			allowDebugOutline = newAllowDebugOutline && helper.allowDrawDebugObject && helper.option.allowDebugOutline;
+			allowOutline = newAllowDebugOutline && helper.allowDrawDebugObject && helper.option.debugging.allowOutline;
 			allowAllCullingResult = helper.cam != nullptr && CamEditorSettingInterface::AllowAllCullingResult(helper.cam);
 			if (allowAllCullingResult)
 				allowCulling = newAllowCulling;
+		}
+		void JDrawCondition::SetRestrictRange(const uint st, const uint count)
+		{
+			drawSt = st;
+			drawEd = st + count;
+			restrictRange = true;
+		}
+		bool JDrawCondition::IsValidDrawingIndex(const uint drawIndex)const noexcept
+		{
+			return restrictRange ? (drawSt <= drawIndex && drawIndex < drawEd) : true;
 		}
 	}
 }

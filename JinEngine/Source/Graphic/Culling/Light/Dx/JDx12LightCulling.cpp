@@ -2,14 +2,16 @@
 #include"../../../JGraphicUpdateHelper.h"
 #include"../../../JGraphicOption.h"
 #include"../../../Device/Dx/JDx12GraphicDevice.h" 
-#include"../../../DataSet/Dx/JDx12GraphicDataSet.h" 
-#include"../../../Shader/Dx/JDx12ShaderDataHolder.h"
+#include"../../../DataSet/Dx/JDx12GraphicDataSet.h"  
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
 #include"../../../FrameResource/Dx/JDx12FrameResource.h"
 #include"../../../FrameResource/JFrameUpdate.h"
 #include"../../../Culling/Dx/JDx12CullingManager.h"
-#include"../../../Utility/Dx/JD3DUtility.h"
+#include"../../../Culling/Dx/JDx12CullingResourceHolder.h"
+#include"../../../Command/Dx/JDx12CommandContext.h"
+#include"../../../Utility/Dx/JDx12Utility.h"
+#include"../../../Utility/Dx/JDx12ObjectCreation.h"
 #include"../../../../Core/Platform/JHardwareInfo.h"
 #include"../../../../Core/Geometry/Mesh/JMeshType.h"
 #include"../../../../Core/Geometry/Mesh/Loader/ObjLoader/JObjFileLoader.h"
@@ -32,15 +34,10 @@
 #define CLUSTER_DIM_Y L"CLUSTER_DIM_Y"
 #define CLUSTER_DIM_Z L"CLUSTER_DIM_Z"
 
-#define THREAD_DIM_X L"THREAD_DIM_X"
-#define THREAD_DIM_Y L"THREAD_DIM_Y"
-#define THREAD_DIM_Z L"THREAD_DIM_Z"
-
 #define NEAR_CLUST L"NEAR_CLUST"
 #define CLEAR_BUFFER L"CLEAR_BUFFER"  
 #define OFFER_BUFFER_CLEAR_VALUE L"OFFER_BUFFER_CLEAR_VALUE" 
-#define LINEAR_DEPTH_DIST L"LINEAR_DEPTH_DIST"
-#define CB_CAM_REIGSTER L"CB_CAM_REIGSTER"
+#define LINEAR_DEPTH_DIST L"LINEAR_DEPTH_DIST" 
 #define USE_HEMISPHERE L"HEMISPHERE"
 
 #define LIGHT_RANGE_OFFSET L"LIGHT_RANGE_OFFSET"
@@ -50,10 +47,9 @@ namespace JinEngine::Graphic
 	namespace Private
 	{
 		//graphic shader
-		static constexpr uint gLightBufferIndex = 0;
-		static constexpr uint gCamCBIndex = gLightBufferIndex + 1;
-		static constexpr uint gPassCBIndex = gCamCBIndex + 1;
-		static constexpr int gSlotCount = gPassCBIndex + 1;
+		static constexpr uint gCamCBIndex = 0; 
+		static constexpr uint gLightBufferIndex = gCamCBIndex + 1;
+		static constexpr int gSlotCount = gLightBufferIndex + 1;
 
 		//computeShader
 		static constexpr uint cLightTypeCBIndex = 0;
@@ -114,31 +110,30 @@ namespace JinEngine::Graphic
 			case JinEngine::J_LIGHT_TYPE::POINT:
 			{
 				initHelper.macro[staticMeshIndex].push_back({ POINT_LIGHT_, L"0" });
-				initHelper.macro[staticMeshIndex].push_back({ LIGHT_RANGE_OFFSET, std::to_wstring(option.clusterPointLightRangeOffset) });
+				initHelper.macro[staticMeshIndex].push_back({ LIGHT_RANGE_OFFSET, std::to_wstring(option.culling.clusterPointLightRangeOffset) });
 				break;
 			}
 			case JinEngine::J_LIGHT_TYPE::SPOT:
 			{
 				initHelper.macro[staticMeshIndex].push_back({ SPOT_LIGHT_, L"1" });
-				initHelper.macro[staticMeshIndex].push_back({ LIGHT_RANGE_OFFSET, std::to_wstring(option.clusterSpotLightRangeOffset) });
+				initHelper.macro[staticMeshIndex].push_back({ LIGHT_RANGE_OFFSET, std::to_wstring(option.culling.clusterSpotLightRangeOffset) });
 				break;
 			}
 			case JinEngine::J_LIGHT_TYPE::RECT:
 			{
 				initHelper.macro[staticMeshIndex].push_back({ RECT_LIGHT_, L"2" });
-				initHelper.macro[staticMeshIndex].push_back({ LIGHT_RANGE_OFFSET, std::to_wstring(option.clusterRectLightRangeOffset) });
+				initHelper.macro[staticMeshIndex].push_back({ LIGHT_RANGE_OFFSET, std::to_wstring(option.culling.clusterRectLightRangeOffset) });
 				if (rectLightShapeIsHemisphere)
-					initHelper.macro->push_back({ USE_HEMISPHERE, L"1"});
+					initHelper.macro->push_back({ USE_HEMISPHERE, L"1" });
 				break;
 			}
 			default:
 				break;
-			}
-			initHelper.macro->push_back({ CB_CAM_REIGSTER, L"b0" });
+			} 
 		}
 		static void StuffShaderMacro(_Inout_ JGraphicShaderInitData& initHelper, const JGraphicOption& option)
 		{
-			switch (JinEngine::Graphic::Constants::litClusterXRange[option.clusterXIndex])
+			switch (JinEngine::Graphic::Constants::litClusterXRange[option.culling.clusterXIndex])
 			{
 			case JinEngine::Graphic::Constants::litClusterXRange[0]:
 			case JinEngine::Graphic::Constants::litClusterXRange[1]:
@@ -149,7 +144,7 @@ namespace JinEngine::Graphic
 			default:
 				break;
 			}
-			switch (JinEngine::Graphic::Constants::litClusterYRange[option.clusterYIndex])
+			switch (JinEngine::Graphic::Constants::litClusterYRange[option.culling.clusterYIndex])
 			{
 			case JinEngine::Graphic::Constants::litClusterYRange[0]:
 			case JinEngine::Graphic::Constants::litClusterYRange[1]:
@@ -160,7 +155,7 @@ namespace JinEngine::Graphic
 			default:
 				break;
 			}
-			switch (JinEngine::Graphic::Constants::litClusterZRange[option.clusterZIndex])
+			switch (JinEngine::Graphic::Constants::litClusterZRange[option.culling.clusterZIndex])
 			{
 			case JinEngine::Graphic::Constants::litClusterZRange[0]:
 			case JinEngine::Graphic::Constants::litClusterZRange[1]:
@@ -173,13 +168,13 @@ namespace JinEngine::Graphic
 				break;
 			}
 
-			initHelper.macro[staticMeshIndex].push_back({ NEAR_CLUST, std::to_wstring(option.clusterNear) });
+			initHelper.macro[staticMeshIndex].push_back({ NEAR_CLUST, std::to_wstring(option.culling.clusterNear) });
 			if (useLinearDepth)
 				initHelper.macro->push_back({ LINEAR_DEPTH_DIST, L"1" });
 		}
 		static void StuffShaderMacro(_Inout_ JComputeShaderInitData& initHelper, const JGraphicOption& option)
 		{
-			switch (JinEngine::Graphic::Constants::litClusterXRange[option.clusterXIndex])
+			switch (JinEngine::Graphic::Constants::litClusterXRange[option.culling.clusterXIndex])
 			{
 			case JinEngine::Graphic::Constants::litClusterXRange[0]:
 			case JinEngine::Graphic::Constants::litClusterXRange[1]:
@@ -190,7 +185,7 @@ namespace JinEngine::Graphic
 			default:
 				break;
 			}
-			switch (JinEngine::Graphic::Constants::litClusterYRange[option.clusterYIndex])
+			switch (JinEngine::Graphic::Constants::litClusterYRange[option.culling.clusterYIndex])
 			{
 			case JinEngine::Graphic::Constants::litClusterYRange[0]:
 			case JinEngine::Graphic::Constants::litClusterYRange[1]:
@@ -201,7 +196,7 @@ namespace JinEngine::Graphic
 			default:
 				break;
 			}
-			switch (JinEngine::Graphic::Constants::litClusterZRange[option.clusterZIndex])
+			switch (JinEngine::Graphic::Constants::litClusterZRange[option.culling.clusterZIndex])
 			{
 			case JinEngine::Graphic::Constants::litClusterZRange[0]:
 			case JinEngine::Graphic::Constants::litClusterZRange[1]:
@@ -214,47 +209,41 @@ namespace JinEngine::Graphic
 				break;
 			}
 
-			initHelper.macro.push_back({ NEAR_CLUST, std::to_wstring(option.clusterNear) });
+			initHelper.macro.push_back({ NEAR_CLUST, std::to_wstring(option.culling.clusterNear) });
 			initHelper.dispatchInfo.threadDim = JVector3<uint>(Constants::litClusterXRange[0], Constants::litClusterYRange[0], 1);
 			initHelper.dispatchInfo.groupDim = JVector3<uint>(std::ceil(option.GetClusterXCount() / Constants::litClusterXRange[0]), std::ceil(option.GetClusterYCount() / Constants::litClusterYRange[0]), 1);
-
-			initHelper.macro.push_back({ THREAD_DIM_X, std::to_wstring(initHelper.dispatchInfo.threadDim.x) });
-			initHelper.macro.push_back({ THREAD_DIM_Y, std::to_wstring(initHelper.dispatchInfo.threadDim.y) });
-			initHelper.macro.push_back({ THREAD_DIM_Z, std::to_wstring(initHelper.dispatchInfo.threadDim.z) });
+			initHelper.PushThreadDimensionMacro();
 		}
 		static void StuffClearShaderMacro(_Inout_ JComputeShaderInitData& initHelper, const JGraphicOption& option)
-		{
-			auto gpuInfo = Core::JHardwareInfo::GetGpuInfo();
-			JVector3<uint> cluster(option.GetClusterXCount(), option.GetClusterYCount(), option.GetClusterZCount());
-
+		{  
 			initHelper.dispatchInfo.threadDim = JVector3<uint>(Constants::litClusterXRange[0], Constants::litClusterYRange[0], 1);
 			initHelper.dispatchInfo.groupDim = JVector3<uint>(std::ceil(option.GetClusterXCount() / Constants::litClusterXRange[0]), std::ceil(option.GetClusterYCount() / Constants::litClusterYRange[0]), option.GetClusterZCount());
 			initHelper.macro.push_back({ CLEAR_BUFFER, std::to_wstring(1) });
 			initHelper.macro.push_back({ OFFER_BUFFER_CLEAR_VALUE, std::to_wstring((1 << 30) - 1) });
 		}
-		static JShaderType::CompileInfo GraphicDrawLightShapeVsCompileInfo()
+		static JCompileInfo GraphicDrawLightShapeVsCompileInfo()
 		{
-			return JShaderType::CompileInfo(L"LightShapeDrawVertex.hlsl", L"VS");
+			return JCompileInfo(L"LightShapeDrawVertex.hlsl", L"VS");
 		}
-		static JShaderType::CompileInfo GraphicDrawLightShapeGsCompileInfo()
+		static JCompileInfo GraphicDrawLightShapeGsCompileInfo()
 		{
-			return JShaderType::CompileInfo(L"LightShapeDrawGeo.hlsl", L"GS");
+			return JCompileInfo(L"LightShapeDrawGeo.hlsl", L"GS");
 		}
-		static JShaderType::CompileInfo GraphicDrawLightShapePsCompileInfo()
+		static JCompileInfo GraphicDrawLightShapePsCompileInfo()
 		{
-			return JShaderType::CompileInfo(L"LightShapeDrawPixel.hlsl", L"PS");
+			return JCompileInfo(L"LightShapeDrawPixel.hlsl", L"PS");
 		}
-		static JShaderType::CompileInfo ComputeLightClusterCompileInfo()
+		static JCompileInfo ComputeLightClusterCompileInfo()
 		{
-			return JShaderType::CompileInfo(L"LightClusterCompute.hlsl", L"CS");
+			return JCompileInfo(L"LightClusterCompute.hlsl", L"CS");
 		}
-		static JShaderType::CompileInfo GraphicDrawDebugVsCompileInfo()
+		static JCompileInfo GraphicDrawDebugVsCompileInfo()
 		{
-			return JShaderType::CompileInfo(L"LightClusterDebug.hlsl", L"VS");
+			return JCompileInfo(L"LightClusterDebug.hlsl", L"FullScreenTriangleVS");
 		}
-		static JShaderType::CompileInfo GraphicDrawDebugPsCompileInfo()
+		static JCompileInfo GraphicDrawDebugPsCompileInfo()
 		{
-			return JShaderType::CompileInfo(L"LightClusterDebug.hlsl", L"PS");
+			return JCompileInfo(L"LightClusterDebug.hlsl", L"PS");
 		}
 
 		static void StreamOutLightInfo(const JUserPtr<JCamera> cam, JDx12GraphicResourceManager* dx12Gm, const size_t sceneGuid)
@@ -305,86 +294,74 @@ namespace JinEngine::Graphic
 			Develop::JDevelopDebug::Write();
 		}
 	}
-	void JDx12LightCulling::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicBaseDataSet& baseDataSet)
+	JDx12LightCulling::~JDx12LightCulling()
+	{
+		ClearResource();
+	}
+	void JDx12LightCulling::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)
 	{
 		if (!IsSameDevice(device) || !IsSameDevice(gM))
 			return;
 
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
-		BuildGraphicRootSignature(dx12Device->GetDevice());
-		BuildComputeRootSignature(dx12Device->GetDevice());
-		BuildDebugRootSignature(dx12Device->GetDevice());
-		BuildGraphicPso(dx12Device->GetDevice(), baseDataSet);
-		BuildComputePso(dx12Device->GetDevice(), baseDataSet);
-		if constexpr (Private::allowDebugging)
-			BuildDebugPso(dx12Device->GetDevice(), baseDataSet);
-		BuildCounterClearBuffer(dx12Device);
-		BuildResultBuffer(dx12Device, baseDataSet.info.upPLightCapacity + baseDataSet.info.upSLightCapacity + baseDataSet.info.upRLightCapacity);
-		if constexpr (Private::allowDebugging)
-			BuildDebugBuffer(dx12Device, baseDataSet);
-		BuildRtResource(dx12Device, dx12Gm, baseDataSet);
-		//LoadLightShape(dx12Device, dx12Gm);
-		device->EndPublicCommand();
-		device->FlushCommandQueue();
-		device->StartPublicCommand();
-		resultClearUploadBuffer = nullptr;
-		counterClearUploadBuffer = nullptr;
+		BuildResource(device, gM);
 	}
 	void JDx12LightCulling::Clear()
 	{
-		counterClearBuffer = nullptr;
-		counterClearUploadBuffer = nullptr;
-		resultOutBuffer = nullptr;
-		resultOutClearBuffer = nullptr;
-		resultClearUploadBuffer = nullptr;
-		for (uint i = 0; i < JLightType::GetLocalLightCount(); ++i)
-			drawLightShader[i] = nullptr;
-		computeLightClusterShader = nullptr;
-		clearOffsetBufferShader = nullptr;
-		drawDebugShader = nullptr;
-
-		mGRootSignature = nullptr;
-		mCRootSignature = nullptr;
-		mDRootSignature = nullptr;
-		if constexpr (Private::allowDebugging)
-		{
-			listDebugBuffer = nullptr;
-			offsetDebugBuffer = nullptr;
-		}
-		for (uint i = 0; i < SIZE_OF_ARRAY(lightRt); ++i)
-			JGraphicResourceInfo::Destroy(lightRt[i].Release());
-		//Unuse
-		/*
-		JGraphicResourceInfo::Destroy(lowSphereVertex.Release());
-		JGraphicResourceInfo::Destroy(lowSphereIndex.Release());
-		JGraphicResourceInfo::Destroy(lowConeVertex.Release());
-		JGraphicResourceInfo::Destroy(lowConeIndex.Release());
-		*/
+		ClearResource();
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12LightCulling::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
-	void JDx12LightCulling::NotifyNewClusterOption(JGraphicDevice* device, const JGraphicBaseDataSet& baseDataSet)
+	bool JDx12LightCulling::HasDependency(const JGraphicInfo::TYPE type)const noexcept
+	{
+		if (type == JGraphicInfo::TYPE::FRAME)
+			return true;
+		else
+			return false;
+	}
+	bool JDx12LightCulling::HasDependency(const JGraphicOption::TYPE type)const noexcept
+	{
+		if (type == JGraphicOption::TYPE::CULLING || type == JGraphicOption::TYPE::RENDERING ||
+			type == JGraphicOption::TYPE::DEBUGGING)
+			return true;
+		else
+			return false;
+	}
+	void JDx12LightCulling::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
+	{
+		auto dx12Set = static_cast<const JDx12GraphicInfoChangedSet&>(set);
+		if (dx12Set.preInfo.frame.upPLightCapacity != dx12Set.newInfo.frame.upPLightCapacity ||
+			dx12Set.preInfo.frame.upSLightCapacity != dx12Set.newInfo.frame.upSLightCapacity ||
+			dx12Set.preInfo.frame.upRLightCapacity != dx12Set.newInfo.frame.upRLightCapacity)
+		{
+			NotifyLocalLightCapacityChanged(dx12Set.device, dx12Set.gm, dx12Set.newInfo.frame.GetLocalLightCapacity());
+		}
+	}
+	void JDx12LightCulling::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
+	{
+		auto dx12Set = static_cast<const JDx12GraphicOptionChangedSet&>(set);
+		if (set.changedPart == JGraphicOption::TYPE::CULLING && set.newOption.culling.LightCullingDependencyChanged(set.preOption))
+			NotifyNewClusterOption(dx12Set.device);
+		else if (set.changedPart == JGraphicOption::TYPE::RENDERING && set.preOption.rendering.renderTargetFormat != set.newOption.rendering.renderTargetFormat)
+			RecompileShader(JGraphicShaderCompileSet(dx12Set.device));
+		else if (set.changedPart == JGraphicOption::TYPE::DEBUGGING && set.newOption.debugging.requestRecompileLightClusterShader)
+			RecompileShader(JGraphicShaderCompileSet(dx12Set.device));
+	}
+	void JDx12LightCulling::NotifyNewClusterOption(JGraphicDevice* device)
 	{
 		if (!IsSameDevice(device))
 			return;
 
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device);
-		BuildGraphicPso(dx12Device->GetDevice(), baseDataSet);
-		BuildComputePso(dx12Device->GetDevice(), baseDataSet);
+		RecompileShader(JGraphicShaderCompileSet(device)); 
 		if constexpr (Private::allowDebugging)
-		{
-			BuildDebugPso(dx12Device->GetDevice(), baseDataSet);
-			BuildDebugBuffer(dx12Device, baseDataSet);
-		}
+			BuildDebugBuffer(static_cast<JDx12GraphicDevice*>(device));
 	}
 	void JDx12LightCulling::NotifyLocalLightCapacityChanged(JGraphicDevice* device, JGraphicResourceManager* gM, const size_t capacity)
 	{
 		bool startCommandThisFunc = false;
 		device->StartPublicCommandSet(startCommandThisFunc);
-		BuildResultBuffer(static_cast<JDx12GraphicDevice*>(device), capacity); 
+		BuildResultBuffer(static_cast<JDx12GraphicDevice*>(device), capacity);
 		device->EndPublicCommandSet(startCommandThisFunc);
 		if (!startCommandThisFunc)
 			device->ReStartPublicCommandSet();
@@ -395,50 +372,40 @@ namespace JinEngine::Graphic
 		if (!IsSameDevice(bindSet))
 			return;
 
-		const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
-		ID3D12GraphicsCommandList* cmdList = dx12BindSet->cmdList;
-
 		//cmdList->SetGraphicsRootSignature(mGRootSignature.Get());
-	} 
+	}
 	void JDx12LightCulling::BindDebugResource(const JGraphicBindSet* bindSet)
 	{
 		if (!IsSameDevice(bindSet))
 			return;
 
-		const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
-		ID3D12GraphicsCommandList* cmdList = dx12BindSet->cmdList;
-
-		cmdList->SetGraphicsRootSignature(mDRootSignature.Get());
+		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(bindSet->context);
+		context->SetGraphicsRootSignature(mDRootSignature.Get());
 	}
 	void JDx12LightCulling::ExecuteLightClusterTask(const JGraphicLightCullingTaskSet* taskSet, const JDrawHelper& helper)
 	{
-		if (taskSet == nullptr || !IsSameDevice(taskSet) || !helper.allowLightCulling || !helper.option.allowLightCluster)
+		if (taskSet == nullptr || !IsSameDevice(taskSet) || !helper.allowLightCulling || !helper.option.culling.allowLightCluster)
 			return;
 
 		const JDx12GraphicLightCullingTaskSet* dx12Set = static_cast<const JDx12GraphicLightCullingTaskSet*>(taskSet);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
-		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(dx12Set->cullingManager);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(dx12Set->currFrame);
-		ID3D12GraphicsCommandList* cmdlist = dx12Set->cmdList;
+		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12Set->context);
 
-		DrawLight(cmdlist, dx12Gm, dx12Cm, dx12Frame, helper);
+		DrawLight(context, helper);
 	}
 	void JDx12LightCulling::ExecuteLightClusterDebug(const JGraphicLightCullingDebugDrawSet* drawSet, const JDrawHelper& helper)
 	{
 		if constexpr (!Private::allowDebugging)
 			return;
 
-		if (drawSet == nullptr || !IsSameDevice(drawSet) || !helper.allowLightCullingDebug || !helper.option.allowLightCluster)
+		if (drawSet == nullptr || !IsSameDevice(drawSet) || !helper.allowLightCullingDebug || !helper.option.culling.allowLightCluster)
 			return;
-		 
-		const JDx12GraphicLightCullingDebugDrawSet* dx12Set = static_cast<const JDx12GraphicLightCullingDebugDrawSet*>(drawSet);
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(dx12Set->device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
-		ID3D12GraphicsCommandList* cmdlist = dx12Set->cmdList;
 
-		DrawLightClusterDebug(cmdlist, dx12Device, dx12Gm, helper);
+		const JDx12GraphicLightCullingDebugDrawSet* dx12Set = static_cast<const JDx12GraphicLightCullingDebugDrawSet*>(drawSet);
+		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12Set->context);
+
+		DrawLightClusterDebug(context, helper);
 	}
-	void JDx12LightCulling::StreamOutDebugInfo(const std::wstring& path, const JGraphicBaseDataSet& baseDataSet)
+	void JDx12LightCulling::StreamOutDebugInfo(const std::wstring& path)
 	{
 		if constexpr (!Private::allowDebugging)
 			return;
@@ -459,9 +426,10 @@ namespace JinEngine::Graphic
 		const uint offsetCount = offsetDebugBuffer->GetElementCount();
 		const uint listCount = listDebugBuffer->GetElementCount();
 
-		const uint clusterX = baseDataSet.option.GetClusterXCount();
-		const uint clusterY = baseDataSet.option.GetClusterYCount();
-		const uint clusterZ = baseDataSet.option.GetClusterZCount();
+		auto option = GetGraphicOption();
+		const uint clusterX = option.GetClusterXCount();
+		const uint clusterY = option.GetClusterYCount();
+		const uint clusterZ = option.GetClusterZCount();
 
 		Develop::JDevelopDebug::CreatePublicLogHandler("LightCulling");
 		Develop::JDevelopDebug::PushDefaultLogHandler("LightCulling");
@@ -492,9 +460,7 @@ namespace JinEngine::Graphic
 					if (nodeIndex != 0x3FFFFFFF)
 						++clusterXY[j][k];
 
-					Develop::JDevelopDebug::PushLog(contents);
-					if (nodeIndex > maxlink && nodeIndex != 0x3FFFFFFF)
-						maxlink = nodeIndex;
+					Develop::JDevelopDebug::PushLog(contents); 
 					while (nodeIndex != 0x3FFFFFFF)
 					{
 						uint* nodePtr = static_cast<uint*>(static_cast<void*>(&listPtr[nodeIndex]));
@@ -513,8 +479,7 @@ namespace JinEngine::Graphic
 						if (link > maxlink && link != 0x3FFFFFFF)
 							maxlink = link;
 						++count;
-					}
-					Develop::JDevelopDebug::PushLog("maxlink: " + std::to_string(maxlink));
+					} 
 				}
 			}
 		}
@@ -543,16 +508,12 @@ namespace JinEngine::Graphic
 	void JDx12LightCulling::RecompileShader(const JGraphicShaderCompileSet& dataSet)
 	{
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(dataSet.device);
-		BuildGraphicPso(dx12Device->GetDevice(), dataSet.base);
-		BuildComputePso(dx12Device->GetDevice(), dataSet.base);
+		BuildGraphicPso(dx12Device->GetDevice());
+		BuildComputePso(dx12Device->GetDevice());
 		if constexpr (Private::allowDebugging)
-			BuildDebugPso(dx12Device->GetDevice(), dataSet.base);
+			BuildDebugPso(dx12Device->GetDevice());
 	}
-	void JDx12LightCulling::DrawLight(ID3D12GraphicsCommandList* cmdList,
-		JDx12GraphicResourceManager* dx12Gm,
-		JDx12CullingManager* dx12Cm,
-		JDx12FrameResource* dx12Frame,
-		const JDrawHelper& helper)
+	void JDx12LightCulling::DrawLight(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
 		JUserPtr<JMeshGeometry> cone = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::LOW_CONE);
 		JUserPtr<JMeshGeometry> sphere = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::LOW_SPHERE);
@@ -561,11 +522,13 @@ namespace JinEngine::Graphic
 			hemiSphere = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::LOW_HEMI_SPHERE);
 		else
 			hemiSphere = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::LOW_SPHERE);
+
 		const size_t sceneGuid = helper.scene->GetGuid();
 		const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
 		const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
 		const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
-		 
+		const uint lightSum = pointLitCount + spotLitCount + rectLitCount;
+
 		const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
 		const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
 		const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
@@ -577,59 +540,36 @@ namespace JinEngine::Graphic
 		auto gInterface = helper.cam->GraphicResourceUserInterface();
 		auto cInterface = helper.cam->CullingUserInterface();
 
-		const uint rsDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
-		const uint offsetBufferDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
-		const uint linkedDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
-		 
-		const int offsetVecIndex = gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, offsetBufferDataIndex);
-		const int linkedVecIndex = gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, linkedDataIndex);
-		const int readBackVecIndex = cInterface.GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::LIGHT);
-		 
-		const int offsetUavHeapIndex = gInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_BIND_TYPE::UAV, offsetBufferDataIndex);
-		const int linkedUavHeapIndex = gInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_BIND_TYPE::UAV, linkedDataIndex);
+		auto offsetBufferSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+		auto linkedSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+		auto linkedCounterSet = context->ComputeSet(linkedSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER);
+		auto readBackSet = context->ComputeSet(cInterface, J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::LIGHT);
 
-		auto pointResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, lightRt[0]->GetArrayIndex());
-		auto spotResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, lightRt[1]->GetArrayIndex());
-		auto rectResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, lightRt[2]->GetArrayIndex());
+		auto pointSet = context->ComputeSet(lightRt[0]);
+		auto spotSet = context->ComputeSet(lightRt[1]);
+		auto rectSet = context->ComputeSet(lightRt[2]);
 
-		auto offsetResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, offsetVecIndex);
-		auto linkedResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, linkedVecIndex);
-		auto linkedCounterResource = dx12Gm->GetOptionResource(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER, linkedVecIndex);
-		auto readBackResource = dx12Cm->GetResource(J_CULLING_TYPE::FRUSTUM, readBackVecIndex);
-		auto outResource = resultOutBuffer->GetResource();
+		context->Transition(pointSet.holder, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		context->Transition(spotSet.holder, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		context->Transition(rectSet.holder, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		context->Transition(offsetBufferSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		context->Transition(linkedSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		auto pointRtv = dx12Gm->GetCpuRtvDescriptorHandle(lightRt[0]->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::RTV));
-		auto spotRtv = dx12Gm->GetCpuRtvDescriptorHandle(lightRt[1]->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::RTV));
-		auto rectRtv = dx12Gm->GetCpuRtvDescriptorHandle(lightRt[2]->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::RTV));
+		//Clear resource 
+		context->CopyResource(resultOutClearBuffer->GetHolder(), resultOutBuffer->GetHolder());
+		context->Transition(resultOutBuffer->GetHolder(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		auto pointGpuSrv = dx12Gm->GetGpuSrvDescriptorHandle(lightRt[0]->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV));
-		auto spotGpuSrv = dx12Gm->GetGpuSrvDescriptorHandle(lightRt[1]->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV));
-		auto rectGpuSrv = dx12Gm->GetGpuSrvDescriptorHandle(lightRt[2]->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV));
-		auto offsetGpuUav = dx12Gm->GetGpuSrvDescriptorHandle(offsetUavHeapIndex);
-		auto linkedGpuUav = dx12Gm->GetGpuSrvDescriptorHandle(linkedUavHeapIndex);
- 
-		JD3DUtility::ResourceTransition(cmdList, pointResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		JD3DUtility::ResourceTransition(cmdList, spotResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		JD3DUtility::ResourceTransition(cmdList, rectResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		JD3DUtility::ResourceTransition(cmdList, offsetResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		JD3DUtility::ResourceTransition(cmdList, linkedResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		context->CopyResource(counterClearBuffer->GetHolder(), linkedCounterSet.holder);
+		context->Transition(linkedCounterSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
-		//Clear resource
-		cmdList->CopyResource(outResource, resultOutClearBuffer->GetResource());
-		JD3DUtility::ResourceTransition(cmdList, outResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-		JD3DUtility::ResourceTransition(cmdList, linkedCounterResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-		cmdList->CopyResource(linkedCounterResource, counterClearBuffer->GetResource());
-		JD3DUtility::ResourceTransition(cmdList, linkedCounterResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-		cmdList->SetPipelineState(clearOffsetBufferShader->pso.Get());
-		cmdList->SetComputeRootSignature(mCRootSignature.Get());
-		cmdList->SetComputeRootDescriptorTable(Private::cOffsetBufferIndex, offsetGpuUav);
-		cmdList->SetComputeRootDescriptorTable(Private::cLinkedlistndex, linkedGpuUav);
-		cmdList->SetComputeRootUnorderedAccessView(Private::cOutBufferIndex, outResource->GetGPUVirtualAddress());
+		context->SetPipelineState(clearOffsetBufferShader.get());
+		context->SetComputeRootSignature(mCRootSignature.Get());
+		context->SetComputeRootDescriptorTable(Private::cOffsetBufferIndex, offsetBufferSet.GetGpuUavHandle());
+		context->SetComputeRootDescriptorTable(Private::cLinkedlistndex, linkedSet.GetGpuUavHandle());
+		context->SetComputeRootUnorderedAccessView(Private::cOutBufferIndex, resultOutBuffer->GetResource()->GetGPUVirtualAddress());
 
 		auto clearDispatchInfo = clearOffsetBufferShader->dispatchInfo.groupDim;
-		cmdList->Dispatch(clearDispatchInfo.x, clearDispatchInfo.y, clearDispatchInfo.z);
+		context->Dispatch(clearDispatchInfo.x, clearDispatchInfo.y, clearDispatchInfo.z);
 
 		const uint clusterX = helper.option.GetClusterXCount();
 		const uint clusterY = helper.option.GetClusterYCount();
@@ -640,342 +580,189 @@ namespace JinEngine::Graphic
 
 		D3D12_VIEWPORT viewPort{ 0.0f, 0.0f, (float)clusterX, (float)clusterY, 0.0f, 1.0f };
 		D3D12_RECT rect{ 0, 0, clusterX, clusterY, };
+		 
+		context->SetGraphicsRootSignature(mGRootSignature.Get());
+		context->SetGraphicsRootConstantBufferView(Private::gCamCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_CULLING_PASS, helper.GetCamFrameIndex(CameraFrameLayer::lightCulling));
+		context->SetViewport(viewPort);
+		context->SetScissorRect(rect);
 
-		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
-		D3D12_INDEX_BUFFER_VIEW indexBufferView;
-
-		auto dispatchInfo = computeLightClusterShader->dispatchInfo.groupDim;
-		//Draw light shape and compute node
-		//point
 		if (pointLitCount > 0)
 		{
-			cmdList->SetPipelineState(drawLightShader[0]->pso.Get());
-			cmdList->SetGraphicsRootSignature(mGRootSignature.Get());
+			context->SetPipelineState(drawLightShader[0].get());
+			//context->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 0, pointLitOffset);
+			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, pointLitOffset);
 
-			dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT)->SetGraphicsRootShaderResourceView(cmdList, Private::gLightBufferIndex);
-			dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA)->SetGraphicCBBufferView(cmdList, Private::gCamCBIndex, helper.GetCamFrameIndex());
-			cmdList->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 1, &pointLitOffset, 0);
-
-			cmdList->ClearRenderTargetView(pointRtv, Constants::WhileColor().value, 0, nullptr);
-			cmdList->OMSetRenderTargets(1, &pointRtv, true, nullptr);
-			cmdList->RSSetViewports(1, &viewPort);
-			cmdList->RSSetScissorRects(1, &rect);
-
-			//vertexBufferView.BufferLocation = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::VERTEX, lowSphereVertex->GetArrayIndex())->GetGPUVirtualAddress();
-			//vertexBufferView.StrideInBytes = sizeof(Core::J1BytePosVertex);
-			//vertexBufferView.SizeInBytes = sizeof(Core::J1BytePosVertex) * lowSphereVertexCount;
-
-			//indexBufferView.BufferLocation = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::INDEX, lowSphereIndex->GetArrayIndex())->GetGPUVirtualAddress();
-			//indexBufferView.SizeInBytes = sizeof(uint16) * lowSphereIndexCount;
-			//indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-
-			vertexBufferView = dx12Gm->VertexBufferView(sphere);
-			indexBufferView = dx12Gm->IndexBufferView(sphere);
-
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-			cmdList->IASetIndexBuffer(&indexBufferView);
-			//cmdList->DrawIndexedInstanced(lowSphereIndexCount, pointLitCount, 0, 0, 0);
-			cmdList->DrawIndexedInstanced(sphere->GetTotalIndexCount(), pointLitCount, sphere->GetSubmeshStartIndexLocation(0), sphere->GetSubmeshBaseVertexLocation(0), 0);
-
-			cmdList->SetPipelineState(computeLightClusterShader->pso.Get());
-			cmdList->SetComputeRootSignature(mCRootSignature.Get());
-			cmdList->SetComputeRootDescriptorTable(Private::cOffsetBufferIndex, offsetGpuUav);
-			cmdList->SetComputeRootDescriptorTable(Private::cLinkedlistndex, linkedGpuUav);
-			cmdList->SetComputeRootUnorderedAccessView(Private::cOutBufferIndex, outResource->GetGPUVirtualAddress());
-
-			cmdList->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, &pointLitType, 0);
-			cmdList->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, &pointLitLocalOffset, 1);
-			cmdList->SetComputeRootDescriptorTable(Private::cRtTextureArrayIndex, pointGpuSrv);
-			cmdList->Dispatch(dispatchInfo.x, dispatchInfo.y, pointLitCount);
+			context->ClearRenderTargetView(pointSet, Constants::GetWhiteClearColor());
+			context->SetRenderTargetView(pointSet, 1, true);
+			context->SetMeshGeometryData(sphere);
+			context->DrawIndexedInstanced(sphere, 0, pointLitCount);
 		}
 		if (spotLitCount > 0)
 		{
-			cmdList->SetPipelineState(drawLightShader[1]->pso.Get());
-			cmdList->SetGraphicsRootSignature(mGRootSignature.Get());
+			context->SetPipelineState(drawLightShader[1].get());
+			//context->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 0, spotLitOffset);
+			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, spotLitOffset);
 
-			dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT)->SetGraphicsRootShaderResourceView(cmdList, Private::gLightBufferIndex);
-			dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA)->SetGraphicCBBufferView(cmdList, Private::gCamCBIndex, helper.GetCamFrameIndex());
-			cmdList->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 1, &spotLitOffset, 0);
-
-			cmdList->ClearRenderTargetView(spotRtv, Constants::WhileColor().value, 0, nullptr);
-			cmdList->OMSetRenderTargets(1, &spotRtv, true, nullptr);
-			cmdList->RSSetViewports(1, &viewPort);
-			cmdList->RSSetScissorRects(1, &rect);
-
-			//vertexBufferView.BufferLocation = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::VERTEX, lowConeVertex->GetArrayIndex())->GetGPUVirtualAddress();
-			//vertexBufferView.StrideInBytes = sizeof(Core::J1BytePosVertex);
-			//vertexBufferView.SizeInBytes = sizeof(Core::J1BytePosVertex) * lowConeVertexCount;
-
-			//indexBufferView.BufferLocation = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::INDEX, lowConeIndex->GetArrayIndex())->GetGPUVirtualAddress();
-			//indexBufferView.SizeInBytes = sizeof(uint16) * lowConeIndexCount;
-			//indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-			vertexBufferView = dx12Gm->VertexBufferView(cone);
-			indexBufferView = dx12Gm->IndexBufferView(cone);
-
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-			cmdList->IASetIndexBuffer(&indexBufferView);
-			cmdList->DrawIndexedInstanced(cone->GetTotalIndexCount(), spotLitCount, cone->GetSubmeshStartIndexLocation(0), cone->GetSubmeshBaseVertexLocation(0), 0);
-			//cmdList->DrawIndexedInstanced(lowConeIndexCount, spotLitCount, 0, 0, 0);
-
-			cmdList->SetPipelineState(computeLightClusterShader->pso.Get());
-			cmdList->SetComputeRootSignature(mCRootSignature.Get());
-			cmdList->SetComputeRootDescriptorTable(Private::cOffsetBufferIndex, offsetGpuUav);
-			cmdList->SetComputeRootDescriptorTable(Private::cLinkedlistndex, linkedGpuUav);
-			cmdList->SetComputeRootUnorderedAccessView(Private::cOutBufferIndex, outResource->GetGPUVirtualAddress());
-
-			cmdList->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, &spotLitType, 0);
-			cmdList->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, &spotLitLocalOffset, 1);
-			cmdList->SetComputeRootDescriptorTable(Private::cRtTextureArrayIndex, spotGpuSrv);
-			cmdList->Dispatch(dispatchInfo.x, dispatchInfo.y, spotLitCount);
+			context->ClearRenderTargetView(spotSet, Constants::GetWhiteClearColor());
+			context->SetRenderTargetView(spotSet, 1, true);
+			context->SetMeshGeometryData(cone);
+			context->DrawIndexedInstanced(cone, 0, spotLitCount);
 		}
 		if (rectLitCount > 0)
 		{
-			cmdList->SetPipelineState(drawLightShader[2]->pso.Get());
-			cmdList->SetGraphicsRootSignature(mGRootSignature.Get());
+			context->SetPipelineState(drawLightShader[2].get());
+			//context->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 0, rectLitOffset);
+			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, rectLitOffset);
 
-			dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT)->SetGraphicsRootShaderResourceView(cmdList, Private::gLightBufferIndex);
-			dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA)->SetGraphicCBBufferView(cmdList, Private::gCamCBIndex, helper.GetCamFrameIndex());
-			cmdList->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 1, &rectLitOffset, 0);
-
-			cmdList->ClearRenderTargetView(rectRtv, Constants::WhileColor().value, 0, nullptr);
-			cmdList->OMSetRenderTargets(1, &rectRtv, true, nullptr);
-			cmdList->RSSetViewports(1, &viewPort);
-			cmdList->RSSetScissorRects(1, &rect);
-
-			vertexBufferView = dx12Gm->VertexBufferView(hemiSphere);
-			indexBufferView = dx12Gm->IndexBufferView(hemiSphere);
-
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-			cmdList->IASetIndexBuffer(&indexBufferView);
-			cmdList->DrawIndexedInstanced(hemiSphere->GetTotalIndexCount(), rectLitCount, hemiSphere->GetSubmeshStartIndexLocation(0), cone->GetSubmeshBaseVertexLocation(0), 0);
-
-			cmdList->SetPipelineState(computeLightClusterShader->pso.Get());
-			cmdList->SetComputeRootSignature(mCRootSignature.Get());
-			cmdList->SetComputeRootDescriptorTable(Private::cOffsetBufferIndex, offsetGpuUav);
-			cmdList->SetComputeRootDescriptorTable(Private::cLinkedlistndex, linkedGpuUav);
-			cmdList->SetComputeRootUnorderedAccessView(Private::cOutBufferIndex, outResource->GetGPUVirtualAddress());
-
-			cmdList->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, &rectLitType, 0);
-			cmdList->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, &rectLitLocalOffset, 1);
-			cmdList->SetComputeRootDescriptorTable(Private::cRtTextureArrayIndex, rectGpuSrv);
-			cmdList->Dispatch(dispatchInfo.x, dispatchInfo.y, rectLitCount);
+			context->ClearRenderTargetView(rectSet, Constants::GetWhiteClearColor());
+			context->SetRenderTargetView(rectSet, 1, true);
+			context->SetMeshGeometryData(hemiSphere);
+			context->DrawIndexedInstanced(hemiSphere, 0, rectLitCount);
 		}
 
-		JD3DUtility::ResourceTransition(cmdList, readBackResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-		JD3DUtility::ResourceTransition(cmdList, outResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		cmdList->CopyResource(readBackResource, outResource);
-		JD3DUtility::ResourceTransition(cmdList, outResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-		JD3DUtility::ResourceTransition(cmdList, readBackResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+		context->Transition(pointSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		context->Transition(spotSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		context->Transition(rectSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		context->Transition(offsetBufferSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		context->Transition(linkedSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
+
+		context->SetComputeRootSignature(mCRootSignature.Get());
+		context->SetPipelineState(computeLightClusterShader.get());
+		context->SetComputeRootDescriptorTable(Private::cOffsetBufferIndex, offsetBufferSet.GetGpuUavHandle());
+		context->SetComputeRootDescriptorTable(Private::cLinkedlistndex, linkedSet.GetGpuUavHandle());
+		context->SetComputeRootUnorderedAccessView(Private::cOutBufferIndex, resultOutBuffer->GetResource()->GetGPUVirtualAddress());
+
+		auto dispatchInfo = computeLightClusterShader->dispatchInfo.groupDim;
+		if (pointLitCount > 0)
+		{ 
+			context->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 0, pointLitType);
+			context->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, pointLitLocalOffset);
+			context->SetComputeRootDescriptorTable(Private::cRtTextureArrayIndex, pointSet.GetGpuSrvHandle());
+			context->Dispatch(dispatchInfo.x, dispatchInfo.y, pointLitCount);
+		}
+		if (spotLitCount > 0)
+		{
+			context->InsertUAVBarrier(linkedSet.holder, true);
+			context->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 0, spotLitType);
+			context->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, spotLitLocalOffset);
+			context->SetComputeRootDescriptorTable(Private::cRtTextureArrayIndex, spotSet.GetGpuSrvHandle());
+			context->Dispatch(dispatchInfo.x, dispatchInfo.y, spotLitCount);
+		}
+		if (rectLitCount > 0)
+		{
+			context->InsertUAVBarrier(linkedSet.holder, true);
+			context->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 0, rectLitType);
+			context->SetComputeRoot32BitConstants(Private::cLightTypeCBIndex, 1, rectLitLocalOffset);
+			context->SetComputeRootDescriptorTable(Private::cRtTextureArrayIndex, rectSet.GetGpuSrvHandle());
+			context->Dispatch(dispatchInfo.x, dispatchInfo.y, rectLitCount);
+		}
 
 		if constexpr (Private::allowDebugging)
 		{
 			if (!helper.cam->GetOwner()->IsEditorObject())
 			{
-				JD3DUtility::ResourceTransition(cmdList, offsetDebugBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-				JD3DUtility::ResourceTransition(cmdList, listDebugBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-				JD3DUtility::ResourceTransition(cmdList, offsetResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
-				JD3DUtility::ResourceTransition(cmdList, linkedResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
-				cmdList->CopyResource(offsetDebugBuffer->GetResource(), offsetResource);
-				cmdList->CopyResource(listDebugBuffer->GetResource(), linkedResource);
-				JD3DUtility::ResourceTransition(cmdList, offsetResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
-				JD3DUtility::ResourceTransition(cmdList, linkedResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
-				JD3DUtility::ResourceTransition(cmdList, listDebugBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
-				JD3DUtility::ResourceTransition(cmdList, offsetDebugBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
-			}
-			else
-			{
-				JD3DUtility::ResourceTransition(cmdList, linkedCounterResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-				JD3DUtility::ResourceTransition(cmdList, linkedResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-				JD3DUtility::ResourceTransition(cmdList, offsetResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
+				context->CopyResource(offsetBufferSet.holder, offsetDebugBuffer->GetHolder());
+				context->CopyResource(linkedSet.holder, listDebugBuffer->GetHolder());
 			}
 		}
-		else
-		{
-			JD3DUtility::ResourceTransition(cmdList, linkedCounterResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-			JD3DUtility::ResourceTransition(cmdList, linkedResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-			JD3DUtility::ResourceTransition(cmdList, offsetResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
-		}
-
-		JD3DUtility::ResourceTransition(cmdList, rectResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
-		JD3DUtility::ResourceTransition(cmdList, spotResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
-		JD3DUtility::ResourceTransition(cmdList, pointResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
-
-		auto litCullingInfo = dx12Cm->GetCullingInfo(J_CULLING_TYPE::FRUSTUM, readBackVecIndex);
+		context->Transition(offsetBufferSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		context->Transition(linkedSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		context->CopyResource(resultOutBuffer->GetHolder(), readBackSet.gHolder);
+		//context->Transition(readBackSet.gHolder, D3D12_RESOURCE_STATE_COMMON, true);
 
 		JCullingUpdatedInfo updateInfo;
 		updateInfo.updatedStartIndex = 0;
 		updateInfo.updatedCount = pointLitCount + spotLitCount + rectLitCount;
-		litCullingInfo->SetUpdatedInfo(updateInfo, helper.info.currFrameResourceIndex);
-	} 
-	void JDx12LightCulling::DrawLightClusterDebug(ID3D12GraphicsCommandList* cmdList,
-		JDx12GraphicDevice* dx12Device,
-		JDx12GraphicResourceManager* dx12Gm,
-		const JDrawHelper& helper)
+		readBackSet.info->SetUpdatedInfo(updateInfo, helper.info.frame.currIndex);
+	}
+	void JDx12LightCulling::DrawLightClusterDebug(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
-		JUserPtr<JMeshGeometry> quad = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::FULL_SCREEN_QUAD);
+		//JUserPtr<JMeshGeometry> quad = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::FULL_SCREEN_QUAD);
 
 		auto gInterface = helper.cam->GraphicResourceUserInterface();
-		const uint rtDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW);
-		const uint dsDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		auto rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW);
+		auto dsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		auto offsetBufferSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+		auto linkedSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
 
-		const uint offsetBufferDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
-		const uint linkedDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+		context->Transition(rtSet.holder, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		context->Transition(dsSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		context->Transition(offsetBufferSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		context->Transition(linkedSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
+		context->SetPipelineState(drawDebugShader.get());
 
-		const int rtvArrayIndex = gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtDataIndex);
-		const int rtvHeapIndex = gInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_BIND_TYPE::RTV, rtDataIndex);
-		const int dsSrvHeapIndex = gInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::SRV, dsDataIndex);
-		const int offsetSrvHeapIndex = gInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_BIND_TYPE::SRV, offsetBufferDataIndex);
-		const int linkedSrvHeapIndex = gInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_BIND_TYPE::SRV, linkedDataIndex);
-
-		auto rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvArrayIndex);
-		auto rtDesc = rtResource->GetDesc();
-
-		auto rtvHandle = dx12Gm->GetCpuRtvDescriptorHandle(rtvHeapIndex);
-		auto dsSrvHandle = dx12Gm->GetGpuSrvDescriptorHandle(dsSrvHeapIndex);
-		auto offsetSrv = dx12Gm->GetGpuSrvDescriptorHandle(offsetSrvHeapIndex);
-		auto linkedSrv = dx12Gm->GetGpuSrvDescriptorHandle(linkedSrvHeapIndex);
-
-		JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		cmdList->SetPipelineState(drawDebugShader->pso.Get());
-
-		JVector2F renderTargetSize = JVector2F(rtDesc.Width, rtDesc.Height);
+		JVector2F renderTargetSize = rtSet.info->GetResourceSize();
 		float camNearZ = helper.cam->GetNear();
 		float camFarZ = helper.cam->GetFar();
 		//uint log2Tile = (uint32)std::log2<uint32>(renderTargetSize.x / helper.option.GetClusterXCount());
 		JVector4F passPack = JVector4F(camNearZ, camFarZ, renderTargetSize.x, renderTargetSize.y);
 
-		D3D12_VIEWPORT viewPort;
-		D3D12_RECT rect;
-		dx12Device->CalViewportAndRect(renderTargetSize, true, viewPort, rect);
-		cmdList->RSSetViewports(1, &viewPort);
-		cmdList->RSSetScissorRects(1, &rect);
+		context->SetViewportAndRect(renderTargetSize);
+		context->SetGraphicsRoot32BitConstants(Private::dPassCBIndex, 0, passPack);
+		context->SetGraphicsRootDescriptorTable(Private::dDepthMapIndex, dsSet.GetGpuSrvHandle());
+		context->SetGraphicsRootDescriptorTable(Private::dOffsetBufferIndex, offsetBufferSet.GetGpuSrvHandle());
+		context->SetGraphicsRootDescriptorTable(Private::dLinkedlistndex, linkedSet.GetGpuSrvHandle());
 
-		cmdList->SetGraphicsRoot32BitConstants(Private::dPassCBIndex, 4, &passPack, 0);
-		cmdList->SetGraphicsRootDescriptorTable(Private::dDepthMapIndex, dsSrvHandle);
-		cmdList->SetGraphicsRootDescriptorTable(Private::dOffsetBufferIndex, offsetSrv);
-		cmdList->SetGraphicsRootDescriptorTable(Private::dLinkedlistndex, linkedSrv);
+		context->ClearRenderTargetView(rtSet, Constants::GetBackBufferClearColor());
+		context->SetRenderTargetView(rtSet);
+		context->DrawFullScreenTriangle();
+		context->Transition(rtSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	}
+	void JDx12LightCulling::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM)
+	{
+		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
+		JGraphicInfo gInfo = GetGraphicInfo();
+		const uint localLightCapacity = gInfo.frame.GetLocalLightCapacity();
 
-		cmdList->ClearRenderTargetView(rtvHandle, dx12Gm->GetBackBufferClearColor(), 0, nullptr);
-		cmdList->OMSetRenderTargets(1, &rtvHandle, true, nullptr);
-
-		D3D12_VERTEX_BUFFER_VIEW vertexBufferView = dx12Gm->VertexBufferView(quad);
-		D3D12_INDEX_BUFFER_VIEW indexBufferView = dx12Gm->IndexBufferView(quad);
-		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-		cmdList->IASetIndexBuffer(&indexBufferView);
-
-		cmdList->DrawIndexedInstanced(quad->GetTotalIndexCount(), 1, quad->GetSubmeshStartIndexLocation(0), quad->GetSubmeshBaseVertexLocation(0), 0);
-		JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
+		BuildGraphicRootSignature(dx12Device->GetDevice());
+		BuildComputeRootSignature(dx12Device->GetDevice());
+		BuildGraphicPso(dx12Device->GetDevice());
+		BuildComputePso(dx12Device->GetDevice()); 
+		BuildCounterClearBuffer(dx12Device);
+		BuildResultBuffer(dx12Device, localLightCapacity);
+		BuildRtResource(dx12Device, dx12Gm);
+		if constexpr (Private::allowDebugging)
+		{
+			BuildDebugRootSignature(dx12Device->GetDevice());
+			BuildDebugPso(dx12Device->GetDevice());
+			BuildDebugBuffer(dx12Device);
+		}
+		//LoadLightShape(dx12Device, dx12Gm);
+		device->EndPublicCommand();
+		device->FlushCommandQueue();
+		device->StartPublicCommand();
+		resultClearUploadBuffer = nullptr;
+		counterClearUploadBuffer = nullptr;
 	}
 	void JDx12LightCulling::BuildGraphicRootSignature(ID3D12Device* device)
-	{
-		CD3DX12_ROOT_PARAMETER slotRootParameter[Private::gSlotCount];
-		slotRootParameter[Private::gLightBufferIndex].InitAsShaderResourceView(0, 0);
-		slotRootParameter[Private::gCamCBIndex].InitAsConstantBufferView(0);
-		slotRootParameter[Private::gPassCBIndex].InitAsConstants(1, 1);
-
-		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(Private::gSlotCount, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-		// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
-		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-			serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-		if (errorBlob != nullptr)
-		{
-			::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-		}
-		ThrowIfFailedHr(hr);
-		ThrowIfFailedHr(device->CreateRootSignature(
-			0,
-			serializedRootSig->GetBufferPointer(),
-			serializedRootSig->GetBufferSize(),
-			IID_PPV_ARGS(mGRootSignature.GetAddressOf())));
-
-		mGRootSignature->SetName(L"LightCulling Draw RootSignature");
+	{ 
+		JDx12RootSignatureBuilder<Private::gSlotCount> builder;
+		builder.PushConstantsBuffer(0);		//Private::gCamCBIndex
+		//builder.PushConstants(1, 1);		//Private::gPassCBIndex
+		builder.PushShaderResource(0, 0);	//Private::gLightBufferIndex
+		builder.Create(device, L"LightCulling Draw RootSignature", mGRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	}
 	void JDx12LightCulling::BuildComputeRootSignature(ID3D12Device* device)
 	{
-		CD3DX12_DESCRIPTOR_RANGE rtTextureArrayTable;
-		rtTextureArrayTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-		CD3DX12_DESCRIPTOR_RANGE offsetBufferTable;
-		offsetBufferTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-
-		CD3DX12_DESCRIPTOR_RANGE linkedListBuffertable;
-		linkedListBuffertable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
-
-		CD3DX12_ROOT_PARAMETER slotRootParameter[Private::cSlotCount];
-		slotRootParameter[Private::cLightTypeCBIndex].InitAsConstants(4, 0);
-		slotRootParameter[Private::cRtTextureArrayIndex].InitAsDescriptorTable(1, &rtTextureArrayTable, D3D12_SHADER_VISIBILITY_ALL);
-		slotRootParameter[Private::cOffsetBufferIndex].InitAsDescriptorTable(1, &offsetBufferTable, D3D12_SHADER_VISIBILITY_ALL);
-		slotRootParameter[Private::cLinkedlistndex].InitAsDescriptorTable(1, &linkedListBuffertable, D3D12_SHADER_VISIBILITY_ALL);
-		slotRootParameter[Private::cOutBufferIndex].InitAsUnorderedAccessView(2);
-
-		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(Private::cSlotCount, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-		// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
-		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-			serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-		if (errorBlob != nullptr)
-		{
-			::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-		}
-		ThrowIfFailedHr(hr);
-		ThrowIfFailedHr(device->CreateRootSignature(
-			0,
-			serializedRootSig->GetBufferPointer(),
-			serializedRootSig->GetBufferSize(),
-			IID_PPV_ARGS(mCRootSignature.GetAddressOf())));
-
-		mCRootSignature->SetName(L"LightCulling Compute RootSignature");
+		JDx12RootSignatureBuilder<Private::cSlotCount> builder;
+		builder.PushConstants(2, 0);								//Private::cLightTypeCBIndex
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);	//Private::cOffsetBufferIndex
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);	//Private::cLinkedlistndex
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);	//Private::cOutBufferIndex
+		builder.PushUnorderedAccess(2);		 
+		builder.Create(device, L"LightCulling Compute RootSignature", mCRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);
 	}
 	void JDx12LightCulling::BuildDebugRootSignature(ID3D12Device* device)
 	{
-		CD3DX12_DESCRIPTOR_RANGE depthMapTable;
-		depthMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-		CD3DX12_DESCRIPTOR_RANGE offsetBufferTable;
-		offsetBufferTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-
-		CD3DX12_DESCRIPTOR_RANGE linkedListBuffertable;
-		linkedListBuffertable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
-
-		CD3DX12_ROOT_PARAMETER slotRootParameter[Private::dSlotCount];
-		slotRootParameter[Private::dPassCBIndex].InitAsConstants(4, 0);
-		slotRootParameter[Private::dDepthMapIndex].InitAsDescriptorTable(1, &depthMapTable, D3D12_SHADER_VISIBILITY_ALL);
-		slotRootParameter[Private::dOffsetBufferIndex].InitAsDescriptorTable(1, &offsetBufferTable, D3D12_SHADER_VISIBILITY_ALL);
-		slotRootParameter[Private::dLinkedlistndex].InitAsDescriptorTable(1, &linkedListBuffertable, D3D12_SHADER_VISIBILITY_ALL);
-
-		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(Private::dSlotCount, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-		// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
-		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-			serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-		if (errorBlob != nullptr)
-		{
-			::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-		}
-		ThrowIfFailedHr(hr);
-		ThrowIfFailedHr(device->CreateRootSignature(
-			0,
-			serializedRootSig->GetBufferPointer(),
-			serializedRootSig->GetBufferSize(),
-			IID_PPV_ARGS(mDRootSignature.GetAddressOf())));
-
-		mDRootSignature->SetName(L"LightCulling Debug RootSignature");
+		JDx12RootSignatureBuilder<Private::dSlotCount> builder;
+		builder.PushConstants(4, 0);								//Private::dPassCBIndex
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);	//Private::dDepthMapIndex
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);	//Private::dOffsetBufferIndex
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);	//Private::dLinkedlistndex
+		builder.Create(device, L"LightCulling Debug RootSignature", mDRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	}
-	void JDx12LightCulling::BuildGraphicPso(ID3D12Device* device, const JGraphicBaseDataSet& baseDataSet)
+	void JDx12LightCulling::BuildGraphicPso(ID3D12Device* device)
 	{
 		for (uint i = 0; i < JLightType::GetLocalLightCount(); ++i)
 		{
@@ -983,13 +770,13 @@ namespace JinEngine::Graphic
 			drawLightShader[i] = std::make_unique<JDx12GraphicShaderDataHolder>();
 
 			JDx12GraphicShaderDataHolder* drawHolder = drawLightShader[i].get();
-			JShaderType::CompileInfo vsCompileInfo = Private::GraphicDrawLightShapeVsCompileInfo();
-			JShaderType::CompileInfo gsCompileInfo = Private::GraphicDrawLightShapeGsCompileInfo();
-			JShaderType::CompileInfo psCompileInfo = Private::GraphicDrawLightShapePsCompileInfo();
+			JCompileInfo vsCompileInfo = Private::GraphicDrawLightShapeVsCompileInfo();
+			JCompileInfo gsCompileInfo = Private::GraphicDrawLightShapeGsCompileInfo();
+			JCompileInfo psCompileInfo = Private::GraphicDrawLightShapePsCompileInfo();
 
 			JGraphicShaderInitData initHelper;
-			Private::StuffShaderMacro(initHelper, baseDataSet.option, lType);
-			Private::StuffShaderMacro(initHelper, baseDataSet.option);
+			Private::StuffShaderMacro(initHelper, GetGraphicOption(), lType);
+			Private::StuffShaderMacro(initHelper, GetGraphicOption());
 
 			drawHolder->vs = JDxShaderDataUtil::CompileShader(vsCompileInfo.filePath, initHelper.macro[Private::staticMeshIndex], vsCompileInfo.functionName, L"vs_6_0");
 			drawHolder->gs = JDxShaderDataUtil::CompileShader(gsCompileInfo.filePath, initHelper.macro[Private::staticMeshIndex], gsCompileInfo.functionName, L"gs_6_0");
@@ -1053,72 +840,49 @@ namespace JinEngine::Graphic
 			darwShaderPso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			darwShaderPso.NumRenderTargets = 1;
 			darwShaderPso.RTVFormats[0] = DXGI_FORMAT_R8G8_UNORM;
-			darwShaderPso.SampleDesc.Count = 1;
-			ThrowIfFailedG(device->CreateGraphicsPipelineState(&darwShaderPso, IID_PPV_ARGS(drawHolder->pso.GetAddressOf())));
+			darwShaderPso.SampleDesc.Count = 1; 
+			ThrowIfFailedG(device->CreateGraphicsPipelineState(&darwShaderPso, IID_PPV_ARGS(drawHolder->GetPsoAddress())));
 		}
 	}
-	void JDx12LightCulling::BuildComputePso(ID3D12Device* device, const JGraphicBaseDataSet& baseDataSet)
+	void JDx12LightCulling::BuildComputePso(ID3D12Device* device)
 	{
 		computeLightClusterShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 		clearOffsetBufferShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 
 		JDx12ComputeShaderDataHolder* computeHolder = computeLightClusterShader.get();
-		JShaderType::CompileInfo csCompileInfo = Private::ComputeLightClusterCompileInfo();
+		JCompileInfo csCompileInfo = Private::ComputeLightClusterCompileInfo();
 
 		JComputeShaderInitData initHelper;
-		Private::StuffShaderMacro(initHelper, baseDataSet.option);
+		Private::StuffShaderMacro(initHelper, GetGraphicOption());
 		computeHolder->cs = JDxShaderDataUtil::CompileShader(csCompileInfo.filePath, initHelper.macro, csCompileInfo.functionName, L"cs_6_0");
 		computeHolder->dispatchInfo = initHelper.dispatchInfo;
 
-		D3D12_COMPUTE_PIPELINE_STATE_DESC computeShaderPso;
-		ZeroMemory(&computeShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
-		computeShaderPso.pRootSignature = mCRootSignature.Get();
-		computeShaderPso.CS =
-		{
-			reinterpret_cast<BYTE*>(computeHolder->cs->GetBufferPointer()),
-			computeHolder->cs->GetBufferSize()
-		};
-		computeShaderPso.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-		ThrowIfFailedG(device->CreateComputePipelineState(&computeShaderPso, IID_PPV_ARGS(computeHolder->pso.GetAddressOf())));
-
+		JDx12ComputePso::Create(device, computeHolder, mCRootSignature.Get()); 
+	 
 		JDx12ComputeShaderDataHolder* clearHolder = clearOffsetBufferShader.get();
-		Private::StuffClearShaderMacro(initHelper, baseDataSet.option);
+		Private::StuffClearShaderMacro(initHelper, GetGraphicOption());
 		clearHolder->cs = JDxShaderDataUtil::CompileShader(csCompileInfo.filePath, initHelper.macro, csCompileInfo.functionName, L"cs_6_0");
 		clearHolder->dispatchInfo = initHelper.dispatchInfo;
 
-		D3D12_COMPUTE_PIPELINE_STATE_DESC clearShaderPso;
-		ZeroMemory(&clearShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
-		clearShaderPso.pRootSignature = mCRootSignature.Get();
-		clearShaderPso.CS =
-		{
-			reinterpret_cast<BYTE*>(clearHolder->cs->GetBufferPointer()),
-			clearHolder->cs->GetBufferSize()
-		};
-		clearShaderPso.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-		ThrowIfFailedG(device->CreateComputePipelineState(&clearShaderPso, IID_PPV_ARGS(clearHolder->pso.GetAddressOf())));
-
+		JDx12ComputePso::Create(device, clearHolder, mCRootSignature.Get());
 	}
-	void JDx12LightCulling::BuildDebugPso(ID3D12Device* device, const JGraphicBaseDataSet& baseDataSet)
+	void JDx12LightCulling::BuildDebugPso(ID3D12Device* device)
 	{
 		drawDebugShader = std::make_unique<JDx12GraphicShaderDataHolder>();
 		JDx12GraphicShaderDataHolder* drawHolder = drawDebugShader.get();
 
-		JShaderType::CompileInfo vsCompileInfo = Private::GraphicDrawDebugVsCompileInfo();
-		JShaderType::CompileInfo psCompileInfo = Private::GraphicDrawDebugPsCompileInfo();
+		JCompileInfo vsCompileInfo = Private::GraphicDrawDebugVsCompileInfo();
+		JCompileInfo psCompileInfo = Private::GraphicDrawDebugPsCompileInfo();
 
 		JGraphicShaderInitData initHelper;
-		Private::StuffShaderMacro(initHelper, baseDataSet.option);
+		Private::StuffShaderMacro(initHelper, GetGraphicOption());
 
 		drawHolder->vs = JDxShaderDataUtil::CompileShader(vsCompileInfo.filePath, initHelper.macro[Private::staticMeshIndex], vsCompileInfo.functionName, L"vs_6_0");
 		drawHolder->ps = JDxShaderDataUtil::CompileShader(psCompileInfo.filePath, initHelper.macro[Private::staticMeshIndex], psCompileInfo.functionName, L"ps_6_0");
-		drawHolder->inputLayout =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-		};
-
+ 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC debugShaderPso;
 		ZeroMemory(&debugShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-		debugShaderPso.InputLayout = { drawHolder->inputLayout.data(), (uint)drawHolder->inputLayout.size() };
+		debugShaderPso.InputLayout.NumElements = 0; 
 		debugShaderPso.pRootSignature = mDRootSignature.Get();
 		debugShaderPso.VS =
 		{
@@ -1140,19 +904,19 @@ namespace JinEngine::Graphic
 		debugShaderPso.SampleMask = UINT_MAX;
 		debugShaderPso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		debugShaderPso.NumRenderTargets = 1;
-		debugShaderPso.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		debugShaderPso.RTVFormats[0] = Constants::GetRenderTargetFormat(GetGraphicOption().rendering.renderTargetFormat);
 		debugShaderPso.SampleDesc.Count = 1;
-		ThrowIfFailedG(device->CreateGraphicsPipelineState(&debugShaderPso, IID_PPV_ARGS(drawHolder->pso.GetAddressOf())));
+		ThrowIfFailedG(device->CreateGraphicsPipelineState(&debugShaderPso, IID_PPV_ARGS(drawHolder->GetPsoAddress())));
 	}
 	void JDx12LightCulling::BuildCounterClearBuffer(JDx12GraphicDevice* device)
 	{
 		if (counterClearBuffer == nullptr)
-			counterClearBuffer = std::make_unique<JDx12GraphicBuffer<uint>>(L"LitCounterClear", J_GRAPHIC_BUFFER_TYPE::COMMON);
+			counterClearBuffer = std::make_unique<JDx12GraphicBufferT<uint>>(L"LitCounterClear", J_GRAPHIC_BUFFER_TYPE::COMMON);
 		counterClearBuffer->Clear();
 		counterClearBuffer->Build(device, Private::litListCounterCount);
 
 		if (counterClearUploadBuffer == nullptr)
-			counterClearUploadBuffer = std::make_unique<JDx12GraphicBuffer<uint>>(L"LitCounterClearIntermediate", J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+			counterClearUploadBuffer = std::make_unique<JDx12GraphicBufferT<uint>>(L"LitCounterClearIntermediate", J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
 		counterClearUploadBuffer->Clear();
 		counterClearUploadBuffer->Build(device, Private::litListCounterCount);
 
@@ -1167,31 +931,31 @@ namespace JinEngine::Graphic
 		JDx12GraphicDevice* dxDevice = static_cast<JDx12GraphicDevice*>(device);
 		ID3D12GraphicsCommandList* cmdList = dxDevice->GetPublicCmdList();
 
-		JD3DUtility::ResourceTransition(cmdList, counterClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+		JDx12Utility::ResourceTransition(cmdList, counterClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 		UpdateSubresources<1>(cmdList, counterClearBuffer->GetResource(), counterClearUploadBuffer->GetResource(), 0, 0, 1, &clearData);
-		JD3DUtility::ResourceTransition(cmdList, counterClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		JDx12Utility::ResourceTransition(cmdList, counterClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
 		*/
 	}
 	void JDx12LightCulling::BuildResultBuffer(JDx12GraphicDevice* device, const uint localLightCapacity)
 	{
 		//const std::wstring& name, const J_GRAPHIC_BUFFER_TYPE type
 		if (resultOutBuffer == nullptr)
-			resultOutBuffer = std::make_unique<JDx12GraphicBuffer<uint>>(L"LitCullingResult", J_GRAPHIC_BUFFER_TYPE::UNORDERED_ACCEESS);
+			resultOutBuffer = std::make_unique<JDx12GraphicBufferT<uint>>(L"LitCullingResult", J_GRAPHIC_BUFFER_TYPE::UNORDERED_ACCEESS);
 		resultOutBuffer->Clear();
 		resultOutBuffer->Build(device, localLightCapacity);
 
 		if (resultOutClearBuffer == nullptr)
-			resultOutClearBuffer = std::make_unique<JDx12GraphicBuffer<uint>>(L"LitCullingResultClear", J_GRAPHIC_BUFFER_TYPE::COMMON);
+			resultOutClearBuffer = std::make_unique<JDx12GraphicBufferT<uint>>(L"LitCullingResultClear", J_GRAPHIC_BUFFER_TYPE::COMMON);
 		resultOutClearBuffer->Clear();
 		resultOutClearBuffer->Build(device, localLightCapacity);
 
 		if (resultClearUploadBuffer == nullptr)
-			resultClearUploadBuffer = std::make_unique<JDx12GraphicBuffer<uint>>(L"LitCullingResultClearIntermediate", J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+			resultClearUploadBuffer = std::make_unique<JDx12GraphicBufferT<uint>>(L"LitCullingResultClearIntermediate", J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
 		resultClearUploadBuffer->Clear();
 		resultClearUploadBuffer->Build(device, localLightCapacity);
 
 		resultOutClearBuffer->SutffClearValue(device->GetPublicCmdList(), resultClearUploadBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE, 0);
-		JD3DUtility::ResourceTransition(device->GetPublicCmdList(), resultOutBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+		JDx12Utility::ResourceTransition(device->GetPublicCmdList(), resultOutBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 		/*
 		uint32 tempClearData = 0;
 		D3D12_SUBRESOURCE_DATA clearData = {};
@@ -1202,33 +966,67 @@ namespace JinEngine::Graphic
 		JDx12GraphicDevice* dxDevice = static_cast<JDx12GraphicDevice*>(device);
 		ID3D12GraphicsCommandList* cmdList = dxDevice->GetPublicCmdList();
 
-		JD3DUtility::ResourceTransition(cmdList, resultOutClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+		JDx12Utility::ResourceTransition(cmdList, resultOutClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 		UpdateSubresources<1>(cmdList, resultOutClearBuffer->GetResource(), resultClearUploadBuffer->GetResource(), 0, 0, 1, &clearData);
-		JD3DUtility::ResourceTransition(cmdList, resultOutClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		JDx12Utility::ResourceTransition(cmdList, resultOutClearBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
 		*/
 	}
-	void JDx12LightCulling::BuildDebugBuffer(JDx12GraphicDevice* device, const JGraphicBaseDataSet& baseDataSet)
+	void JDx12LightCulling::BuildDebugBuffer(JDx12GraphicDevice* device)
 	{
 		if (offsetDebugBuffer == nullptr)
-			offsetDebugBuffer = std::make_unique<JDx12GraphicBuffer<uint>>(L"LitStartOffsetBack", J_GRAPHIC_BUFFER_TYPE::READ_BACK);
+			offsetDebugBuffer = std::make_unique<JDx12GraphicBufferT<uint>>(L"LitStartOffsetBack", J_GRAPHIC_BUFFER_TYPE::READ_BACK);
 
 		if (listDebugBuffer == nullptr)
-			listDebugBuffer = std::make_unique<JDx12GraphicBuffer<uint64>>(L"LitListReadBack", J_GRAPHIC_BUFFER_TYPE::READ_BACK);
+			listDebugBuffer = std::make_unique<JDx12GraphicBufferT<uint64>>(L"LitListReadBack", J_GRAPHIC_BUFFER_TYPE::READ_BACK);
 
 		offsetDebugBuffer->Clear();
-		offsetDebugBuffer->Build(device, baseDataSet.option.GetClusterTotalCount());
+		offsetDebugBuffer->Build(device, GetGraphicOption().GetClusterTotalCount());
 
 		listDebugBuffer->Clear();
-		listDebugBuffer->Build(device, baseDataSet.option.GetClusterIndexCount());
+		listDebugBuffer->Build(device, GetGraphicOption().GetClusterIndexCount());
 	}
-	void JDx12LightCulling::BuildRtResource(JDx12GraphicDevice* device, JDx12GraphicResourceManager* dx12Gm, const JGraphicBaseDataSet& baseDataSet)
+	void JDx12LightCulling::BuildRtResource(JDx12GraphicDevice* device, JDx12GraphicResourceManager* dx12Gm)
 	{
 		JGraphicResourceCreationDesc desc;
-		desc.width = baseDataSet.option.GetClusterXCount();
-		desc.height = baseDataSet.option.GetClusterYCount();
-		desc.arraySize = baseDataSet.info.minCapacity;
+		desc.width = GetGraphicOption().GetClusterXCount();
+		desc.height = GetGraphicOption().GetClusterYCount();
+		desc.arraySize = GetGraphicInfo().minCapacity;
 		for (uint i = 0; i < SIZE_OF_ARRAY(lightRt); ++i)
 			lightRt[i] = dx12Gm->CreateResource(device, desc, Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING);
+	}
+	void JDx12LightCulling::ClearResource()
+	{
+		for (uint i = 0; i < SIZE_OF_ARRAY(lightRt); ++i)
+			JGraphicResourceInfo::Destroy(lightRt[i].Release());
+
+		counterClearBuffer = nullptr;
+		counterClearUploadBuffer = nullptr;
+
+		resultOutBuffer = nullptr;
+		resultOutClearBuffer = nullptr;
+		resultClearUploadBuffer = nullptr;
+
+		for (uint i = 0; i < SIZE_OF_ARRAY(drawLightShader); ++i)
+			drawLightShader[i] = nullptr;
+		computeLightClusterShader = nullptr;
+		clearOffsetBufferShader = nullptr;
+		drawDebugShader = nullptr;
+
+		mGRootSignature = nullptr;
+		mCRootSignature = nullptr;
+		mDRootSignature = nullptr;
+		if constexpr (Private::allowDebugging)
+		{
+			listDebugBuffer = nullptr;
+			offsetDebugBuffer = nullptr;
+		}
+		//Unuse
+		/*
+		JGraphicResourceInfo::Destroy(lowSphereVertex.Release());
+		JGraphicResourceInfo::Destroy(lowSphereIndex.Release());
+		JGraphicResourceInfo::Destroy(lowConeVertex.Release());
+		JGraphicResourceInfo::Destroy(lowConeIndex.Release());
+		*/
 	}
 	void JDx12LightCulling::LoadLightShape(JDx12GraphicDevice* device, JDx12GraphicResourceManager* gM)
 	{
@@ -1244,7 +1042,7 @@ namespace JinEngine::Graphic
 
 		Core::JObjFileLoader{}.LoadObjFile(lowSpherePathData, lowSphereMeshGroup, lowSphereMaterialMap);
 		Core::JObjFileLoader{}.LoadObjFile(lowConePathData, lowConeMeshGroup, lowConeMaterialMap);
-		   
+
 		lowSphereVertexCount = lowSphereMeshGroup.GetTotalVertexCount();
 		lowSphereIndexCount = lowSphereMeshGroup.GetTotalIndexCount();
 
@@ -1288,7 +1086,7 @@ namespace JinEngine::Graphic
 			for (uint j = 0; j < subMeshVertexCount; ++j)
 				vertex[vertexOffset + j] = Core::J1BytePosVertex::Encode(meshdata->GetVertex(j));
 			vertexOffset += subMeshVertexCount;
-		}	 
+		}
 		lowConeVertex = gM->CreateVertexBuffer(device, vertex);
 		lowConeVertex->SetPrivateName(L"LowConeVertex");
 
@@ -1302,7 +1100,7 @@ namespace JinEngine::Graphic
 				index16[indicesOffset + j] = meshdata->GetIndex(j);
 			indicesOffset += subMeshIndexCount;
 		}
-		lowConeIndex = gM->CreateIndexBuffer(device, index16);	 
+		lowConeIndex = gM->CreateIndexBuffer(device, index16);
 		lowConeIndex->SetPrivateName(L"LowConeIndex");
 		*/
 	}

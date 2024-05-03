@@ -63,8 +63,7 @@ namespace JinEngine
 		private:
 			std::wstring GetMetadataPath()const noexcept;
 		private:
-			bool CanUpdate(JEditorPage* page)const noexcept;
-			bool HasMaximizePage()const noexcept;
+			bool CanUpdate(JEditorPage* page)const noexcept; 
 		public:
 			void OpenProjectSelector(std::unique_ptr<Graphic::JGuiInitData>&& initData, std::unique_ptr<JEditorProjectInterface>&& pInterface);
 			void OpenProject(std::unique_ptr<Graphic::JGuiInitData>&& initData, std::unique_ptr<JEditorProjectInterface>&& pInterface);

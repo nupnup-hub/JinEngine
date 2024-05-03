@@ -8,7 +8,7 @@ cbuffer cbObject : register(b0)
 {
 	float4x4 objWorld;
 	//float4x4 objTexTransform;
-	//uint objMaterialIndex;
+	//uint cbObject.materialIndex;
 	//uint objPad00;
 	//uint objPad01;
 	//uint objPad02;

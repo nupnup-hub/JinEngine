@@ -1,7 +1,7 @@
 #pragma once  
 #include"JDxShaderDataHolderInterface.h"
-#include"../../../Core/Math/JVector.h" 
-#include"../../../Object/Resource/Shader/JShaderEnum.h"
+#include"../../../Core/Math/JVector.h"  
+#include"../../../Core/Utility/JMacroUtility.h"
 #include<vector>
 #include<wrl.h> 
 #include<d3d12.h> 
@@ -10,8 +10,17 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		class JDx12GraphicShaderDataHolder final: public JGraphicShaderDataHolder
+	{ 
+		class JDx12RasterizeShaderDataHolderInterface 
+		{
+		public:
+			virtual ID3D12PipelineState* GetPso(const uint index = 0)const noexcept = 0;
+			virtual ID3D12PipelineState** GetPsoAddress(const uint index = 0) noexcept = 0;
+		};
+
+		template<uint psoVariation>
+		class JDx12GraphicShaderDataHolder final: public JGrahicShaderDataHolder, 
+			public JDx12RasterizeShaderDataHolderInterface
 		{
 		public:
 			Microsoft::WRL::ComPtr<IDxcBlob> vs = nullptr;
@@ -20,38 +29,115 @@ namespace JinEngine
 			Microsoft::WRL::ComPtr<IDxcBlob> gs = nullptr;
 			Microsoft::WRL::ComPtr<IDxcBlob> ps = nullptr;
 			std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
-		public:
-			//Main pso
-			Microsoft::WRL::ComPtr<ID3D12PipelineState> pso = nullptr;
-			//Extra pso 
-			//Material이외에 오브젝트에서 Pso변경이 필요할시 사용
-			//ex) gameobject select시 outline 
-			Microsoft::WRL::ComPtr<ID3D12PipelineState> extraPso[(int)J_GRAPHIC_SHADER_EXTRA_FUNCTION::COUNT];
 		public: 
-			JDx12GraphicShaderDataHolder();
-			~JDx12GraphicShaderDataHolder();
+			Microsoft::WRL::ComPtr<ID3D12PipelineState> pso[psoVariation];
+		public: 
+			JDx12GraphicShaderDataHolder()
+			{
+
+			}
+			~JDx12GraphicShaderDataHolder()
+			{
+				ClearResource();
+			}
 		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
-			ID3D12PipelineState* GetExtraPso(const J_GRAPHIC_SHADER_EXTRA_FUNCTION type)const noexcept;
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final
+			{
+				return J_GRAPHIC_DEVICE_TYPE::DX12;
+			}
+			J_SHADER_TYPE GetShaderType()const noexcept final
+			{
+				return J_SHADER_TYPE::GRAPHIC;
+			}
+			ResourceHandle GetShaderData(const uint index)const noexcept final
+			{
+				return GetPso(index);
+			}
+			ID3D12PipelineState* GetPso(const uint index = 0)const noexcept final
+			{
+				return pso[index].Get();
+			}
+			ID3D12PipelineState** GetPsoAddress(const uint index = 0)noexcept final
+			{
+				return pso[index].GetAddressOf();
+			}
+			uint GetVariationCount()const noexcept final
+			{
+				return psoVariation;
+			}
 		public:
-			bool HasExtra(const J_GRAPHIC_SHADER_EXTRA_FUNCTION type)const noexcept final;
-		public:
-			void Clear()final;
+			void Clear()final
+			{
+				ClearResource();
+			}
+		private:
+			void ClearResource()
+			{
+				vs = nullptr;
+				hs = nullptr;
+				ds = nullptr;
+				gs = nullptr;
+				ps = nullptr;
+				inputLayout.clear(); 
+				for (uint i = 0; i < SIZE_OF_ARRAY(pso); ++i)
+					pso[i] = nullptr;
+			}
 		};
 
-		class JDx12ComputeShaderDataHolder final : public JComputeShaderDataHolder
+		template<uint psoVariation>
+		class JDx12ComputeShaderDataHolder final : public JComputeShaderDataHolder, 
+			public JDx12RasterizeShaderDataHolderInterface
 		{
 		public:
-			Microsoft::WRL::ComPtr<IDxcBlob> cs = nullptr;							//Variable
-			Microsoft::WRL::ComPtr<ID3D12PipelineState> pso = nullptr;				//Constants 
-			//ID3D12RootSignature* RootSignature = nullptr;							//Variable
+			Microsoft::WRL::ComPtr<IDxcBlob> cs = nullptr;											//Variable
+			Microsoft::WRL::ComPtr<ID3D12PipelineState> pso[psoVariation];				//Constants 
+			//ID3D12RootSignature* RootSignature = nullptr;											//Variable
 		public:
-			JDx12ComputeShaderDataHolder();
-			~JDx12ComputeShaderDataHolder();
+			JDx12ComputeShaderDataHolder()
+			{
+
+			}
+			~JDx12ComputeShaderDataHolder()
+			{
+				ClearResource();
+			}
 		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final
+			{
+				return J_GRAPHIC_DEVICE_TYPE::DX12;
+			}
+			J_SHADER_TYPE GetShaderType()const noexcept final
+			{
+				return J_SHADER_TYPE::COMPUTE;
+			}
+			ResourceHandle GetShaderData(const uint index)const noexcept final
+			{
+				return GetPso(index);
+			}
+			ID3D12PipelineState* GetPso(const uint index = 0)const noexcept final
+			{
+				return pso[index].Get();
+			}
+			ID3D12PipelineState** GetPsoAddress(const uint index = 0)noexcept final
+			{
+				return pso[index].GetAddressOf();
+			}
+			uint GetVariationCount()const noexcept final
+			{
+				return psoVariation;
+			}
 		public:
-			void Clear()final;
+			void Clear()final
+			{
+				ClearResource();
+			}
+		private:
+			void ClearResource()
+			{ 
+				cs = nullptr;
+				for (uint i = 0; i < SIZE_OF_ARRAY(pso); ++i)
+					pso[i] = nullptr;
+			}
 		};
 	}
 }

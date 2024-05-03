@@ -12,6 +12,10 @@ namespace JinEngine
 		2. caller(impl) is derived interface(has cinfo and access cmanager public method)
 		3. impl interface class can derived user access class(restrict version impl derived interface)
 		*/
+		JCullingManager::~JCullingManager()
+		{
+			ClearResource();
+		}
 		uint JCullingManager::GetCullingInfoCount(const J_CULLING_TYPE type)const noexcept
 		{
 			return (uint)cullingInfo[(uint)type].size();
@@ -92,6 +96,10 @@ namespace JinEngine
 			return true;
 		} 
 		void JCullingManager::Clear()
+		{
+			ClearResource();
+		}
+		void JCullingManager::ClearResource()
 		{
 			for (uint i = 0; i < (uint)J_CULLING_TYPE::COUNT; ++i)
 				cullingInfo[i].clear();

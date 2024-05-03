@@ -1,7 +1,6 @@
 #include"JThreadManager.h" 
 #include"JThreadManagerPrivate.h"
-#include"../Func//Functor/JFunctor.h"
-#include"../../Graphic/JGraphicConstants.h"
+#include"../Func//Functor/JFunctor.h" 
 #include<memory>
 #include<string>
 #include<mutex>
@@ -23,7 +22,7 @@ namespace JinEngine
 			static constexpr PriorityNumber lastPriority = 3;
 			static constexpr PriorityNumber priorityRange = lastPriority + 1;
 
-			static constexpr int reservedThreadCount = Graphic::Constants::gMaxFrameThread;
+			//static constexpr int reservedThreadCount = Graphic::Constants::gMaxFrameThread;
 			static bool canLoopThread = true;
 		}
 		namespace
@@ -36,6 +35,8 @@ namespace JinEngine
 					return secondPriority;
 				else if (type == J_THREAD_USE_CASE_TYPE::COMMON)
 					return lastPriority;
+				else
+					return invalidIndex;
 			}
 			static bool HasReservedSpace(const int priority)
 			{
@@ -161,9 +162,11 @@ namespace JinEngine
 			int workingPoolStartIndex[priorityRange];
 		public:
 			int threadCount = 0;
+			uint reservedThreadCount = 0;
 		public:
-			void Initialize()
+			void Initialize(const uint newReservedThreadCount)
 			{
+				reservedThreadCount = newReservedThreadCount;
 				canLoopThread = true;
 				threadCount = std::thread::hardware_concurrency();
 				JThreadHandle::Initialize(threadCount);
@@ -333,9 +336,9 @@ namespace JinEngine
 		using MainAccess = JThreadManagerPrivate::MainAccess;
 		using GraphicInterface = JThreadManagerPrivate::GraphicInterface;
 
-		void MainAccess::Initialize()
+		void MainAccess::Initialize(const uint reservedThreadCount)
 		{
-			_JThreadManager::Instance().impl->Initialize();
+			_JThreadManager::Instance().impl->Initialize(reservedThreadCount);
 		}
 		void MainAccess::Clear()
 		{

@@ -58,15 +58,16 @@ namespace JinEngine
 				}
 			}
 			void InvokeAllReverse(Type* type, const bool doConditionTest, Param&&... value)
-			{
-				for (int i = count- 1; i >= count; --i)
+			{ 
+				for (uint i = 0; i < count; ++i)
 				{
-					if (Has(i))
+					int index = count - i - 1;
+					if (Has(index))
 					{
 						if (doConditionTest)
-							Invoke(i, type, std::forward<Param>(value)...);
+							Invoke(index, type, std::forward<Param>(value)...);
 						else
-							InvokePassCondition(i, type, std::forward<Param>(value)...);
+							InvokePassCondition(index, type, std::forward<Param>(value)...);
 					}
 				}
 			}
@@ -107,6 +108,16 @@ namespace JinEngine
 						Parent::Invoke(innerGroup[index][i], type, std::forward<Param>(value)...);
 				}
 			} 
+			void InvokeGroupReverse(const uint index, Type* type, Param&&... value)
+			{
+				const uint count = (uint)innerGroup[index].size();
+				for (uint i = 0; i < count; ++i)
+				{
+					int innerIndex = count - i - 1;
+					if (Parent::Has(innerIndex))
+						Parent::Invoke(innerGroup[index][innerIndex], type, std::forward<Param>(value)...);
+				}
+			}
 			void InvokeGroupPassCondition(const uint index, Type* type, Param&&... value)
 			{
 				const uint count = (uint)innerGroup[index].size();
@@ -114,6 +125,16 @@ namespace JinEngine
 				{
 					if (Parent::Has(i))
 						Parent::InvokePassCondition(innerGroup[index][i], type, std::forward<Param>(value)...);
+				}
+			}
+			void InvokeGroupPassConditionReverse(const uint index, Type* type, Param&&... value)
+			{
+				const int count = (int)innerGroup[index].size();
+				for (uint i = 0; i < count; ++i)
+				{
+					int innerIndex = count - i - 1;
+					if (Parent::Has(innerIndex))
+						Parent::InvokePassCondition(innerGroup[index][innerIndex], type, std::forward<Param>(value)...);
 				}
 			}
 		public:

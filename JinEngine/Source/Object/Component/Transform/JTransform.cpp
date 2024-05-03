@@ -241,7 +241,7 @@ namespace JinEngine
 				return;
 
 			UpdateWorld();
-			JScenePrivate::CompSettingInterface::UpdateTransform(owner);
+			JScenePrivate::CompSettingInterface::UpdateTransform(thisPointer);
 			const uint childrenCount = owner->GetChildrenCount();
 			for (uint i = 0; i < childrenCount; ++i)
 				owner->GetChild(i)->GetTransform()->impl->UpdateTopDown();
@@ -339,7 +339,7 @@ namespace JinEngine
 	{
 		return impl->GetRotation();
 	}
-	XMVECTOR JTransform::GetQuaternion()const noexcept
+	JVector4<float> JTransform::GetQuaternion()const noexcept
 	{
 		return impl->GetQuaternion();
 	}
@@ -359,13 +359,9 @@ namespace JinEngine
 	{
 		return impl->GetWorldQuaternion();
 	}
-	JMatrix4x4 JTransform::GetWorldMatrix4x4()const noexcept
+	JMatrix4x4 JTransform::GetWorldMatrix()const noexcept
 	{
 		return impl->GetWorldMatrix();
-	}
-	DirectX::XMMATRIX JTransform::GetWorldMatrix()const noexcept
-	{
-		return impl->world.LoadXM();
 	} 
 	JVector3<float> JTransform::GetRight()const noexcept
 	{
@@ -395,6 +391,17 @@ namespace JinEngine
 	{ 
 		return impl->GetDistance(t);
 	}
+	void JTransform::GetWorldPQS(_Inout_ JVector3<float>& p, _Inout_ JVector4<float>& q, _Inout_ JVector3<float>& s)
+	{
+		XMVECTOR positionV;
+		XMVECTOR rotationV;
+		XMVECTOR scaleV;
+		XMMatrixDecompose(&scaleV, &rotationV, &positionV, impl->GetWorldMatrix().LoadXM());
+
+		p = positionV;
+		q = rotationV;
+		s = scaleV;
+	}
 	void JTransform::SetTransform(const JMatrix4x4& transform)noexcept
 	{
 		XMVECTOR positionV;
@@ -406,6 +413,10 @@ namespace JinEngine
 	void JTransform::SetTransform(const JVector3<float>& position, const JVector3<float>& rotation, const JVector3<float>& scale)noexcept
 	{
 		impl->SetTransform(position, rotation, scale);
+	}
+	void JTransform::SetTransform(const JVector3<float>& position, const JVector4<float>& quaternion, const JVector3<float>& scale)noexcept
+	{
+		impl->SetTransform(position, JMathHelper::ToEulerAngle(quaternion), scale);
 	}
 	void JTransform::SetPosition(const JVector3<float>& value)noexcept
 	{

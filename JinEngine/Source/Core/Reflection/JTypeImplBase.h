@@ -17,10 +17,11 @@ namespace JinEngine
 		/**
 		* impl class는 OwnerPointer가 아니라 std::unique_ptr로 할당된다
 		* 그러므로 Memory Relocation때 수동으로 포인터 갱신이 필요하게된다
-		* 이경우 impl이 자신의 raw 포인터를 소유하는 객체를 알거나 혹은 그런 객체에 event를 할 필요가있다
+		* 이경우 impl이 자신의 raw 포인터를 소유하는 객체를 알거나 혹은 그런 객체에 notify를 할 필요가있다
 		* impl포인터를 직접 소유하는 객체는 하나만 존재하며 참조하는 경우는 interface class로서 참조하게된다
 		* 이 interface class는 사용자에게 노출하지않으며 event를 사용할만큼 빈도가많지않으므로 수동으로 관리하며
 		* 참조 사용자 객체에 직접 접근해 포인터를 수정하거나 PointerWrapper를 통해 관리한다.
+		* 즉 OwnerPointer의 유효한 pointer에 대한 기능을 PointerWrapper가 대신하는 셈이다 -2024-02-26-
 		*/
 
 		template<typename InterfaceType> class JTypeImplInterfacePointerHolder;

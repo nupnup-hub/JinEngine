@@ -1,5 +1,6 @@
 #pragma once 
 #include"../../Core/Reflection/JTypeImplBase.h"
+#include"../JGraphicSubClassInterface.h"
 #include"JCsmType.h"
 #include<unordered_map>
 
@@ -22,7 +23,7 @@ namespace JinEngine
 		* 이는 하나의 Scene에서 관리되는 Handler들은 같은 Target들을 Rendering한다는 점에서 채택된 구현사항이다
 		* 각각에 Handler  Target들은 수동으로도 객체를 추가/제거가 불가능하다
 		*/
-		class JCsmManager
+		class JCsmManager : public JGraphicSubClassInterface
 		{ 
 		private:
 			struct AreaData
@@ -33,6 +34,8 @@ namespace JinEngine
 			};
 		private:
 			std::unordered_map<size_t, AreaData> areaData;
+		public:
+			~JCsmManager();
 		public:
 			bool RegisterHandler(JCsmHandlerInterface* handler);
 			bool DeRegisterHandler(JCsmHandlerInterface* handler);

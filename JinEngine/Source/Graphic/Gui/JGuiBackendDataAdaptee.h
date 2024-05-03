@@ -10,6 +10,7 @@ namespace JinEngine
 		class JGraphicDevice;
 		class JGraphicResourceManager;
 		class JFrameResource;
+		struct JGraphicOption;
 		struct JGuiInitData; 
 		struct JGuiDrawData;
 		class JGuiBackendDataAdaptee : public JGraphicDeviceUser
@@ -20,6 +21,7 @@ namespace JinEngine
 		public:
 			virtual std::unique_ptr<JGuiInitData> CreateInitData(_In_ JGraphicDevice* device,
 				_In_ JGraphicResourceManager* gm,
+				_In_ const JGraphicOption& option,
 				_In_ const GuiIdentification guiIden) = 0;
 			virtual std::unique_ptr<JGuiDrawData> CreateDrawData(_In_ JGraphicDevice* device,
 				_In_ JGraphicResourceManager* gm,

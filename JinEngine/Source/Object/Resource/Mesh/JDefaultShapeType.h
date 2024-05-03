@@ -10,10 +10,12 @@ namespace JinEngine
 		EMPTY = 0,
 		CUBE,
 		GRID,
-		SPHERE,
+		SPHERE, 
 		CYILINDER,
 		QUAD,		//has to transform clip space
 		FULL_SCREEN_QUAD,	//vertics range -1 ~ 1(xy), 0(z), hasn't to transform clip space
+		CONE,
+		LOW_CUBE,
 		LOW_CONE,
 		LOW_SPHERE,
 		LOW_HEMI_SPHERE,
@@ -32,7 +34,7 @@ namespace JinEngine
 	class JDefaultShape
 	{ 
 	public:
-		static constexpr int debugTypeSt = (int)J_DEFAULT_SHAPE::BOUNDING_BOX_LINE;
+		static constexpr int hiddenTypeSt = (int)J_DEFAULT_SHAPE::BOUNDING_BOX_LINE;
 		static bool IsDefaultUsed(const J_DEFAULT_SHAPE type)
 		{
 			switch (type)
@@ -42,6 +44,8 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::QUAD:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::FULL_SCREEN_QUAD:
+				return true;
+			case JinEngine::J_DEFAULT_SHAPE::LOW_CUBE:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::LOW_CONE:
 				return true;
@@ -85,13 +89,17 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::GRID:
 				return L"Grid";
 			case JinEngine::J_DEFAULT_SHAPE::SPHERE:
-				return L"Sphere";
+				return L"Sphere"; 
 			case JinEngine::J_DEFAULT_SHAPE::CYILINDER:
 				return L"Cyilinder";
 			case JinEngine::J_DEFAULT_SHAPE::QUAD:
 				return L"Quad";
 			case JinEngine::J_DEFAULT_SHAPE::FULL_SCREEN_QUAD:
 				return L"FullScreenQuad";
+			case JinEngine::J_DEFAULT_SHAPE::CONE:
+				return L"Cone";
+			case JinEngine::J_DEFAULT_SHAPE::LOW_CUBE:
+				return L"LowCube";
 			case JinEngine::J_DEFAULT_SHAPE::LOW_CONE:
 				return L"LowCone";
 			case JinEngine::J_DEFAULT_SHAPE::LOW_SPHERE:

@@ -397,7 +397,7 @@ namespace JinEngine
 		template<typename T>
 		static constexpr bool IsRefernce_V = std::is_reference_v<T>;
 		template<typename T>
-		static constexpr bool IsNumber_V = std::is_floating_point_v<RemoveAll_T<T>> || std::_Is_character_or_bool<RemoveAll_T<T>> || std::is_integral_v<RemoveAll_T<T>>;
+		static constexpr bool IsNumber_V = std::is_floating_point_v<RemoveAll_T<T>> || std::is_integral_v<RemoveAll_T<T>>;
 #pragma endregion
 
 #pragma region Method
@@ -444,6 +444,13 @@ namespace JinEngine
 			return (((int)ori & (int)tar) > 0);
 		}
 
+		template<typename Type, typename ...Param>
+		auto BitOR(Type v, Param... param) ->
+			TypeCondition_T<Type, std::is_integral_v<Type> || std::is_enum_v<Type>>
+		{
+			uint value = (uint)((v | param)...);
+			return (Type)value;
+		}
 #pragma endregion
 
 	}

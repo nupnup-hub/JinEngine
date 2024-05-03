@@ -65,7 +65,7 @@ namespace JinEngine
 			}
 			case J_EDITOR_POPUP_NODE_TYPE::LEAF:
 			{
-				bool isEnable = enableBind != nullptr ? enableBind->Invoke() : true;
+				bool isEnable = enableBind != nullptr ? enableBind->InvokeCompletelyBindRetBoolean() : true;
 				if (hasShortCut)
 				{
 					if (JGui::MenuItem(editorString->GetString(nodeId), editorString->GetString(shortCutId), false, isEnable))
@@ -82,7 +82,7 @@ namespace JinEngine
 			}
 			case J_EDITOR_POPUP_NODE_TYPE::LEAF_TOGGLE:
 			{
-				bool isEnable = enableBind != nullptr ? enableBind->Invoke() : true;
+				bool isEnable = enableBind != nullptr ? enableBind->InvokeCompletelyBindRetBoolean() : true;
 				if (hasShortCut)
 				{
 					if (JGui::MenuItem(editorString->GetString(nodeId), editorString->GetString(shortCutId), &isActivated, isEnable))
@@ -116,8 +116,11 @@ namespace JinEngine
 		{
 			selectBind = std::move(newSelectBind);
 		}
-		void JEditorPopupNode::RegisterEnableBind(std::unique_ptr<EnableF::CompletelyBind>&& newEnableBind)noexcept
+		void JEditorPopupNode::RegisterEnableBind(std::unique_ptr<Core::JBindHandleBase>&& newEnableBind)noexcept
 		{
+			if (!newEnableBind->IsSameReturnType(Core::J_PARAMETER_TYPE::Bool))
+				return;
+
 			enableBind = std::move(newEnableBind);
 		}
 		void JEditorPopupNode::InvokeSelectBind()noexcept

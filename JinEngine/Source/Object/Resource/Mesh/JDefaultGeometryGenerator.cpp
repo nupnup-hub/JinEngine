@@ -4,10 +4,7 @@
 #include "JDefaultGeometryGenerator.h" 
 
 namespace JinEngine
-{
-	//***************************************************************************************
-// JDefaultGeometryGenerator.cpp by Frank Luna (C) 2011 All Rights Reserved.
-//***************************************************************************************
+{ 
 	using namespace DirectX;
 
 	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateCube(const float width,
@@ -213,9 +210,9 @@ namespace JinEngine
 		// Poles: note that there will be texture coordinate distortion as there is
 		// not a unique point on the texture map to assign to the pole when mapping
 		// a rectangular texture onto a sphere.
-		 
+		
 		Core::JStaticMeshVertex topVertex(0.0f, radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-		Core::JStaticMeshVertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+		Core::JStaticMeshVertex bottomVertex(0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
 
 		std::vector<Core::JStaticMeshVertex> vertices;
 		vertices.push_back(topVertex);
@@ -236,8 +233,8 @@ namespace JinEngine
 
 				// spherical to cartesian
 				v.position.x = radius * sinf(phi) * cosf(theta);
-				//v.position.y = radius * cosf(phi);
-				v.position.y = -radius + (radius * 2) * cosf(phi);
+				v.position.y = radius * cosf(phi);
+				//v.position.y = -radius + (radius * 2) * cosf(phi);
 				v.position.z = radius * sinf(phi) * sinf(theta);
 
 				// Partial derivative of P with respect to theta
@@ -384,15 +381,12 @@ namespace JinEngine
 		float topRadius,
 		const float height,
 		const uint slicecount,
-		const uint stackcount,
-		const bool isCone,
+		const uint stackcount, 
 		const float ySt)
 	{
 		//
 		// Build Stacks.
-		// 
-		if (isCone)
-			topRadius = 0;
+		//  
 		std::vector<Core::JStaticMeshVertex> vertices;
 		std::vector<uint> indices;
 
@@ -740,85 +734,158 @@ namespace JinEngine
 		}
 		return std::make_unique<Core::JStaticMeshData>(L"Line", std::move(indices), false, false, std::move(vertices));
 	}
-	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateBoundingCone()
-	{
-		float outRadius = 0.5f;;
-		float innerRadius = 0.4988f;
-		float middleRadius = innerRadius + (outRadius - innerRadius) * 0.5f;
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateCone(float height, float outRadius, uint bottomStack)
+	{ 
+		if (bottomStack < 4)
+			return nullptr;
+		 
+		const int bottomPerVertex = 1;
+		const int bottomPerIndex = 3;
+		  
+		const int vertexCount = bottomStack * bottomPerVertex + 2;
+		const int indexCount = bottomStack * bottomPerIndex * 2;
+		 
+		std::vector<Core::JStaticMeshVertex> vertices(vertexCount);
+		std::vector<uint> indices(indexCount);
 
-		const int segments = 64;
-		const int vertexCount = (segments + 1) * 2;
-		const int indexCount = (vertexCount - 2) * 3 + 6;
-		const int lineCount = 8;
-		static constexpr int lineThickness = 4;
-		const float padding = 0.0001f;
+		static constexpr uint topIndex = 0;
+		static constexpr uint bottomIndex = 1;
+		static constexpr uint startIndex = bottomIndex + 1;
 
-		std::vector<Core::JStaticMeshVertex> vertices(vertexCount + lineCount * lineThickness * 2);
-		std::vector<uint> indices(indexCount + lineCount * lineThickness * 2);
+		Core::JStaticMeshVertex topVertex(0.0f, height, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		Core::JStaticMeshVertex bottomVertex(0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+		 
+		vertices[topIndex] = topVertex;
+		vertices[bottomIndex] = bottomVertex;
 
-		float theta = 2.0f * XM_PI;
-		vertices[0].position.x = innerRadius * std::cos(theta);
-		vertices[0].position.y = innerRadius * std::sin(theta);
-		vertices[0].position.z = 1;
-
-		vertices[1].position.x = outRadius * std::cos(theta);
-		vertices[1].position.y = outRadius * std::sin(theta);
-		vertices[1].position.z = 1;
-
+		int vertexOffset = startIndex;
 		int indexOffset = 0;
-		int vertexOffset = 0;
+		float theta = 0;
+		for (int i = 0; i < bottomStack; i++)
+		{		  
+			theta = 2.0f * XM_PI * ((i + 1) / (float)bottomStack);
 
-		int loopCount = segments + 1;
-		float piRate = 1.0f / segments;
+			Core::JStaticMeshVertex v;
+			v.position.x = outRadius * std::cosf(theta);
+			v.position.y = 0.0f;
+			v.position.z = outRadius * std::sinf(theta);		 
+			
+			v.tangentU.x = -outRadius * sinf(theta);
+			v.tangentU.y = 0.0f;
+			v.tangentU.z = +outRadius * cosf(theta);
 
-		for (int i = 1; i < loopCount; i++)
+			v.normal = XMVector3Normalize(v.position.ToXmV());
+			vertices[vertexOffset] = v;
+
+			indices[indexOffset] = vertexOffset; 
+			indices[indexOffset + 1] = bottomIndex;
+			if (i == (bottomStack - 1))
+				indices[indexOffset + 2] = startIndex;
+			else
+				indices[indexOffset + 2] = vertexOffset + 1;
+			vertexOffset += bottomPerVertex;
+			indexOffset += bottomPerIndex;
+		} 
+	 
+		vertexOffset = startIndex;
+		for (int i = 0; i < bottomStack; i++)
 		{
-			vertexOffset += 2;
-			theta = 2.0f * XM_PI * ((float)((segments + 1) - i) / segments - piRate);
-			vertices[vertexOffset].position.x = innerRadius * std::cos(theta);
-			vertices[vertexOffset].position.y = innerRadius * std::sin(theta);
-			vertices[vertexOffset].position.z = 1.0f;
-
-			vertices[vertexOffset + 1].position.x = outRadius * std::cos(theta);
-			vertices[vertexOffset + 1].position.y = outRadius * std::sin(theta);
-			vertices[vertexOffset + 1].position.z = 1.0f;
-
-			indices[indexOffset] = vertexOffset - 2;
-			indices[indexOffset + 1] = vertexOffset - 1;
-			indices[indexOffset + 2] = vertexOffset;
-			indices[indexOffset + 3] = vertexOffset - 1;
-			indices[indexOffset + 4] = vertexOffset + 1;
-			indices[indexOffset + 5] = vertexOffset;
-
-			indexOffset += 6;
+			indices[indexOffset] = vertexOffset;
+			indices[indexOffset + 1] = topIndex;
+			if (i == (bottomStack - 1))
+				indices[indexOffset + 2] = startIndex;
+			else
+				indices[indexOffset + 2] = vertexOffset + 1;
+			vertexOffset += bottomPerVertex;
+			indexOffset += bottomPerIndex;
 		}
-		vertexOffset += 2;
+
+		return std::make_unique<Core::JStaticMeshData>(L"Cone", std::move(indices), false, false, std::move(vertices));
+	}
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateBoundingCone()
+	{ 
+		constexpr float outRadius = 0.5f;;
+		constexpr float innerRadius = 0.4988f;
+		constexpr float middleRadius = innerRadius + (outRadius - innerRadius) * 0.5f;
+
+		constexpr int segments = 64;
+
+		constexpr int loopPerVertex = 2;
+		constexpr int loopPerIndex = 4;
+		constexpr int linePerVertex = 4;
+		constexpr int linePerIndex = 8;
+		constexpr int lineCount = 8;
+
+		constexpr int vertexCount = segments * loopPerVertex + lineCount* linePerVertex + 1;
+		constexpr int indexCount = segments * loopPerIndex + lineCount * linePerIndex;
+		constexpr float padding = 0.0001f;
+
+		std::vector<Core::JStaticMeshVertex> vertices(vertexCount);
+		std::vector<uint> indices(indexCount);
+
+		constexpr int vertexTopInedx = 0;
+		constexpr int vertexStartIndex = vertexTopInedx + 1;
+
+		vertices[vertexTopInedx].position = JVector3<float>(0.0f, 1.0f, 0.0f);
+		float theta = 0;
+		int vertexOffset = vertexStartIndex;
+		int indexOffset = 0;
+
+		for (int i = 0; i < segments; i++)
+		{ 
+			theta = 2.0f * XM_PI * ((segments - i) / (float)segments);
+			vertices[vertexOffset].position.x = outRadius * std::cos(theta);
+			vertices[vertexOffset].position.y = 0.0f;
+			vertices[vertexOffset].position.z = outRadius * std::sin(theta);
+
+			vertices[vertexOffset + 1].position.x = innerRadius * std::cos(theta);
+			vertices[vertexOffset + 1].position.y = 0.0f;
+			vertices[vertexOffset + 1].position.z = innerRadius * std::sin(theta);
+		  
+			if (i == (segments - 1))
+			{
+				indices[indexOffset] = vertexOffset;
+				indices[indexOffset + 1] = vertexStartIndex;
+				indices[indexOffset + 2] = vertexOffset + 1;
+				indices[indexOffset + 3] = vertexStartIndex + 1;
+			}
+			else
+			{
+				indices[indexOffset] = vertexOffset;
+				indices[indexOffset + 1] = vertexOffset + 2;
+				indices[indexOffset + 2] = vertexOffset + 1;
+				indices[indexOffset + 3] = vertexOffset + 3;
+			}
+
+			vertexOffset += loopPerVertex;
+			indexOffset += loopPerIndex;
+		} 
+
+		vertexOffset -= loopPerVertex;
+		indexOffset -= loopPerIndex;
+
 		for (int i = 0; i < lineCount; ++i)
 		{
 			theta = 2.0f * XM_PI * ((lineCount - i) / (float)lineCount);
 			float x = middleRadius * std::cos(theta);
-			float y = middleRadius * std::sin(theta);
-
-			vertices[vertexOffset].position = JVector3<float>(0.0f, 0.0f, 0.0f);
-			vertices[vertexOffset + 1].position = JVector3<float>(x - padding, y, 1.0f);
-			vertices[vertexOffset + 2].position = JVector3<float>(0.0f, 0.0f, 0.0f);
-			vertices[vertexOffset + 3].position = JVector3<float>(x, y + padding, 1.0f);
-			vertices[vertexOffset + 4].position = JVector3<float>(0.0f, 0.0f, 0.0f);
-			vertices[vertexOffset + 5].position = JVector3<float>(x + padding, y, 1.0f);
-			vertices[vertexOffset + 6].position = JVector3<float>(0.0f, 0.0f, 0.0f);
-			vertices[vertexOffset + 7].position = JVector3<float>(x, y - padding, 1.0f);
+			float z = middleRadius * std::sin(theta);
+			 
+			vertices[vertexOffset].position = JVector3<float>(x - padding, 0.0f, z);		 
+			vertices[vertexOffset + 1].position = JVector3<float>(x, 0.0f, z + padding);		 
+			vertices[vertexOffset + 2].position = JVector3<float>(x + padding, 0.0f, z);			 
+			vertices[vertexOffset + 3].position = JVector3<float>(x, 0.0f, z - padding);
 
 			indices[indexOffset] = vertexOffset;
-			indices[indexOffset + 1] = vertexOffset + 1;
-			indices[indexOffset + 2] = vertexOffset + 2;
-			indices[indexOffset + 3] = vertexOffset + 3;
-			indices[indexOffset + 4] = vertexOffset + 4;
-			indices[indexOffset + 5] = vertexOffset + 5;
-			indices[indexOffset + 6] = vertexOffset + 6;
-			indices[indexOffset + 7] = vertexOffset + 7;
+			indices[indexOffset + 1] = vertexTopInedx; 
+			indices[indexOffset + 2] = vertexOffset + 1;
+			indices[indexOffset + 3] = vertexTopInedx; 
+			indices[indexOffset + 4] = vertexOffset + 2;
+			indices[indexOffset + 5] = vertexTopInedx;
+			indices[indexOffset + 6] = vertexOffset + 3;
+			indices[indexOffset + 7] = vertexTopInedx;
 
-			vertexOffset += 8;
-			indexOffset += 8;
+			vertexOffset += linePerVertex;
+			indexOffset += linePerIndex;
 		}
 		return std::make_unique<Core::JStaticMeshData>(L"BoundingCone_L", std::move(indices), false, false, std::move(vertices));
 	}

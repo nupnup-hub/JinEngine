@@ -141,16 +141,42 @@ namespace JinEngine
 		return newStr;
 	}
 	std::wstring JCUtil::EraseSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept
+	{ 
+		return EraseLeftSideWChar(EraseRightSideWChar(wstr, ch), ch);
+	}
+	std::string JCUtil::EraseSideChar(const std::string& str, const char ch)noexcept
+	{   
+		return EraseLeftSideChar(EraseRightSideChar(str, ch), ch);
+	}
+	std::wstring JCUtil::EraseLeftSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept
 	{
 		std::wstring newWStr = wstr;
-		for (int i = (int)newWStr.size() - 1; i >= 0; --i)
+		for (int i = ((int)newWStr.size()) - 1; i >= 0; --i)
 		{
 			if (newWStr[i] != ch && newWStr[i] != 0x00d)
 				break;
 			else
 				newWStr.pop_back();
 		}
-
+		newWStr.shrink_to_fit();
+		return newWStr;
+	}
+	std::string JCUtil::EraseLeftSideChar(const std::string& str, const char ch)noexcept
+	{
+		std::string newStr = str;
+		for (int i = ((int)newStr.size()) - 1; i >= 0; --i)
+		{
+			if (newStr[i] != ch && newStr[i] != 0x00d)
+				break;
+			else
+				newStr.pop_back();
+		}
+		newStr.shrink_to_fit();
+		return newStr;
+	}
+	std::wstring JCUtil::EraseRightSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept
+	{
+		std::wstring newWStr = wstr;
 		for (int i = 0; i < newWStr.size(); ++i)
 		{
 			if (newWStr[i] != ch)
@@ -158,18 +184,12 @@ namespace JinEngine
 			else
 				newWStr = newWStr.substr(i + 1);
 		}
+		newWStr.shrink_to_fit();
 		return newWStr;
 	}
-	std::string JCUtil::EraseSideChar(const std::string& str, const char ch)noexcept
-	{ 
+	std::string JCUtil::EraseRightSideChar(const std::string& str, const char ch)noexcept
+	{
 		std::string newStr = str;
-		for (int i = (int)newStr.size() - 1; i >= 0; --i)
-		{
-			if (newStr[i] != ch && newStr[i] != 0x00d)
-				break;
-			else
-				newStr.pop_back();
-		} 
 		for (int i = 0; i < newStr.size(); ++i)
 		{
 			if (newStr[i] != ch)
@@ -210,12 +230,32 @@ namespace JinEngine
 		newSentence += oriSentence.substr(offset);
 		return newSentence;
 	}
+	std::wstring JCUtil::ToUppercase(std::wstring oriSentence, uint st)
+	{
+		const uint count = (uint)oriSentence.size();
+		for (uint i = st; i < count; ++i)
+		{
+			if (iswalpha(oriSentence[i]) && islower(oriSentence[i]))
+				oriSentence[i] = (char)toupper(oriSentence[i]);
+		}
+		return oriSentence;
+	}
+	std::string JCUtil::ToUppercase(std::string oriSentence, uint st)
+	{
+		const uint count = (uint)oriSentence.size();
+		for (uint i = st; i < count; ++i)
+		{
+			if (isalpha(oriSentence[i]) && islower(oriSentence[i]))
+				oriSentence[i] = (char)toupper(oriSentence[i]);
+		}
+		return oriSentence;
+	}
 	std::wstring JCUtil::ToLowercase(std::wstring oriSentence, uint st)
 	{
 		const uint count = (uint)oriSentence.size();
 		for (uint i = st; i < count; ++i)
 		{
-			if (iswupper(oriSentence[i]))
+			if (iswalpha(oriSentence[i]) && iswupper(oriSentence[i]))
 				oriSentence[i] = (char)towlower(oriSentence[i]);
 		}
 		return oriSentence;
@@ -225,7 +265,7 @@ namespace JinEngine
 		const uint count = (uint)oriSentence.size();
 		for (uint i = st; i < count; ++i)
 		{
-			if (isupper(oriSentence[i]))
+			if (isalpha(oriSentence[i]) && isupper(oriSentence[i]))
 				oriSentence[i] = (char)tolower(oriSentence[i]);
 		}
 		return oriSentence;
@@ -751,5 +791,13 @@ namespace JinEngine
 		const uint count = (uint)wVec.size();
 		for (uint i = 0; i < count; ++i)
 			filePath[i] = WstrToU8Str(wVec[i]);
+	}
+	uint JCUtil::CalDimIndex(const uint d1, const uint d2, const uint d1Range)noexcept
+	{
+		return d1 + d2 * d1Range;
+	}
+	uint JCUtil::CalDimIndex(const uint d1, const uint d2, const uint d3, const uint d1Range, const uint d2Range)noexcept
+	{
+		return d1 + d2 * d1Range + d3 * d1Range * d2Range;
 	}
 }

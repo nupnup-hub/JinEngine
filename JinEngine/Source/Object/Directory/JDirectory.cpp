@@ -79,7 +79,7 @@ namespace JinEngine
 				return a != nullptr ? a->GetResourceGuid() == guid : false;
 			};
 			return JCUtil::GetIndex(fileList, ptr, guid);
-		}
+		} 
 	public:
 		static void ActivateDirectory(JDirectory* tar)
 		{
@@ -244,7 +244,7 @@ namespace JinEngine
 	Core::JIdentifierPrivate& JDirectory::PrivateInterface()const noexcept
 	{
 		return dPrivate;
-	}
+	} 
 	J_OBJECT_TYPE JDirectory::GetObjectType()const noexcept
 	{
 		return J_OBJECT_TYPE::DIRECTORY_OBJECT;
@@ -327,6 +327,10 @@ namespace JinEngine
 	JUserPtr<JFile> JDirectory::GetRecentFile()const noexcept
 	{
 		return impl->fileList.back();
+	}
+	std::vector<JUserPtr<JDirectory>> JDirectory::GetChildDirctoryVec()const noexcept
+	{
+		return impl->children;
 	}
 	std::vector<JUserPtr<JFile>> JDirectory::GetDirectoryFileVec(const bool containChildFile)const noexcept
 	{
@@ -450,6 +454,21 @@ namespace JinEngine
 	JUserPtr<JFile> JDirectory::SearchFile(const size_t resourceGuid)noexcept
 	{ 
 		return Core::GetUserPtr<JFile>(JFile::StaticTypeInfo().TypeGuid(), resourceGuid);
+	}
+	void JDirectory::AlignByName(std::vector<JUserPtr<JFile>>& vec, const bool isAscending)noexcept
+	{ 
+		auto aSortLam = [](const JUserPtr<JFile>& a, const JUserPtr<JFile>& b)
+		{
+			return tolower(a->GetName()[0]) < tolower(b->GetName()[0]);
+		};
+		auto dSortLam = [](const JUserPtr<JFile>& a, const JUserPtr<JFile>& b)
+		{
+			return tolower(a->GetName()[0]) > tolower(b->GetName()[0]);
+		};	 
+		if (isAscending)
+			std::sort(vec.begin(), vec.end(), aSortLam);
+		else
+			std::sort(vec.begin(), vec.end(), dSortLam);
 	}
 	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name, const std::wstring& format, const size_t guid)const noexcept
 	{

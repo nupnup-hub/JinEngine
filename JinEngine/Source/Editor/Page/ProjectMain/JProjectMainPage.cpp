@@ -350,8 +350,8 @@ namespace JinEngine
 					data->GetOpenPtr(),
 					windowNodePtr);
 
-				auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, data->GetName());
-				auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, data->GetName());
+				auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(GetRequestOpenEditorWindowFunctorPtr(), *this, data->GetName());
+				auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(GetRequestCloseEditorWindowFunctorPtr(), *this, data->GetName());
 				newNode->RegisterBindHandle(std::move(openBind), std::move(closeBind));
 				menuBar->AddNode(std::move(newNode));
 			}
@@ -361,8 +361,8 @@ namespace JinEngine
 				graphicOptionSetting->GetOpenPtr(),
 				graphicNodePtr);
    
-			auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, graphicOptionSetting->GetName());
-			auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, graphicOptionSetting->GetName());
+			auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(GetRequestOpenEditorWindowFunctorPtr(), *this, graphicOptionSetting->GetName());
+			auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(GetRequestCloseEditorWindowFunctorPtr(), *this, graphicOptionSetting->GetName());
 			grapicOptionNode->RegisterBindHandle(std::move(openBind), std::move(closeBind));
 
 			menuBar->AddNode(std::move(grapicOptionNode)); 

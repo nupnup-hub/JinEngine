@@ -23,6 +23,7 @@ namespace JinEngine
 		JMatrix2x4();
 		JMatrix2x4(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13);
 		JMatrix2x4(const JVector4F(&v)[2]);
+		JMatrix2x4(const JVector4F v0, const JVector4F v1);
 	public:
 		float operator() (size_t row, size_t column)const noexcept;
 		float& operator() (size_t row, size_t column)noexcept;
@@ -32,6 +33,8 @@ namespace JinEngine
 	public:
 		void StoreXM(const DirectX::FXMMATRIX& xm)noexcept;
 		DirectX::XMMATRIX LoadXM()const noexcept;
+	public:
+		std::string ToString()const noexcept;
 	};
 	class JMatrix3x3
 	{
@@ -53,6 +56,7 @@ namespace JinEngine
 			float m10, float m11, float m12,
 			float m20, float m21, float m22);
 		JMatrix3x3(const JVector3F(&v)[3]);
+		JMatrix3x3(const JVector3F v0, const JVector3F v1, const JVector3F v2);
 	public:
 		float operator() (size_t row, size_t column)const noexcept;
 		float& operator() (size_t row, size_t column)noexcept; 
@@ -65,6 +69,44 @@ namespace JinEngine
 	public: 
 		static DirectX::XMMATRIX Inverse(const JMatrix3x3& m)noexcept;
 		static DirectX::XMMATRIX InverseTranspose(const JMatrix3x3& m)noexcept;
+	public:
+		std::string ToString()const noexcept;
+	};
+	class JMatrix3x4
+	{
+	public:
+		union
+		{
+			struct
+			{
+				float _11, _12, _13, _14;
+				float _21, _22, _23, _24;
+				float _31, _32, _33, _34;
+			};
+			float m[3][4];
+			JVector4F r[3];
+		};
+	public:
+		JMatrix3x4();
+		JMatrix3x4(float m00, float m01, float m02, float m03,
+			float m10, float m11, float m12, float m13,
+			float m20, float m21, float m22, float m23);
+		JMatrix3x4(const JVector4F(&v)[3]);
+		JMatrix3x4(const JVector4F v0, const JVector4F v1, const JVector4F v2);
+	public:
+		float operator() (size_t row, size_t column)const noexcept;
+		float& operator() (size_t row, size_t column)noexcept;
+		bool operator==(const JMatrix3x4& rhs)const noexcept;
+	public:
+		void StoreXM(const DirectX::FXMMATRIX& xm)noexcept;
+		DirectX::XMMATRIX LoadXM()const noexcept;
+	public:
+		JVector3F Column(int index)const noexcept;
+	public:
+		static DirectX::XMMATRIX Inverse(const JMatrix3x3& m)noexcept;
+		static DirectX::XMMATRIX InverseTranspose(const JMatrix3x3& m)noexcept;
+	public:
+		std::string ToString()const noexcept;
 	};
  	MS_ALIGN(8) class JMatrix4x2
 	{
@@ -85,6 +127,7 @@ namespace JinEngine
 		JMatrix4x2();
 		JMatrix4x2(float m00, float m01,  float m10, float m11, float m20, float m21, float m30, float m31);
 		JMatrix4x2(const JVector2F(&v)[4]);
+		JMatrix4x2(const JVector2F v0, const JVector2F v1, const JVector2F v2, const JVector2F v3);
 	public:
 		float operator() (size_t row, size_t column)const noexcept;
 		float& operator() (size_t row, size_t column)noexcept;
@@ -92,6 +135,8 @@ namespace JinEngine
 	public:
 		void StoreXM(const DirectX::FXMMATRIX& xm)noexcept;
 		DirectX::XMMATRIX LoadXM()const noexcept;  
+	public:
+		std::string ToString()const noexcept;
 	};
 	MS_ALIGN(16) class JMatrix4x4
 	{
@@ -114,7 +159,8 @@ namespace JinEngine
 			float m10, float m11, float m12, float m13,
 			float m20, float m21, float m22, float m23,
 			float m30, float m31, float m32, float m33); 
-		JMatrix4x4(const JVector4<float>(&v)[4]);   
+		JMatrix4x4(const JVector4<float>(&v)[4]); 
+		JMatrix4x4(const JVector4F v0, const JVector4F v1, const JVector4F v2, const JVector4F v3);
 	public:
 		float operator() (size_t row, size_t column)const noexcept;
 		float& operator() (size_t row, size_t column)noexcept;
@@ -128,5 +174,7 @@ namespace JinEngine
 		static DirectX::XMMATRIX NdcToTextureSpaceXM()noexcept;
 		static DirectX::XMMATRIX Inverse(const JMatrix4x4& m)noexcept;
 		static DirectX::XMMATRIX InverseTranspose(const JMatrix4x4& m)noexcept;
+	public:
+		std::string ToString()const noexcept;
 	};
 }

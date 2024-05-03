@@ -65,16 +65,15 @@ cbuffer cbDepthMapInfo : register(b0)
 //368
 cbuffer cbPass : register(b1)
 {
-	float4x4 camView;
-	float4x4 camProj;
-	float4x4 camViewProj;
+	float4x4 View;
+	float4x4 Proj; 
 	float4 frustumPlane[6];
 	float4 frustumDir;
 	float3 frustumPos;
 	float viewWidth;
 	float viewHeight;
-	float camNear;
-	float camFar;
+	float Near;
+	float Far;
 	int validQueryCount;
 	int validQueryOffset;
 	int occMapCount;
@@ -98,7 +97,7 @@ void HZBCopyDepthMap(int3 dispatchThreadID : SV_DispatchThreadID)
 	if (nowWidth <= dispatchThreadID.x || nowHeight <= dispatchThreadID.y)
 		return;
 #ifdef USE_PERSPECTIVE
-lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = LinearDepth(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)), camNear, camFar);
+lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = LinearDepth(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)), Near, Far);
 #else
 lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0));
 #endif
@@ -209,10 +208,10 @@ int CullBBox(const float3 center, const float3 extents)
 
 float3 CalNearPoint(const float3 p0, const float3 p1, const float3 p2, const float3 p3)
 {
-	const float3 camPos = float3(0, 0, 0);
+	const float3 Pos = float3(0, 0, 0);
 	const float3 pNormal = normalize(cross(p1 - p0, p2 - p0));
 	const float3 dist = -dot(pNormal, p0);
-	float3 nearPoint = camPos - dist * pNormal;
+	float3 nearPoint = Pos - dist * pNormal;
 	
 	const float2 xFactor = float2(min(min(p0.x, p1.x), min(p2.x, p3.x)), max(max(p0.x, p1.x), max(p2.x, p3.x)));
 	const float2 yFactor = float2(min(min(p0.y, p1.y), min(p2.y, p3.y)), max(max(p0.y, p1.y), max(p2.y, p3.y)));
@@ -246,14 +245,14 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	 
 	const float4 bboxPointV[8] =
 	{
-		mul(float4(object[threadIndex].coners[0], 1.0f), camView),
-		mul(float4(object[threadIndex].coners[1], 1.0f), camView),
-		mul(float4(object[threadIndex].coners[2], 1.0f), camView),
-		mul(float4(object[threadIndex].coners[3], 1.0f), camView),
-		mul(float4(object[threadIndex].coners[4], 1.0f), camView),
-		mul(float4(object[threadIndex].coners[5], 1.0f), camView),
-		mul(float4(object[threadIndex].coners[6], 1.0f), camView),
-		mul(float4(object[threadIndex].coners[7], 1.0f), camView)
+		mul(float4(object[threadIndex].coners[0], 1.0f), View),
+		mul(float4(object[threadIndex].coners[1], 1.0f), View),
+		mul(float4(object[threadIndex].coners[2], 1.0f), View),
+		mul(float4(object[threadIndex].coners[3], 1.0f), View),
+		mul(float4(object[threadIndex].coners[4], 1.0f), View),
+		mul(float4(object[threadIndex].coners[5], 1.0f), View),
+		mul(float4(object[threadIndex].coners[6], 1.0f), View),
+		mul(float4(object[threadIndex].coners[7], 1.0f), View)
 	};
 
 	/*
@@ -302,19 +301,19 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	else
 	{
 #ifdef DEBUG
-		clipNearH = mul(float4(nearPoint[minIndex], 1.0f), camProj);
+		clipNearH = mul(float4(nearPoint[minIndex], 1.0f), Proj);
 #ifdef  USE_PERSPECTIVE
 		clipNearC = clipNearH.xyz / clipNearH.w;
-		centerDepth = LinearDepth(clipNearC.z, camNear, camFar);
+		centerDepth = LinearDepth(clipNearC.z, Near, Far);
 #else
 		//직교투영은 원근나누기가 불필요하다.
 		centerDepth = clipNearH.z;
 #endif
 #else
-		float4 clipNearH = mul(float4(nearPoint[minIndex], 1.0f), camProj);
+		float4 clipNearH = mul(float4(nearPoint[minIndex], 1.0f), Proj);
 #ifdef  USE_PERSPECTIVE
 		float3 clipNearC = clipNearH.xyz / clipNearH.w;
-		centerDepth = LinearDepth(clipNearC.z, camNear, camFar);
+		centerDepth = LinearDepth(clipNearC.z, Near, Far);
 #else
 		//직교투영은 원근나누기가 불필요하다.
 		centerDepth = clipNearH.z;
@@ -324,14 +323,14 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	
 	const float4 bboxPointH[8] =
 	{
-		mul(bboxPointV[0], camProj),
-		mul(bboxPointV[1], camProj),
-		mul(bboxPointV[2], camProj),
-		mul(bboxPointV[3], camProj),
-		mul(bboxPointV[4], camProj),
-		mul(bboxPointV[5], camProj),
-		mul(bboxPointV[6], camProj),
-		mul(bboxPointV[7], camProj)
+		mul(bboxPointV[0], Proj),
+		mul(bboxPointV[1], Proj),
+		mul(bboxPointV[2], Proj),
+		mul(bboxPointV[3], Proj),
+		mul(bboxPointV[4], Proj),
+		mul(bboxPointV[5], Proj),
+		mul(bboxPointV[6], Proj),
+		mul(bboxPointV[7], Proj)
 	};
 
 	const float2 bboxPointNdc[8] =

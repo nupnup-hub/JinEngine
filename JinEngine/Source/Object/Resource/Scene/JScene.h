@@ -7,6 +7,8 @@
 #include"Accelerator/Kd-tree/JKdTreeOption.h"
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h" 
+#include"../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
+#include"../../../Core/Geometry/Mesh/JMeshType.h"
 #include<memory>
 #include<vector>  
 #include<DirectXCollision.h>
@@ -22,10 +24,9 @@ namespace JinEngine
 	{
 		class JRay;  
 	}
-	class JScene : public JResourceObject
+	class JScene : public JResourceObject, public Graphic::JGpuAcceleratorUserAccess
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JScene)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JScene) 
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{
@@ -73,6 +74,7 @@ namespace JinEngine
 		std::unique_ptr<JSceneImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
+		const Graphic::JGpuAcceleratorUserInterface GpuAcceleratorUserInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -91,6 +93,7 @@ namespace JinEngine
 		uint GetMeshCount()const noexcept;
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept; 
 		std::vector<JUserPtr<JGameObject>> GetGameObjectVec()const noexcept;
+		std::vector<JUserPtr<JGameObject>> GetGameObjectVec(const J_RENDER_LAYER layer, const Core::J_MESHGEOMETRY_TYPE mesh)const noexcept;
 		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept;
 		JUserPtr<JLight> GetFirstDirectionalLight()const noexcept;
 		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;
@@ -115,6 +118,7 @@ namespace JinEngine
 		bool IsMainScene()const noexcept;
 		bool IsAcceleratorActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
+		bool HasCanCullingAccelerator(const J_ACCELERATOR_LAYER layer)const noexcept;
 		bool AllowLightCulling()const noexcept;
 		bool CanUseAcceleratorUtility(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)const noexcept;
 	public:

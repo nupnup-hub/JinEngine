@@ -1,3 +1,4 @@
+#pragma once
 /*
 * Convert Ndc depth to linear depth (Perpective)
 */
@@ -24,8 +25,12 @@ Orhto depth value is linear
 */
 
 float NdcToViewPZ(const float v, const float near, const float far)
-{
+{ 
 	return (far * near) / (far - v * (far - near));
+}
+float NdcToViewPZ(const float v, const float camNearMulFar, const float2 camNearFar)
+{
+    return camNearMulFar / (camNearFar.y - v * (camNearFar.y - camNearFar.x));
 }
 float ViewToNdcPZ(const float v, const float near, const float far)
 {

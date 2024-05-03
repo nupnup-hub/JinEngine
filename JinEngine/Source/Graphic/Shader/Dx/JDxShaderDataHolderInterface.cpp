@@ -1,6 +1,7 @@
 #include"JDxShaderDataHolderInterface.h"
 #include"../../../Core/Exception/JExceptionMacro.h"
 #include"../../../Core/Utility/JCommonUtility.h"
+#include"../../../Core/Log/JLogMacro.h"
 #include"../../../Develop/Debug/JDevelopDebug.h"
 #include <D3Dcompiler.h>   
 
@@ -114,7 +115,7 @@ namespace JinEngine::Graphic
                             Develop::JDevelopDebug::Write();
                         }
                         else
-                            MessageBoxA(0, err.c_str(), "Compilation failed with errors", 0); 
+                            J_LOG_PRINT_OUT("Shader compilation failed with errors", err); 
                     }
                 } 
             }
@@ -141,5 +142,11 @@ namespace JinEngine::Graphic
         //    return Private::CompileShaderUseNewApi(filename, macroSet, entrypoint, target);
         //else
         //    return Private::CompileShaderUseOldApi(filename, macroSet, JCUtil::WstrToU8Str(entrypoint), JCUtil::WstrToU8Str(target));
+    }
+    Microsoft::WRL::ComPtr<IDxcBlob> JDxShaderDataUtil::CompileShader(const JCompileInfo& info,
+        const std::vector<JMacroSet>& macroSet,
+        const std::wstring& target)
+    {
+        return CompileShader(info.filePath, macroSet, info.functionName, target);
     }
 }

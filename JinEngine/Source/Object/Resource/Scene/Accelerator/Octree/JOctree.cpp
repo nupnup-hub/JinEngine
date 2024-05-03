@@ -17,7 +17,7 @@ namespace JinEngine
 	using namespace DirectX;
 
 	JOctree::JOctree(const J_ACCELERATOR_LAYER layer)
-		:JAccelerator(layer)
+		:JCpuAccelerator(layer)
 	{}
 	JOctree::~JOctree() {}
 	void JOctree::Build()noexcept
@@ -33,9 +33,8 @@ namespace JinEngine
 		rootNodeCash = nullptr;
 	}
 	void JOctree::Clear()noexcept
-	{
-		UnBuild();
-		JAccelerator::Clear();
+	{ 
+		JCpuAccelerator::Clear();
 	}
 	void JOctree::OnDebugGameObject()noexcept
 	{

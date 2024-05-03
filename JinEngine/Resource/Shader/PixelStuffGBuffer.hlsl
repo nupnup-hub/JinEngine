@@ -1,53 +1,58 @@
-#include "PixelLayout.hlsl" 
-#include"PixelCommon.hlsl"
+#pragma once
+#include"PixelLayout.hlsl" 
+#include"PixelShaderCommon.hlsl"
+#include"ColorSpaceUtility.hlsl"
 
 struct PixelOut
 {
-	float4 albedoColor : SV_TARGET0;
-	float4 normal : SV_TARGET1;					//10,10,10, 2 rgb, empty
-	float4 tangent : SV_TARGET2;				//10,10,10, 2 rgb, empty
-	float4 lightingProp : SV_TARGET3;		//x metalic, y roughness, z ambient, w is emtpy
+	float4 albedoColor : SV_TARGET0;			//8,8,8,8 unorm 
+    float4 lightingProp : SV_TARGET1;			//8,8,8,8 unorm, x = specular, y = metallic, z =roughness, w = ambient
+	float4 normalAndTangent : SV_TARGET2;		//10,10,10,2 unorm	(nx, ny, tx, nz) 
 };
  
 #if defined(DEBUG)
 PixelOut PS(PixelIn pin) : SV_Target
 {
 	PixelOut pOut;
-	pOut.albedoColor = materialData[objMaterialIndex].albedoColor;
-	pOut.normal = float4(0, 0, 0, G_BUFFER_ALBEDO_ONLY_TYPE);
+	pOut.albedoColor = materialData[cbObject.materialIndex].albedoColor; 
+	pOut.lightingProp = InitialLightPropLayer();
+	pOut.normalAndTangent = InitialNormalTangentLayer();
 	return pOut;
 }
 #elif defined(SKY)
 PixelOut PS(PixelIn pin) : SV_Target
 { 
 	PixelOut pOut;
-	pOut.albedoColor = materialData[objMaterialIndex].albedoColor;
-	pOut.albedoColor *=	cubeMap[materialData[objMaterialIndex].albedoMapIndex].Sample(samLinearWrap, pin.posL);
-	pOut.normal = float4(0, 0, 0, G_BUFFER_ALBEDO_ONLY_TYPE);
+	pOut.albedoColor = materialData[cbObject.materialIndex].albedoColor;
+	pOut.albedoColor *=	cubeMap[materialData[cbObject.materialIndex].albedoMapIndex].Sample(samLinearWrap, pin.posL);
+	pOut.lightingProp = InitialLightPropLayer();
+	pOut.normalAndTangent = InitialNormalTangentLayer();
 	return pOut; 
 }
 #elif defined(ALBEDO_MAP_ONLY)
 PixelOut PS(PixelIn pin) : SV_Target
 { 
 	PixelOut pOut;
-	pOut.albedoColor = materialData[objMaterialIndex].albedoColor;
-	pOut.albedoColor *= textureMaps[materialData[objMaterialIndex].albedoMapIndex].Sample(samAnisotropicWrap, pin.texC); 
-	pOut.normal = float4(0, 0, 0, G_BUFFER_ALBEDO_ONLY_TYPE);
+	pOut.albedoColor = materialData[cbObject.materialIndex].albedoColor;
+	pOut.albedoColor *= textureMaps[materialData[cbObject.materialIndex].albedoMapIndex].Sample(samAnisotropicWrap, pin.texC); 
+	pOut.lightingProp = InitialLightPropLayer();
+	pOut.normalAndTangent = InitialNormalTangentLayer();
 	return pOut;
 }
 #else
 PixelOut PS(PixelIn pin) : SV_Target
 {
-	PixelOut pOut;
-	MaterialData matData = materialData[objMaterialIndex];
+	PixelOut pOut; 
+	MaterialData matData = materialData[cbObject.materialIndex];
 	float4 albedoColor = matData.albedoColor; 
 #ifdef ALBEDO_MAP
 	albedoColor *= textureMaps[matData.albedoMapIndex].Sample(samAnisotropicWrap, pin.texC);
 #endif
-	float3 normalW = normalize(pin.normalW);
-	float3 toEyeW = normalize(camEyePosW - pin.posW);
-	float2 texC = pin.texC;
  
+	float3 normalW = normalize(pin.normalW);
+	float3 toEyeW = normalize(cbCam.eyePosW - pin.posW);
+	float2 texC = pin.texC;
+ 	
 #ifdef NORMAL_MAP
 	float3x3 TBN = CalTBN(normalW, pin.tangentW);
 #ifdef HEIGHT_MAP
@@ -80,12 +85,17 @@ PixelOut PS(PixelIn pin) : SV_Target
 #else
 	float ambientFactor = 1.0f;
 #endif 
-	pOut.albedoColor = albedoColor;
-	pOut.normal = float4(EncodeOct(normalW), 0, G_BUFFER_STANDARD_TYPE);
-	//pOut.normal = float4(SignedOctEncode(normalW), G_BUFFER_STANDARD_TYPE);
-	pOut.tangent = float4(EncodeOct(normalize(pin.tangentW)),0,  0);
-	pOut.lightingProp = float4(metallic, roughness, ambientFactor, 0.0f);
+  		
+    float specularFactor = 0.0f;
+#ifdef SPECULAR_MAP	
+	specularFactor = RGBToLuminance(textureMaps[matData.specularMapIndex].Sample(samAnisotropicWrap, texC).xyz * metallic);
+#else
+    specularFactor = ComputeDefaultSpecularFactor(albedoColor.xyz, metallic);
+#endif
 	 
+	pOut.albedoColor = albedoColor; 
+    pOut.lightingProp = PackLightPropLayer(specularFactor, metallic, roughness, ambientFactor);
+    pOut.normalAndTangent = PackNormalAndTangentLayer(normalW, normalize(pin.tangentW));
 	return pOut;
 }
 #endif

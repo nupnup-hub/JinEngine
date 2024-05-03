@@ -196,7 +196,9 @@ namespace JinEngine::Develop
 		{
 			if (Private::GetHandle(name) == nullptr)
 				return false;
+
 			Private::GetData()->defaultLogNameStack.push(name);
+			return true; 
 		}
 		else
 			return false;

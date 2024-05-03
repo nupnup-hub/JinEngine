@@ -2,9 +2,9 @@
 #include"SsaoCommon.hlsl"
 #include"DepthFunc.hlsl"
 
-Texture2D<float> depthMap : register(t0); 
+Texture2D depthMap : register(t0); 
 float DepthLinearize(VertexOut pin) :SV_Target
 {
-	AddViewportOrigin(pin, viewPortTopLeft, camInvRtSize);
-	return NdcToViewPZ(depthMap.Load(int3(pin.posH.xy, 0)), camNearFar.x, camNearFar.y);
+    AddViewportOrigin(pin, cbPass.viewPortTopLeft, cbPass.camInvRtSize);
+    return NdcToViewPZ(depthMap.Load(int3(pin.posH.xy, 0)).x, cbPass.camNearFar.x, cbPass.camNearFar.y);
 }

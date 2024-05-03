@@ -1,6 +1,7 @@
 #pragma once
 #include<string> 
 #include"../../JMeshStruct.h" 
+#include"../../JMaterialProperty.h"
 #include"../../../../ThirdParty/DirectX/DirectXMesh.h"   
 
 namespace JinEngine
@@ -32,16 +33,15 @@ namespace JinEngine
 			std::wstring specularHighlightMapName;
 			std::wstring alphaMapName; 
 			std::wstring decalMapName;
-
+		public:
+			JMaterialParameter mParam;
 			//¹Ì±¸Çö
-			JVector4F ambient;
-			JVector4F albedo;
+			JVector4F ambient; 
 			JVector4F specular;
 			JVector4F transmissionFilterColor;
 			float specularWeight; 
 			float opaqueFactor; 
 			float opticalDensity;
-
 			JOBJ_MATERIAL_FLAG flag;
 		};
 	}

@@ -4,6 +4,7 @@
 #include"JEditorWindowEnum.h"  
 #include"../Gui/JGuiType.h"
 #include"../../Core/Func/Functor/JFunctor.h"
+#include"../../Object/JObjectFlag.h"
 #include<set>
 namespace JinEngine
 {
@@ -73,8 +74,8 @@ namespace JinEngine
 				bool isCloseThisFrame = false;
 			};
 		protected:			 
-			using PassSelectedOneF = Core::JSFunctorType<bool, JEditorWindow*>;
-			using PassSelectedAboveOneF = Core::JSFunctorType<bool, JEditorWindow*>;
+			using PassPopupConditionF = Core::JSFunctorType<bool, JEditorWindow*>; 
+			using PassPopupConditionFlagF = Core::JSFunctorType<bool, JEditorWindow*, J_OBJECT_FLAG, bool>;
 		private: 
 			const J_EDITOR_PAGE_TYPE ownerPageType; 
 			J_EDITOR_WINDOW_FLAG windowFlag;
@@ -109,8 +110,10 @@ namespace JinEngine
 			void UpdatePopup(const PopupSetting setting);
 			void UpdatePopup(const PopupSetting setting, _Out_ PopupResult& result);
 		protected: 
-			PassSelectedOneF::Functor* GetPassSelectedOneFunctor()noexcept;
-			PassSelectedAboveOneF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
+			PassPopupConditionF::Functor* GetPassSelectedOneFunctor()noexcept;
+			PassPopupConditionF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
+			PassPopupConditionFlagF::Functor* GetPassSelectedOneFlagFunctor(const J_OBJECT_FLAG flag, const bool passIfHas)noexcept;
+			PassPopupConditionFlagF::Functor* GetPassSelectedAboveFlagFunctor(const J_OBJECT_FLAG flag, const bool passIfHas)noexcept;
 			JUserPtr<Core::JIdentifier> GetHoveredObject()const noexcept;
 			uint GetSelectedObjectCount()const noexcept;  
 			JUserPtr<Core::JIdentifier> GetFirstSelectedObject()const noexcept;
@@ -130,6 +133,7 @@ namespace JinEngine
 				}
 				return vec;
 			}
+			std::unordered_map<size_t, JUserPtr<Core::JIdentifier>> GetSelectedObjectMap()const noexcept;
 		public: 
 			//dock node가 아닌경우만 유효
 			void SetNextWindowPos(const JVector2F& pos)noexcept;
@@ -176,7 +180,7 @@ namespace JinEngine
 			void ExecuteOtherWindowNotifiedEv(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev);
 		protected:
 			void TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj);
-			JUserPtr<Core::JIdentifier> TryGetDraggingTarget();
+			std::vector<JUserPtr<Core::JIdentifier>> TryGetDraggingTarget();
 		protected:
 			void DoSetOpen()noexcept override;
 			void DoSetClose()noexcept override;

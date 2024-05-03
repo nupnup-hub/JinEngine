@@ -7,7 +7,7 @@ namespace JinEngine
 	///struct JGraphicShaderData; 
 	namespace Graphic
 	{
-		struct JDrawHelper;
+		class JDrawHelper;
 		class JOccCulling : public JGraphicTaskInterface, public JGraphicMultiThreadDrawInterface
 		{     
 		public:

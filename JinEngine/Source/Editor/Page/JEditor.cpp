@@ -85,9 +85,9 @@ namespace JinEngine
 			if (!newName.empty())
 				name = newName;
 		}
-		 
+
 		void JEditor::RequestOpenPage(const JEditorOpenPageEvStruct& evStruct, const bool doAct)
-		{ 
+		{
 			std::string taskName = "Open page";
 			std::string taskDesc = "page name: " + JEditorPageShareData::GetPageName(evStruct.pageType);
 
@@ -96,16 +96,16 @@ namespace JinEngine
 				evGuidVec.resize(3);
 			else
 				evGuidVec.resize(2);
-		 
-			JEditorEvStruct* openEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(evStruct), evGuidVec[0]);
-			JEditorEvStruct* closeEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(evStruct.pageType), evGuidVec[1]);
+
+			JEditorEvStruct* openEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(evStruct), evGuidVec[0], true);
+			JEditorEvStruct* closeEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(evStruct.pageType), evGuidVec[1], true);
 
 			auto doBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::OPEN_PAGE, *openEvStruct);
 			auto undoBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct);
 			auto task = std::make_unique<Core::JTransitionSetValueTask>(taskName, taskDesc, std::move(doBinder), std::move(undoBinder));
 			if (doAct)
-			{ 
-				JEditorEvStruct* actEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(evStruct.pageType), evGuidVec[2]);
+			{
+				JEditorEvStruct* actEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(evStruct.pageType), evGuidVec[2], true);
 				std::vector<std::unique_ptr<Core::JBindHandleBase>> postDoVec;
 				postDoVec.push_back(std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::ACTIVATE_PAGE, *actEvStruct));
 
@@ -127,19 +127,19 @@ namespace JinEngine
 				else
 					evGuidVec.resize(2);
 
-				JEditorEvStruct* closeEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(evStruct), evGuidVec[0]);
-				JEditorEvStruct* openEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(JEditorPageShareData::GetOpendPageData(pageType)), evGuidVec[1]);
+				JEditorEvStruct* closeEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(evStruct), evGuidVec[0], true);
+				JEditorEvStruct* openEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(JEditorPageShareData::GetOpendPageData(pageType)), evGuidVec[1], true);
 				auto doBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct);
 				auto undoBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::OPEN_PAGE, *openEvStruct);
 				auto task = std::make_unique<Core::JTransitionSetValueTask>(taskName, taskDesc, std::move(doBinder), std::move(undoBinder));
 				if (isAct)
 				{
-					JEditorEvStruct* actEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(evStruct.pageType), evGuidVec[2]);
+					JEditorEvStruct* actEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(evStruct.pageType), evGuidVec[2], true);
 					std::vector<std::unique_ptr<Core::JBindHandleBase>> postUndoVec;
 					postUndoVec.push_back(std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::ACTIVATE_PAGE, *actEvStruct));
 					task->RegisterAddtionalProcess(Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_POST, std::move(postUndoVec));
 				}
-				
+
 				task->RegisterClearTask(std::make_unique<ClearTaskF::CompletelyBind>(*GetClearTaskFunctor(), std::move(evGuidVec)));
 				JEditorTransition::Instance().Execute(std::move(task));
 			}

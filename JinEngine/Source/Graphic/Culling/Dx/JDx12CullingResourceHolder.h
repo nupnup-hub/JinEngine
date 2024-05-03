@@ -6,12 +6,13 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		using HardwareOcclusionResultType = uint64;
 		class JGraphicDevice;
-
 		class JDx12CullingResourceHolder : public JCullingResultHolder
 		{
 		public:
 			virtual ID3D12Resource* GetResource()const noexcept = 0;  
+			virtual JDx12GraphicResourceHolder* GetHolder()const noexcept = 0;
 		public: 
 			bool IsGpuResource()const noexcept final;
 			bool CanSetValue()const noexcept final; 
@@ -34,9 +35,9 @@ namespace JinEngine
 		public:
 			using ResultType = uint32;
 		private:
-			//JDx12GraphicBuffer<ResultType> result;
-			JDx12GraphicBuffer<ResultType> readBack[Constants::gNumFrameResources];
-			JDx12GraphicBuffer<ResultType>* current = nullptr;
+			//JDx12GraphicBufferT<ResultType> result;
+			JDx12GraphicBufferT<ResultType> readBack[Constants::gNumFrameResources];
+			JDx12GraphicBufferT<ResultType>* current = nullptr;
 			ResultType* cpuBuffer = nullptr;
 			const J_CULLING_TARGET target;
 		public:
@@ -46,12 +47,14 @@ namespace JinEngine
 			void Culling(const uint index, const bool value)noexcept final;
 			void CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept final;
 		public:
-			uint GetBufferSize()const noexcept final;
+			uint GetElementSize()const noexcept final;
+			uint GetElementCount()const noexcept final;
 			J_CULLING_TARGET GetCullingTarget()const noexcept final;
 			/*
 			* @return ReadBack
 			*/
-			ID3D12Resource* GetResource()const noexcept final;  
+			ID3D12Resource* GetResource()const noexcept final;
+			JDx12GraphicResourceHolder* GetHolder()const noexcept final;
 		public:
 			/*
 			* @brief 0 is non culling 1 is culling
@@ -70,8 +73,8 @@ namespace JinEngine
 			using ResultType = uint;
 		private:
 			//read back ...  hzb compute시 ua buffer에 쓰인 값을 복사받는다(in JDx12HZBOccCulling)
-			JDx12GraphicBuffer<ResultType> readBack[Constants::gNumFrameResources];
-			JDx12GraphicBuffer<ResultType>* current = nullptr;
+			JDx12GraphicBufferT<ResultType> readBack[Constants::gNumFrameResources];
+			JDx12GraphicBufferT<ResultType>* current = nullptr;
 			ResultType* cpuBuffer = nullptr;
 			const J_CULLING_TARGET target;
 		public:
@@ -81,9 +84,11 @@ namespace JinEngine
 			void Culling(const uint index, const bool value)noexcept final;
 			void CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept final;
 		public:
-			uint GetBufferSize()const noexcept final;
+			uint GetElementSize()const noexcept final;
+			uint GetElementCount()const noexcept final;
 			J_CULLING_TARGET GetCullingTarget()const noexcept final;
 			ID3D12Resource* GetResource()const noexcept final;
+			JDx12GraphicResourceHolder* GetHolder()const noexcept final;
 		public:
 			void SetCurrent(const uint frameIndex) final;
 		public:
@@ -99,10 +104,10 @@ namespace JinEngine
 		class JHdDx12CullingResultHolder final : public JDx12ReadBackResourceInterface
 		{
 		public:
-			using ResultType = uint64;
+			using ResultType = HardwareOcclusionResultType;
 		private: 
-			JDx12GraphicBuffer<ResultType> readBack[Constants::gNumFrameResources];
-			JDx12GraphicBuffer<ResultType>* current = nullptr;
+			JDx12GraphicBufferT<ResultType> readBack[Constants::gNumFrameResources];
+			JDx12GraphicBufferT<ResultType>* current = nullptr;
 			ResultType* cpuBuffer = nullptr;
 			const J_CULLING_TARGET target;
 		public:
@@ -112,12 +117,14 @@ namespace JinEngine
 			void Culling(const uint index, const bool value)noexcept final;
 			void CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept final;
 		public:
-			uint GetBufferSize()const noexcept final;
+			uint GetElementSize()const noexcept final;
+			uint GetElementCount()const noexcept final;
 			J_CULLING_TARGET GetCullingTarget()const noexcept final;
 			/*
 			* @return ReadBack
 			*/
 			ID3D12Resource* GetResource()const noexcept final; 
+			JDx12GraphicResourceHolder* GetHolder()const noexcept final;
 		public:
 			void SetCurrent(const uint frameIndex) final;
 		public:

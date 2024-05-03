@@ -57,9 +57,7 @@ namespace JinEngine
 		if (previewSceneList.size() >= maxCapacity)
 			return nullptr;
 
-		JPreviewScene* res = nullptr;
-		const uint previewSceneCount = (uint)previewSceneList.size();
-
+		JPreviewScene* res = nullptr; 
 		if (jObj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 		{
 			JUserPtr<JResourceObject> resource;
@@ -126,6 +124,47 @@ namespace JinEngine
 				newVector.push_back(std::move(previewSceneList[i]));
 		}
 		previewSceneList = std::move(newVector);
+	}
+	bool JPreviewSceneGroup::PopPreviewScene()noexcept
+	{
+		if (previewSceneList.size() > 0)
+		{
+			auto preview = previewSceneList[previewSceneList.size() - 1].get();
+			return DestroyPreviewScene(preview);
+		}
+		else
+			return false; 
+	}
+	void JPreviewSceneGroup::AlignByName(const bool isAscending)noexcept
+	{
+		auto aSortLam = [](const std::unique_ptr<JPreviewScene>& a, const std::unique_ptr<JPreviewScene>& b)
+		{ 
+			return tolower(a->GetJObject()->GetName()[0]) < tolower(b->GetJObject()->GetName()[0]);
+		};
+		auto dSortLam = [](const std::unique_ptr<JPreviewScene>& a, const std::unique_ptr<JPreviewScene>& b)
+		{
+			return tolower(a->GetJObject()->GetName()[0]) > tolower(b->GetJObject()->GetName()[0]);
+		};
+		if (isAscending)
+			std::sort(previewSceneList.begin(), previewSceneList.end(), aSortLam);
+		else
+			std::sort(previewSceneList.begin(), previewSceneList.end(), dSortLam);
+	}
+	void JPreviewSceneGroup::AlignByType(const J_OBJECT_TYPE type)noexcept
+	{
+		auto rSortLam = [](const std::unique_ptr<JPreviewScene>& a, const std::unique_ptr<JPreviewScene>& b)
+		{
+			return a->GetJObject()->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT;
+		};
+		auto dSortLam = [](const std::unique_ptr<JPreviewScene>& a, const std::unique_ptr<JPreviewScene>& b)
+		{
+			return b->GetJObject()->GetObjectType() != J_OBJECT_TYPE::DIRECTORY_OBJECT;
+		};
+
+		if (type == J_OBJECT_TYPE::RESOURCE_OBJECT)
+			std::sort(previewSceneList.begin(), previewSceneList.end(), rSortLam);
+		else if (type == J_OBJECT_TYPE::DIRECTORY_OBJECT)
+			std::sort(previewSceneList.begin(), previewSceneList.end(), dSortLam);
 	}
 }
 /*

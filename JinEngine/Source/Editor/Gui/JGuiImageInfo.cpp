@@ -4,19 +4,14 @@
 
 namespace JinEngine::Editor
 { 
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const bool useFirstHandle)
-		:gUserAccess(gUserAccess), useFirstHandle(useFirstHandle)
+	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess)
+		:gUserAccess(gUserAccess), useFirstHandle(true)
 	{}
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess,
-		const Graphic::J_GRAPHIC_RESOURCE_TYPE rType,
-		const bool useFirstHandle)
-		: gUserAccess(gUserAccess), rType(rType), useFirstHandle(useFirstHandle)
+	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType)
+		: gUserAccess(gUserAccess), rType(rType)
 	{}
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess,
-		const Graphic::J_GRAPHIC_RESOURCE_TYPE rType,
-		const Graphic::J_GRAPHIC_BIND_TYPE bType,
-		const bool useFirstHandle)
-		: gUserAccess(gUserAccess), rType(rType), bType(bType), useFirstHandle(useFirstHandle)
+	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_BIND_TYPE bType)
+		: gUserAccess(gUserAccess), rType(rType), bType(bType)
 	{}
 	JGuiImageInfo::JGuiImageInfo(Graphic::ResourceHandle handle)
 		: handle(handle), useFirstHandle(true)

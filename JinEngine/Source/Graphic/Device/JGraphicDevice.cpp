@@ -1,5 +1,4 @@
-#include"JGraphicDevice.h"
-
+#include"JGraphicDevice.h" 
 namespace JinEngine::Graphic
 { 
 	void JGraphicDevice::StartPublicCommandSet(bool& startCommandThisFunc)
@@ -13,13 +12,15 @@ namespace JinEngine::Graphic
 		else
 			startCommandThisFunc = false;
 	}
-	void JGraphicDevice::EndPublicCommandSet(const bool startCommandThisFunc)
+	void JGraphicDevice::EndPublicCommandSet(const bool startCommandThisFunc, const bool canRestartImmdetely)
 	{ 
 		if (startCommandThisFunc)
 		{
 			EndPublicCommand();
 			FlushCommandQueue();
 		}
+		else if(canRestartImmdetely)
+			ReStartPublicCommandSet();
 	}
 	void JGraphicDevice::ReStartPublicCommandSet()
 	{

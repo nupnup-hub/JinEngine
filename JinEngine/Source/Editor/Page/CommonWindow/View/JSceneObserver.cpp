@@ -178,7 +178,7 @@ namespace JinEngine
 			coordGrid = std::make_unique<JEditorSceneCoordGrid>();
 			editBTreeView = std::make_unique<JEditorBinaryTreeView>();
 			editCamCtrl = std::make_unique<JEditorCameraControl>();
-			mouseBBox = std::make_unique<JEditorMouseIdenDragBox>();
+			mouseBBox = std::make_unique<JEditorMouseDragSceneBox>();
 			idenList = std::make_unique< JEditorIdentifierList>();
 			selectNodeFunctor = std::make_unique<SelectMenuNodeT::Functor>(&JSceneObserver::SelectObserverSettingNode, this);
 			activateNodeFunctor = std::make_unique<ActivateMenuNodeT::Functor>(&JSceneObserver::ActivateObserverSetting, this);
@@ -452,11 +452,10 @@ namespace JinEngine
 				}
 				*/
 
-				Private::cursor = JGui::GetCursorScreenPos();
-				//JGui::Image(*camera, JGui::GetMainViewport()->WorkSize); 
 				JGuiImageInfo imageInfo(editCamData.cam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 				JGui::Image(imageInfo, JGui::GetWindowSize());
-
+				//JGui::Image(*camera, JGui::GetMainViewport()->WorkSize); 
+ 
 				bool hasSelecetdIcon = false;
 				DisplaySceneIcon(sceneImageScreenPos, canSelectSceneObject, hasSelecetdIcon);
 
@@ -481,11 +480,11 @@ namespace JinEngine
 					JUserPtr<JGameObject> hitObj = JEditorSceneImageInteraction::Intersect(scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT, sceneImageScreenPos);
 					canAcitvateMouseBBox = canAcitvateMouseBBox && hitObj == nullptr;
 				}
-				using DragBoxUpdaetIn = JEditorMouseIdenDragBox::UpdateIn;
-				using DragBoxUpdaetOut = JEditorMouseIdenDragBox::UpdateOut;
-
+				
 				if (JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW))
 				{
+					using DragBoxUpdaetIn = JEditorMouseDragSceneBox::UpdateIn;
+					using DragBoxUpdaetOut = JEditorMouseDragSceneBox::UpdateOut;
 					DragBoxUpdaetIn in(canAcitvateMouseBBox, sceneImageCursorPos, JVector2F::Zero(), sceneImageScreenPos, scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT);
 					DragBoxUpdaetOut out;
 
@@ -501,9 +500,7 @@ namespace JinEngine
 						AddEventNotification(*JEditorEvent::EvInterface(),
 							GetGuid(),
 							J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
-							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), out.newSelectedVec, JEditorEvStruct::RANGE::ALL))); {
-
-					}
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), out.newSelectedVec, JEditorEvStruct::RANGE::ALL))); 
 					if (mouseBBox->GetSelectedCount() > 0)
 						SetContentsClick(true);
 				}
@@ -905,7 +902,7 @@ namespace JinEngine
 			if (JGui::Button("fit main cam##"+ GetName()))
 			{
 				auto mainCam = scene->FindFirstSelectedCamera(false); 
-				editCamData.cam->GetTransform()->SetTransform(mainCam->GetTransform()->GetWorldMatrix4x4());
+				editCamData.cam->GetTransform()->SetTransform(mainCam->GetTransform()->GetWorldMatrix());
 			}
 			JGui::Separator();
 			JGui::Text("Grid");
@@ -993,26 +990,28 @@ namespace JinEngine
 				J_GUI_TABLE_FLAG_BORDER_OUTHER_H | J_GUI_TABLE_FLAG_ROW_BG | J_GUI_TABLE_FLAG_CONTEXT_MENU_IN_BODY;
 			const J_GUI_TABLE_COLUMN_FLAG_ columnDefaultFlag = J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH;
 
-			JGui::BeginTable("##Table" + GetName(), 4, tableFlag);
-			for (uint i = 0; i < 4; ++i)
-				JGui::TableSetupColumn(tableColumnLabel[i], columnDefaultFlag);
-			JGui::TableHeadersRow();
-			JGui::TableNextRow();
-
-			for (uint i = 0; i < 4; ++i)
+			if (JGui::BeginTable("##Table" + GetName(), 4, tableFlag))
 			{
-				JGui::TableSetColumnIndex(0);
-				JGui::Text(tableRowLabel[i]);
-				JGui::TableSetColumnIndex(1);
-				JGui::InputFloat("##Coord" + tableRowLabel[i] + "X" + GetName(), &value[i]->x);
-				JGui::TableSetColumnIndex(2);
-				JGui::InputFloat("##Coord" + tableRowLabel[i] + "Y" + GetName(), &value[i]->y);
-				JGui::TableSetColumnIndex(3);
-				JGui::InputFloat("##Coord" + tableRowLabel[i] + "Z" + GetName(), &value[i]->z);
-				if (i + 1 < 4)
-					JGui::TableNextRow();
+				for (uint i = 0; i < 4; ++i)
+					JGui::TableSetupColumn(tableColumnLabel[i], columnDefaultFlag);
+				JGui::TableHeadersRow();
+				JGui::TableNextRow();
+
+				for (uint i = 0; i < 4; ++i)
+				{
+					JGui::TableSetColumnIndex(0);
+					JGui::Text(tableRowLabel[i]);
+					JGui::TableSetColumnIndex(1);
+					JGui::InputFloat("##Coord" + tableRowLabel[i] + "X" + GetName(), &value[i]->x);
+					JGui::TableSetColumnIndex(2);
+					JGui::InputFloat("##Coord" + tableRowLabel[i] + "Y" + GetName(), &value[i]->y);
+					JGui::TableSetColumnIndex(3);
+					JGui::InputFloat("##Coord" + tableRowLabel[i] + "Z" + GetName(), &value[i]->z);
+					if (i + 1 < 4)
+						JGui::TableNextRow();
+				}
+				JGui::EndTable();
 			}
-			JGui::EndTable();
 
 			if (JGui::Button("Create##TestOption" + GetName()))
 			{
@@ -1150,8 +1149,7 @@ namespace JinEngine
 					{
 						JGuiImageInfo info(shadowLitVec[data->selectedIndex],
 							Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP,
-							Graphic::J_GRAPHIC_BIND_TYPE::SRV);
-						//JGui::Image(info, RenderResultImageSize()); 
+							Graphic::J_GRAPHIC_BIND_TYPE::SRV); 
 						JGui::Image(info, RenderResultImageSize());
 					}
 					else
@@ -1199,25 +1197,43 @@ namespace JinEngine
 						JGuiImageInfo info(handle); 
 						JGui::Image(info, RenderResultImageSize());
 					}
-
+ 
 					//depth, normal, ssao		... except tangent
 					using GI = Graphic::JGraphicResourceUserInterface; 
 					using condFunc = bool(*)(const GI&);
-					constexpr uint deubgMapCount = 3; 
+					constexpr uint deubgMapCount = 6; 
 					condFunc cond[deubgMapCount]
 					{
+						[](const GI& g)
+						{
+							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY, index);
+						},
 						[](const GI& g) {return true; },
 						[](const GI& g) 
 						{
 							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
 						},
+						[](const GI& g)
+						{
+							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
+						},
+						[](const GI& g)
+						{
+							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, index);
+						},
 						[](const GI& g){return g.HasHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP); }
 					};
 					std::string name[deubgMapCount]
 					{
 						"Depth Map",
+						"Specular Map",
 						"Normal Map",
+						"Tangent Map",
+						"Velocity Map",
 						"SSAO Map"
 					};
 
@@ -1227,8 +1243,15 @@ namespace JinEngine
 						if (!cond[i](gInterface))
 							continue;
 
-						JGui::Text(name[i]);
-						auto handle = gInterface.GetGpuHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0, i);
+						int dataIndex = i;
+						//swap display order depth & specular
+						if (dataIndex == 0)
+							dataIndex = 1;
+						else if (dataIndex == 1)
+							dataIndex = 0;
+
+						JGui::Text(name[dataIndex]);
+						auto handle = gInterface.GetGpuHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0, dataIndex);
 						JGuiImageInfo info(handle);
 						JGui::Image(info, RenderResultImageSize());
 					}
@@ -1284,20 +1307,32 @@ namespace JinEngine
 					{
 						//cam has one occ
 						auto afterDisplayImagePtr = [](int i)
-						{
-							if (i == 0 || (i % 3) > 0)
+						{ 
+							int mod = i % 4;
+							if (0 == mod || mod == 1 || mod == 2)
 								JGui::SameLine();
 						};
 						 
 						JGui::Text("Occlusion Depth Map");
 						JGuiImageInfo info(cam,
 							Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG,
-							Graphic::J_GRAPHIC_BIND_TYPE::SRV);
+							Graphic::J_GRAPHIC_BIND_TYPE::SRV); 
 						if (cam->AllowHzbOcclusionCulling())
 							info.extraPerImagePtr = afterDisplayImagePtr;
+
 						JGui::Image(info, RenderResultImageSize());
 					} 
-	
+					if (graphicOption.CanUseRtGi() && cam->AllowRaytracingGI())
+					{
+						JGui::Text("RtGi");
+						JGuiImageInfo info(cam,
+							Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
+							Graphic::J_GRAPHIC_BIND_TYPE::SRV); 
+						info.dataIndex = gInterface.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+						JGui::Image(info, RenderResultImageSize());
+
+						//finalColorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+					}
 					JGui::Separator();
 				}
 				//JGui::SameLine();
@@ -1330,28 +1365,19 @@ namespace JinEngine
 				JGui::SliderFloat("##TextureDetailOnScreen_Size", &textureDebug->sizeFactor, 0.001f, 1.0f, 2);
 
 				const JVector2F imageSize = JGui::GetWindowSize() * textureDebug->sizeFactor;
-				auto selectedTexture = idenList->GetSelectedUser<JTexture>();
-				bool canDisplayMipmap = selectedTexture.IsValid();
-				if (canDisplayMipmap)
+				auto selectedTexture = idenList->GetSelectedUser<JTexture>(); 
+				bool canDisplayMipmap = false;
+			 
+				auto gUser = selectedTexture->GraphicResourceUserInterface();
+				if (gUser.GetFirstMipmapType() != Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE)
 				{
-					if (selectedTexture->GraphicResourceUserInterface().GetFirstMipmapType() == Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE)
-					{
-						if (textureDebug->HasValidHandle())
-							selectedTexture->GraphicResourceUserInterface().ClearFirstResourceMipmapBind(textureDebug->dataHandle);
-						canDisplayMipmap = false;
-					}
-					else
-					{
-						if (!textureDebug->HasValidHandle())
-						{
-							if (!selectedTexture->GraphicResourceUserInterface().TryFirstResourceMipmapBind(textureDebug->gpuHandle, textureDebug->dataHandle))
-								canDisplayMipmap = false;
-						}
-					}
+					if (gUser.TryFirstResourceMipmapBind(textureDebug->gpuHandle, textureDebug->dataHandle))
+						canDisplayMipmap = true;
 				}
+
 				JTexture* texture = static_cast<JTexture*>(selectedTexture.Get());
 				//JVector2<uint> oriSize = JVector2<uint>(texture->GetTextureWidth(), texture->GetTextureHeight());
-				JGuiImageInfo info(texture, true); 
+				JGuiImageInfo info(texture); 
 				JGui::Image(info, imageSize);
 
 				if (canDisplayMipmap)
@@ -1365,7 +1391,8 @@ namespace JinEngine
 						JGui::Image(info, imageSize);
 						//oriSize /= 2;
 					}
-				} 
+					Graphic::JGraphicResourceUserInterface::ClearFirstResourceMipmapBind(textureDebug->dataHandle);
+				} 			 
 			}
 			JGui::EndWindow();
 		}

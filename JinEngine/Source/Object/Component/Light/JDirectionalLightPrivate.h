@@ -2,16 +2,7 @@
 #include"JLightPrivate.h"
 
 namespace JinEngine
-{
-	namespace Graphic
-	{ 
-		struct JDirectionalLightConstants;
-		struct JCsmConstants;  
-		struct JShadowMapArrayDrawConstants; 
-		struct JShadowMapDrawConstants;
-		struct JHzbOccComputeConstants;
-		struct JDepthTestPassConstants;
-	}
+{ 
 	class JDirectionalLight;
 	class JDirectionalLightPrivate : public JLightPrivate
 	{
@@ -39,42 +30,29 @@ namespace JinEngine
 			void Clear(Core::JIdentifier* ptr, const bool isForced)final;
 		};
 		class FrameUpdateInterface final : public JLightPrivate::FrameUpdateInterface
-		{
+		{ 
 		private:
 			friend class Graphic::JGraphic; 
 		private:
 			bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept final;
-			void UpdateFrame(JDirectionalLight* lit, Graphic::JDirectionalLightConstants& constant)noexcept;
-			void UpdateFrame(JDirectionalLight* lit, Graphic::JCsmConstants& constant, const uint index)noexcept;
-			void UpdateFrame(JDirectionalLight* lit, Graphic::JShadowMapArrayDrawConstants& constant, const uint index)noexcept;
-			void UpdateFrame(JDirectionalLight* lit, Graphic::JShadowMapDrawConstants& constant)noexcept;
-			void UpdateFrame(JDirectionalLight* lit, Graphic::JDepthTestPassConstants& constant)noexcept;
-			void UpdateFrame(JDirectionalLight* lit, Graphic::JHzbOccComputeConstants& constant, const uint queryCount, const uint queryOffset)noexcept;
+			void UpdateFrame(JLight* lit, Graphic::JLightConstantsSet& set)noexcept final;
 			void UpdateEnd(JLight* lit)noexcept final;
 		private:
-			int GetLitFrameIndex(JLight* lit)noexcept final;
-			int GetShadowMapFrameIndex(JLight* lit)noexcept final;
-			int GetDepthTestPassFrameIndex(JLight* lit)noexcept final;
-			int GetHzbOccComputeFrameIndex(JLight* lit)noexcept final;
-			int GetCsmFrameSize(JDirectionalLight* lit)noexcept;
-		private:
-			//valid updating
-			bool IsHotUpdate(JLight* lit)noexcept final;
-			//valid after update end
+			int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept final;
+			int GetFrameIndexSize(JLight* lit, const uint layerIndex)noexcept final;
+			int GetShadowFrameLayerIndex(JLight* lit)noexcept final;
+		private: 
+			//Frame Dirtied ~ update end
+			bool IsFrameHotDirted(JLight* lit)noexcept final;
+			//Hot update ~ next update
 			bool IsLastFrameHotUpdated(JLight* lit)noexcept final;
-			bool IsLastUpdated(JLight* lit)noexcept final;
-			bool HasLitRecopyRequest(JLight* lit)noexcept final;
-			bool HasShadowMapRecopyRequest(JLight* lit)noexcept final;
-			bool HasDepthTestPassRecopyRequest(JLight* lit)noexcept final;
-			bool HasHzbOccComputeRecopyRequest(JLight* lit)noexcept final;
+			bool IsLastUpdated(JLight* lit)noexcept final; 
 		};
 		class FrameIndexInterface final : public JLightPrivate::FrameIndexInterface
 		{ 
 		private:
-			int GetLitFrameIndex(JLight* lit)noexcept final;
-			int GetShadowMapFrameIndex(JLight* lit)noexcept final;
-			int GetDepthTestPassFrameIndex(JLight* lit)noexcept final;
-			int GetHzbOccComputeFrameIndex(JLight* lit)noexcept final;
+			int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept final;
+			int GetShadowFrameLayerIndex(JLight* lit)noexcept final;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

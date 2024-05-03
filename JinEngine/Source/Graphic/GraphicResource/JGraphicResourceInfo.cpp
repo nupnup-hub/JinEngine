@@ -5,11 +5,7 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		namespace Private
-		{
-
-		}
+	{ 
 		static bool IsOwnerType(const J_GRAPHIC_RESOURCE_TYPE rType)
 		{
 			switch (rType)
@@ -20,7 +16,7 @@ namespace JinEngine
 				return true;
 			}
 		}
-
+		  
 		J_GRAPHIC_RESOURCE_TYPE JGraphicResourceInfo::GetGraphicResourceType()const noexcept
 		{
 			return graphicResourceType;
@@ -36,6 +32,24 @@ namespace JinEngine
 		int JGraphicResourceInfo::GetOptionHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
 		{
 			return optionalInfo != nullptr ? optionalInfo->viewInfo[(uint)opType][(uint)bindType].stIndex : invalidIndex;
+		}
+		int JGraphicResourceInfo::GetMinValidHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType)const noexcept
+		{
+			if (optionalInfo != nullptr)
+			{
+				int infoViewSt = GetHeapIndexStart(bindType);
+				int minValid = INT_MAX;
+				for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNT; ++i)
+				{
+					int opViewSt = optionalInfo->viewInfo[i][(uint)bindType].stIndex;
+					if (opViewSt != invalidIndex && opViewSt < minValid)
+						minValid = opViewSt;
+				} 
+				minValid = infoViewSt != invalidIndex ? min(infoViewSt, minValid) : minValid;
+				return minValid != INT_MAX ? minValid : invalidIndex;
+			}
+			else
+				return GetHeapIndexStart(bindType);
 		}
 		uint JGraphicResourceInfo::GetViewCount(const J_GRAPHIC_BIND_TYPE bindType)const noexcept
 		{

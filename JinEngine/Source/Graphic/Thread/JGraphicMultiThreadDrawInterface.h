@@ -5,7 +5,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		struct JDrawHelper;
+		class JDrawHelper;
 		class JGraphicMultiThreadDrawInterface
 		{
 		public:

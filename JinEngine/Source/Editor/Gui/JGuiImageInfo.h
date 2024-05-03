@@ -25,17 +25,12 @@ namespace JinEngine
 			uint dataIndex = 0;
 			uint bIndex = 0; 
 		public:
-			bool displayAllType = true;
-			bool useFirstHandle = true;	//handle을 사용할경우 반드시 true여야 한다.
+			bool displayAllType = false;
+			bool useFirstHandle = false;	//handle을 사용할경우 반드시 true여야 한다.
 		public:
-			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const bool useFirstHandle = true);
-			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess,
-				const Graphic::J_GRAPHIC_RESOURCE_TYPE rType,
-				const bool useFirstHandle = false);
-			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess,
-				const Graphic::J_GRAPHIC_RESOURCE_TYPE rType,
-				const Graphic::J_GRAPHIC_BIND_TYPE bType,
-				const bool useFirstHandle = false);
+			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess);
+			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType);
+			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_BIND_TYPE bType);
 			JGuiImageInfo(Graphic::ResourceHandle handle);
 		public:
 			bool IsValid()const noexcept;

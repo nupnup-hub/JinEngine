@@ -1,4 +1,5 @@
 #include"DepthFunc.hlsl"
+#include"FullScreenTriangleVs.hlsl"
 
 Texture2D<float> depthMap : register(t0);
 Texture2D<uint2> stencilMap : register(t1);
@@ -19,33 +20,13 @@ cbuffer cbPass : register(b0)
 	uint passPad01;
 	uint passPad02;
 };
-
-struct VertexIn
-{
-	float3 PosL    : POSITION;
-	float2 TexC    : TEXCOORD;
-};
-struct VertexOut
-{
-	float4 PosH    : SV_POSITION;
-	float2 TexC    : TEXCOORD;
-};
-
-VertexOut VS(VertexIn vin)
-{
-	VertexOut vout = (VertexOut)0.0f;
-	//has to -1 ~ 1 ndc range for transform screen pos
-	vout.PosH = float4(vin.PosL, 1.0f);
-	vout.TexC = vin.TexC;
-	return vout;
-}
-
+  
 static const float xFilter[9] = { -1,0,1,-2,0,2,-1,0,1 };
 static const float yFilter[9] = { 1,2,1,0,0,0,-1,-2,-1 };
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	const int3 baseIndex = int3(pin.TexC.x * width, pin.TexC.y * height, 0);
+	const int3 baseIndex = int3(pin.texC.x * width, pin.texC.y * height, 0);
 	int colorIndex[9] =
 	{
 		stencilMap.Load(baseIndex + int3(-thickness, thickness, 0)).y,

@@ -26,30 +26,7 @@ namespace JinEngine
 			int nowHeight = 0;
 			int nowIndex = 0;
 			int samplePad00 = 0;
-		};
-		struct JHzbOccComputeConstants
-		{
-			JMatrix4x4 view = JMatrix4x4::Identity();
-			JMatrix4x4 proj = JMatrix4x4::Identity();
-			JMatrix4x4 viewProj = JMatrix4x4::Identity();
-			DirectX::XMFLOAT4 frustumPlane[6];
-			DirectX::XMFLOAT4 frustumDir;
-			DirectX::XMFLOAT3 frustumPos;
-			float viewWidth = 0;
-			float viewHeight = 0;
-			float camNear = 0;
-			float camFar = 0;
-			int validQueryCount = 0;
-			int validQueryOffset = 0;
-			int occMapCount = 0;
-			int occIndexOffset = 0;
-			int correctFailTrigger = 0;
-			int usePerspective = 1;
-			int hzbOccComputePad00 = 0;
-			int hzbOccComputePad01 = 0;
-			int hzbOccComputePad02 = 0;
-		};
-
+		};		
 		struct JHZBDebugInfo
 		{
 			JVector3F bboxV[8]
@@ -85,6 +62,30 @@ namespace JinEngine
 			int debugPad02 = 0;
 			int debugPad03 = 0;
 		};
-
+		struct JDepthTestConstants
+		{
+			JMatrix4x4 viewProj = JMatrix4x4::Identity();
+		};
+		struct JHzbOccComputeConstants
+		{
+			JMatrix4x4 view = JMatrix4x4::Identity();
+			JMatrix4x4 proj = JMatrix4x4::Identity();
+			DirectX::XMFLOAT4 frustumPlane[6];
+			DirectX::XMFLOAT4 frustumDir;
+			DirectX::XMFLOAT3 frustumPos;
+			float viewWidth = 0;
+			float viewHeight = 0;
+			float camNear = 0;
+			float camFar = 0;
+			int validQueryCount = 0;
+			int validQueryOffset = 0;
+			int occMapCount = 0;
+			int occIndexOffset = 0;
+			int correctFailTrigger = 0;
+			int usePerspective = 1;
+			int hzbOccComputePad00 = 0;
+			int hzbOccComputePad01 = 0;
+			int hzbOccComputePad02 = 0;
+		};
 	}
 }

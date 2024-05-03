@@ -13,9 +13,7 @@ namespace JinEngine
 		class JEditorStringMap;
 		class JEditorWindow;
 		class JEditorPopupNode
-		{
-		public:
-			using EnableF = Core::JSFunctorType<bool, JEditorWindow*>;
+		{ 
 		private:
 			const std::string name;
 			const J_EDITOR_POPUP_NODE_TYPE nodeType;
@@ -35,7 +33,7 @@ namespace JinEngine
 			bool isActivated;	//Toggle
 		private:
 			std::unique_ptr<Core::JBindHandleBase> selectBind;	//valid in leaf node 
-			std::unique_ptr<EnableF::CompletelyBind> enableBind;	//valid in leaf node 
+			std::unique_ptr<Core::JBindHandleBase> enableBind;	//valid in leaf node 
 		public:
 			JEditorPopupNode(const std::string name,
 				const J_EDITOR_POPUP_NODE_TYPE nodeType,
@@ -45,7 +43,7 @@ namespace JinEngine
 			~JEditorPopupNode();
 		public:
 			void RegisterSelectBind(std::unique_ptr<Core::JBindHandleBase>&& newSelectBind)noexcept;
-			void RegisterEnableBind(std::unique_ptr<EnableF::CompletelyBind>&& newEnableBind)noexcept;
+			void RegisterEnableBind(std::unique_ptr<Core::JBindHandleBase>&& newEnableBind)noexcept;
 			void InvokeSelectBind()noexcept;
 		public:
 			JEditorPopupNode* PopupOnScreen(_In_ JEditorStringMap* editorString);

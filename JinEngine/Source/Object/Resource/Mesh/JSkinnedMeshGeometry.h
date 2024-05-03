@@ -7,8 +7,7 @@ namespace JinEngine
 	class JSkinnedMeshGeometryPrivate;
 	class JSkinnedMeshGeometry final : public JMeshGeometry
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JSkinnedMeshGeometry)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JSkinnedMeshGeometry) 
 	public: 
 		class InitData : public JMeshGeometry::InitData
 		{

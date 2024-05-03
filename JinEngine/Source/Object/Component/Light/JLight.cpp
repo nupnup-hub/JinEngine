@@ -12,10 +12,7 @@
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Graphic/JGraphic.h"  
-#include"../../../Graphic/Frameresource/JLightConstants.h"  
-#include"../../../Graphic/Frameresource/JShadowMapConstants.h"  
-#include"../../../Graphic/Frameresource/JOcclusionConstants.h"
-#include"../../../Graphic/Frameresource/JDepthTestConstants.h" 
+#include"../../../Graphic/Frameresource/JLightConstants.h"    
 #include"../../../Graphic/Frameresource/JFrameUpdate.h"
 #include"../../../Graphic/Culling/JCullingInterface.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
@@ -29,15 +26,7 @@ namespace JinEngine
 {
 	namespace
 	{
-		static auto isAvailableoverlapLam = []() {return true; }; 
-		 
-		static JComponent::UserCompComparePtr GetLitTypeComparePtr()
-		{
-			return [](const JUserPtr<JComponent>& a, const JUserPtr<JComponent>& b)
-			{
-				return (int)static_cast<JLight*>(a.Get())->GetLightType() < (int)static_cast<JLight*>(b.Get())->GetLightType();
-			};
-		} 
+		static auto isAvailableoverlapLam = []() {return false; };  
 
 		static constexpr float minPenumbraWidth = 0;
 		static constexpr float maxPenumbraWidth = 100000.0f; //Constants::lightMaxDistance * 0.5f;
@@ -163,6 +152,11 @@ namespace JinEngine
 			return allowDisplayShadowMap;	
 		}
 	public:
+		void UpdateLightShape()const noexcept
+		{
+			JScenePrivate::CompSettingInterface::UpdateTransform(thisPointer);
+		}
+	public:
 		//for call child class set func by gui
 		void TryCallSetShadow(const bool value)noexcept
 		{
@@ -182,7 +176,8 @@ namespace JinEngine
 			SetFrameDirty();
 		}
 		void DeActivate()noexcept
-		{}
+		{ 
+		}
 	public:
 		static bool DoCopy(JLight* from, JLight* to)
 		{ 
@@ -307,6 +302,13 @@ namespace JinEngine
 	{
 		return impl->GetPenumbraBlockerWidth();
 	}
+	JComponent::UserCompComparePtr JLight::GetLitTypeComparePtr()const noexcept
+	{
+		return [](const JUserPtr<JComponent>& a, const JUserPtr<JComponent>& b)
+		{
+			return (int)static_cast<JLight*>(a.Get())->GetLightType() < (int)static_cast<JLight*>(b.Get())->GetLightType();
+		};
+	}
 	void JLight::SetColor(const JVector3<float>& color)noexcept
 	{
 		impl->SetColor(color);
@@ -357,13 +359,11 @@ namespace JinEngine
 	}
 	void JLight::DoActivate()noexcept
 	{
-		JComponent::DoActivate();
-		RegisterComponent(impl->thisPointer, GetLitTypeComparePtr());
+		JComponent::DoActivate(); 
 		impl->Activate(); 
 	}
 	void JLight::DoDeActivate()noexcept
-	{
-		DeRegisterComponent(impl->thisPointer);
+	{ 
 		impl->DeActivate(); 
 		JComponent::DoDeActivate();
 	}
@@ -380,7 +380,7 @@ namespace JinEngine
 	using DestroyInstanceInterface = JLightPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JLightPrivate::AssetDataIOInterface; 
 	using FrameIndexInterface = JLightPrivate::FrameIndexInterface;
-	using FrameDirtyInterface = JLightPrivate::FrameDirtyInterface;
+	using ChildInterface = JLightPrivate::ChildInterface;
 	 
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
@@ -453,14 +453,18 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreAtomicData(tool, user->AllowDisplayShadowMap(), "AllowDisplayShadowMap:");
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
- 
-	void FrameDirtyInterface::RegisterFrameDirtyListener(JLight* lit, Graphic::JFrameDirty* listener, const size_t guid)noexcept
+
+	void ChildInterface::RegisterFrameDirtyListener(JLight* lit, Graphic::JFrameDirty* listener, const size_t guid)noexcept
 	{ 
 		lit->impl->RegisterFrameDirtyListener(listener, guid);
 	}
-	void FrameDirtyInterface::DeRegisterFrameDirtyListener(JLight* lit, const size_t guid)noexcept
+	void ChildInterface::DeRegisterFrameDirtyListener(JLight* lit, const size_t guid)noexcept
 	{
 		lit->impl->DeRegisterFrameDirtyListener(guid);
+	}
+	void ChildInterface::UpdateLightShape(const JUserPtr<JLight>& lit)noexcept
+	{
+		lit->impl->UpdateLightShape();
 	}
 	 
 	Core::JIdentifierPrivate::DestroyInstanceInterface& JLightPrivate::GetDestroyInstanceInterface()const noexcept

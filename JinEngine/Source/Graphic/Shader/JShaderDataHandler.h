@@ -1,23 +1,17 @@
 #pragma once
-#include"JShaderDataHolder.h"
-#include"../Device/JGraphicDeviceUser.h"
-#include"../DataSet/JGraphicDataSet.h"
+#include"JShaderDataHolder.h" 
+#include"../Device/JGraphicDeviceUser.h" 
 #include"../../Core/Pointer/JOwnerPtr.h" 
 
 namespace JinEngine
 {
-	class JShader;
-	class JGraphicShaderDataHolderBase;
-	class JComputeShaderDataHolderBase;
-
+	class JShader; 
 	/**
 	* User가 JObject를 통해서 조절가능한 Shader생성하는 책임을 가지는 class는
 	* Graphic, Compute type에 따라 밑에 class를 반드시 상속한다. 
 	*/
 	namespace Graphic
-	{
-		class JGraphicDevice;
-		class JGraphicResourceManager;  
+	{ 
 		struct JGraphicShaderCompileSet;
 		//private shader
 		class JGraphicDeviceShaderHandler
@@ -37,7 +31,7 @@ namespace JinEngine
 		class JGraphicShaderDataHandler : public JGraphicDeviceShaderHandler
 		{
 		public: 
-			virtual JOwnerPtr<JGraphicShaderDataHolderBase> CreateGraphicShader(const JGraphicShaderCompileSet& dataSet, JGraphicShaderInitData initData) = 0;
+			virtual JOwnerPtr<JShaderDataHolder> CreateShader(const JGraphicShaderCompileSet& dataSet, JGraphicShaderInitData initData) = 0;
 		protected:
 			void RecompileUserShader(JShader* shader);
 		};
@@ -46,14 +40,13 @@ namespace JinEngine
 		// NotifyChangeGraphicShaderMacro로 일괄적으로 알려서 조건에 따라 처리하거나
 		// Event발생시 직접 필요로 하는 곳에 알려서 처리할수있다.
 		// 현재는 직접 필요로 하는 곳에 알려서 처리하나
-		// 추후에 따로 관리하는 기반을 만들 필요성이 생길수있다.
-
+		// 추후에 따로 관리하는 기반을 만들 필요성이 생길수있다. 
 		class JComputeShaderDataHandler : public JGraphicDeviceShaderHandler
 		{
-		public: 
-			virtual JOwnerPtr<JComputeShaderDataHolderBase> CreateComputeShader(const JGraphicShaderCompileSet& dataSet) = 0;
 		public:
-			void RecompileShader(JShader* shader); 
+			virtual JOwnerPtr<JShaderDataHolder> CreateShader(const JGraphicShaderCompileSet& dataSet, JComputeShaderInitData initData) = 0;
+		protected:
+			void RecompileUserShader(JShader* shader);
 		};
 	}
 }

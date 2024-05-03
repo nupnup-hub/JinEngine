@@ -34,6 +34,8 @@ namespace JinEngine
 		float GetInnerConeAngle()const noexcept; 
 		float GetOuterConeAngle()const noexcept;
 		DirectX::BoundingBox GetBBox()const noexcept final;
+		JUserPtr<JMeshGeometry> GetMesh()const noexcept final;
+		DirectX::XMMATRIX GetMeshWorldM(const bool restrictScaledZ = false)const noexcept final;
 		JVector3F GetDirection()const noexcept;
 	public:
 		void SetShadow(const bool value)noexcept final;

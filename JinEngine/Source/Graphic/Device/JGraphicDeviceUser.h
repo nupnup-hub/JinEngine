@@ -22,6 +22,11 @@ namespace JinEngine
 			bool IsAllSameDevice(Param... param)const noexcept
 			{
 				return (IsSameDevice(param) && ...);
+			} 
+			template<J_GRAPHIC_DEVICE_TYPE type, typename ...Param>
+			static bool IsAllSameDevice(Param... param)noexcept
+			{
+				return ((param->GetDeviceType() == type) && ...);
 			}
 		};
 	}

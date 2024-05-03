@@ -11,8 +11,7 @@ namespace JinEngine
 	class JSkeletonAssetPrivate;
 	class JSkeletonAsset final : public JResourceObject
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JSkeletonAsset)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JSkeletonAsset) 
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{

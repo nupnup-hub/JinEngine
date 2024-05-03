@@ -15,18 +15,23 @@ namespace JinEngine
 		struct JDrawCondition;
 		class JDx12FrameResource;
 		class JDx12CullingManager;
-		class JDx12GraphicResourceManager;
-		class JDx12GraphicShaderDataHolder;
+		class JDx12GraphicResourceManager; 
 		class JDx12GraphicDevice;
+		class JDx12CommandContext;
+
 		class JDx12ShadowMap : public JShadowMap
 		{ 
+		private:
+			using JDx12GraphicShaderDataHolder = JDx12GraphicShaderDataHolder<1>;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
 			std::unique_ptr<JDx12GraphicShaderDataHolder> normalShadowShaderData[(uint)Core::J_MESHGEOMETRY_TYPE::COUNT];
 			std::unique_ptr<JDx12GraphicShaderDataHolder> cubeShadowShaderData[(uint)Core::J_MESHGEOMETRY_TYPE::COUNT];
 			std::unique_ptr<JDx12GraphicShaderDataHolder> csmShaderData[JCsmOption::maxCountOfSplit][(uint)Core::J_MESHGEOMETRY_TYPE::COUNT];
 		public:
-			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)final;
+			~JDx12ShadowMap();
+		public:
+			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)final;
 			void Clear()final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
@@ -49,17 +54,15 @@ namespace JinEngine
 			void DrawSceneShadowMap(const JGraphicShadowMapDrawSet* shadowDrawSet, const JDrawHelper& helper)final;
 			void DrawSceneShadowMapMultiThread(const JGraphicShadowMapDrawSet* shadowDrawSet, const JDrawHelper& helper)final;
 		private:
-			void DrawShadowMapGameObject(ID3D12GraphicsCommandList* cmdList,
-				JDx12FrameResource* dx12Frame,
-				JDx12GraphicResourceManager* dx12Gm,
-				JDx12CullingManager* dx12Cm,
+			void DrawShadowMapGameObject(JDx12CommandContext* context,
 				const std::vector<JUserPtr<JGameObject>>& gameObject,
 				const JDrawHelper& helper,
 				const JDrawCondition& condition,
 				const uint dataIndex);
 		private:
-			void BindLightFrameResource(ID3D12GraphicsCommandList* cmdList, JDx12FrameResource* dx12Frame, const JDrawHelper& helper, const int offset);
+			void BindLightFrameResource(JDx12CommandContext* context, const JDrawHelper& helper, const int offset);
 		private:
+			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info);
 			void BuildRootSignature(ID3D12Device* device);
 			void BuildPso(ID3D12Device* device,
 				const DXGI_FORMAT dsvFormat,
@@ -67,6 +70,8 @@ namespace JinEngine
 				const Core::J_MESHGEOMETRY_TYPE meshType,
 				const std::vector<JMacroSet>& macroSet,
 				_Out_ JDx12GraphicShaderDataHolder& data);
+		private:
+			void ClearResource();
 		};
 	}
 }

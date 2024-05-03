@@ -2,8 +2,14 @@
 #if defined(FULL_SCREEN_QUAD)
 struct PixelIn
 {
-	float4 posH    : SV_POSITION; 
-	float3 dir : DIRECTION;
+	float4 posH : SV_POSITION; 
+	float2 texC : TEXCOORD; 
+};
+#elif defined(FULL_SCREEN_TRIANGLE)
+struct PixelIn
+{
+	float4 posH : SV_POSITION;
+	float2 texC : TEXCOORD; 
 };
 #elif defined(DEBUG)
 struct PixelIn

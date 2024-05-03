@@ -16,8 +16,7 @@ namespace JinEngine
 	class JAnimationControllerPrivate;
 	class JAnimationController final : public JResourceObject
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JAnimationController)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JAnimationController) 
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{

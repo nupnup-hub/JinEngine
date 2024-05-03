@@ -21,9 +21,13 @@ namespace JinEngine
 	{
 		class JEditorStringMap;
 		class JEditorPopupMenu; 
-		class JEditorSearchBarHelper;
+		class JEditorSearchBar;
+		class JEditorAddressBar;
+		class JEditorPageCounter;
 		class JEditorRenameHelper;
 		class JEditorTreeStructure;
+		class JEditorSelectableStructure;
+		class JEditorMouseDragCanvas;
 
 		class JWindowDirectoryCreationFunctor;
 		class JWindowDirectorySettingFunctor;
@@ -42,9 +46,16 @@ namespace JinEngine
 				int descIndex = 0;
 				bool isActivatedImportWindow = false; 
 			};
+			struct IconData
+			{
+			public:
+				float maxSize;
+				float minSize;
+				float size = 0;
+				bool isDetail = true;
+			};
 		private:
-			JUserPtr<JDirectory> root;
-			JUserPtr<JDirectory> opendDirctory; 
+			JUserPtr<JDirectory> root; 
 			bool lastUpdateOpenNewDir = false; 
 		private:
 			std::unique_ptr<JWindowDirectoryCreationFunctor> creation;
@@ -55,22 +66,23 @@ namespace JinEngine
 			//not use
 			//std::unique_ptr<JEditorPopupMenu>directoryViewPopup;
 			std::unique_ptr<JEditorPopupMenu>fileviewPopup; 
-			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
+			std::unique_ptr<JEditorSearchBar> searchBar;
+			std::unique_ptr<JEditorAddressBar> addressBar;
+			std::unique_ptr<JEditorPageCounter> pageCounter;
 			std::unique_ptr<JEditorTreeStructure> treeStrcture;
+			std::unique_ptr<JEditorSelectableStructure> selectableStructure;
+			std::unique_ptr<JEditorMouseDragCanvas> mouseBBox;
 		private:
 			ImportData importData;
-		private:
-			static constexpr float selectorIconMaxRate = 0.075f;
-			static constexpr float selectorIconMinRate = 0.035f;
-			float btnIconMaxSize;
-			float btnIconMinSize;
-			float btnIconSize = 0;
+			IconData iconData;
+		private: 
 			size_t selectorIconSlidebarId; 
 			JVector2<float> fileTitleBarSize; 
 			JVector2<float> renameCursorPos;
 			JVector2<float> renameRectSize;
 		private:
 			float childWindowHeight = 0;  
+			bool requestUpdatePreview = false;
 		public:
 			JWindowDirectory(const std::string &name,
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -101,7 +113,7 @@ namespace JinEngine
 			void ImportSettingOnScreen(); 
 		private:
 			void OpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory);
-			void CreateDirectoryPreview(const JUserPtr<JDirectory>& directory, const bool hasNameMask, const std::wstring& mask = L"");
+			void CreateDirectoryPreview();
 			//Only create file preview not directory
 			void CreateAllDirectoryPreview(const JUserPtr<JDirectory>& directory, const bool hasNameMask, const std::wstring& mask = L"");
 		private:

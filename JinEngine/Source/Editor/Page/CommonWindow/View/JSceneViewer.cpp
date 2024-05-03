@@ -58,7 +58,11 @@ namespace JinEngine
 				{
 					editorCamCtrl->Update(selectedCam, JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
 					JGuiImageInfo info(selectedCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
-					info.useFirstHandle = false;
+					if (selectedCam->AllowPostProcess())
+					{
+						auto gInterface = selectedCam->GraphicResourceUserInterface();
+						info.dataIndex = gInterface.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
+					}
 					JGui::Image(info, JGui::GetWindowSize());
 				}	  
 				JGui::SetCursorPos(preCursor);

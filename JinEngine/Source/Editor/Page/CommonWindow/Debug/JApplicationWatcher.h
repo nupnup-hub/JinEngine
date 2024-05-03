@@ -22,6 +22,7 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void DisplayTimeOnScreen();
+			void DisplayCpuDrawingTimeOnScreen();
 			void DisplayMemoryUsageOnScreen();
 		};
 	}

@@ -19,6 +19,7 @@
 #include"../../Core/Geometry/JRay.h"
 #include"../../Core/Geometry/JBBox.h"
 #include"../../Core/Math/JMathHelper.h"  
+//#include"../../Develop/Debug/JDevelopDebug.h"  
 
 using namespace DirectX;
 namespace JinEngine
@@ -40,8 +41,8 @@ namespace JinEngine
 			//determine mouse delta direction by cam and arrow world position
 			static JVector3F GetMouseDeltaDirFactor(JGameObject* tool, JCamera* cam)
 			{
-				const JMatrix4x4 camWorld = cam->GetTransform()->GetWorldMatrix4x4();
-				const JMatrix4x4 arrowWorld = tool->GetTransform()->GetWorldMatrix4x4();
+				const JMatrix4x4 camWorld = cam->GetTransform()->GetWorldMatrix();
+				const JMatrix4x4 arrowWorld = tool->GetTransform()->GetWorldMatrix();
 				const JVector3F dir = JVector3F(arrowWorld._41 - camWorld._41,
 					arrowWorld._42 - camWorld._42,
 					arrowWorld._43 - camWorld._43).Normalize();
@@ -151,7 +152,6 @@ namespace JinEngine
 			for (uint j = 0; j < subMeshCount; ++j)
 				rItem->SetMaterial(j, material);
 			rItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_UI);
-
 			arrow = newArrow;
 		}
 
@@ -647,11 +647,11 @@ namespace JinEngine
 					OBJECT_FLAG_EDITOR_OBJECT,
 					J_DEFAULT_SHAPE::BOUNDING_FRUSTUM,
 					J_DEFAULT_MATERIAL::DEBUG_LINE_RED,
-					true);
+					true); 
 			}
 		}
 		JEditorGeometryTool::FrustumView::~FrustumView()
-		{
+		{ 
 			Clear();
 		}
 		void JEditorGeometryTool::FrustumView::Clear()
@@ -835,14 +835,13 @@ namespace JinEngine
 				return;
 
 			//bounding
-			float radius = 0.5f;
-			float hypotenuse = range / cos(outAngle);
-			float bottomRadius = hypotenuse * sin(outAngle);
+			float radius = 0.5f; 
+			float bottomRadius = range * tan(outAngle);
 
 			//boundingCone face z+
-			boundingCone->GetTransform()->SetScale(JVector3F(bottomRadius, bottomRadius, range));
-			boundingCone->GetTransform()->SetRotation(transform->GetWorldRotation() + JVector3F(90, 0, 0));
-			boundingCone->GetTransform()->SetPosition(transform->GetWorldPosition());
+			JMatrix4x4 world;
+			world.StoreXM(targetSpot->GetMeshWorldM());
+			boundingCone->GetTransform()->SetTransform(world); 
 		}
 		size_t JEditorGeometryTool::ConeView::GetTargetGuid()const noexcept
 		{

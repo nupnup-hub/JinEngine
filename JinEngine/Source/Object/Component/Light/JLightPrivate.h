@@ -13,7 +13,8 @@ namespace JinEngine
 	{
 		class JGraphic;  
 		class JFrameDirty;
-		struct JDrawHelper;
+		class JFrameIndexAccess;
+		struct JLightConstantsSet;
 	}
 	class JLightPrivate : public JComponentPrivate
 	{
@@ -44,34 +45,28 @@ namespace JinEngine
 			friend class Graphic::JGraphic; 
 		private:
 			virtual bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept = 0;
+			virtual void UpdateFrame(JLight* lit, Graphic::JLightConstantsSet& set)noexcept = 0;
 			virtual void UpdateEnd(JLight* lit)noexcept = 0;
 		private:
-			virtual int GetLitFrameIndex(JLight* lit)noexcept = 0;
-			virtual int GetShadowMapFrameIndex(JLight* lit)noexcept = 0; 
-			virtual int GetDepthTestPassFrameIndex(JLight* lit)noexcept = 0;
-			virtual int GetHzbOccComputeFrameIndex(JLight* lit)noexcept = 0;
+			virtual int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept = 0;
+			virtual int GetFrameIndexSize(JLight* lit, const uint layerIndex)noexcept = 0;
+			virtual int GetShadowFrameLayerIndex(JLight* lit)noexcept = 0;
 		private:
 			//valid updating
-			virtual bool IsHotUpdate(JLight* lit)noexcept = 0;
+			virtual bool IsFrameHotDirted(JLight* lit)noexcept = 0;
 			//valid after update end
 			virtual bool IsLastFrameHotUpdated(JLight* lit)noexcept = 0;
-			virtual bool IsLastUpdated(JLight* lit)noexcept = 0;
-			virtual bool HasLitRecopyRequest(JLight* lit)noexcept = 0;
-			virtual bool HasShadowMapRecopyRequest(JLight* lit)noexcept = 0;
-			virtual bool HasDepthTestPassRecopyRequest(JLight* lit)noexcept = 0;
-			virtual bool HasHzbOccComputeRecopyRequest(JLight* lit)noexcept = 0;
+			virtual bool IsLastUpdated(JLight* lit)noexcept = 0; 
 		};
 		class FrameIndexInterface
 		{
 		private:
-			friend struct Graphic::JDrawHelper;
+			friend class Graphic::JFrameIndexAccess;
 		private:
-			virtual int GetLitFrameIndex(JLight* lit)noexcept = 0;
-			virtual int GetShadowMapFrameIndex(JLight* lit)noexcept = 0;
-			virtual int GetDepthTestPassFrameIndex(JLight* lit)noexcept = 0;
-			virtual int GetHzbOccComputeFrameIndex(JLight* lit)noexcept = 0;
+			virtual int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept = 0;
+			virtual int GetShadowFrameLayerIndex(JLight* lit)noexcept = 0;
 		};
-		class FrameDirtyInterface final
+		class ChildInterface final
 		{
 		private:    
 			friend class JDirectionalLight;
@@ -82,6 +77,7 @@ namespace JinEngine
 			//almost JFrameDirtyListener is impl class
 			static void RegisterFrameDirtyListener(JLight* lit, Graphic::JFrameDirty* listener, const size_t guid)noexcept;
 			static void DeRegisterFrameDirtyListener(JLight* lit, const size_t guid)noexcept;
+			static void UpdateLightShape(const JUserPtr<JLight>& lit)noexcept;
 		};
 	public:  
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;

@@ -93,7 +93,7 @@ namespace JinEngine
 			if (info == nullptr)
 				return;
 
-			const uint count = (uint)info->GetResultBufferSize();
+			const uint count = (uint)info->GetResultBufferElementCount();
 			for (uint i = 0; i < count; ++i)
 				info->Culling(i, false);
 		}

@@ -2,9 +2,14 @@
 #include"JCsmHandlerInterface.h"
 #include"JCsmTargetInterface.h"
 #include"../../Core/Utility/JCommonUtility.h"
+#include"../../Core/Log/JLogMacro.h"
 
 namespace JinEngine::Graphic
 { 
+	JCsmManager::~JCsmManager()
+	{
+		Clear();
+	}
 	bool JCsmManager::RegisterHandler(JCsmHandlerInterface* handler)
 	{
 		auto existHandle = GetHandler(handler->GetCsmAreaGuid(), handler->GetCsmHandlerGuid());
@@ -44,6 +49,8 @@ namespace JinEngine::Graphic
 		//	--area->second.handler[i]->Get()->handlerIndex;
 
 		area->second.handler.erase(area->second.handler.begin() + existHandlerIndex);
+		if (area->second.handler.size() == 0 && area->second.target.size() == 0)
+			areaData.erase(handler->GetCsmAreaGuid());
 		return true;
 	}
 	bool JCsmManager::RegisterTarget(JCsmTargetInterface* target)
@@ -99,6 +106,8 @@ namespace JinEngine::Graphic
 			if(area->second.handler[i]->Get()->GetCsmTargetCount() == 0)
 				area->second.handler[i]->Get()->NotifyCsmTargetZero();
 		}
+		if (area->second.handler.size() == 0 && area->second.target.size() == 0)
+			areaData.erase(target->GetCsmAreaGuid());
 		return true;
 	}
 	JUserPtr<JCsmHandlerPointer> JCsmManager::GetHandler(const size_t areaGuid, const size_t handlerGuid)const noexcept
@@ -142,7 +151,7 @@ namespace JinEngine::Graphic
 		for (uint i = 0; i < count; ++i)
 		{
 			if (handlerVec[i]->Get() == nullptr)
-				MessageBox(0, L"NULL", std::to_wstring(i).c_str(), 0);
+				J_LOG_PRINT_OUT("Null csm handler", "Count: " + std::to_string(count) + " Index: " + std::to_string(i));
 			if (handlerVec[i]->Get()->GetCsmHandlerGuid() == handlerGuid)
 				return i;
 		}

@@ -1,6 +1,7 @@
 #pragma once
 #include<string>  
 #include"../../JMeshStruct.h"
+#include"../../JMaterialProperty.h"
 #include"../../../../Animation/JAnimationSample.h"
 #include"../../../../ThirdParty/Fbx/Include/fbxsdk.h"
 #include"../../../../ThirdParty/DirectX/DirectXMesh.h" 
@@ -48,9 +49,11 @@ namespace JinEngine
 		public:
 			std::string name;
 		public:
-			JVector4F albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };	//same as JMaterial default value
-			float metallic = 0.25f;			//same as JMaterial default value
-			float roughness = 0.75f;		//same as JMaterial default value
+			JMaterialParameter mParam;
+			//JVector4F albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };	 
+			//float metallic = 0.25f;			 
+			//float roughness = 0.75f;		 
+			//float specularFactor = 0.5f;	
 		public:
 			//texture name(include path)
 			//has empty value("") if not exist

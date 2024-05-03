@@ -51,8 +51,10 @@ namespace JinEngine
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr ptr)noexcept;
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr iptr, ClassifyResourceTypeF::Ptr cptr)noexcept;
 	public:
-		std::vector<JUserPtr<JResourceObject>> ImportResource(const JResourceObjectImportDesc* desc)noexcept;
+		std::vector<JUserPtr<JResourceObject>> ImportResource(const JResourceObjectImportDesc* desc)const noexcept;
 		std::vector<J_RESOURCE_TYPE> DeterminFileResourceType(const Core::JFileImportHelpData importPathData)const noexcept;
+	private:
+		const FormatInfo* GetFormatInfo(const std::wstring& format)const noexcept;
 	public:
 		bool IsValidFormat(const std::wstring& format)const noexcept;
 	private:

@@ -1,20 +1,50 @@
 #include"JGraphicAdapter.h"   
-#include"../Culling/JCullingManager.h"
+#include"../Accelerator/JGpuAcceleratorManager.h"
 #include"../Debug/JGraphicDebug.h"
 #include"../DepthMap/JDepthTest.h"
 #include"../Device/JGraphicDevice.h"
 #include"../GraphicResource/JGraphicResourceManager.h" 
+#include"../GraphicResource/JGraphicResourceShareData.h" 
 #include"../Outline/JOutline.h"
+#include"../Culling/JCullingManager.h"
 #include"../Culling/Occlusion/JHardwareOccCulling.h"
 #include"../Culling/Occlusion/JHZBOccCulling.h"
 #include"../Culling/Light/JLightCulling.h"
-#include"../Image/JImageProcessing.h"
+#include"../Image/JBlur.h"
+#include"../Image/JDownSampling.h"
+#include"../Image/JSsao.h"
+#include"../Image/JToneMapping.h"
+#include"../Image/JBloom.h" 
+#include"../Image/JAntialise.h" 
+#include"../Image/JPostProcessHistogram.h" 
+#include"../Image/JPostProcessExposure.h" 
+#include"../Image/JConvertColor.h"
+#include"../Raytracing/Occlusion/JRaytracingAmbientOcclusion.h" 
 #include"../Scene/JSceneDraw.h"
 #include"../ShadowMap/JShadowMap.h" 
 #include"../FrameResource/JFrameResource.h" 
 
 namespace JinEngine::Graphic
-{  
+{ 
+	JGraphicAdapter::~JGraphicAdapter()
+	{
+		for (uint i = 0; i < (uint)J_GRAPHIC_DEVICE_TYPE::COUNT; ++i)
+			Clear((J_GRAPHIC_DEVICE_TYPE)i);
+	}
+	void JGraphicAdapter::Initialize(JCommandContextManager* manager, const J_GRAPHIC_DEVICE_TYPE deviceType)
+	{
+		if (!IsSameDevice(deviceType))
+			return;
+
+		GetAdaptee(deviceType)->Initialize(manager);
+	}
+	void JGraphicAdapter::Clear(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	{
+		if (!IsSameDevice(deviceType))
+			return;
+
+		GetAdaptee(deviceType)->Clear();
+	}
 	void JGraphicAdapter::AddAdaptee(std::unique_ptr<JGraphicAdaptee>&& newAdaptee)
 	{
 		if (newAdaptee != nullptr)
@@ -23,100 +53,61 @@ namespace JinEngine::Graphic
 			adaptee[index] = std::move(newAdaptee);
 		}
 	}
-	std::unique_ptr<JGraphicDevice> JGraphicAdapter::CreateDevice(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	std::unique_ptr<JGraphicDevice> JGraphicAdapter::CreateDevice(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData)
 	{
 		if (!IsSameDevice(deviceType))
 			return nullptr;
  
-		return GetAdaptee(deviceType)->CreateDevice();
+		return GetAdaptee(deviceType)->CreateDevice(shareData);
 	}
-	std::unique_ptr<JGraphicResourceManager> JGraphicAdapter::CreateGraphicResourceManager(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	void JGraphicAdapter::CreateResourceManageSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set)
 	{
 		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateGraphicResourceManager();
-	}
-	std::unique_ptr<JCullingManager> JGraphicAdapter::CreateCullingManager(const J_GRAPHIC_DEVICE_TYPE deviceType)
-	{
-		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateCullingManager();
-	}
-	bool JGraphicAdapter::CreateFrameResource(const J_GRAPHIC_DEVICE_TYPE deviceType, _Out_ std::unique_ptr<JFrameResource> (&frame)[Constants::gNumFrameResources])
-	{
-		if (!IsSameDevice(deviceType))
-			return false;
+			return;
 
-		GetAdaptee(deviceType)->CreateFrameResource(frame);
-		bool isSuccess = true;
-		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-			isSuccess = isSuccess && frame[i] != nullptr;
-		return isSuccess;
+		GetAdaptee(deviceType)->CreateResourceManageSubclass(shareData, set);
 	}
-	std::unique_ptr<JGraphicDebug> JGraphicAdapter::CreateDebug(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	void JGraphicAdapter::CreateDrawSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set)
 	{
 		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateDebug();
+			return;
+
+		GetAdaptee(deviceType)->CreateDrawSubclass(shareData, set);
 	}
-	std::unique_ptr<JDepthTest> JGraphicAdapter::CreateDepthTest(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	void JGraphicAdapter::CreateCullingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set)
 	{
 		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateDepthTest();
+			return;
+
+		GetAdaptee(deviceType)->CreateCullingSubclass(shareData, set);
 	}
-	std::unique_ptr<JShadowMap> JGraphicAdapter::CreateShadowMapDraw(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	void JGraphicAdapter::CreateImageProcessingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set)
 	{
 		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateShadowMapDraw();
+			return;
+
+		GetAdaptee(deviceType)->CreateImageProcessingSubclass(shareData, set);
 	}
-	std::unique_ptr<JSceneDraw> JGraphicAdapter::CreateSceneDraw(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	void JGraphicAdapter::CreateRaytracingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set)
 	{
 		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateSceneDraw();
+			return;
+
+		GetAdaptee(deviceType)->CreateRaytracingSubclass(shareData, set);
 	}
-	std::unique_ptr<JHardwareOccCulling> JGraphicAdapter::CreateHdOcc(const J_GRAPHIC_DEVICE_TYPE deviceType)
-	{
-		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateHdOcc();
-	}
-	std::unique_ptr<JHZBOccCulling> JGraphicAdapter::CreateHzbOcc(const J_GRAPHIC_DEVICE_TYPE deviceType)
-	{
-		if (!IsSameDevice(deviceType))
-			return nullptr;
- 
-		return GetAdaptee(deviceType)->CreateHzbOcc();
-	}
-	std::unique_ptr<JLightCulling> JGraphicAdapter::CreateLightCulling(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	std::unique_ptr<JGraphicInfoChangedSet> JGraphicAdapter::CreateInfoChangedSet(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicInfo& preInfo, const JGraphicDrawReferenceSet& drawRefSet)
 	{
 		if (!IsSameDevice(deviceType))
 			return nullptr;
 
-		return GetAdaptee(deviceType)->CreateLightCulling();
+		return GetAdaptee(deviceType)->CreateInfoChangedSet(preInfo, drawRefSet);
 	}
-	std::unique_ptr<JOutline> JGraphicAdapter::CreateOutlineDraw(const J_GRAPHIC_DEVICE_TYPE deviceType)
-	{
-		if (!IsSameDevice(deviceType))
-			return nullptr;
-		 
-		return GetAdaptee(deviceType)->CreateOutlineDraw();
-	}  
-	std::unique_ptr<JImageProcessing> JGraphicAdapter::CreateImageProcessing(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	std::unique_ptr<JGraphicOptionChangedSet> JGraphicAdapter::CreateOptionChangedSet(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicOption& preOption, const JGraphicDrawReferenceSet& drawRefSet)
 	{
 		if (!IsSameDevice(deviceType))
 			return nullptr;
 
-		return GetAdaptee(deviceType)->CreateImageProcessing();
+		return GetAdaptee(deviceType)->CreateOptionChangedSet(preOption, drawRefSet);
 	}
 	void JGraphicAdapter::BeginUpdateStart(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet)
 	{
@@ -244,41 +235,48 @@ namespace JinEngine::Graphic
 
 		GetAdaptee(deviceType)->ExecuteDrawSceneTask(drawRefSet);
 	}
-	bool JGraphicAdapter::SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
-		const JGraphicDrawReferenceSet& drawRefSet,
-		const ResourceHandle from,
-		const ResourceHandle to,
-		std::unique_ptr<JBlurDesc>&& desc,
-		_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet)
+	bool JGraphicAdapter::BeginBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicBlurTaskSettingSet& set)
 	{
 		if (!IsSameDevice(deviceType))
 			return false;
 
-		GetAdaptee(deviceType)->SettingBlurTask(drawRefSet, from, to, std::move(desc), dataSet);
+		return GetAdaptee(deviceType)->BeginBlurTask(drawRefSet, set);
 	}
-	bool JGraphicAdapter::SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
-		const JGraphicDrawReferenceSet& drawRefSet,
-		const JUserPtr<JGraphicResourceInfo>& info,
-		std::unique_ptr<JBlurDesc>&& desc,
-		_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet)
+	void JGraphicAdapter::EndBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet)
 	{
 		if (!IsSameDevice(deviceType))
-			return false;
+			return;
 
-		GetAdaptee(deviceType)->SettingBlurTask(drawRefSet, info, std::move(desc), dataSet);
+		GetAdaptee(deviceType)->EndBlurTask(drawRefSet);
 	}
-	bool JGraphicAdapter::SettingMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
-		const JGraphicDrawReferenceSet& drawRefSet,
-		const JUserPtr<JGraphicResourceInfo>& srcInfo,
-		const JUserPtr<JGraphicResourceInfo>& modInfo,
-		std::unique_ptr<JDownSampleDesc>&& desc,
-		_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet)
+	bool JGraphicAdapter::BeginMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicMipmapGenerationSettingSet& set)
 	{
 		if (!IsSameDevice(deviceType))
 			return false;
 
-		return GetAdaptee(deviceType)->SettingMipmapGenerationTask(drawRefSet, srcInfo, modInfo, std::move(desc), dataSet);
+		return GetAdaptee(deviceType)->BeginMipmapGenerationTask(drawRefSet, set);
+	}
+	void JGraphicAdapter::EndMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet)
+	{
+		if (!IsSameDevice(deviceType))
+			return;
+
+		GetAdaptee(deviceType)->EndMipmapGenerationTask(drawRefSet);
 	} 
+	bool JGraphicAdapter::BeginConvertColorTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicConvetColorSettingSet& set)
+	{
+		if (!IsSameDevice(deviceType))
+			return false;
+
+		return GetAdaptee(deviceType)->BeginConvertColorTask(drawRefSet, set);
+	}
+	void JGraphicAdapter::EndConvertColorTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet)
+	{
+		if (!IsSameDevice(deviceType))
+			return;
+
+		GetAdaptee(deviceType)->EndConvertColorTask(drawRefSet);
+	}
 	JGraphicAdaptee* JGraphicAdapter::GetAdaptee(const J_GRAPHIC_DEVICE_TYPE deviceType)
 	{
 		return adaptee[(uint)deviceType].get();

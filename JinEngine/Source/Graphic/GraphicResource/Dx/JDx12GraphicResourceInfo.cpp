@@ -1,12 +1,11 @@
 #include"JDx12GraphicResourceInfo.h"
-#include"JDx12GraphicResourceHolder.h"   
-
+#include"JDx12GraphicResourceHolder.h"     
 namespace JinEngine::Graphic
 {
 	namespace Private
-	{ 
+	{
 	}
-	 
+
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceInfo::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
@@ -19,16 +18,32 @@ namespace JinEngine::Graphic
 	{
 		return resourceHolder->GetHeight();
 	}
+	uint JDx12GraphicResourceInfo::GetElementCount()const noexcept
+	{
+		return resourceHolder->GetElementCount();
+	}
+	uint JDx12GraphicResourceInfo::GetElementSize()const noexcept
+	{
+		return resourceHolder->GetElementSize();
+	}
 	uint JDx12GraphicResourceInfo::GetMipmapCount()const noexcept
 	{
 		return resourceHolder->GetResource()->GetDesc().MipLevels;
 	}
+	J_GRAPHIC_RESOURCE_FORMAT JDx12GraphicResourceInfo::GetFormat()const noexcept
+	{
+		return resourceHolder->GetEngineFormat();
+	}
+	JVector2<uint>JDx12GraphicResourceInfo::GetResourceSize()const noexcept
+	{
+		return resourceHolder->GetResourceSize();
+	}
 	ResourceHandle JDx12GraphicResourceInfo::GetResourceGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex)const noexcept
-	{  
+	{
 		if (GetViewCount(bindType) <= bIndex)
 			return nullptr;
-		 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = getHandlePtr(manager, bindType, GetHeapIndexStart(bindType) + bIndex);
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = getGpuHandlePtr(manager, bindType, GetHeapIndexStart(bindType) + bIndex);
 		//cast uint64 to void*
 		//void*는 uint64주소가 아니라 값으로 채워진다.
 		return (ResourceHandle)handle.ptr;
@@ -38,7 +53,7 @@ namespace JinEngine::Graphic
 		if (GetOptionViewCount(bindType, opType) <= bIndex)
 			return nullptr;
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = getHandlePtr(manager, bindType, GetOptionHeapIndexStart(bindType, opType) + bIndex);
+		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = getGpuHandlePtr(manager, bindType, GetOptionHeapIndexStart(bindType, opType) + bIndex);
 		//cast uint64 to void*
 		//void*는 uint64주소가 아니라 값으로 채워진다.
 		return (ResourceHandle)handle.ptr;
@@ -84,15 +99,15 @@ namespace JinEngine::Graphic
 	bool JDx12GraphicResourceInfo::HasOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
 	{
 		return optionHolderSet != nullptr && optionHolderSet->holder[(uint)opType] != nullptr;
-	} 
-	JDx12GraphicResourceInfo::JDx12GraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
+	}
+	JDx12GraphicResourceInfo::JDx12GraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType,
 		JDx12GraphicResourceManager* manager,
-		std::unique_ptr<JDx12GraphicResourceHolder>&& resourceHolder,
-		GetHandlePtr getHandlePtr)
+		std::unique_ptr<JDx12GraphicResourceHolder>&& resourceHolder, 
+		GetGpuHandlePtr getGpuHandlePtr)
 		:JGraphicResourceInfo(graphicResourceType),
-		manager(manager), 
-		resourceHolder(std::move(resourceHolder)),
-		getHandlePtr(getHandlePtr)
+		manager(manager),
+		resourceHolder(std::move(resourceHolder)), 
+		getGpuHandlePtr(getGpuHandlePtr)
 	{
 	}
 	JDx12GraphicResourceInfo::~JDx12GraphicResourceInfo()
@@ -100,8 +115,8 @@ namespace JinEngine::Graphic
 		resourceHolder = nullptr;
 		if (optionHolderSet != nullptr)
 		{
-			for (auto& data : optionHolderSet->holder)
-				data = nullptr;
+			for (uint i = 0; i < SIZE_OF_ARRAY(optionHolderSet->holder); ++i)
+				optionHolderSet->holder[i] = nullptr;		 
 			optionHolderSet = nullptr;
 		}
 	}

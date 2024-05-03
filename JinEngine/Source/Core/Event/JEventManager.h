@@ -5,7 +5,7 @@
 //#include"../Func/Callable/JCallable.h"
 #include<unordered_map>
 #include<vector>   
- 
+  
 namespace JinEngine
 {
 	namespace Core
@@ -56,7 +56,7 @@ namespace JinEngine
 			public:
 				std::unique_ptr<OnEventFunctor> onEvent;
 				IdentifierType iden;
-				uint listenEventCount = 0;
+				int listenEventCount = 0;
 				bool isValid = true;
 			public:
 				ListenerInfo(OnEventPtr ptr, Listener* listener, IdentifierType iden)
@@ -138,6 +138,8 @@ namespace JinEngine
 				for (uint i = 0; i < binderVecCount; ++i)
 					eventBinderVec[i]->InvokeCompletelyBind();
 
+				//eventBinderVec에서 새로운 event를 add할수 있으므로
+				//Clear는 하지않는다.
 				uint invokeEndCount = binderVecCount;
 				uint nowVecCount = eventBinderVec.size(); 
 				while (invokeEndCount < nowVecCount)
@@ -199,7 +201,7 @@ namespace JinEngine
 							return false;
 					}
 				}
-
+				 
 				vec->second.push_back(listenerData->second.get());
 				++listenerData->second->listenEventCount;
 				return true;
@@ -221,7 +223,7 @@ namespace JinEngine
 						{
 							--vec->second[i]->listenEventCount;
 							vec->second.erase(vec->second.begin() + i);
-							if (vec->second[i]->listenEventCount == 0)
+							if (vec->second[i]->listenEventCount <= 0)
 								listenerDic.erase(iden);
 							return;
 						}

@@ -7,6 +7,7 @@
 #include"../Core/Exception/JException.h"
 #include"../Core/Singleton/JSingletonHolder.h" 
 #include"../Core/Utility/JCommonUtility.h" 
+#include"../Core/Log/JLogMacro.h"
 #include"../../resource.h"
 #include"../../ThirdParty/imgui/imgui.h"
 #include<tchar.h>
@@ -25,24 +26,49 @@ namespace JinEngine
 	{
 #define WIND_CLASS_NAME L"JinEngineClass"
 #define UM_CHECKSTATECHANGE (WM_USER + 100)
-
-		namespace
-		{
-			static constexpr float minWindowRate = 0.35f;
-		}
+		 
 		using WindowCloseConfirmF = JWindowPrivate::MainAccess::CloseConfirmF;
 		class JWindowImpl : public Core::JEventManager<size_t, J_WINDOW_EVENT>
 		{
+		private:
+			struct JRECT : public RECT
+			{
+			public:
+				JRECT() = default;
+				JRECT(const RECT& rhs) 
+				{ 
+					left = rhs.left;
+					right = rhs.right;
+					top = rhs.top;
+					bottom = rhs.bottom;
+				}
+				RECT& operator=(const RECT& rhs)
+				{
+					left = rhs.left;
+					right = rhs.right;
+					top = rhs.top;
+					bottom = rhs.bottom;
+					return *this;
+				}
+				bool operator==(const RECT& rhs)
+				{ 
+					return left == rhs.left && top == rhs.top && right == rhs.right && bottom == rhs.bottom;
+				}
+			};
 		public:
 			const size_t guid;
 			//JInputManager inputManager;
 			WNDCLASSEX wc;
 			HINSTANCE hInst;
-			RECT displayRect;
-			RECT preWindowRect;
-			RECT preClinetRect;
+			JRECT displayRect;
+			JRECT preWindowRect;
+			JRECT preClinetRect;
 			HWND hwnd;
 			bool enableCursor = true;
+		private: 
+			bool isActivated = false;
+			bool isMinimize = false;
+			static constexpr float minWindowRate = 0.55f;
 		public:
 			std::unique_ptr<WindowCloseConfirmF> closeConfirmF;
 		public:
@@ -120,9 +146,24 @@ namespace JinEngine
 					return defaultFrequency;
 			}
 		public:
+			void SetDisplayInfo()
+			{
+				MONITORINFOEX monitorInfo;
+				monitorInfo.cbSize = sizeof(MONITORINFOEX);
+
+				// 현재 프라이머리 모니터의 정보 가져오기
+				if (GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &monitorInfo))
+					displayRect = monitorInfo.rcWork;
+				NotifyEvent(guid, J_WINDOW_EVENT::DISPLAY_RESOULTION_CHANGE);
+			}
+		public:
 			bool IsFullScreen()const noexcept
 			{
 				return IsZoomed(hwnd);
+			}
+			bool IsActivated()const noexcept
+			{
+				return isActivated;
 			}
 			bool HasStorageSpace(const std::wstring& dirPath, size_t capacity)const noexcept
 			{
@@ -240,7 +281,7 @@ namespace JinEngine
 				hwnd = CreateWindowEx(
 					WS_EX_ACCEPTFILES,
 					WIND_CLASS_NAME, ENGINE_WNAME,
-					WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+					WS_OVERLAPPED | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX,
 					windowX, windowY, windowWidth, windowHeight,
 					nullptr, nullptr, hInst, this);
 
@@ -260,7 +301,8 @@ namespace JinEngine
 				rid.hwndTarget = nullptr;
 
 				SetDisplayInfo();
-				ThrowIfFailedW(RegisterRawInputDevices(&rid, 1, sizeof(rid)))
+				ThrowIfFailedW(RegisterRawInputDevices(&rid, 1, sizeof(rid)));
+				isActivated = true;
 			}
 			void OpenEngineWindow()
 			{
@@ -312,6 +354,7 @@ namespace JinEngine
 
 				SetDisplayInfo();
 				ThrowIfFailedW(RegisterRawInputDevices(&rid, 1, sizeof(rid)));
+				isActivated = true;
 			}
 			void CloseWindow()
 			{
@@ -325,13 +368,13 @@ namespace JinEngine
 			{
 				MSG msg = { 0 };
 				while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-				{
+				{ 
 					if (msg.message == WM_QUIT)
 						return (int)msg.wParam;
 					// TranslateMessage will post auxilliary WM_CHAR messages from key msgs
 					TranslateMessage(&msg);
 					DispatchMessage(&msg);
-				}
+				} 
 				return {};
 			}
 			void RegisterWindowClass()
@@ -351,36 +394,33 @@ namespace JinEngine
 				wc.cbClsExtra = 0;
 				wc.cbWndExtra = 0;
 				wc.hInstance = hInst;
-				wc.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
-				//wc.hIconSm = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON2));
+				wc.hIcon = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
+				wc.hIconSm = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 				wc.hCursor = nullptr;
 				wc.hbrBackground = (HBRUSH)3;
 				wc.lpszMenuName = nullptr;
 				wc.lpszClassName = WIND_CLASS_NAME;
 
 				if (!RegisterClassEx(&wc))
-				{
-					MessageBox(NULL, L"JWindow Registration Failed!", L"Error!",
-						MB_ICONEXCLAMATION | MB_OK);
-				}
+					J_LOG_PRINT_OUT("JWindow Registration Failed", "");
 			}
-		public:
-			void SetDisplayInfo()
-			{
-				MONITORINFOEX monitorInfo;
-				monitorInfo.cbSize = sizeof(MONITORINFOEX);
-
-				// 현재 프라이머리 모니터의 정보 가져오기
-				if (GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &monitorInfo))
-					displayRect = monitorInfo.rcWork;
-			}
+		public: 
 			void Resize(WPARAM wParam)
 			{
+				JRECT preWindowRectCahce = preWindowRect;
+				JRECT preClinetRectCache = preClinetRect;
+
 				GetWindowRect(hwnd, &preWindowRect);
 				GetClientRect(hwnd, &preClinetRect);
+				 
+				//if (preWindowRectCahce == preWindowRect && preClinetRectCache == preClinetRect)
+				//	return;
 
 				if (wParam != SIZE_MINIMIZED)
+				{
+					OutputDebugString(L"Resize\n");
 					NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_RESIZE);
+				}
 			}
 			void Move()
 			{
@@ -388,6 +428,39 @@ namespace JinEngine
 				GetClientRect(hwnd, &preClinetRect);
 
 				NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_MOVE);
+			}
+		public:
+			void Activate()
+			{
+				//window가 minimize상태가 아닌 상태에 Acivate메세지를 받았을시 활성화시킨다.
+				if (isActivated || isMinimize)
+					return;
+
+				//OutputDebugString(L"Act\n");
+				isActivated = true;
+				NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_ACTIVATE);  
+			}
+			void DeActivate()
+			{
+				//window가 minimize메세지를 받거나 DeActivate메세지를 받았을시 비활성화시킨다.
+				if (!isActivated)
+					return;
+
+				//OutputDebugString(L"DeAct\n");
+				isActivated = false;
+				NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_DEACTIVATE);
+			}
+			void Restore()
+			{
+				//Caching state
+				isMinimize = false;
+				Activate();
+			}
+			void Minimize()
+			{	
+				//Caching state
+				isMinimize = true;
+				DeActivate();
 			}
 		public:
 			static LRESULT CALLBACK HandleMsgSetup(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
@@ -416,7 +489,7 @@ namespace JinEngine
 			return DefWindowProc(hwnd, msg, wParam, lParam);
 		}
 		LRESULT CALLBACK JWindowImpl::HandleMsgThunk(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
-		{
+		{  
 			JWindowImpl* const pWnd = reinterpret_cast<JWindowImpl*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			// forward message to window instance handler
 			return pWnd->HandleMsg(hwnd, msg, wParam, lParam);
@@ -428,7 +501,7 @@ namespace JinEngine
 
 			//if (inputManager.HasUpkey())
 				//inputManager.ReleaseUpKey()
-
+ 
 			switch (msg)
 			{
 			case WM_CLOSE:
@@ -446,6 +519,14 @@ namespace JinEngine
 				break;
 				//return 0;
 			}
+			case WM_SYSCOMMAND:
+			{ 
+				if (wParam == SC_RESTORE)
+					Impl::Instance().Restore();
+				else if (wParam == SC_MINIMIZE)
+					Impl::Instance().Minimize();
+				break;
+			} 
 			case WM_MDIMAXIMIZE:
 			{
 				HMONITOR hmon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -453,7 +534,7 @@ namespace JinEngine
 				moninfo.cbSize = sizeof(moninfo);
 				GetMonitorInfo(hmon, &moninfo);
 
-				SetWindowPos(hwnd, 0, moninfo.rcWork.left, moninfo.rcWork.top,
+				SetWindowPos(hwnd, 0, moninfo.rcWork.left, moninfo.rcWork.top, 
 					moninfo.rcWork.right, moninfo.rcWork.bottom, SWP_NOZORDER);
 
 				Impl::Instance().Resize(wParam);
@@ -465,7 +546,7 @@ namespace JinEngine
 				int newHeight = ((RECT*)lParam)->bottom - ((RECT*)lParam)->top;
 				JVector2F minSize = Impl::Instance().GetMinSize(); 
 
-				if (newWidth <= minSize.x || newHeight <= minSize.y)
+				if ((newWidth <= minSize.x || newHeight <= minSize.y) && Impl::Instance().isActivated)
 				{
 					RECT preWindowRect = Impl::Instance().GetPreWindowR();
 					((RECT*)lParam)->left = preWindowRect.left;
@@ -480,15 +561,13 @@ namespace JinEngine
 					((RECT*)lParam)->right = preWindowRect.right;
 					((RECT*)lParam)->top = preWindowRect.top;
 					((RECT*)lParam)->bottom = preWindowRect.bottom;
-				}*/
+				}*/ 
 				break;
-				//return TRUE;
 			}
 			case WM_SIZE:
-			{
+			{  
 				Impl::Instance().Resize(wParam);
 				break;
-				//return 0;
 			}
 			case WM_MOVE:
 			{
@@ -510,16 +589,29 @@ namespace JinEngine
 				//inputManager.UpKey(wParam);
 				break;			 
 			case WM_SETFOCUS:
-			{ 
+			{  		 
 				break;
 			}
 			case WM_KILLFOCUS:
-			{ 
+			{ 	
 				break;
 			}
+			case WM_ENABLE:
+			{
+				break;
+			} 
 			case WM_DISPLAYCHANGE:
 			{
 				Impl::Instance().SetDisplayInfo();
+				Impl::Instance().Resize(wParam);
+				break;
+			}
+			case WM_ACTIVATEAPP:
+			{
+				if (wParam)
+					Impl::Instance().Activate();
+				else  
+					Impl::Instance().DeActivate();
 				break;
 			}
 			}
@@ -577,6 +669,10 @@ namespace JinEngine
 		bool JWindow::IsFullScreen()noexcept
 		{
 			return Impl::Instance().IsFullScreen();
+		}
+		bool JWindow::IsActivated()noexcept
+		{
+			return Impl::Instance().IsActivated();
 		}
 		bool JWindow::HasStorageSpace(const std::wstring& dirPath, size_t capacity)noexcept
 		{

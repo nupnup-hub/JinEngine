@@ -1,9 +1,9 @@
 #pragma once  
-#include"../JResourceObject.h"   
-#include"../Shader/JShaderEnum.h"
-#include"../Shader/JShaderCondition.h" 
+#include"../JResourceObject.h"    
+#include"../../../Graphic/Shader/JShaderType.h"
 #include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
 #include"../../../Core/Math/JMatrix.h"
+#include"../../../Core/Geometry/Mesh/JMaterialProperty.h"
 
 namespace JinEngine
 { 
@@ -13,8 +13,7 @@ namespace JinEngine
 	class JMaterial : public JResourceObject, 
 		public Graphic::JFrameUpdateUserAccess
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JMaterial)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JMaterial) 
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{
@@ -47,6 +46,7 @@ namespace JinEngine
 		JShader* GetRawShader()const noexcept;
 		float GetMetallic() const noexcept;
 		float GetRoughness() const noexcept;
+		float GetSpecularFactor() const noexcept;
 		JVector4<float> GetAlbedoColor() const noexcept;
 		JMatrix4x4 GetMatTransform() const noexcept;
 		JUserPtr<JTexture> GetAlbedoMap() const noexcept;
@@ -55,15 +55,18 @@ namespace JinEngine
 		JUserPtr<JTexture> GetMetallicMap() const noexcept;
 		JUserPtr<JTexture> GetRoughnessMap() const noexcept;
 		JUserPtr<JTexture> GetAmbientOcclusionMap() const noexcept;
-		JShaderCondition GetShaderCondition()const noexcept;
+		JUserPtr<JTexture> GetSpecularMap() const noexcept;
+		JGraphicShaderCondition GetShaderCondition()const noexcept;
 		J_SHADER_PRIMITIVE_TYPE GetPrimitiveType()const noexcept;
 		J_SHADER_DEPTH_COMPARISON_FUNC GetDepthCompasionFunc()const noexcept;
 	public:
 		void SetMetallic(const float value) noexcept;
 		void SetRoughness(const float value) noexcept;
+		void SetSpecularFactor(const float value) noexcept;
 		void SetAlbedoColor(const JVector4<float>& value) noexcept;
 		void SetMatTransform(const JMatrix4x4& value) noexcept;
 		void SetAlbedoMap(JUserPtr<JTexture> texture) noexcept;
+		void SetSpecularMap(JUserPtr<JTexture> texture) noexcept;
 		void SetNormalMap(JUserPtr<JTexture>texture) noexcept;
 		void SetHeightMap(JUserPtr<JTexture> texture) noexcept;
 		void SetMetallicMap(JUserPtr<JTexture> texture) noexcept;
@@ -86,7 +89,9 @@ namespace JinEngine
 		bool IsFrameDirted()const noexcept final;
 		bool IsSkyMaterial()const noexcept;
 		bool IsDebugMaterial()const noexcept; 
+		bool IsSame(const Core::JMaterialParameter& param)const noexcept;
 		bool HasAlbedoMapTexture() const noexcept;
+		bool HasSpecularMapTexture() const noexcept;
 		bool HasNormalMapTexture() const noexcept;
 		bool HasHeightMapTexture() const noexcept;
 		bool HasRoughnessMapTexture() const noexcept;

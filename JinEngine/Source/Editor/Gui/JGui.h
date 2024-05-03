@@ -1,6 +1,7 @@
 #pragma once
 #include"JGuiType.h"  
 #include"JGuiWindow.h"
+#include"../DragAndDrop/JDragDropData.h"
 #include"../Align/JEditorAlignType.h" 
 #include"../EditTool/JEditorInputBuffHelper.h"
 #include"../Page/JEditorPageEnum.h"
@@ -8,6 +9,7 @@
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Reflection/JGuiWidgetType.h"
 #include"../../Core/Utility/JCommonUtility.h"
+#include"../../Core/Unit/JManagedVariable.h"
 #include"../../Core/Reflection/JReflection.h"
 #include"../../Core/Input/JMouse.h"
 #include"../../Core/Input/JKeyboard.h"
@@ -26,6 +28,7 @@ namespace JinEngine
 		class JEditorManager;
 		class JDockUpdateHelper;
 		class JGuiBehaviorAdapter; 
+
 		class JGui
 		{
 #pragma region JIdentifier
@@ -153,11 +156,12 @@ namespace JinEngine
 			static bool IsKeyDown(const Core::J_KEYCODE key)noexcept;
 		public:
 			static bool BeginDragDropSource(J_GUI_DRAG_DROP_FLAG_ flag = J_GUI_DRAG_DROP_FLAG_NONE);
-			static bool SetDragDropPayload(const std::string& typeName, Core::JTypeInstanceSearchHint* draggingHint, J_GUI_CONDIITON cond = J_GUI_CONDIITON::J_GUI_CONDIITON_NONE);
+			static bool SetDragDropPayload(const std::string& typeName, JDragDropData* draggingHint, J_GUI_CONDIITON cond = J_GUI_CONDIITON::J_GUI_CONDIITON_NONE);
 			static void EndDragDropSource();
 			static bool BeginDragDropTarget();
-			static Core::JTypeInstanceSearchHint* TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag = J_GUI_DRAG_DROP_FLAG_NONE);
+			static JDragDropData* TryGetTypeHintDragDropPayload(const std::string& typeName, J_GUI_DRAG_DROP_FLAG_ flag = J_GUI_DRAG_DROP_FLAG_NONE);
 			static void EndDragDropTarget();
+			static bool IsDragDropActivated();
 #pragma endregion
 #pragma region Widget
 		public:
@@ -201,16 +205,21 @@ namespace JinEngine
 			static bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags); 
 			static bool TreeNodeEx(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags = J_GUI_TREE_NODE_FLAG_NONE);
 			static void TreePop();
-			static bool Selectable(const std::string& name, bool* pSelected = nullptr, J_GUI_SELECTABLE_FLAG_ flags = J_GUI_SELECTABLE_FLAG_NONE, const JVector2<float>& sizeArg = { 0,0 });
-			static bool Selectable(const std::string& name, bool selected, J_GUI_SELECTABLE_FLAG_ flags = J_GUI_SELECTABLE_FLAG_NONE, const JVector2<float>& sizeArg = { 0,0 });
+			static bool Selectable(const std::string& name, bool* pSelected = nullptr, J_GUI_SELECTABLE_FLAG_ flags = J_GUI_SELECTABLE_FLAG_NONE, const JVector2F sizeArg = JVector2F::Zero());
+			static bool Selectable(const std::string& name, bool selected, J_GUI_SELECTABLE_FLAG_ flags = J_GUI_SELECTABLE_FLAG_NONE, const JVector2F sizeArg = JVector2F::Zero());
 			static bool InputText(const std::string& name, std::string& buff, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputText(const std::string& name, std::string& buff, const size_t size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 2);
-			static bool InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 2);
+			static bool InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, uint step = 1, uint inputWidthRate = 2);
+			static bool InputIntClamp(const std::string& name, int* value, const int minV, const int maxV, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 2);
+			static bool InputIntClamp(const std::string& name, uint* value, const uint minV, const uint maxV, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, uint step = 1, uint inputWidthRate = 2);
+			static bool InputIntClamp(const std::string& name, Core::JRestrictedRangeVar<int>& value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 2);
+			static bool InputIntClamp(const std::string& name, Core::JRestrictedRangeVar<uint>& value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, uint step = 1, uint inputWidthRate = 2);
 			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f, uint inputWidthRate = 1); 
 			static bool InputFloatClamp(const std::string& name, float* value, const float minV, const float maxV, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f, uint inputWidthRate = 1);
+			static bool InputFloatClamp(const std::string& name, Core::JRestrictedRangeVar<float>& value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f, uint inputWidthRate = 1);
 		public:
 			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 			static bool SliderInt(const std::string& name, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
@@ -242,6 +251,11 @@ namespace JinEngine
 			static bool MenuItem(const std::string& name, const std::string& shortcut, bool selected, bool enabled);
 		public:
 			static bool BeginCombo(const std::string& name, const std::string& preview, J_GUI_COMBO_FLAG_ flags = J_GUI_COMBO_FLAG_NONE);
+			static bool BeginComboEx(const std::string& name, 
+				const std::string& preview, 
+				J_GUI_COMBO_FLAG_ flags = J_GUI_COMBO_FLAG_NONE, 
+				J_GUI_CARDINAL_DIR initDir = J_GUI_CARDINAL_DIR::DOWN,
+				J_GUI_CARDINAL_DIR activateDir = J_GUI_CARDINAL_DIR::DOWN);
 			static void EndCombo();
 		public:
 			static bool BeginListBox(const std::string& name, const JVector2<float> size = { 0,0 });
@@ -253,6 +267,10 @@ namespace JinEngine
 			static void Tooltip(const float value, const int range = 2, const float fontScale = 0.8f)noexcept;
 		public:
 			//Image  
+			//주의!
+			//Image handle을 이용해 gui를 호출한뒤 해당 handle에 사양을 변경하면
+			//잘못된 image 참조 및 오류가 발생할수있음.
+			//종속성이 있는 값들에 대한 호출을 image 호출전에 하도록하자
 			static void InvalidImage(const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
@@ -495,7 +513,7 @@ namespace JinEngine
 			static void PopItemWidth()noexcept;
 		public:
 			//util 
-			static float GetSliderRightAlignPosX(bool hasScrollbar = false)noexcept;
+			static float GetSliderRightAlignPosX(float width = GetSliderWidth(), bool hasScrollbar = false)noexcept;
 			static float GetSliderWidth()noexcept; 
 		public:
 			static bool IsFullScreen()noexcept;
@@ -503,10 +521,11 @@ namespace JinEngine
 			static bool IsEnableSelector()noexcept;
 		public:
 			//Widget Set  
-			static void ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<std::string>& strVec);
+			static bool ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<std::string>& strVec);
 			template<typename Object, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Object>, int> = 0>
-			static void ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<Object*>& objVec)
+			static bool ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<Object*>& objVec)
 			{
+				bool isOpen = false;
 				if (BeginCombo(uniqueLabel, JCUtil::WstrToU8Str(objVec[selectedIndex]->GetName()), J_GUI_COMBO_FLAG_HEIGHT_LARGE))
 				{
 					const uint count = (uint)objVec.size();
@@ -519,12 +538,18 @@ namespace JinEngine
 							SetLastItemDefaultFocus();
 					}
 					EndCombo();
+					isOpen = true;
 				}
+				return isOpen;
 			}
 			template<typename EnumType>
-			static void ComboEnumSet(const std::string& uniqueLabel, int& selectedIndex)
+			static bool ComboEnumSet(const std::string& uniqueLabel, int& selectedIndex)
 			{
+				bool isOpen = false;
 				Core::JEnumInfo* enumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(EnumType).name());
+				if (enumInfo == nullptr)
+					return false;
+
 				if (BeginCombo(uniqueLabel, enumInfo->ElementName(enumInfo->EnumValue(selectedIndex)), J_GUI_COMBO_FLAG_HEIGHT_LARGE))
 				{
 					const uint enumCount = enumInfo->GetEnumCount();
@@ -537,7 +562,9 @@ namespace JinEngine
 							SetLastItemDefaultFocus();
 					}
 					EndCombo();
+					isOpen = true;
 				}
+				return isOpen;
 			}
 			//Widget Set
 			//Support Redo undo transition

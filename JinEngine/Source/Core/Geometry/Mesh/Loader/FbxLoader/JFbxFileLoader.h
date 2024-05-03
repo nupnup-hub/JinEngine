@@ -20,7 +20,7 @@ namespace JinEngine
 			struct FbxFileTypeInfo
 			{
 			public:
-				J_FBXRESULT typeInfo = J_FBXRESULT::FAIL;
+				J_FBX_RESULT typeInfo = J_FBX_RESULT_FAIL;
 				std::string meshRootName;
 				std::string skeletonRootName;
 				std::string animName; 
@@ -59,9 +59,9 @@ namespace JinEngine
 			int num = 0;
 		public:
 			~JFbxFileLoader();
-			J_FBXRESULT LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup, JFbxMaterialMap& materialMap);
-			J_FBXRESULT LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, JFbxMaterialMap& materialMap);
-			J_FBXRESULT LoadFbxAnimationFile(const std::string& path, JFbxAnimationData& jfbxAniData);
+			J_FBX_RESULT LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup, JFbxMaterialMap& materialMap);
+			J_FBX_RESULT LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, JFbxMaterialMap& materialMap);
+			J_FBX_RESULT LoadFbxAnimationFile(const std::string& path, JFbxAnimationData& jfbxAniData);
 			FbxFileTypeInfo GetFileTypeInfo(const std::string& path);
 		private:
 			void GetMeshCount(FbxNode* node, uint& count, FbxFileTypeInfo& typeInfo);
@@ -77,7 +77,7 @@ namespace JinEngine
 			bool LoadBinormal(const FbxMesh* mesh, int controlPointIndex, int vertexCounter, DirectX::XMFLOAT3& outBiNormal);
 			bool LoadTangent(const FbxMesh* mesh, int controlPointIndex, int vertexCounter, DirectX::XMFLOAT4& outTangent);
 			void LoadSkinnedMeshInfo(FbxNode* node, JFbxSkeleton& skeleton);
-			J_FBXRESULT LoadAnimationClip(FbxScene* scene, FbxNode* node, JFbxSkeleton& skeleton, bool hasSkeleton, JFbxAnimationData& jfbxAniData);
+			J_FBX_RESULT LoadAnimationClip(FbxScene* scene, FbxNode* node, JFbxSkeleton& skeleton, bool hasSkeleton, JFbxAnimationData& jfbxAniData);
 			void LoadMaterial(FbxScene* scene);
 			bool LoadTexture(FbxProperty& prop, std::string& path);	
 		private:

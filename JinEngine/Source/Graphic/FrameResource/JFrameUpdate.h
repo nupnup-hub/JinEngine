@@ -74,6 +74,21 @@ namespace JinEngine
 			{
 				return uploadType;
 			}
+		protected:
+			void Register(const size_t areaGuid,
+				const ushort indexSize = 1,
+				const uint8 sortOrder = 255)
+			{
+				JFrameUpdateData::RegisterFrameData(uploadType, this, areaGuid, indexSize, sortOrder);
+			}
+			void DeRegister()
+			{
+				JFrameUpdateData::DeRegisterFrameData(uploadType, this);
+			}
+			void ReRegister()
+			{
+				JFrameUpdateData::ReRegisterFrameData(uploadType, this);
+			}
 		private:
 			virtual void UpdateFrame(Param... var)noexcept = 0;
 		};
@@ -806,12 +821,16 @@ namespace JinEngine
 			bool isLastUpdated = false;
 		public:
 			int GetFrameDirty()noexcept;
+		protected:
+			virtual int GetFrameDirtyMax()const noexcept;
+		public:
 			void SetFrameDirty()noexcept override;
 		public:
 			void SetLastFrameHotUpdatedTrigger(const bool value)noexcept;
 			void SetLastFrameUpdatedTrigger(const bool value)noexcept;
 		public:
 			bool IsFrameDirted()const noexcept final;
+			bool IsFrameHotDirted()const noexcept;
 			bool IsLastFrameHotUpdated()const noexcept;
 			bool IsLastFrameUpdated()const noexcept;
 		public:

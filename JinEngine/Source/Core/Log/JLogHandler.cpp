@@ -26,7 +26,19 @@ namespace JinEngine::Core
 
 		PrintOut(JLogBase(title, newContents));
 	}
-	 
+	void JLogPrintOut::JLogPrintOut::PrintOut(const std::wstring& file, 
+		const std::wstring& line,
+		const std::wstring& title, 
+		const std::wstring& contents)
+	{ 
+		std::wstring newContents;
+		newContents += L"File: " + file + L'\n';
+		newContents += L"Line: " + line + L'\n';
+		newContents += contents;
+
+		PrintOut(JLogBase(title, newContents));
+	}
+
 	namespace
 	{
 		static constexpr uint initCapacity = 50;

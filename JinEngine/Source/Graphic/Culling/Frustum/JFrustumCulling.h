@@ -1,4 +1,5 @@
 #pragma once 
+#include"../../JGraphicSubClassInterface.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
 #include<vector>
 
@@ -11,10 +12,12 @@ namespace JinEngine
 		class JGraphicDrawTarget;
 		class JCullingInfo;
 		class JSceneFrustumCullingRequestor;
-		struct JDrawHelper;
+		class JDrawHelper;
 
-		class JFrustumCulling
+		class JFrustumCulling : public JGraphicSubClassInterface
 		{ 
+		public:
+			~JFrustumCulling();
 		public:
 			void Initialize();
 			void Clear();

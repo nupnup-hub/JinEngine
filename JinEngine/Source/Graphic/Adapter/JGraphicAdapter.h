@@ -3,51 +3,35 @@
 #include"../JGraphicConstants.h"
 #include"../Device/JGraphicDeviceUser.h"
 #include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicIndirectDataSet.h"
 #include"../../Core/JCoreEssential.h"
 #include<memory>
 
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		//Resource manage
-		class JGraphicDevice;
-		class JGraphicResourceManager;
-		class JCullingManager;
-		class JFrameResource;
-
-		//Draw object
-		class JGraphicDebug;
-		class JDepthTest;
-		class JShadowMap;
-		class JSceneDraw;
-		class JHardwareOccCulling;
-		class JHZBOccCulling;
-		class JLightCulling;
-		class JOutline;
-		class JImageProcessing;
-
+	{   
 		class JGraphicAdapter
 		{
 		private:
 			std::unique_ptr<JGraphicAdaptee> adaptee[(uint)J_GRAPHIC_DEVICE_TYPE::COUNT]; 
 		public:
+			~JGraphicAdapter();
+		public:
+			void Initialize(JCommandContextManager* manager, const J_GRAPHIC_DEVICE_TYPE deviceType);
+			void Clear(const J_GRAPHIC_DEVICE_TYPE deviceType);
+		public:
 			void AddAdaptee(std::unique_ptr<JGraphicAdaptee>&& newAdaptee);
 		public:
-			std::unique_ptr<JGraphicDevice> CreateDevice(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JGraphicResourceManager> CreateGraphicResourceManager(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JCullingManager> CreateCullingManager(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			bool CreateFrameResource(const J_GRAPHIC_DEVICE_TYPE deviceType, _Out_ std::unique_ptr<JFrameResource>(&frame)[Constants::gNumFrameResources]);
+			std::unique_ptr<JGraphicDevice> CreateDevice(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData);
+			void CreateResourceManageSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set);
+			void CreateDrawSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set);
+			void CreateCullingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set);
+			void CreateImageProcessingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set);
+			void CreateRaytracingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set);
 		public:
-			std::unique_ptr<JGraphicDebug> CreateDebug(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JDepthTest> CreateDepthTest(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JShadowMap> CreateShadowMapDraw(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JSceneDraw> CreateSceneDraw(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JHardwareOccCulling> CreateHdOcc(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JHZBOccCulling> CreateHzbOcc(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JLightCulling> CreateLightCulling(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JOutline> CreateOutlineDraw(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JImageProcessing> CreateImageProcessing(const J_GRAPHIC_DEVICE_TYPE deviceType);
+			std::unique_ptr<JGraphicInfoChangedSet> CreateInfoChangedSet(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicInfo& preInfo, const JGraphicDrawReferenceSet& drawRefSet);
+			std::unique_ptr<JGraphicOptionChangedSet> CreateOptionChangedSet(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicOption& preOption, const JGraphicDrawReferenceSet& drawRefSet);
 		public:
 			//called after update wait
 			void BeginUpdateStart(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
@@ -77,27 +61,18 @@ namespace JinEngine
 			void ExecuteDrawSceneTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 			void ExecuteDrawShadowMapTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 		public:
-			//common 
+			//common task
+			//begin, mid, end... 등 frame step중에 호출하는 task가 아닌
+			//임의의 타이밍에 호출가능한 task함수
 			/**
 			* @brief Generate custom mipmap in modInfo and copy to srcInfo
-			*/ 
-			bool SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
-				const JGraphicDrawReferenceSet& drawRefSet,
-				const ResourceHandle from,
-				const ResourceHandle to,
-				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet);
-			bool SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
-				const JGraphicDrawReferenceSet& drawRefSet,
-				const JUserPtr<JGraphicResourceInfo>& info,
-				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet);
-			bool SettingMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType, 
-				const JGraphicDrawReferenceSet& drawRefSet,
-				const JUserPtr<JGraphicResourceInfo>& srcInfo,
-				const JUserPtr<JGraphicResourceInfo>& modInfo,
-				std::unique_ptr<JDownSampleDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet);
+			*/  
+			bool BeginBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicBlurTaskSettingSet& set);
+			void EndBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
+			bool BeginMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicMipmapGenerationSettingSet& set);
+			void EndMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
+			bool BeginConvertColorTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicConvetColorSettingSet& set);
+			void EndConvertColorTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 		private:
 			JGraphicAdaptee* GetAdaptee(const J_GRAPHIC_DEVICE_TYPE deviceType);
 		public:

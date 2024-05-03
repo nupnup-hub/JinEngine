@@ -4,7 +4,8 @@
 #include"Kd-tree/JKdTree.h"
 #include"../../../GameObject/JGameObject.h"
 #include"../../../Component/RenderItem/JRenderItem.h"
-
+#include"../../../Component/Light/JLight.h"
+#include"../../../../Core/Log/JLogMacro.h"
 using namespace DirectX;
 namespace JinEngine
 {
@@ -12,6 +13,7 @@ namespace JinEngine
 	namespace
 	{
 		static constexpr bool onlyBvhCanFrustumCulling = true;
+		static constexpr bool restrictGpuAccLightShape = true;
 	}
 
 	JOctreeOption JSceneAcceleratorStructure::ActivatedOptionCash::GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
@@ -31,6 +33,10 @@ namespace JinEngine
 		JKdTreeOption option = preKdTreeOption[(int)layer];
 		LoadRoot(option.commonOption, J_ACCELERATOR_TYPE::KD_TREE, layer);
 		return option;
+	} 
+	JGpuAcceleratorOption JSceneAcceleratorStructure::ActivatedOptionCash::GetGpuOption()const noexcept
+	{
+		return gpuBuildOption;
 	}
 	void JSceneAcceleratorStructure::ActivatedOptionCash::SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& octreeOption)
 	{
@@ -46,6 +52,10 @@ namespace JinEngine
 	{
 		preKdTreeOption[(uint)layer] = kdTreeOption;
 		StoreRoot(kdTreeOption.commonOption, J_ACCELERATOR_TYPE::KD_TREE, layer);
+	} 
+	void JSceneAcceleratorStructure::ActivatedOptionCash::SetGpuOption(const JGpuAcceleratorOption& option)
+	{
+		gpuBuildOption = option;
 	}
 	void JSceneAcceleratorStructure::ActivatedOptionCash::LoadRoot(JAcceleratorOption& option, const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer)const noexcept
 	{
@@ -89,7 +99,7 @@ namespace JinEngine
 			spaceSpatialVec.push_back(octree[i].get());
 			spaceSpatialVec.push_back(bvh[i].get());
 			spaceSpatialVec.push_back(kdTree[i].get());
-		}
+		} 
 	}
 	JSceneAcceleratorStructure::~JSceneAcceleratorStructure() {}
 	void JSceneAcceleratorStructure::Clear()noexcept
@@ -182,40 +192,62 @@ namespace JinEngine
 			}
 		}
 	}
-	void JSceneAcceleratorStructure::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
-	{
-		if (!gameObject->HasRenderItem())
-			return;
- 
-		const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(gameObject->GetRenderItem()->GetRenderLayer());
-		for (auto& data : spaceSpatialVec)
+	void JSceneAcceleratorStructure::UpdateGameObject(const JUserPtr<JComponent>& comp)noexcept
+	{ 
+		const J_COMPONENT_TYPE compType = comp->GetComponentType();
+		auto gameObject = comp->GetOwner();
+		if ((compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM || compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM) && gameObject->HasRenderItem())
 		{
-			if (data->IsAcceleratorActivated() && data->GetLayer() == accLayer)
-				data->UpdateGameObject(gameObject);
+			auto renderItem = gameObject->GetRenderItem();
+			const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(renderItem->GetRenderLayer());
+			for (auto& data : spaceSpatialVec)
+			{
+				if (data->IsAcceleratorActivated() && data->GetLayer() == accLayer)
+					data->UpdateGameObject(gameObject);
+			}
+			if (gpuAccelerator != nullptr && accLayer == J_ACCELERATOR_LAYER::COMMON_OBJECT)
+				gpuAccelerator->UpdateTransform(renderItem);
 		}
+
+		if (gpuAccelerator != nullptr && compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			gpuAccelerator->UpdateTransform(comp);
 	}
-	void JSceneAcceleratorStructure::AddGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
+	void JSceneAcceleratorStructure::AddGameObject(const JUserPtr<JRenderItem>& rItem)noexcept
 	{
-		if (!gameObject->HasRenderItem() || gameObject->GetRenderItem()->GetMesh() == nullptr)
+		if (rItem->GetMesh() == nullptr)
 			return;
 
-		const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(gameObject->GetRenderItem()->GetRenderLayer());
+		auto gameObject = rItem->GetOwner();
+		const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(rItem->GetRenderLayer());
 		for (auto& data : spaceSpatialVec)
 		{
 			if (data->IsAcceleratorActivated() && data->CanAddGameObject(gameObject) && data->GetLayer() == accLayer)
 				data->AddGameObject(gameObject);
 		}
+		if (gpuAccelerator != nullptr && accLayer == J_ACCELERATOR_LAYER::COMMON_OBJECT)
+			gpuAccelerator->AddComponent(rItem);
 	}
-	void JSceneAcceleratorStructure::RemoveGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
+	void JSceneAcceleratorStructure::AddGameObject(const JUserPtr<JLight>& light)noexcept
 	{
-		if (gameObject == nullptr)
-			return;
-
+		if (gpuAccelerator != nullptr && light->GetLightType() != J_LIGHT_TYPE::DIRECTIONAL)
+			gpuAccelerator->AddComponent(light);
+	}
+	void JSceneAcceleratorStructure::RemoveGameObject(const JUserPtr<JRenderItem>& rItem)noexcept
+	{ 
+		auto gameObject = rItem->GetOwner();
+		const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(gameObject->GetRenderItem()->GetRenderLayer());
 		for (auto& data : spaceSpatialVec)
 		{
 			if (data->IsAcceleratorActivated())
 				data->RemoveGameObject(gameObject);
 		}
+		if (gpuAccelerator != nullptr && accLayer == J_ACCELERATOR_LAYER::COMMON_OBJECT)
+			gpuAccelerator->RemoveComponent(rItem);
+	}
+	void JSceneAcceleratorStructure::RemoveGameObject(const JUserPtr<JLight>& light)noexcept
+	{
+		if (gpuAccelerator != nullptr && light->GetLightType() != J_LIGHT_TYPE::DIRECTIONAL)
+			gpuAccelerator->RemoveComponent(light);
 	}
 	JOctreeOption JSceneAcceleratorStructure::GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
 	{
@@ -246,6 +278,10 @@ namespace JinEngine
 		isValidBBox = !result.IsDistanceZero();
 		return result;
 	}
+	const Graphic::JGpuAcceleratorUserInterface JSceneAcceleratorStructure::GpuAcceleratorUserInterface()const noexcept
+	{
+		return Graphic::JGpuAcceleratorUserInterface(gpuAccelerator.get());
+	}
 	void JSceneAcceleratorStructure::SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& option)
 	{
 		if (activateTrigger)
@@ -267,6 +303,25 @@ namespace JinEngine
 		else
 			optionCash->SetKdTreeOption(layer, option);
 	}
+	void JSceneAcceleratorStructure::SetGpuAccelerator(JGpuAcceleratorOption option)
+	{
+		if (!JGpuAccelerator::CanBuild())
+			return;
+
+		if (gpuAccelerator == nullptr)
+			gpuAccelerator = std::make_unique<JGpuAccelerator>();
+ 
+		if constexpr (restrictGpuAccLightShape)
+		{ 
+			if (Core::HasSQValueEnum(option.flag, Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE))
+				J_LOG_PRINT_OUT("Invalid data", "J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE");
+			option.flag = Core::MinusSQValueEnum(option.flag, Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE);
+		}
+		if (activateTrigger)
+			gpuAccelerator->SetOption(option);
+		else
+			optionCash->SetGpuOption(option);
+	}
 	bool JSceneAcceleratorStructure::IsActivated(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)
 	{
 		if (type == J_ACCELERATOR_TYPE::OCTREE)
@@ -276,6 +331,12 @@ namespace JinEngine
 		else
 			return kdTree[(uint)layer]->IsAcceleratorActivated();
 	} 
+	bool JSceneAcceleratorStructure::HasCanCullingAccelerator(const J_ACCELERATOR_LAYER layer)const noexcept
+	{
+		return octree[(uint)layer]->IsAcceleratorActivated() && octree[(uint)layer]->IsCullingActivated() ||
+			bvh[(uint)layer]->IsAcceleratorActivated() && bvh[(uint)layer]->IsCullingActivated() ||
+			kdTree[(uint)layer]->IsAcceleratorActivated() && kdTree[(uint)layer]->IsCullingActivated();
+	}
 	void JSceneAcceleratorStructure::Activate()noexcept
 	{
 		if (!activateTrigger)
@@ -290,6 +351,8 @@ namespace JinEngine
 				spaceSpatialVec.push_back(bvh[i].get());
 				spaceSpatialVec.push_back(kdTree[i].get());
 			}
+			if (gpuAccelerator != nullptr)
+				gpuAccelerator->SetOption(optionCash->GetGpuOption());
 
 			optionCash.reset();
 			activateTrigger = true;
@@ -310,7 +373,11 @@ namespace JinEngine
 				bvh[i]->Clear();
 				kdTree[i]->Clear();
 			}
-
+			if (gpuAccelerator != nullptr)
+			{
+				optionCash->SetGpuOption(gpuAccelerator->GetOption());
+				gpuAccelerator->Clear();
+			}
 			spaceSpatialVec.clear();
 			activateTrigger = false;
 		}
@@ -341,5 +408,12 @@ namespace JinEngine
 				break;
 			}
 		}
+	}
+	void JSceneAcceleratorStructure::RegisterInterfacePointer()
+	{
+		if (gpuAccelerator == nullptr)
+			return;
+
+		gpuAccelerator->RegisterInterfacePointer();
 	}
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include"JGraphicDeviceType.h"
+#include"../JGraphicSubClassInterface.h"
 #include"../DataSet/JGraphicDataSet.h"
 #include"../JGraphicConstants.h"
 #include"../../Core/JCoreEssential.h"
@@ -13,7 +14,7 @@ namespace JinEngine
 		class JGraphicPublicCommnad;
 
 		//manage graphic device
-		class JGraphicDevice
+		class JGraphicDevice : public JGraphicSubClassInterface
 		{ 
 		private:
 			friend class JGraphic;
@@ -30,8 +31,9 @@ namespace JinEngine
 			virtual ~JGraphicDevice() = default;
 		public:
 			virtual bool CreateDeviceObject() = 0;
-			virtual bool CreateRefResourceObject(const JGraphicDeviceInitSet& dataSet) = 0; 
-			virtual void Clear() = 0;
+			virtual bool CreateRefResourceObject(const JGraphicDeviceInitSet& dataSet) = 0;
+		public:
+			virtual void Clear()noexcept = 0;
 		public:
 			virtual J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept = 0;
 			virtual std::unique_ptr<RefSet> GetDeviceRefSet()const noexcept = 0;
@@ -42,8 +44,10 @@ namespace JinEngine
 			virtual bool IsSupportPublicCommand()const noexcept = 0;
 			//return true if PublicCommand is activated
 			virtual bool IsPublicCommandStared()const noexcept = 0;
+			virtual bool IsRaytracingSupported()const noexcept = 0;
 			//return true if PublicCommand is deactivated
 			virtual bool CanStartPublicCommand()const noexcept = 0;
+			virtual bool CanBuildGpuAccelerator()const noexcept = 0;
 		public:
 			//if !IsSupportPublicCommand just return false
 			virtual void StartPublicCommand() = 0;
@@ -54,12 +58,13 @@ namespace JinEngine
 			//execute FlushCommandQueue and StartPublicCommand if CanStartPublicCommand
 			void StartPublicCommandSet(bool& startCommandThisFunc);
 			//execute EndPublicCommand and FlushCommandQueue if startCommandThisFunc == true
-			void EndPublicCommandSet(const bool startCommandThisFunc);
+			void EndPublicCommandSet(const bool startCommandThisFunc, const bool canRestartImmdetely = false);
 			void ReStartPublicCommandSet();
 		public:
 			virtual void UpdateWait(const GraphicFence frameFence) = 0;
 		public:
-			virtual void ResizeWindow(const JGraphicDeviceInitSet& refSet) = 0;
+			virtual void ResizeWindow(const JGraphicDeviceInitSet& dataSet) = 0;
+			virtual void NotifyChangedBackBufferFormat(const JGraphicDeviceInitSet& dataSet) = 0;
 		};
 	}
 }

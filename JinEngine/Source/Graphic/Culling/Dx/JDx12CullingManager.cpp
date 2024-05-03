@@ -1,7 +1,9 @@
 #include"JDx12CullingManager.h"
 #include"JDx12CullingResourceHolder.h"
 #include"../JCullingInfo.h"  
-
+#include"../JCullingInterface.h"
+#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../../Core/Log/JLogMacro.h"
 #ifdef DEVELOP
 #include"../../../Develop/Debug/JDevelopDebug.h"
 #endif
@@ -32,24 +34,25 @@ namespace JinEngine
 				}
 			};
 			//query heap count = initOccQueryHeapCapacity <= newCapacity
-			static Microsoft::WRL::ComPtr<ID3D12QueryHeap> BuildOccQueryHeaps(JGraphicDevice* device, const size_t capacity)
+			static void BuildOccQueryHeaps(JGraphicDevice* device, const size_t capacity, Microsoft::WRL::ComPtr<ID3D12QueryHeap>& heap)
 			{
 				if (device == nullptr || device->GetDeviceType() != J_GRAPHIC_DEVICE_TYPE::DX12)
-					return nullptr;
+					return;
 
+				heap = nullptr;
 				ID3D12Device* d3d12Device = static_cast<JDx12GraphicDevice*>(device)->GetDevice();
-				Microsoft::WRL::ComPtr<ID3D12QueryHeap> newQueryHeap;
 				D3D12_QUERY_HEAP_DESC queryHeapDesc = {};
 				queryHeapDesc.Count = (uint)capacity;
 				queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
-				ThrowIfFailedHr(d3d12Device->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&newQueryHeap)));
-				newQueryHeap->SetName(L"Occlusion Query Heap ");
-				return std::move(newQueryHeap);
+				ThrowIfFailedHr(d3d12Device->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&heap)));
+				heap->SetName(L"Occlusion Query Heap ");			 
 			}
-		
-		
 		}
 	 
+		JDx12CullingManager::~JDx12CullingManager()
+		{
+			ClearResource();
+		}
 		J_GRAPHIC_DEVICE_TYPE JDx12CullingManager::GetDeviceType()const noexcept
 		{
 			return J_GRAPHIC_DEVICE_TYPE::DX12;
@@ -98,7 +101,7 @@ namespace JinEngine
 
 					auto readbackHolder = static_cast<JDx12ReadBackResourceInterface*>(holder);
 					if (updateInfo.updatedCount > 0)
-					{
+					{  
 						readbackHolder->CopyOnCpuBuffer(updateInfo.updatedStartIndex, updateInfo.updatedCount);
 						updateInfo.updatedStartIndex = 0;
 						updateInfo.updatedCount = 0;
@@ -136,7 +139,7 @@ namespace JinEngine
 			auto holder = GetHolder(info);
 			if (holder->IsGpuResource())
 				device->StartPublicCommandSet(data.startCommandThisFunc);
-
+			 
 			const J_CULLING_TYPE cType = info->GetCullingType();
 			switch (cType)
 			{
@@ -159,10 +162,10 @@ namespace JinEngine
 				break;
 			}
 			case JinEngine::Graphic::J_CULLING_TYPE::HD_OCCLUSION:
-			{
+			{  
+				BuildOccQueryHeaps(device, capacity, occQueryHeap[index]);
 				static_cast<JHdDx12CullingResultHolder*>(holder)->Build(device, capacity);
 				static_cast<JHdDx12CullingResultHolder*>(holder)->SutffClearValue(data.cmdList, data.upload.Get());
-				occQueryHeap[index] = BuildOccQueryHeaps(device, capacity);
 				break;
 			}  
 			default:
@@ -174,10 +177,72 @@ namespace JinEngine
 				if (!data.startCommandThisFunc)
 					device->ReStartPublicCommandSet();
 			}
+			/**
+			* 새로운 buffer에 capacity를 updateInfo에 반영하지않으면
+			* CopyOnCpuBuffer시에 잘못된 범위에 메모리를 참조하게된다.
+			*/
+			const uint updateDataCount = info->GetUpdatedInfoCount();
+			for (uint i = 0; i < updateDataCount; ++i)
+			{
+				auto updateInfo = info->GetUpdateddInfo(i);
+				const uint elementCount = info->GetResultBufferElementCount();
+				if (updateInfo.updatedStartIndex >= elementCount)
+				{				
+					//over index는 전부 무효처리
+					updateInfo.updatedStartIndex = 0;
+					updateInfo.updatedCount = 0;
+				}
+				else if (updateInfo.updatedCount + updateInfo.updatedStartIndex >= elementCount)
+					updateInfo.updatedCount = elementCount - updateInfo.updatedStartIndex;
+				info->SetUpdatedInfo(updateInfo, i);
+			}
 		}
 		ID3D12QueryHeap* JDx12CullingManager::GetQueryHeap(const uint index)const noexcept
 		{
 			return occQueryHeap.size() > index ? occQueryHeap[index].Get() : nullptr;
+		}
+		bool JDx12CullingManager::HasDependency(const JGraphicInfo::TYPE type)const noexcept
+		{
+			if (type == JGraphicInfo::TYPE::FRAME)
+				return true;
+			else
+				return false;
+		}
+		bool JDx12CullingManager::HasDependency(const JGraphicOption::TYPE type)const noexcept
+		{
+			if (type == JGraphicOption::TYPE::CULLING)
+				return true;
+			else
+				return false;
+		}
+		void JDx12CullingManager::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
+		{
+			auto dx12Set = static_cast<const JDx12GraphicInfoChangedSet&>(set);
+			if (dx12Set.preInfo.frame.upPLightCapacity != dx12Set.newInfo.frame.upPLightCapacity ||
+				dx12Set.preInfo.frame.upSLightCapacity != dx12Set.newInfo.frame.upSLightCapacity ||
+				dx12Set.preInfo.frame.upRLightCapacity != dx12Set.newInfo.frame.upRLightCapacity)
+			{
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::FRUSTUM, dx12Set.device,
+					dx12Set.newInfo.frame.GetLocalLightCapacity(), J_CULLING_TARGET::LIGHT);
+			}
+			if (dx12Set.preInfo.frame.upBoundingObjCapacity != dx12Set.newInfo.frame.upBoundingObjCapacity)
+			{ 
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::FRUSTUM, dx12Set.device, dx12Set.newInfo.frame.upBoundingObjCapacity, J_CULLING_TARGET::RENDERITEM);
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::HD_OCCLUSION, dx12Set.device, dx12Set.newInfo.frame.upBoundingObjCapacity);
+			}
+			if (dx12Set.preInfo.frame.upHzbObjCapacity != dx12Set.newInfo.frame.upHzbObjCapacity)
+			{ 
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::HZB_OCCLUSION, dx12Set.device, dx12Set.newInfo.frame.upHzbObjCapacity);
+			}
+		}
+		void JDx12CullingManager::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
+		{ 
+			auto dx12Set = static_cast<const JDx12GraphicOptionChangedSet&>(set);
+			if (set.preOption.culling.isOcclusionQueryActivated != set.newOption.culling.isOcclusionQueryActivated)
+			{
+				StuffClearValue(dx12Set.device, J_CULLING_TYPE::HZB_OCCLUSION);
+				StuffClearValue(dx12Set.device, J_CULLING_TYPE::HD_OCCLUSION);
+			}
 		}
 		JUserPtr<JCullingInfo> JDx12CullingManager::CreateFrsutumData(JGraphicDevice* device, const JCullingCreationDesc& desc)
 		{
@@ -244,7 +309,11 @@ namespace JinEngine
 			if (user != nullptr)
 			{
 				if (device->GetDeviceType() == J_GRAPHIC_DEVICE_TYPE::DX12)
-					occQueryHeap.push_back(BuildOccQueryHeaps(device, desc.capacity));
+				{
+					Microsoft::WRL::ComPtr<ID3D12QueryHeap> newHeap;
+					BuildOccQueryHeaps(device, desc.capacity, newHeap);
+					occQueryHeap.push_back(std::move(newHeap)); 
+				}
 			}
 			
 			device->EndPublicCommandSet(data.startCommandThisFunc);
@@ -259,6 +328,7 @@ namespace JinEngine
 		}
 		bool JDx12CullingManager::TryStreamOutCullingBuffer(JCullingInfo* info, const std::string& logName)
 		{
+#ifdef DEVELOP
 			if constexpr (!allowDebug)
 				return false; 
 
@@ -277,8 +347,8 @@ namespace JinEngine
 			Develop::JDevelopDebug::CreatePublicLogHandler(logName);
 			Develop::JDevelopDebug::PushDefaultLogHandler(logName);
 			Develop::JDevelopDebug::PushLog("Result buffer");
-			const uint bufferSize = info->GetResultBufferSize();
-			for (uint i = 0; i < bufferSize; ++i)
+			const uint elemtCount = info->GetResultBufferElementCount();
+			for (uint i = 0; i < elemtCount; ++i)
 			{
 				uint r = info->IsCulled(i);
 				Develop::JDevelopDebug::PushLog("index: " + std::to_string(i) +" result: " + std::to_string(r));
@@ -287,11 +357,44 @@ namespace JinEngine
 			Develop::JDevelopDebug::PopDefaultLogHandler(logName);
 			Develop::JDevelopDebug::DestroyPublicLogHandler(logName);
 			return true;
+#else
+			return false;
+#endif
 		}
 		void JDx12CullingManager::Clear()
 		{
-			occQueryHeap.clear();
+			ClearResource();
 			JCullingManager::Clear();
+		}
+		void JDx12CullingManager::ClearResource()
+		{
+			occQueryHeap.clear(); 
+		}
+		 
+		JDx12CullingResourceComputeSet::JDx12CullingResourceComputeSet(JDx12CullingManager* cm, JCullingInfo* info)
+			:cm(cm), 
+			info(info),
+			cHolder(info != nullptr ? cm->GetDxHolder(info->GetCullingType(), info->GetArrayIndex()) : nullptr),
+			gHolder(cHolder != nullptr ? cHolder->GetHolder() : nullptr),
+			resource(cHolder != nullptr ? cHolder->GetResource() : nullptr)
+		{}
+		JDx12CullingResourceComputeSet::JDx12CullingResourceComputeSet(JDx12CullingManager* cm, const JUserPtr<JCullingInfo>& info)
+			: cm(cm), 
+			info(info.Get()), 
+			cHolder(info != nullptr ? cm->GetDxHolder(info->GetCullingType(), info->GetArrayIndex()) : nullptr),
+			gHolder(cHolder != nullptr ? cHolder->GetHolder() : nullptr),
+			resource(cHolder != nullptr ? cHolder->GetResource() : nullptr)
+		{}
+		JDx12CullingResourceComputeSet::JDx12CullingResourceComputeSet(JDx12CullingManager* cm, const JCullingUserInterface& cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget)
+			: cm(cm), 
+			info(cm->GetCullingInfo(cType, cInterface.GetArrayIndex(cType, cTarget)).Get()),
+			cHolder(info != nullptr ? cm->GetDxHolder(info->GetCullingType(), info->GetArrayIndex()) : nullptr),
+			gHolder(cHolder != nullptr ? cHolder->GetHolder() : nullptr),
+			resource(cHolder != nullptr ? cHolder->GetResource() : nullptr)
+		{}
+		bool JDx12CullingResourceComputeSet::IsValid()const noexcept
+		{
+			return info != nullptr;
 		}
 	}
 }

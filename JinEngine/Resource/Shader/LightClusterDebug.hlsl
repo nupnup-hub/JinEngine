@@ -1,4 +1,5 @@
 #include"LightClusterCommon.hlsl"
+#include"FullScreenTriangleVs.hlsl"
 #include"DepthFunc.hlsl"
 
 Texture2D depthMap : register(t0); 
@@ -56,27 +57,13 @@ float4 DebugDrawNumLightsPerTileRadarColors(uint nNumLightsInThisTile)
 		uint nColorIndex = floor(log2((float) nNumLightsInThisTile) / log2(fLogBase));
 		return kRadarColors[nColorIndex];
 	}
-}
-
-struct VertexOut
-{
-	float4 position : SV_POSITION;
-};
-
-VertexOut VS(float3 position : POSITION)
-{ 
-	//has to -1 ~ 1 ndc range for transform screen pos
-	VertexOut vout; 
-	vout.position = float4(position, 1.0f);
-	return vout;
-}  
-
+} 
 float4 PS(VertexOut pIn) : SV_TARGET
 {  
-	int2 screenPos = pIn.position.xy;  
+	int2 screenPos = pIn.posH.xy;
 	// Look up the light list for the cluster
-	const float camNear = passPack.x;
-	const float camFar = passPack.y;
+	const float Near = passPack.x;
+	const float Far = passPack.y;
 	const float rtWidth = passPack.z;
 	const float rtHeight = passPack.w;
 	//const uint log2Tile = (uint) passPack.z; 
@@ -84,19 +71,19 @@ float4 PS(VertexOut pIn) : SV_TARGET
 	const uint rangeY = rtHeight / CLUSTER_DIM_Y;
 	 
 #ifdef LINEAR_DEPTH_DIST
-	const float depth = LinearDepthOne(depthMap.Load(int3(screenPos, 0)).r, camNear, camFar);
+	const float depth = LinearDepthOne(depthMap.Load(int3(screenPos, 0)).r, Near, Far);
 	if(depth == 1.0f)
 		return float4(1,1,1,1);
 	int dep = int(depth * CLUSTER_DIM_Z);
 #else
 	const float min_depth = log2(NEAR_CLUST);
-	const float max_depth = log2(camFar);
+	const float max_depth = log2(Far);
 
 	const float scale = 1.0f / (max_depth - min_depth) * (CLUSTER_DIM_Z - 1.0f);
 	const float bias = 1.0f - min_depth * scale;
-	//const float distnace = camFar - camNear;
-	const float depth = NdcToViewPZ(depthMap.Load(int3(screenPos, 0)).r, camNear, camFar); 
-	if (depth == camFar)
+	//const float distnace = Far - Near;
+	const float depth = NdcToViewPZ(depthMap.Load(int3(screenPos, 0)).r, Near, Far); 
+	if (depth == Far)
 		return float4(1, 1, 1, 1);
 
 	int dep = int(max(log2(depth) * scale + bias, 0.0f));
@@ -105,7 +92,7 @@ float4 PS(VertexOut pIn) : SV_TARGET
 	uint numLights = 0;
 	int2 clusterPos = int2(screenPos.x / rangeX, screenPos.y / rangeY);
 	uint lightIndex = (startOffsetBuffer.Load((clusterPos.x + CLUSTER_DIM_X * clusterPos.y + CLUSTER_DIM_X * CLUSTER_DIM_Y * dep) * LINKED_LIST_INDEX_PER_BYTE) & CLUSTER_LIGHT_INVALID_ID);
-  
+	 
 	//uint shade_bit = 1;
 	//uint setindex = (shade_bit << 30) | (lightIndex & 0x3FFFFFFF);
 	//uint temp;

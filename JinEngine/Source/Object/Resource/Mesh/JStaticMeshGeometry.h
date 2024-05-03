@@ -6,8 +6,7 @@ namespace JinEngine
 	class JStaticMeshGeometryPrivate;
 	class JStaticMeshGeometry final : public JMeshGeometry
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE(JStaticMeshGeometry)
-		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
+		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JStaticMeshGeometry) 
 	public: 
 		class InitData : public JMeshGeometry::InitData
 		{

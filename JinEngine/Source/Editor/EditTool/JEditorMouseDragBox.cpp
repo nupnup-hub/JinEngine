@@ -6,7 +6,7 @@
 #include"../../Core/Time/JStopWatch.h"
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Utility/JCommonUtility.h"
- 
+
 namespace JinEngine::Editor
 {
 	namespace Private
@@ -29,25 +29,26 @@ namespace JinEngine::Editor
 			const JVector2<int>& wndPos = JGui::GetWindowPos(),
 			const JVector2<int>& wndSize = JGui::GetWindowSize())
 		{
-			minV2 = wndPos + wndSize * (1 - canvasFactor);
+			//minV2 = wndPos + wndSize * (1 - canvasFactor);
+			minV2 = wndPos;
 			maxV2 = wndPos + wndSize * canvasFactor;
 		}
 	}
 
-	JEditorMouseDragBox::UpdateIn::UpdateIn(const bool allowActivateBBox,
+	JEditorMouseDragBox::UpdateIn::UpdateIn(const bool allowActivateDragBox,
 		JVector2<int> minOffset,
 		JVector2<int> maxOffset)
-		:allowActivateBBox(allowActivateBBox), minOffset(minOffset), maxOffset(maxOffset)
+		:allowActivateDragBox(allowActivateDragBox), minOffset(minOffset), maxOffset(maxOffset)
 	{
 
 	}
-
 	void JEditorMouseDragBox::Update(_In_ const UpdateIn& in, _Out_ UpdateOut& out)noexcept
-	{ 
+	{
+		lastUpdateInCash = &in; 
 		if (!IsActivated())
 		{
 			out.successUpdate = false;
-			if (in.allowActivateBBox)
+			if (in.allowActivateDragBox)
 			{
 				Activate();
 				out.successActivateCanUpdateNextFrame = true;
@@ -77,14 +78,15 @@ namespace JinEngine::Editor
 		JVector2<int> canvasMin;
 		JVector2<int> canvasMax;
 		Private::CanvasMinMax(canvasMin, canvasMax, uData.stWndPos, uData.stWndSize);
-  
+
 		JVector2<int> framePadding = JVector2<int>(1, 1);
 		JGui::DrawRectFilledMultiColor(minV2 + framePadding, maxV2 - minV2 - framePadding, Private::RectColor(), Private::RectDeltaColor(), true);
-		JGui::DrawRectFrame(minV2, maxV2 - minV2, Private::RectFrameColor(), framePadding.x,  true);
-		
+		JGui::DrawRectFrame(minV2, maxV2 - minV2, Private::RectFrameColor(), framePadding.x, true);
+
 		out.successUpdate = true;
+		lastUpdateInCash = nullptr;
 	}
-	void JEditorMouseDragBox::GetBBoxMinMax(_Out_ JVector2<int>& minV2, 
+	void JEditorMouseDragBox::GetBBoxMinMax(_Out_ JVector2<int>& minV2,
 		_Out_ JVector2<int>& maxV2,
 		const JVector2<int>& minOffset,
 		const JVector2<int>& maxOffset)const noexcept
@@ -115,13 +117,13 @@ namespace JinEngine::Editor
 
 		JVector2<int> canvasMin;
 		JVector2<int> canvasMax;
-		Private::CanvasMinMax(canvasMin, canvasMax);
+		Private::CanvasMinMax(canvasMin, canvasMax, JGui::GetWindowPos() + lastUpdateInCash->minOffset, JGui::GetWindowSize() - lastUpdateInCash->minOffset);
 
 		return JGui::IsMouseInRect(canvasMin, canvasMax - canvasMin);
 	}
 	bool JEditorMouseDragBox::CanDeActivate()const noexcept
-	{ 
-		return !JGui::IsMouseDragging(Core::J_MOUSE_BUTTON::LEFT) || 
+	{
+		return !JGui::IsMouseDragging(Core::J_MOUSE_BUTTON::LEFT) ||
 			uData.stWndPos != JGui::GetWindowPos() ||
 			uData.stWndSize != JGui::GetWindowSize();
 	}
@@ -141,73 +143,56 @@ namespace JinEngine::Editor
 		Core::JActivatedInterface::DoDeActivate();
 	}
 
-	JEditorMouseIdenDragBox::UpdateIn::UpdateIn(const bool allowActivateBBox,
-		JVector2<float> minOffset,
-		JVector2<float> maxOffset,
-		JVector2<float> sceneImageScreenMinPoint,
-		JUserPtr<JScene> scene,
-		JUserPtr<JCamera> cam,
-		J_ACCELERATOR_LAYER layer)
-		:JEditorMouseDragBox::UpdateIn(allowActivateBBox, minOffset, maxOffset),
-		scene(scene), cam(cam), layer(layer), sceneImageScreenMinPoint(sceneImageScreenMinPoint)
-	{
-
-	}
-
-	JEditorMouseIdenDragBox::SelectedInfo::SelectedInfo(const JUserPtr<Core::JIdentifier>& iden, const bool isSelectedBefore)
-		:iden(iden),isSelectedBefore(isSelectedBefore), isLastUpdateSelected(false)
+	JEditorIdentifierDragInterface::SelectedInfo::SelectedInfo(const JUserPtr<Core::JIdentifier>& iden, const bool isSelectedBefore)
+		:iden(iden), isSelectedBefore(isSelectedBefore), isLastUpdateSelected(false)
 	{}
-
-	void JEditorMouseIdenDragBox::UpdateSceneImageDrag(_In_ const UpdateIn& in, _Out_ UpdateOut& out)noexcept
-	{  
-		JEditorMouseDragBox::Update(in, out);
-		if (!out.successUpdate || out.isSameMousePos)
-			return;
-
-		JVector2<int> minV2;
-		JVector2<int> maxV2;
-		GetBBoxMinMax(minV2, maxV2, in.minOffset, in.maxOffset);
- 
-		std::vector<JUserPtr<JGameObject>> selectedVec = JEditorSceneImageInteraction::Contain(in.scene,
-			in.cam,
-			J_ACCELERATOR_LAYER::COMMON_OBJECT,
-			in.sceneImageScreenMinPoint,
-			minV2,
-			maxV2);
-
-		bool(*equalPtr)(const SelectedInfo&, const size_t) = [](const SelectedInfo& info, const size_t guid) {return info.iden.IsValid() ? info.iden->GetGuid() == guid : false; };
-		if (selectedVec.size() > 0)
+	void JEditorIdentifierDragInterface::Update(const IdenVec& vec, const UpdateIn& in, UpdateOut& out)
+	{
+		if (vec.size() > 0)
 		{
-			if (isHoldCtrl && !JGui::IsKeyPressed(Core::J_KEYCODE::CONTROL))
+			TryClearHoldState();
+			StuffSelectedBuffer(vec, in, out);
+		}
+		StuffOutBuffer(out);
+	} 
+	void JEditorIdentifierDragInterface::TryClearHoldState()
+	{
+		if (isHoldCtrl && !JGui::IsKeyPressed(Core::J_KEYCODE::CONTROL))
+		{
+			isHoldCtrl = false;
+			for (int i = 0; i < sInfoVec.size(); ++i)
 			{
-				isHoldCtrl = false;
-				for (int i = 0; i < sInfoVec.size(); ++i)
+				if (sInfoVec[i].isSelectedBefore)
 				{
-					if (sInfoVec[i].isSelectedBefore)
-					{
-						sInfoVec.erase(sInfoVec.begin() + i);
-						--i;
-					}
+					sInfoVec.erase(sInfoVec.begin() + i);
+					--i;
 				}
 			}
-
-			for (const auto& data : selectedVec)
+		}
+	}
+	void JEditorIdentifierDragInterface::StuffSelectedBuffer(const IdenVec& vec, const UpdateIn& in, UpdateOut& out)
+	{
+		bool(*equalPtr)(const SelectedInfo&, const size_t) = [](const SelectedInfo& info, const size_t guid) {return info.iden.IsValid() ? info.iden->GetGuid() == guid : false; };
+		for (const auto& data : vec)
+		{
+			int index = JCUtil::GetIndex(sInfoVec, equalPtr, data->GetGuid());
+			if (index == invalidIndex)
 			{
-				int index = JCUtil::GetIndex(sInfoVec, equalPtr, data->GetGuid());
-				if (index == invalidIndex)
-				{
-					sInfoVec.push_back(SelectedInfo(data, data->IsSelected()));
-					sInfoVec[sInfoVec.size() - 1].isLastUpdateSelected = true;
+				const bool isSelecetd = IsSelected(data, in);
+				sInfoVec.push_back(SelectedInfo(data, isSelecetd));
+				sInfoVec[sInfoVec.size() - 1].isLastUpdateSelected = true;
 
-					if (data->IsSelected())
-						out.newDeSelectedVec.push_back(data);
-					else
-						out.newSelectedVec.push_back(data);
-				}
+				if (isSelecetd)
+					out.newDeSelectedVec.push_back(data);
 				else
-					sInfoVec[index].isLastUpdateSelected = true;
-			}  
-		}  
+					out.newSelectedVec.push_back(data);
+			}
+			else
+				sInfoVec[index].isLastUpdateSelected = true;
+		}
+	}
+	void JEditorIdentifierDragInterface::StuffOutBuffer(UpdateOut& out)
+	{
 		for (int i = 0; i < sInfoVec.size(); ++i)
 		{
 			if (!sInfoVec[i].isLastUpdateSelected)
@@ -223,18 +208,127 @@ namespace JinEngine::Editor
 				sInfoVec[i].isLastUpdateSelected = false;
 		}
 	}
-	uint JEditorMouseIdenDragBox::GetSelectedCount()const noexcept
+	uint JEditorIdentifierDragInterface::GetSelectedCount()const noexcept
 	{
 		return sInfoVec.size();
 	}
-	void JEditorMouseIdenDragBox::DoActivate() noexcept
+	void JEditorIdentifierDragInterface::DoActivate() noexcept
 	{
 		JEditorMouseDragBox::DoActivate();
 		isHoldCtrl = JGui::IsKeyDown(Core::J_KEYCODE::CONTROL);
 	}
-	void JEditorMouseIdenDragBox::DoDeActivate() noexcept
+	void JEditorIdentifierDragInterface::DoDeActivate() noexcept
 	{
 		sInfoVec.clear();
 		JEditorMouseDragBox::DoDeActivate();
+	}
+
+	JEditorMouseDragSceneBox::UpdateIn::UpdateIn(const bool allowActivateDragBox,
+		JVector2<float> minOffset,
+		JVector2<float> maxOffset,
+		JVector2<float> sceneImageScreenMinPoint,
+		JUserPtr<JScene> scene,
+		JUserPtr<JCamera> cam,
+		J_ACCELERATOR_LAYER layer)
+		:JEditorIdentifierDragInterface::UpdateIn(allowActivateDragBox, minOffset, maxOffset),
+		scene(scene), cam(cam), layer(layer), sceneImageScreenMinPoint(sceneImageScreenMinPoint)
+	{
+
+	}
+	void JEditorMouseDragSceneBox::UpdateSceneImageDrag(_In_ const UpdateIn& in, _Out_ UpdateOut& out)noexcept
+	{
+		JEditorMouseDragBox::Update(in, out);
+		if (!out.successUpdate || out.isSameMousePos)
+			return;
+
+		JVector2<int> minV2;
+		JVector2<int> maxV2;
+		GetBBoxMinMax(minV2, maxV2, in.minOffset, in.maxOffset);
+
+		std::vector<JUserPtr<JGameObject>> selectedVec = JEditorSceneImageInteraction::Contain(in.scene,
+			in.cam,
+			J_ACCELERATOR_LAYER::COMMON_OBJECT,
+			in.sceneImageScreenMinPoint,
+			minV2,
+			maxV2);
+ 
+		std::vector<JUserPtr<Core::JIdentifier>> selectedIdenVec;
+		selectedIdenVec.insert(selectedIdenVec.begin(), std::move_iterator(selectedVec.begin()), std::move_iterator(selectedVec.end())); 
+		Update(selectedIdenVec, in, out);
+	} 
+	bool JEditorMouseDragSceneBox::IsSelected(const JUserPtr<Core::JIdentifier>& iden, const JEditorIdentifierDragInterface::UpdateIn& in)const noexcept
+	{
+		return static_cast<JGameObject*>(iden.Get())->IsSelected();
+	}
+	void JEditorMouseDragSceneBox::DoActivate() noexcept
+	{
+		JEditorIdentifierDragInterface::DoActivate();
+	}
+	void JEditorMouseDragSceneBox::DoDeActivate() noexcept
+	{ 
+		JEditorIdentifierDragInterface::DoDeActivate();
+	}
+
+	JEditorMouseDragCanvas::IdenData::IdenData(const JUserPtr<Core::JIdentifier>& iden, const Core::JBBox2D& bbox)
+		:iden(iden), bbox(bbox)
+	{}
+	JEditorMouseDragCanvas::UpdateIn::UpdateIn(const bool allowActivateDragBox,
+		JVector2<float> minOffset,
+		JVector2<float> maxOffset)
+		:JEditorIdentifierDragInterface::UpdateIn(allowActivateDragBox, minOffset, maxOffset)
+	{}
+	JEditorMouseDragCanvas::UpdateIn::UpdateIn(const bool allowActivateDragBox,
+		JVector2<float> minOffset,
+		JVector2<float> maxOffset,
+		std::vector<IdenData>&& iden,
+		std::unordered_map<size_t, JUserPtr<Core::JIdentifier>>&& selectedMap)
+		:JEditorIdentifierDragInterface::UpdateIn(allowActivateDragBox, minOffset, maxOffset),
+		iden(std::move(iden)),
+		selectedMap(std::move(selectedMap))
+	{}
+	void JEditorMouseDragCanvas::UpdateCanvasDrag(_In_ const UpdateIn& in, _Out_ UpdateOut& out)noexcept
+	{
+		JEditorMouseDragBox::Update(in, out);
+		if (!out.successUpdate || out.isSameMousePos)
+			return;
+
+		JVector2<int> minV2;
+		JVector2<int> maxV2;
+		GetBBoxMinMax(minV2, maxV2, in.minOffset, in.maxOffset);
+ 
+		const Core::JBBox2D tar(minV2, maxV2);
+		std::vector<JUserPtr<Core::JIdentifier>> intersected;
+		for (const auto& data : in.iden)
+		{
+			if (tar.Intersect(data.bbox))
+				intersected.push_back(data.iden);
+		}
+
+		Update(intersected, in, out);
+	} 
+	std::vector<JEditorMouseDragCanvas::IdenData> JEditorMouseDragCanvas::Combine(const std::vector<JUserPtr<Core::JIdentifier>>& idenVec, const std::vector<Core::JBBox2D>& bboxVec)
+	{
+		std::vector<JEditorMouseDragCanvas::IdenData> result;
+		const uint idenCount = (uint)idenVec.size();
+		if (idenCount != bboxVec.size())
+			return result;
+
+		result.resize(idenCount);
+		for (uint i = 0; i < idenCount; ++i)
+			result[i] = IdenData(idenVec[i], bboxVec[i]);
+		return result;
+	}
+	bool JEditorMouseDragCanvas::IsSelected(const JUserPtr<Core::JIdentifier>& iden, const JEditorIdentifierDragInterface::UpdateIn& in)const noexcept
+	{
+		auto thisIn = static_cast<const UpdateIn*>(&in); 
+		return thisIn->selectedMap.find(iden->GetGuid()) != thisIn->selectedMap.end();
+	}
+	void JEditorMouseDragCanvas::DoActivate() noexcept
+	{
+		JEditorIdentifierDragInterface::DoActivate();
+	}
+	void JEditorMouseDragCanvas::DoDeActivate() noexcept
+	{
+		JEditorIdentifierDragInterface::DoDeActivate();
 	}
 }

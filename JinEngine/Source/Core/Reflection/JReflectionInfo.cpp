@@ -5,14 +5,14 @@
 #include"../JCoreEssential.h"
 #include"../Time/JGameTimer.h"
 #include"../Utility/JCommonUtility.h"
+#include"../Log/JLogMacro.h"
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Object/Component/JComponent.h"
 #include"../../Object/Resource/JResourceObject.h"
-#include"../../Object/Resource/JResourceObjectHint.h"
+#include"../../Object/Resource/JResourceObjectHint.h" 
 #include<set>
 #include<vector>  
-#include<unordered_map>
-
+#include<unordered_map> 
 namespace JinEngine
 {
 	namespace Core
@@ -175,23 +175,24 @@ namespace JinEngine
 				{
 					if (jType.typeVec[i]->instanceData != nullptr && jType.typeVec[i]->instanceData->classInstanceVec.size() > 0)
 					{
-						MessageBox(0, std::to_wstring(jType.typeVec[i]->instanceData->classInstanceVec.size()).c_str(), JCUtil::StrToWstr(jType.typeVec[i]->Name()).c_str(), 0);
+						J_LOG_PRINT_OUT("Exist type instance", jType.typeVec[i]->Name() + " " +
+							std::to_string(jType.typeVec[i]->instanceData->classInstanceVec.size()));
 					}
 				}
 			}
 		public:
 			void Update()
-			{
-				jLazy.lazyTypeVec[lazyUpdateIndex]->UpdateLazyDestruction(jLazy.timeVec[lazyUpdateIndex]);
-				++lazyUpdateIndex;
-				if (lazyUpdateIndex >= jLazy.lazyTypeVec.size())
-					lazyUpdateIndex = 0;
-
+			{ 
+				jLazy.lazyTypeVec[lazyUpdateIndex]->UpdateLazyDestruction(jLazy.timeVec[lazyUpdateIndex]);		
 				float deltaTime = JEngineTimer::Data().DeltaTime();
 				for (auto& data : jLazy.timeVec)
 					data += deltaTime;
 
 				jLazy.timeVec[lazyUpdateIndex] = 0;
+				++lazyUpdateIndex;
+				if (lazyUpdateIndex >= jLazy.lazyTypeVec.size())
+					lazyUpdateIndex = 0;
+
 			}
 		public:
 			void AddType(JTypeInfo* newType)

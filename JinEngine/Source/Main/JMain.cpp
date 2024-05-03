@@ -25,6 +25,7 @@
 #include"../Core/Plugin/JPluginManagerPrivate.h"
 #include"../Core/Utility/JCommonUtility.h" 
 #include"../Core/Reflection/JTypeBase.h"
+#include"../Core/Log/JLogMacro.h"
 #include"../Editor/JEditorManager.h" 
 #include"../Editor/Interface/JEditorProjectInterface.h" 
 #include"../Editor/Gui/Data/ImGui/JImGuiPrivateData.h"
@@ -79,7 +80,7 @@ namespace JinEngine
 		{
 			RefelectionMainAccess::Initialize();
 			EngineMainAccess::Initialize();
-			ThreadManagerAccess::Initialize();
+			ThreadManagerAccess::Initialize(Graphic::Constants::gMaxFrameThread);
 			_JModuleManager::Instance().LoadModule(JApplicationEngine::SolutionPath());
 			_JPluginManager::Instance().LoadPlugin(JApplicationEngine::SolutionPath());
 
@@ -160,12 +161,15 @@ namespace JinEngine
 					break;
 
 				Core::JGameTimer::UpdateAllTimer();
-				GraphicMainAccess::UpdateWait();
-				RefelectionMainAccess::Update();
-				ThreadManagerAccess::Update();  
-				editorManager.Update();
-				GraphicMainAccess::UpdateFrame();
-				GraphicMainAccess::Draw(true);
+				if (JWindow::IsActivated())
+				{ 
+					GraphicMainAccess::UpdateWait();
+					RefelectionMainAccess::Update();
+					ThreadManagerAccess::Update();
+					editorManager.Update();
+					GraphicMainAccess::UpdateFrame();
+					GraphicMainAccess::Draw(true);
+				}
 
 				if (edFrameEv != END_FRAME_EVENT::NONE)
 				{
@@ -252,7 +256,7 @@ namespace JinEngine
 					//	MessageBox(0, L"Fail start project", 0, 0);
 				}
 				else
-					MessageBox(0, L"Invalid project path", 0, 0);
+					J_LOG_PRINT_OUT("Invalid project path", ""); 
 			}
 		}
 		void LoadUnRegisteredProject(const std::wstring path)
@@ -266,7 +270,7 @@ namespace JinEngine
 
 			ProjectLifeInterface::SetNextProjectInfo(std::move(pInfo));
 			if (!ProjectLifeInterface::SetStartNewProjectTrigger())
-				MessageBox(0, L"Load Project Fail", 0, 0);
+				J_LOG_PRINT_OUT("Load Project fail", ""); 
 		}
 		void StoreProject()
 		{
@@ -289,14 +293,14 @@ namespace JinEngine
 		{ 
 			ProjectLifeInterface::SetNextProjectInfo(ProjectLifeInterface::MakeProjectInfo(path, version));
 			if (!ProjectLifeInterface::SetStartNewProjectTrigger())
-				MessageBox(0, L"Create Project Fail", 0, 0);
+				J_LOG_PRINT_OUT("Create project fail", ""); 
 		}
 		void StartProject(std::unique_ptr<JApplicationProjectInfo>&& pInfo)
 		{
 			using ProjectLifeInterface = JApplicationProjectPrivate::LifeInterface;
 			ProjectLifeInterface::SetNextProjectInfo(std::move(pInfo));
 			if (!ProjectLifeInterface::SetStartNewProjectTrigger())
-				MessageBox(0, L"Start Project Fail", 0, 0);
+				J_LOG_PRINT_OUT("Start project fail", ""); 
 		}
 	private:
 		void CloseSelector()

@@ -458,6 +458,14 @@ namespace JinEngine
 			isValid(iden.IsValid() ? true : false), 
 			hasImplType(iden.IsValid() ? iden->GetTypeInfo().HasImplTypeInfo() : false)
 		{}
+		JTypeInstanceSearchHint& JTypeInstanceSearchHint::operator=(JUserPtr<JTypeBase> iden)
+		{
+			typeGuid = iden.IsValid() ? iden->GetTypeInfo().TypeGuid() : 0;
+			objectGuid = iden.IsValid() ? iden->GetGuid() : 0;
+			isValid = iden.IsValid() ? true : false;
+			hasImplType = iden.IsValid() ? iden->GetTypeInfo().HasImplTypeInfo() : false;
+			return *this;
+		}
 		JTypeInstanceSearchHint::~JTypeInstanceSearchHint()
 		{  
 		}

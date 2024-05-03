@@ -41,33 +41,34 @@ namespace JinEngine
 		private:
 			// We cannot update a cbuffer until the GPU is done processing the commands
 			// that reference it.  So each frame needs their own cbuffers.
-			std::unique_ptr<JDx12GraphicBuffer<JMaterialConstants>> materialBuffer = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JDirectionalLightConstants>> dLightBuffer = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JCsmConstants>> csmBuffer = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JPointLightConstants>> pLightBuffer = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JSpotLightConstants>> sLightBuffer = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JRectLightConstants>> rLightBuffer = nullptr;	
+			std::unique_ptr<JDx12GraphicBufferT<JMaterialConstants>> materialBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JDirectionalLightConstants>> dLightBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JCsmConstants>> csmBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JPointLightConstants>> pLightBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JSpotLightConstants>> sLightBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JRectLightConstants>> rLightBuffer = nullptr;	
+			std::unique_ptr<JDx12GraphicBufferT<JObjectRefereneceInfoConstants>> objRefInfoBuffer = nullptr;
 		private:
-			std::unique_ptr<JDx12GraphicBuffer<JObjectConstants>> objectCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JAnimationConstants>> skinnedCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JEnginePassConstants>> enginePassCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JScenePassConstants>> scenePassCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JCameraConstants>> cameraCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JShadowMapArrayDrawConstants>> smArrayDrawCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JShadowMapCubeDrawConstants>> smCubeDrawCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JShadowMapDrawConstants>> smDrawCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JObjectConstants>> objectCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JAnimationConstants>> skinnedCB = nullptr; 
+			std::unique_ptr<JDx12GraphicBufferT<JScenePassConstants>> sceneCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JDrawSceneCameraConstants>> cameraCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JShadowMapArrayDrawConstants>> smArrayDrawCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JShadowMapCubeDrawConstants>> smCubeDrawCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JShadowMapDrawConstants>> smDrawCB = nullptr;
 		private:
 			//Bounding
-			std::unique_ptr<JDx12GraphicBuffer<JBoundingObjectConstants>> bundingObjectCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JBoundingObjectConstants>> bundingObjectCB = nullptr;
 		private:
 			//depth test
-			std::unique_ptr<JDx12GraphicBuffer<JDepthTestPassConstants>> depthTestPassCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JDepthTestConstants>> depthTestCB = nullptr;
 		private:
 			//occ
-			std::unique_ptr<JDx12GraphicBuffer<JHzbOccComputeConstants>> hzbOccReqCB = nullptr;
-			std::unique_ptr<JDx12GraphicBuffer<JHzbOccObjectConstants>> hzbOccObjectBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JHzbOccComputeConstants>> hzbOccReqCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JHzbOccObjectConstants>> hzbOccObjectBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JLightCullingCameraConstants>> litCullCB = nullptr;
 		private:
-			std::unique_ptr<JDx12GraphicBuffer<JSsaoConstants>> ssaoCB = nullptr;
+			std::unique_ptr<JDx12GraphicBufferT<JSsaoConstants>> ssaoCB = nullptr; 
 		private:
 			JDx12GraphicBufferInterface* bufferVec[(uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];
 		private:
@@ -78,7 +79,7 @@ namespace JinEngine
 			JDx12FrameResource& operator=(const JFrameResource& rhs) = delete;
 			~JDx12FrameResource();
 		public:
-			void Intialize(JGraphicDevice* device, const JGraphicInfo& gInfo) final;
+			void Intialize(JGraphicDevice* device) final;
 			void Clear()final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;

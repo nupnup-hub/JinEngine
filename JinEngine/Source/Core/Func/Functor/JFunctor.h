@@ -2,6 +2,7 @@
 #include<utility>
 #include<memory> 
 #include<vector>
+#include"../../Reflection/JParameter.h"
 #include"../../Empty/JEmptyType.h"
 #include"../../Utility/JTypeTraitUtility.h" 
 #include"../../../../ThirdParty/Loki/Typelist/Typelist.h"   
@@ -110,7 +111,13 @@ namespace JinEngine
 			virtual ~JBindHandleBase() {}
 		public:
 			virtual void InvokeCompletelyBind() = 0;
-			virtual bool IsCompletelyBind() = 0;
+			/**
+			* @return 반환하는 type이 bool이 아닐시 함수를 수행하지않고 false를 반환
+			*/
+			virtual bool InvokeCompletelyBindRetBoolean() = 0;
+		public:
+			virtual bool IsCompletelyBind()const = 0;
+			virtual bool IsSameReturnType(const J_PARAMETER_TYPE paramType)const = 0;
 		};
 
 		template<typename OriFunctor, typename ...BindParam>
@@ -125,8 +132,7 @@ namespace JinEngine
 			OriFunctor* rawFunctor = nullptr;
 			std::unique_ptr<OriFunctor> unqFunctor = nullptr;
 			BindTuple bindTuple;
-		private:
-		private:
+		private: 
 			//	res: a condition of bindtuple match element type
 			//		true : is bindtuple element
 			//		false ; is passtuple element
@@ -213,24 +219,53 @@ namespace JinEngine
 				else
 					return (*unqFunctor)(GetParam<Is>(passTuple)...);
 			}
-			template<size_t ...Is>
-			void CallFunc(std::index_sequence<Is...>)
+			template<typename FixedRet, size_t ...Is>
+			FixedRet CallFunc(std::index_sequence<Is...>)
 			{
 				constexpr int bindParamCount = sizeof...(BindParam);
 				constexpr int seqIndex = bindParamCount - 1;
-				if constexpr (bindParamCount == 0)
+				if constexpr(std::is_same_v<FixedRet, void>)
 				{
-					if (rawFunctor != nullptr)
-						(*rawFunctor)(GetParam<Is>()...);
-					else
-						(*unqFunctor)(GetParam<Is>()...);
+					if constexpr (bindParamCount == 0)
+					{
+						if (rawFunctor != nullptr)
+							(*rawFunctor)(GetParam<Is>()...);
+						else
+							(*unqFunctor)(GetParam<Is>()...);
+					}
+					else if constexpr (ParamSequence<BindTuple, seqIndex>::isCompletely)
+					{
+						if (rawFunctor != nullptr)
+							(*rawFunctor)(GetParam<Is>()...);
+						else
+							(*unqFunctor)(GetParam<Is>()...);
+					} 
 				}
-				else if constexpr (ParamSequence<BindTuple, seqIndex>::isCompletely)
+				else
 				{
-					if (rawFunctor != nullptr)
-						(*rawFunctor)(GetParam<Is>()...);
+					if constexpr (bindParamCount == 0)
+					{
+						if (rawFunctor != nullptr)
+							return (*rawFunctor)(GetParam<Is>()...);
+						else
+							return (*unqFunctor)(GetParam<Is>()...);
+					}
+					else if constexpr (ParamSequence<BindTuple, seqIndex>::isCompletely)
+					{
+						if (rawFunctor != nullptr)
+							return (*rawFunctor)(GetParam<Is>()...);
+						else
+							return (*unqFunctor)(GetParam<Is>()...);
+					}
 					else
-						(*unqFunctor)(GetParam<Is>()...);
+					{
+						if constexpr (IsPointer_V<Ret>)
+							return nullptr;
+						else if constexpr (IsClass_V<Ret>)
+							return Ret();
+						else
+							return 0;
+					}
 				}
 			}
 		public:
@@ -248,10 +283,17 @@ namespace JinEngine
 			}
 			void InvokeCompletelyBind()
 			{
-				CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>());
+				CallFunc<void>(std::make_index_sequence<std::tuple_size_v<BindTuple>>());
+			}
+			bool InvokeCompletelyBindRetBoolean()
+			{
+				if constexpr (std::is_same_v<Ret, bool>)
+					return CallFunc<bool>(std::make_index_sequence<std::tuple_size_v<BindTuple>>());
+				else
+					return false;
 			}
 		public:
-			constexpr bool IsCompletelyBind()
+			constexpr bool IsCompletelyBind()const
 			{
 				constexpr int bindParamCount = sizeof...(BindParam);
 				constexpr int seqIndex = bindParamCount - 1;
@@ -261,6 +303,10 @@ namespace JinEngine
 					return true;
 				else
 					return false;
+			}
+			bool IsSameReturnType(const J_PARAMETER_TYPE paramType)const
+			{
+				return GetParameterType<Ret>() == paramType;
 			}
 			template<size_t index>
 			decltype(auto) Get()

@@ -1,20 +1,19 @@
 #pragma once
-#include"JGraphicConstants.h"
+#include"JGraphicConstants.h" 
 #include"GraphicResource/JGraphicResourceType.h"  
 #include"FrameResource/JFrameResourceEnum.h"   
 #include"Culling/JCullingType.h"
+#include"Accelerator/JGpuAcceleratorType.h" 
 #include"../Core/JCoreEssential.h"  
 #include<string>
  
 namespace JinEngine
-{
+{ 
+	class JShader;  
+	class JMain;
+	class JComponent;
 	struct JGraphicShaderInitData;
 	struct JComputeShaderInitData;
-	class JGraphicShaderDataHolderBase;
-	class JComputeShaderDataHolderBase; 
-	class JShader;  
- 
-	class JMain;
 	namespace Core
 	{
 		class JDataHandle;
@@ -35,15 +34,18 @@ namespace JinEngine
 		class JGraphicResourceUserInterface; 
 		class JCullingInfo;
 		class JCullingInterface;
+		class JGpuAcceleratorInfo;
+		class JGpuAcceleratorInterface;
 		class JCsmTargetInterface;
 		class JCsmHandlerInterface;
 		class JFrameUpdateData; 
 		class JGraphicAdapter;
 		class JGuiBackendDataAdapter;
 		class JGuiBackendInterface;
+		class JShaderDataHolder;
 		struct JGuiInitData; 
 		struct JMipmapGenerationDesc;
-
+		struct JConvertColorDesc;
 		class JGraphicPrivate
 		{
 		public:
@@ -63,9 +65,10 @@ namespace JinEngine
 				static bool DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype);
 			private:
 				static bool SetMipmap(const JUserPtr<JGraphicResourceInfo>& info, JTextureCreationDesc createDesc);
+				static bool SetTextureDetail(const JUserPtr<JGraphicResourceInfo>& info, const JConvertColorDesc& convertDesc);
 			private:
-				static JOwnerPtr<JGraphicShaderDataHolderBase> StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData);
-				static JOwnerPtr<JComputeShaderDataHolderBase> StuffComputeShaderPso(const JComputeShaderInitData& shaderData);
+				static JOwnerPtr<JShaderDataHolder> StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData);
+				static JOwnerPtr<JShaderDataHolder> StuffComputeShaderPso(const JComputeShaderInitData& shaderData);
 			private:
 				//Debug
 				static bool MipmapBindForDebug(const JUserPtr<JGraphicResourceInfo>& info, _Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle);
@@ -82,6 +85,19 @@ namespace JinEngine
 				static JUserPtr<JCullingInfo> CreateHdOccCullingResultBuffer(); 
 			private:
 				static bool DestroyCullignData(JCullingInfo* cullingInfo);
+			};
+			class AcceleratorInterface
+			{
+			private:
+				friend class JGpuAcceleratorInterface;
+			private:
+				static JUserPtr<JGpuAcceleratorInfo> CreateGpuAccelerator(const JGpuAcceleratorBuildDesc& desc);
+			private:
+				static bool DestroyGpuAccelerator(JGpuAcceleratorInfo* info);
+			private:
+				static void UpdateTransform(JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp);
+				static void AddComponent(JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp);
+				static void RemoveComponent(JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp);
 			};
 			class CsmInterface
 			{
