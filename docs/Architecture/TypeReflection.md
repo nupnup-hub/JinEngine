@@ -14,6 +14,8 @@
 - Use static structure construction func for register
 
 ## Class overview
+- JReflectionInfo 
+    - Manage type per event
 - JTypeInfo
     - Own type per data 
 - JMethodInfo
@@ -22,8 +24,5 @@
 - JParameterInfo
     - Own parameter get set callable 
     - Own parameter return type hint
-- JReflectionInfo
-    - Own typeinfo
-    - Manage type per event
 
-
+## View
