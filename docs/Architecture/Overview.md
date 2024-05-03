@@ -36,7 +36,7 @@
   - Update reflection: 
   - Update thread: Manage enable cpu thread
   - Update editor: Do update editor process ... [detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
-  - Update frame resource: Do update graphic frame resource used by scene object ... details [detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
+  - Update frame resource: Do update graphic frame resource used by scene object ... [detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
   - draw: Scene rendering and display ... [detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md)
   
 
