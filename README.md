@@ -2,10 +2,10 @@
 
 Game engine for studying graphics and software architecture 
   
-![EngineImage00](https://github.com/nupnup-hub/JinEngine/assets/59456231/9f9e30ed-ed01-4d69-994c-10b52edd2f56)
+![EngineImage00](https://github.com/nupnup-hub/JinEngine/assets/59456231/18817b30-8ff2-4e56-8001-730b64ed297a)
 (Unreal engine4 sun temple model) 
 
-![EngineImage02](https://github.com/nupnup-hub/JinEngine/assets/59456231/5e4bdd1b-ae19-4e7a-9080-9e12fe4f4166)
+![EngineImage01](https://github.com/nupnup-hub/JinEngine/assets/59456231/b46dd7fd-1a05-41ed-b6e1-cb9c2d6812f1)
 (Amazon Lumberyard Bistro model)
 
 ## Features
