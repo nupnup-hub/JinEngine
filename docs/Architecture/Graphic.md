@@ -30,5 +30,7 @@
     ![GraphicDraw drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/886abff7-78c0-4520-9dd0-b26f3d57d5cf)
 
 ## GBuffer
+  
+  ![GBufferLayer drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/62e70476-6034-45c0-9d43-aa48895fec42)
 
-  ![GBufferLayer drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/c4e79965-2e35-4f02-bd8b-81b1b5ded2ff)
+
