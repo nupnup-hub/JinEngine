@@ -7,7 +7,6 @@
 ## Detail
   - Responsible for all functions related to graphics
   - Designed to use a variety of graphical APIs(Currently, only dx12 is applied)
-  - 
   - Class
     - Graphic
       - Manage sub class
