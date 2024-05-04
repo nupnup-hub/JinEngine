@@ -32,12 +32,18 @@
 - Controll engine flow 
 ![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/b0cf7f36-02d2-4cef-b253-2474ae844061)
 
-  - Update wait: Wait for the command to complete to a certain point in gpu
-  - Update reflection: Update reflection event ... [reflection system detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/TypeReflection.md)
-  - Update thread: Manage enable cpu thread
-  - Update editor: Do update editor process ... [editor detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
-  - Update frame resource: Do update graphic frame resource used by scene object ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
-  - draw: Scene rendering and display ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md)
+  - Update wait
+    - Wait for the command to complete to a certain point in gpu
+  - Update reflection
+    - Update reflection event ... [reflection system detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/TypeReflection.md)
+  - Update thread
+    - Manage enable cpu thread
+  - Update editor
+    - Do update editor process ... [editor detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
+  - Update frame resource
+    - Do update graphic frame resource used by scene object ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
+  - draw
+    - Scene rendering and display ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md)
   
 
 
