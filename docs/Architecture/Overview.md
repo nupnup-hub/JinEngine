@@ -40,7 +40,7 @@
     - Manage enable cpu thread
   - Update editor
     - Do update editor process ... [editor detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
-  - Update frame resource
+  - Update frame
     - Do update graphic frame resource used by scene object ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
   - draw
     - Scene rendering and display ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md)
