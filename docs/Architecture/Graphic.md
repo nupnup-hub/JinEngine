@@ -17,7 +17,7 @@
     - Option
       - User interface to control graphics
     - Info
-      - Public statistics on graphic related data    
+      - Public statistics data on graphic related    
 
 ## Specific task senario
   - Sub class creation
