@@ -18,7 +18,7 @@
   - Depending on the frequency of use, resources exist in real memory or as metadata in file data
 
 ## Specific task senario
-- Component Creation
+- Component Register
 
 ![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/59a06155-cd32-45da-9da0-5d960169643f)
     
