@@ -5,7 +5,11 @@
  
    
 ## Detail
-
+  - Graphic
+  - Sub class
+    - Resource manage
+    - Task
+  - Option
 
 ## Specific task senario
   - Sub class creation
