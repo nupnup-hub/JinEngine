@@ -1,7 +1,7 @@
 # Graphic
   - Component dependency
 
-![GraphicDiagram](https://github.com/nupnup-hub/JinEngine/assets/59456231/06ffb805-5149-4131-97fa-005e629fac38)
+![GraphicDependency](https://github.com/nupnup-hub/JinEngine/assets/59456231/06ffb805-5149-4131-97fa-005e629fac38)
  
    
 ## Detail
