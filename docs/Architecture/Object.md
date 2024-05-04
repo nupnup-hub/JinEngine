@@ -1,7 +1,7 @@
 # Object
 
 - Component dependency     
-![ObjectDiagram](https://github.com/nupnup-hub/JinEngine/assets/59456231/a92badc9-d3cb-42cb-89f8-b5afb1b0c7ee)
+![ObjectDiagram](https://github.com/nupnup-hub/JinEngine/assets/59456231/49d66305-9e0c-449b-9671-17681e69ac2d)
  
 ## Detail 
 - GameObject
@@ -20,11 +20,10 @@
 ## Specific task senario
 - Component Register
 
-![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/9d19a586-b8b8-4341-a900-f166506a8c22)
+![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/4b7c17e3-db33-4956-8d8e-1d763d9c3b90)
 
 - Resouce Destruction
 
-![ResourceDestruction](https://github.com/nupnup-hub/JinEngine/assets/59456231/5cd949fb-9bfe-4e76-8943-85cd80e9c57b)
-
+![ResourceDestruction](https://github.com/nupnup-hub/JinEngine/assets/59456231/46203687-4c3f-4d7b-8890-d4af8db2bcbc)
   
 
