@@ -7,6 +7,7 @@
 ## Detail
   - Responsible for all functions related to graphics
   - Designed to use a variety of graphical APIs(Currently, only dx12 is applied)
+  - Configure subclasses for each graphic task
   - Class
     - JGraphic
       - Manage sub class
