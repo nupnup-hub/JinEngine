@@ -12,7 +12,8 @@
 
  - Editor event process
 
-![EditorEventProcess drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/adec797b-4860-4651-b30b-4ac77bc97f4b)
+![EditorEventProcess drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/283363fe-0210-4efc-9254-80054d250148)
+
 
    
    
