@@ -39,11 +39,11 @@
   - Update thread
     - Manage enable cpu thread
   - Update editor
-    - Do update editor process ... [editor detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
+    - Do update editor process ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md)
   - Update frame
     - Do update graphic frame resource used by scene object ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
   - draw
-    - Scene rendering and display ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Editor.md)
+    - Scene rendering and display ... [graphic detail](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Graphic.md)
   
 
 
