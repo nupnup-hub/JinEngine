@@ -32,7 +32,7 @@
 
  - Call imgui(Gui api) implementation part
 
-![GuiCall drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/76609cc8-1c64-4ef4-a800-efc56145ee14)
+![GuiCall drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/0fa9e520-2f33-4b63-929b-cefc2499ff1c)
 
 
  - Editor event process
