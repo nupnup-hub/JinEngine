@@ -19,7 +19,8 @@
     
   - Draw
     
-    ![GraphicDraw drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/f3b2c7d0-69fb-46b5-a453-c462ebe66bf8)
+    ![GraphicDraw drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/886abff7-78c0-4520-9dd0-b26f3d57d5cf)
+
 
 
 ## GBuffer
