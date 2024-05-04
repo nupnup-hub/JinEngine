@@ -5,7 +5,7 @@
 
 # Detail
   - Manage engine gui feature
-  - The display scenario consist of control (JEditorPage, JEditorWindow) and implementation(JGui)
+  - The display scenario consist of control (JEditorPage, JEditorWindow) and implementation(JGui, JGuiAdaptee)
   - Can transition(do, undo)
   - The event will be updated one frame later for integrity of the resource
   - Class
