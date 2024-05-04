@@ -10,7 +10,8 @@
 ## Specific task senario
   - Sub class creation
     
-    ![GraphicSubclass](https://github.com/nupnup-hub/JinEngine/assets/59456231/b86c671b-4b23-4050-bbf8-51d81a7e7012)
+    ![GraphicSubclass](https://github.com/nupnup-hub/JinEngine/assets/59456231/75a0f5a0-9af5-48e9-a590-1bdb6d835d61)
+
     
   - Update frame
     
