@@ -1,7 +1,7 @@
 # Object
 
 - Component dependency     
-![ObjectDiagram](https://github.com/nupnup-hub/JinEngine/assets/59456231/49d66305-9e0c-449b-9671-17681e69ac2d)
+![ObjectDependency](https://github.com/nupnup-hub/JinEngine/assets/59456231/49d66305-9e0c-449b-9671-17681e69ac2d)
  
 ## Detail 
 - GameObject
