@@ -1,7 +1,7 @@
 # Editor
   - Component dependency
 
-![EditorDiagram](https://github.com/nupnup-hub/JinEngine/assets/59456231/7a0dd5ec-59f0-41ce-ad82-c5c50bd6d7cf)
+![EditorDependency](https://github.com/nupnup-hub/JinEngine/assets/59456231/7a0dd5ec-59f0-41ce-ad82-c5c50bd6d7cf)
 
 # Detail
 
