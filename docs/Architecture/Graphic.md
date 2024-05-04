@@ -14,7 +14,7 @@
 ## Specific task senario
   - Sub class creation
     
-    ![GraphicSubclass](https://github.com/nupnup-hub/JinEngine/assets/59456231/75a0f5a0-9af5-48e9-a590-1bdb6d835d61)
+    ![GraphicSubclass](https://github.com/nupnup-hub/JinEngine/assets/59456231/67b79604-e9d5-4191-b5ba-dca5edd0a4a6)
 
   - Graphic resource creation
 
