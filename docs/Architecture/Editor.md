@@ -23,13 +23,15 @@
         - Manage displayed gui data(click, intersect, ...)
  
 # Specific task senario
- - object explorer update
+ - update JEditorWindow
 
 ![DisplayObjectExp drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/d315d800-f3a1-40a1-b479-a2c42cf7b62d)
+
 
  - Call gui implementation part
 
 ![GuiCall drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/76609cc8-1c64-4ef4-a800-efc56145ee14)
+
 
  - Editor event process
 
