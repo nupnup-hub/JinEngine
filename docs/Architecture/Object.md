@@ -20,13 +20,11 @@
 ## Specific task senario
 - Component Register
 
-![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/59a06155-cd32-45da-9da0-5d960169643f)
-    
+![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/9d19a586-b8b8-4341-a900-f166506a8c22)
+
 - Resouce Destruction
 
- ![ResourceDestruction](https://github.com/nupnup-hub/JinEngine/assets/59456231/82c74c15-3855-4a07-8b7b-e2776c82af09)
-
-
+![ResourceDestruction](https://github.com/nupnup-hub/JinEngine/assets/59456231/5cd949fb-9bfe-4e76-8943-85cd80e9c57b)
 
   
 
