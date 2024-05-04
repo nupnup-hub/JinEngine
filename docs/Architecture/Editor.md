@@ -18,9 +18,11 @@
       - JEditorWindow
         - Configure the Gui display scenario control according to window characteristics
       - JGui 
-        - Connect the caller to the implementation according to Api
+        - Parser a display gui request to Adaptee
         - Control gui state
         - Manage displayed gui data(click, intersect, ...)
+      - JGuiAdaptee
+         - Connect the caller to the implementation according to Api
  
 # Specific task senario
  - update JEditorWindow
