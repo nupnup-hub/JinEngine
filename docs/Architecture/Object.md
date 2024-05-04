@@ -17,7 +17,7 @@
   - Own and manage the file that owns metadata on the Resource
   - Depending on the frequency of use, resources exist in real memory or as metadata in file data
 
-## Use case
+## Specific task senario
 - Component Creation
 
 ![Component creation drawio](https://github.com/nupnup-hub/JinEngine/assets/59456231/844be91f-ef00-4ac8-8479-6690af79003c)
