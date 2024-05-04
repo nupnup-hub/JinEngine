@@ -1,7 +1,7 @@
 # Overview
 - Module dependency 
   
-![dir_274a967828c2c6b04a4f42b9857d59f3_dep](https://github.com/nupnup-hub/JinEngine/assets/59456231/19e55b64-b7e7-407a-ad3a-1c8d7a717d09) 
+![ModuleDependency](https://github.com/nupnup-hub/JinEngine/assets/59456231/95452b95-551f-43a1-b473-6537d9f80526)
  
 #  The behavior of modules
 
@@ -30,7 +30,7 @@
 
 ## Main
 - Controll engine flow 
-![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/b0cf7f36-02d2-4cef-b253-2474ae844061)
+![MainFlow](https://github.com/nupnup-hub/JinEngine/assets/59456231/3d8eb083-4424-42e5-8da6-daf5f2910fdb)
 
   - Update wait
     - Wait for the command to complete to a certain point in gpu
