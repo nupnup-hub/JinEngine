@@ -1,7 +1,7 @@
 # Type Reflection
  
 ## Class overview
-![TypeReflection](https://github.com/nupnup-hub/JinEngine/assets/59456231/ab63c3ae-685b-47f3-998e-cdbb9e0c7748)
+![TypeReflection](https://github.com/nupnup-hub/JinEngine/assets/59456231/b338aeb3-2d38-4b07-b40f-19f1d8f2a182)
 
 ## Detail
 - Define unique data per type
