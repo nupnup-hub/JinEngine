@@ -24,7 +24,8 @@
     
 - Resouce Destruction
 
-![ResourceDestruction](https://github.com/nupnup-hub/JinEngine/assets/59456231/14677627-2cda-433c-8de9-a62a712194b7)
+ ![ResourceDestruction](https://github.com/nupnup-hub/JinEngine/assets/59456231/82c74c15-3855-4a07-8b7b-e2776c82af09)
+
 
 
   
