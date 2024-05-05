@@ -1,8 +1,7 @@
 #pragma once
 #include "JDxGraphicResourceHolderInterface.h" 
 #include<wrl/client.h>   
-#include<d3dx12.h>
-#include<memory>
+#include<d3dx12.h> 
 
 namespace JinEngine
 {

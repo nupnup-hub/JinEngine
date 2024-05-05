@@ -1,8 +1,7 @@
 #pragma once  
 #include"JDxShaderDataHolderInterface.h"
 #include"../../../Core/Math/JVector.h"  
-#include"../../../Core/Utility/JMacroUtility.h"
-#include<vector>
+#include"../../../Core/Utility/JMacroUtility.h" 
 #include<wrl.h> 
 #include<d3d12.h> 
 #include<dxcapi.h>

@@ -1,7 +1,7 @@
 #include"JCplusScriptCreator.h"
-#include"../Utility/JMacroUtility.h"
+#include"../../../Core/Utility/JMacroUtility.h"
  
-namespace JinEngine::Core
+namespace JinEngine::Application
 {
 	std::string JCplusScriptCreator::CreateProjectDefaultHeader(const std::string& name)
 	{ 
@@ -33,6 +33,7 @@ namespace JinEngine::Core
 		std::string cpp; 
 		cpp += "#include \"" + name + ".h\"\n";
 		cpp += "#include \"Core/Module/JModuleUser.h\"\n";
+		cpp += "#include \"Application/Project/JApplicationProject.h\"\n"; 
 		cpp += "namespace JinEngine::Core\n";
 		cpp += "{\n";
 		cpp += "	class _JModuleRegister\n";
@@ -42,7 +43,7 @@ namespace JinEngine::Core
 		cpp += "	{\n";
 		cpp += "	std::wstring wName = JCUtil::U8StrToWstr(name);\n";
 		cpp += "	std::wstring modulePath = JApplicationProject::OutDirPath() + L\"\\ \" + wName + L\".dll\";\n";
-		cpp += "	_JModuleManager::Instance().RegisterModule(JModuleIntializer{ wName , modulePath, desc });\n";
+		cpp += "	_JModuleManager::Instance().RegisterModule(JModuleIntializer{modulePath, desc });\n";
 		cpp += "	}\n";
 		cpp += "	public:\n";
 		cpp += "	};\n";

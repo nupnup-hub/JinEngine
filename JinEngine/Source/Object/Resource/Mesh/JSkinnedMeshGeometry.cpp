@@ -362,7 +362,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto metaData = std::make_unique<JSkinnedMeshGeometry::LoadMetaData>(directory);	//for load metadata
-		if (LoadMetaData(pathData.engineMetaFileWPath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JSkinnedMeshGeometry> newMesh = nullptr;
@@ -372,7 +372,7 @@ namespace JinEngine
 		if (newMesh == nullptr)
 		{
 			using Impl = JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl;
-			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.engineFileWPath, metaData.get()), &sPrivate);
+			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &sPrivate);
 			newMesh.ConnnectChild(idenUser);
 		}
 		return newMesh;

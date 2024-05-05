@@ -1,6 +1,5 @@
 #include"JShaderType.h"
-#include"../../Core/File/JFileIOHelper.h"
-#include<string>
+#include"../../Core/File/JFileIOHelper.h" 
 
 #define THREAD_DIM_X_SYMBOL L"DIMX"
 #define THREAD_DIM_Y_SYMBOL L"DIMY"

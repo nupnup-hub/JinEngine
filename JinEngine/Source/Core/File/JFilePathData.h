@@ -1,37 +1,41 @@
-#pragma once
-#include<string> 
+#pragma once 
+#include"../JCoreEssential.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		struct JAssetFileLoadPathData
+		struct JFilePathData
 		{
 		public:
-			const std::wstring engineFileWPath;
-			std::wstring engineMetaFileWPath;
-			std::wstring folderPath;
 			std::wstring name;
+			std::wstring fullName;
+			std::wstring folderPath;
+			std::wstring path;
 			std::wstring format;
 		public:
-			JAssetFileLoadPathData(const std::wstring& engineFilePath);
+			JFilePathData(const std::wstring& oriPath);
 		};
 
-		struct JFileImportHelpData
+		struct JAssetFilePathData : public JFilePathData
+		{
+		public: 
+			std::wstring metaFilePath; 
+		public:
+			JAssetFilePathData(const std::wstring& engineFilePath);
+		};
+
+		struct JFileImportPathData : public JAssetFilePathData
 		{
 		public:
 			const std::wstring oriFileWPath;
-			const std::string oriFilePath;
-			std::wstring engineFileWPath;
-			std::wstring engineMetaFileWPath;
-			std::wstring folderPath;
-			std::wstring name;
-			std::wstring fullName;
-			std::wstring format;
+			const std::string oriFilePath; 
+		public:
+			std::wstring oriFileFormat;
 		public:
 			int flag;
 		public:
-			JFileImportHelpData(const std::wstring& oriPath, const int flag = 0);
+			JFileImportPathData(const std::wstring& oriPath, const int flag = 0);
 		};
 	}
 }

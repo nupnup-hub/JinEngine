@@ -3,8 +3,7 @@
 #include"../Platform/JHardwareInfo.h"
 #include"../Platform/JPlatformInfo.h"
 #include<assert.h> 
-#include<Windows.h> 
-#include<string>
+#include<Windows.h>  
 #include<fstream>
   
 namespace JinEngine

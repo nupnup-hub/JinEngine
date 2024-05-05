@@ -29,7 +29,7 @@
 #include"../../../Object/Resource/Shader/JShader.h"
 #include"../../../Object/Resource/Scene/JScene.h" 
 #include"../../../Object/GameObject/JGameObject.h"
-#include"../../../Application/JApplicationEngine.h"
+#include"../../../Application/Engine/JApplicationEngine.h"
 
 //Graphic Shader Macro Symbol  
 #define TEXTURE_2D_COUNT_SYMBOL L"TEXTURE_2D_COUNT"

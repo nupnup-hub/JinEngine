@@ -4,11 +4,9 @@
 #include"../JGraphicOption.h"
 #include"../JGraphicConstants.h" 
 #include"../JGraphicEnum.h"
-#include"../Image/JImageProcessingDesc.h"
-#include"../../Core/JCoreEssential.h"
+#include"../Image/JImageProcessingDesc.h" 
 #include"../../Core/Reflection/JTypeImplBase.h"
-#include"../../Core/Math/JVector.h" 
-#include<string>  
+#include"../../Core/Math/JVector.h"  
 
 namespace JinEngine
 {

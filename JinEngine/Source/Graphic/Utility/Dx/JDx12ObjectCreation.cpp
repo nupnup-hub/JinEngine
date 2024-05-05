@@ -1,6 +1,6 @@
 #include"JDx12ObjectCreation.h"
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"
-#include"../../../Core/Exception/JExceptionMacro.h"
+#include"../../Exception/JGraphicException.h"
 #include<d3dx12.h>
 namespace JinEngine::Graphic
 {

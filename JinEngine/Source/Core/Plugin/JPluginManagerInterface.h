@@ -1,8 +1,6 @@
 #pragma once 
 #include "../Pointer/JOwnerPtr.h"
-#include"../Module/JModuleDesc.h"
-#include<string>
-#include<vector>
+#include"../Module/JModuleDesc.h" 
 
 namespace JinEngine
 {

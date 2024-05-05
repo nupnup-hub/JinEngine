@@ -22,7 +22,7 @@
 #include"../../../Core/Animation/JAnimationData.h"
 #include"../../../Core/Geometry/Mesh/Loader/FbxLoader/JFbxFileLoader.h"
 #include"../../../Core/Utility/JCommonUtility.h"
-#include"../../../Application/JApplicationProject.h"
+#include"../../../Application/Project/JApplicationProject.h"
 
  
 namespace JinEngine
@@ -517,7 +517,7 @@ namespace JinEngine
 
 			auto fbxMeshImportC = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
 			{				
-				const Core::JFileImportHelpData& importPathData = desc->importPathData;
+				const Core::JFileImportPathData& importPathData = desc->importPathData;
 				const JUserPtr<JDirectory>& dir = desc->dir;
 
 				std::vector<JUserPtr<JResourceObject>> res;
@@ -541,7 +541,7 @@ namespace JinEngine
 						res.push_back(JICI::Create<JAnimationClip>(importPathData.name,
 							Core::MakeGuid(),
 							(J_OBJECT_FLAG)importPathData.flag,
-							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
+							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.oriFileFormat),
 							animationDir,
 							std::make_unique<Core::JAnimationData>(std::move(jfbxAniData))));
 					}
@@ -715,7 +715,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 		JAnimationClip::LoadMetaData metadata(loadData->directory);
 		 
-		if (LoadMetaData(pathData.engineMetaFileWPath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JAnimationClip> newClip = nullptr;
@@ -729,7 +729,7 @@ namespace JinEngine
 				metadata.flag, 
 				(uint8)metadata.formatIndex, 
 				directory,
-				JAnimationClip::JAnimationClipImpl::ReadAssetData(pathData.engineFileWPath));
+				JAnimationClip::JAnimationClipImpl::ReadAssetData(pathData.path));
 
 			auto idenUser = aPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &aPrivate);
 			newClip.ConnnectChild(idenUser);

@@ -4,8 +4,7 @@
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Platform/JHardwareInfo.h" 
 #include"../../Core/Geometry/Mesh/JMeshType.h"
-#include"../../Application/JApplicationEngine.h"
-#include<string>
+#include"../../Application/Engine/JApplicationEngine.h" 
 
 namespace JinEngine
 {

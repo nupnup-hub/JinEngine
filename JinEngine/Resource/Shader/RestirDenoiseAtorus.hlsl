@@ -31,7 +31,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     const float2 uv = pixelCenterCoord * cb.invRtSize;
     
     const float epsVariance = 1e-10;
-    const float kernelWeights[3] = { 1.0, 2.0 / 3.0, 1.0 / 6.0 };
+    const float kernelWeights[3] = { 1.0f, 2.0f / 3.0f, 1.0f / 6.0f };
 
     // constant samplers to prevent the compiler from generating code which
     // fetches the sampler descriptor from memory for each texture access

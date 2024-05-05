@@ -1,5 +1,4 @@
-#pragma once 
-#include<memory>
+#pragma once  
 #include"../JResourceObject.h"  
 #include"../../../Core/Guid/JGuidCreator.h"
 

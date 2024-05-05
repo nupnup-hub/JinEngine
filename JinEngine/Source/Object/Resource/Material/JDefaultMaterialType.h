@@ -1,6 +1,5 @@
 #pragma once
-#include"../Shader/JDefaultShaderType.h"
-#include<string>
+#include"../Shader/JDefaultShaderType.h" 
 
 namespace JinEngine
 {

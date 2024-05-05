@@ -6,11 +6,8 @@
 #include"../JCoreEssential.h"
 #include"../JEngineInfo.h"
 #include"../Pointer/JOwnerPtr.h"
-#include"../Lazy/JLazyDestruction.h" 
-#include<unordered_map>  
-#include<vector>
-#include<assert.h>  
-#include<memory>
+#include"../Lazy/JLazyDestruction.h"  
+#include<assert.h>   
 
 namespace JinEngine
 {

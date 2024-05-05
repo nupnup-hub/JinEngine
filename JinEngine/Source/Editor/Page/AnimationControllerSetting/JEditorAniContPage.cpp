@@ -17,8 +17,7 @@
 #include"../../../Object/Resource/JResourceManager.h"    
 #include"../../../Object/Resource/Scene/JScene.h"  
 #include"../../../Object/Resource/Scene/JSceneManager.h"  
-#include"../../../Application/JApplicationProject.h" 
-#include<vector>
+#include"../../../Application/Project/JApplicationProject.h"  
 
 namespace JinEngine
 {

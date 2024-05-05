@@ -3,8 +3,7 @@
 #include"JThread.h"
 #include"../Func/Functor/JFunctor.h"
 #include"../Singleton/JSingletonHolder.h"
-#include <windows.h> 
-#include<vector>
+#include <windows.h>  
 
 namespace JinEngine
 {

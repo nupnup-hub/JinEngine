@@ -5,14 +5,9 @@
 #include"../JCoreEssential.h"
 #include"../Time/JGameTimer.h"
 #include"../Utility/JCommonUtility.h"
-#include"../Log/JLogMacro.h"
-#include"../../Object/GameObject/JGameObject.h"
-#include"../../Object/Component/JComponent.h"
-#include"../../Object/Resource/JResourceObject.h"
-#include"../../Object/Resource/JResourceObjectHint.h" 
-#include<set>
-#include<vector>  
-#include<unordered_map> 
+#include"../Log/JLogMacro.h" 
+#include<set> 
+
 namespace JinEngine
 {
 	namespace Core
@@ -63,59 +58,19 @@ namespace JinEngine
 				for (auto& data : typeVec)
 					data->ExecuteTypeCallOnece();
 
-				std::set<size_t> registeredType;
-				JGameObject::StaticTypeInfo().RegisterAllocation();
-				registeredType.emplace(JGameObject::StaticTypeInfo().TypeGuid());
-
-				auto componentTypeVec = GetDerivedTypeInfo(JComponent::StaticTypeInfo());
-				for (auto& data : componentTypeVec)
+				//std::set<size_t> registeredType;		debugging
+				for (auto& data : typeVec)
 				{
 					if (!data->IsAbstractType())
 					{
 						data->RegisterAllocation();
 						data->RegisterLazyDestructionInfo();
-						registeredType.emplace(data->TypeGuid());
-					}
-				}
-
-				auto rTypeHintVec = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
-				for (auto& hint : rTypeHintVec)
-				{
-					Core::JTypeInfo& typeInfo = RTypeCommonCall::CallGetTypeInfo(hint.thisType);
-					auto derivedVec = GetDerivedTypeInfo(typeInfo);
-					for (auto& data : derivedVec)
-					{
-						if (!data->IsAbstractType())
-						{
-							data->RegisterAllocation();
-							data->RegisterLazyDestructionInfo();
-							registeredType.emplace(data->TypeGuid());
-						}
-					}
-				}
-
-				auto idenTypeVec = GetDerivedTypeInfo(Core::JIdentifier::StaticTypeInfo());
-				for (auto& data : idenTypeVec)
-				{
-					if (!data->IsAbstractType() && registeredType.find(data->TypeGuid()) == registeredType.end())
-					{
-						data->RegisterAllocation();
-						data->RegisterLazyDestructionInfo();
-						registeredType.emplace(data->TypeGuid());
-					}
-				}
-				for (auto& data : typeVec)
-				{
-					if (!data->IsAbstractType() && registeredType.find(data->TypeGuid()) == registeredType.end())
-					{
-						data->RegisterAllocation();
-						data->RegisterLazyDestructionInfo();
-						registeredType.emplace(data->TypeGuid());
+						//registeredType.emplace(data->TypeGuid());
 					}
 					if (data->CanUseLazyDestruction())
 						jLazy.lazyTypeVec.push_back(data);
 				}
-
+	   
 				jLazy.timeVec.resize(jLazy.lazyTypeVec.size());
 				for (auto& data : jLazy.timeVec)
 					data = 0;
@@ -126,7 +81,7 @@ namespace JinEngine
 			}
 			void Clear()
 			{
-				auto typeVec = GetDerivedTypeInfo(Core::JIdentifier::StaticTypeInfo());
+				std::vector<JTypeInfo*> typeVec = GetAllTypeInfo(); 
 				for (auto& data : typeVec)
 					data->DeRegisterAllocation();
 			}

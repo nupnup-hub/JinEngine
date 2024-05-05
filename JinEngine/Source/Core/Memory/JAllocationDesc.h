@@ -1,6 +1,5 @@
 #pragma once 
-#include"../Func/Functor/JFunctor.h"
-#include<memory>
+#include"../Func/Functor/JFunctor.h" 
 
 namespace JinEngine
 {

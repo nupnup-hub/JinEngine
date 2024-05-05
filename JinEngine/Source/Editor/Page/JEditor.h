@@ -3,9 +3,7 @@
 #include"../Event/JEditorEventStruct.h" 
 #include"../../Core/JCoreEssential.h"  
 #include"../../Core/Event/JEventListener.h"
-#include"../../Core/File/JFileIOHelper.h"
-#include<string>
-#include<memory> 
+#include"../../Core/File/JFileIOHelper.h" 
 
 namespace JinEngine
 {

@@ -1,5 +1,4 @@
-#pragma once 
-#include<string>   
+#pragma once  
 #include"../../../../Core/Math/JVector.h" 
 #include"../../../../Core/JCoreEssential.h" 
 

@@ -14,8 +14,7 @@
 #include"../../../../Core/Log/JLogMacro.h"
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Resource/Scene/JScene.h" 
-
-#include"../../../../Develop/Debug/JDevelopDebug.h"
+ 
 namespace JinEngine::Graphic
 {
 	namespace Private

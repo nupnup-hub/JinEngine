@@ -9,8 +9,7 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		class JSceneObserver;
-		class JEditorBinaryTreeView;
+		class JSceneObserver; 
 	}
 	namespace Graphic
 	{ 
@@ -27,6 +26,7 @@ namespace JinEngine
 	class JLight;
 	class JRenderItem;
 	class JMeshGeometry;
+	class JAcceleratorVisualizeInterface;
 	struct JAcceleratorCullingInfo;
 
 	class JScenePrivate : public JResourceObjectPrivate
@@ -123,9 +123,9 @@ namespace JinEngine
 		class DebugInterface
 		{
 		private:
-			friend class Editor::JSceneObserver;
+			friend class Editor::JSceneObserver; 
 		private:
-			static void BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept;
+			static void BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept;
 		};
 		class FrameIndexInterface
 		{

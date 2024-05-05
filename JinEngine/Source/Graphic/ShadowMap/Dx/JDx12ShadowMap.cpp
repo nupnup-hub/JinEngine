@@ -33,7 +33,7 @@
 #include"../../../Object/Resource/Scene/JScenePrivate.h"  
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../../Object/Resource/Mesh/JMeshGeometryPrivate.h" 
-#include"../../../Application/JApplicationEngine.h"
+#include"../../../Application/Engine/JApplicationEngine.h"
  
 namespace JinEngine::Graphic
 {

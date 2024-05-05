@@ -5,7 +5,7 @@
 namespace JinEngine::Core
 {
 	//¹Ì±¸Çö
-	bool JMeshFileLoader::LoadBinFile(const JFileImportHelpData& pathData, JBinFileMeshData& binMeshData, std::vector<JBinFileMaterialData>& binMatData)
+	bool JMeshFileLoader::LoadBinFile(const JFileImportPathData& pathData, JBinFileMeshData& binMeshData, std::vector<JBinFileMaterialData>& binMatData)
 	{
 		std::ifstream stream;
 		stream.open(pathData.oriFileWPath, std::ios::binary | std::ios::in);

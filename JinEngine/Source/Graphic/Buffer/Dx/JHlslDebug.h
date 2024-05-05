@@ -1,7 +1,6 @@
 #pragma once
 #include"JDx12GraphicBuffer.h"
-#include"../JBufferType.h"
-#include<memory>
+#include"../JBufferType.h" 
 
 namespace JinEngine
 {

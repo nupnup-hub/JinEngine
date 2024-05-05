@@ -1,5 +1,4 @@
-#pragma once
-#include<string> 
+#pragma once 
 #include"../Reflection/JReflectionInfo.h"
 #include"../Utility/JCommonUtility.h"
 

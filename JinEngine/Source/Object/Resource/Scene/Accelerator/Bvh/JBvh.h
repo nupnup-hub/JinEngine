@@ -2,19 +2,12 @@
 #include"JBvhNode.h" 
 #include"JBvhOption.h"
 #include"../JAccelerator.h"
-#include"../JAcceleratorType.h"  
-#include<vector>
-#include<unordered_map>
-#include<memory>
+#include"../JAcceleratorType.h"   
 #include<DirectXCollision.h>
 
 namespace JinEngine
 {
-	class JGameObject;
-	namespace Editor
-	{
-		class JEditorBinaryTreeView;
-	} 
+	class JGameObject; 
 	class JBvh : public JCpuAccelerator
 	{
 	private:
@@ -72,6 +65,6 @@ namespace JinEngine
 		void ClearBvhNode(const uint nodeNumber)noexcept;
 		void DestroyBvhNode(const uint nodeNumber)noexcept;
 	public:
-		void BuildDebugTree(Editor::JEditorBinaryTreeView& treeView);
+		void BuildDebugTree(JAcceleratorVisualizeInterface* treeView);
 	};
 }

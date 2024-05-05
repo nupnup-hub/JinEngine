@@ -2,10 +2,8 @@
 #include"../JGraphicConstants.h"
 #include"../Device/JGraphicDeviceUser.h"
 #include"../DataSet/JGraphicDataSet.h"
-#include"../DataSet/JGraphicIndirectDataSet.h"
-#include"../../Core/JCoreEssential.h"
-#include"../../Core/Pointer/JOwnerPtr.h"
-#include<memory>
+#include"../DataSet/JGraphicIndirectDataSet.h" 
+#include"../../Core/Pointer/JOwnerPtr.h" 
 
 namespace JinEngine
 {

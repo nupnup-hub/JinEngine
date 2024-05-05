@@ -2,8 +2,7 @@
 #include"JMeshType.h" 
 #include"../../Pointer/JOwnerPtr.h"
 #include"../../Math/JVector.h" 
-#include"../../Reflection/JReflection.h"
-#include<vector>
+#include"../../Reflection/JReflection.h" 
 #include<DirectXMath.h>
 #include<DirectXCollision.h>
 

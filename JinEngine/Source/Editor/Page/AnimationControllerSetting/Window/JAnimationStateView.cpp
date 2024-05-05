@@ -13,7 +13,7 @@
 #include"../../../../Object/Resource/AnimationController/FSM/JAnimationFSMtransition.h"
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"  
 #include"../../../../Object/Resource/JResourceManager.h"
-#include"../../../../Application/JApplicationProject.h"
+#include"../../../../Application/Project/JApplicationProject.h"
 
 namespace JinEngine
 {
@@ -293,7 +293,7 @@ namespace JinEngine
 		{
 			bool isHoveredContents = false;
 			stateGraph->ClearNode();
-			stateGraph->SetGridSize(2000);
+			//stateGraph->SetGridSize(2000);
 			if (aniCont.IsValid() && selectedDiagram == nullptr)
 				selectedDiagram = aniCont->GetDiagramByIndex(0);
 

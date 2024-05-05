@@ -3,17 +3,12 @@
 #include"../JAcceleratorOption.h"  
 #include"../../../../../Core/Geometry/JRay.h" 
 #include"../../../../../Core/Math/JVector.h"
-#include<DirectXCollision.h> 
-#include<vector>
-#include<string>
+#include<DirectXCollision.h>  
 
 namespace JinEngine
 {
-	class JGameObject;
-	namespace Editor
-	{
-		class JEditorBinaryTreeView;
-	} 
+	class JGameObject; 
+	class JAcceleratorVisualizeInterface;
 	enum class J_KDTREE_NODE_TYPE
 	{
 		ROOT,
@@ -97,7 +92,7 @@ namespace JinEngine
 		void FindContainNotSort(JAcceleratorContainInfo& info)const noexcept;
 	public:
 		//Debug
-		void BuildDebugNode(Editor::JEditorBinaryTreeView& treeView);
+		void BuildDebugNode(JAcceleratorVisualizeInterface* treeView);
 		//void AddLog(const std::string& newNodeLog)noexcept;
 	};
 }

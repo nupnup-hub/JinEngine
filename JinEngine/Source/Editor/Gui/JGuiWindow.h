@@ -1,9 +1,6 @@
 #pragma once
 #include"JGuiType.h" 
-#include"../../Core/Math/JVector.h"
-#include<string>
-#include<memory>
-#include<vector>
+#include"../../Core/Math/JVector.h" 
 
 namespace JinEngine
 {

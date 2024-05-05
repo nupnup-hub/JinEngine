@@ -1,9 +1,7 @@
 #pragma once 
 #include"JObjFileLoaderUtility.h" 
-#include"../../../../Singleton/JSingletonHolder.h"  
-#include<string>
-#include<vector>
-
+#include"../../../../Singleton/JSingletonHolder.h"   
+ 
 struct DirectX::BoundingBox;
 struct DirectX::BoundingSphere;
 
@@ -11,7 +9,7 @@ namespace JinEngine
 { 
 	namespace Core
 	{
-		struct JFileImportHelpData;
+		struct JFileImportPathData;
 		using ObjMaterialMap = std::unordered_map<size_t, JObjFileMaterial>;
 		using ObjMaterialRefMap = std::unordered_map<std::wstring, JObjFileMaterial&>;
 		using ObjMaterialVec = std::vector<JObjFileMaterial>;
@@ -55,9 +53,9 @@ namespace JinEngine
 		private:
 			std::unique_ptr<LoadDataSet> set;
 		public:
-			bool LoadObjFile(const JFileImportHelpData& pathData, JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData);
+			bool LoadObjFile(const JFileImportPathData& pathData, JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData);
 		private:
-			bool LoadMesh(const JFileImportHelpData& pathData);
+			bool LoadMesh(const JFileImportPathData& pathData);
 			bool LoadMaterial();
 			bool CreateMeshGroup(JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData);
 		private:

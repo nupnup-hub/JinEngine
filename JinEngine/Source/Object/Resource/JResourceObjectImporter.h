@@ -3,11 +3,7 @@
 #include"../../Core/Singleton/JSingletonHolder.h"
 #include"../../Core/DI/JDIDataBase.h"
 #include"../../Core/File/JFilePathData.h"
-#include"JResourceObjectType.h"
-#include<string>
-#include<vector>
-#include<unordered_map>
-#include<memory>
+#include"JResourceObjectType.h"   
 
 namespace JinEngine
 { 
@@ -15,7 +11,7 @@ namespace JinEngine
 	class JResourceObject;
 	namespace Core
 	{
-		struct JFileImportHelpData;
+		struct JFileImportPathData;
 		template<typename T> class JCreateUsingNew;
 	}
  
@@ -23,15 +19,15 @@ namespace JinEngine
 	{
 		REGISTER_CLASS_ONLY_USE_TYPEINFO(JResourceObjectImportDesc)
 	public: 
-		Core::JFileImportHelpData importPathData;
+		Core::JFileImportPathData importPathData;
 		JUserPtr<JDirectory> dir;
 	public: 
-		JResourceObjectImportDesc(const Core::JFileImportHelpData& importPathData, const JUserPtr<JDirectory>& dir = nullptr);
+		JResourceObjectImportDesc(const Core::JFileImportPathData& importPathData, const JUserPtr<JDirectory>& dir = nullptr);
 	};
 
 	//.fbx처럼 하나의 format에 여려 resourceType이 포함되어있을때 유효한 resourceType을 분류하는 함수
 	//.jpg, .png처럼 resource가 명확한 경우 등록할 필요가 없다.
-	using ClassifyResourceTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const Core::JFileImportHelpData>;
+	using ClassifyResourceTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const Core::JFileImportPathData>;
 	using ImportResourceF = Core::JStaticCallableType<std::vector<JUserPtr<JResourceObject>>, const JResourceObjectImportDesc*>;
 
 	class JResourceObjectImporterImpl
@@ -52,7 +48,7 @@ namespace JinEngine
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr iptr, ClassifyResourceTypeF::Ptr cptr)noexcept;
 	public:
 		std::vector<JUserPtr<JResourceObject>> ImportResource(const JResourceObjectImportDesc* desc)const noexcept;
-		std::vector<J_RESOURCE_TYPE> DeterminFileResourceType(const Core::JFileImportHelpData importPathData)const noexcept;
+		std::vector<J_RESOURCE_TYPE> DeterminFileResourceType(const Core::JFileImportPathData importPathData)const noexcept;
 	private:
 		const FormatInfo* GetFormatInfo(const std::wstring& format)const noexcept;
 	public:

@@ -22,7 +22,7 @@ namespace JinEngine
 			friend class JResourceObjectIO;
 			friend class CreateInstanceInterface;
 		private:
-			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JDirectory>& parent, const Core::JAssetFileLoadPathData& pathData);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JDirectory>& parent, const Core::JAssetFilePathData& pathData);
 		private:
 			static JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data);
 			static Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data);

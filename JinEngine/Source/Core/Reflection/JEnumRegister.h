@@ -1,5 +1,4 @@
-#pragma once
-#include<string> 
+#pragma once 
 #include"JEnumInitializer.h"
 #include"JEnumInfo.h"
 

@@ -13,7 +13,7 @@
 #include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Core/Identity/JIdenCreator.h"
 
-#include "../../../../Application/JApplicationProject.h"
+#include "../../../../Application/Project/JApplicationProject.h"
 namespace JinEngine
 {
 	JPreviewDirectory::JPreviewDirectory(_In_ JUserPtr<JDirectory> jDir, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)

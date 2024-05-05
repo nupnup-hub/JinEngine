@@ -1,7 +1,7 @@
 #include"JGraphicInfo.h"
 #include"../Core/File/JFileIOHelper.h"
 #include"../Core/File/JFileConstant.h"
-#include"../Application/JApplicationProject.h"
+#include"../Application/Project/JApplicationProject.h"
 
 namespace JinEngine::Graphic
 { 

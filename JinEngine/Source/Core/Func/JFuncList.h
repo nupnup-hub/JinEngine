@@ -1,7 +1,6 @@
 #pragma once 
-#include"Callable/JCallable.h"
-#include<vector>
-#include<memory>
+#include"Callable/JCallable.h" 
+
 namespace JinEngine
 {
 	namespace Core

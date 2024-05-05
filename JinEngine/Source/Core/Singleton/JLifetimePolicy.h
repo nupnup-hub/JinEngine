@@ -1,7 +1,7 @@
 #pragma once 
+#include"../JCoreEssential.h"
 #include<cstdlib> 
-#include<list>
-#include<memory>
+#include<list> 
 #include<algorithm> 
 #include<stdexcept> 
 

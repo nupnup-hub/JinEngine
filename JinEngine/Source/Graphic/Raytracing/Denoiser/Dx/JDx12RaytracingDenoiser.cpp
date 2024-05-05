@@ -76,7 +76,7 @@ namespace JinEngine::Graphic
 	{
 		static constexpr uint denoiseRange = 16;
 		static constexpr float baseRadius = 2.0f;
-		static constexpr float radiusRange = 14.0f;
+		static constexpr float radiusRange = 8.0f;
 		static constexpr uint clearUserDataFrequency = 7680;
 		static constexpr uint sampleNumberMax = 64;
 
@@ -257,7 +257,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12RaytracingDenoiser::ApplyGIDenoise(const JGraphicRtDenoiseComputeSet* computeSet, const JDrawHelper& helper)
 	{
-		if (!IsSameDevice(computeSet) || !helper.option.debugging.testTrigger00)
+		if (!IsSameDevice(computeSet) || !helper.allowRtGi || !helper.option.rendering.restir.useDenoiser)
 			return;
 
 		DenoiseDataSet set(computeSet, helper);

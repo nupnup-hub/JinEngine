@@ -3,9 +3,7 @@
 #include"../../Core/Interface/JActivatedInterface.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Geometry/JBBox.h"
-#include"../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
-#include<vector>
-#include<unordered_map>
+#include"../../Object/Resource/Scene/Accelerator/JAcceleratorType.h" 
 
 namespace JinEngine
 {

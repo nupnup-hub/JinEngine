@@ -1,13 +1,10 @@
 #pragma once
-#include<type_traits> 
-#include<vector>
-#include<deque>
-#include<map>
-#include<unordered_map> 
-#include"../JCoreEssential.h"  
 #include"../Pointer/JOwnerPtr.h"
 #include"../Math/JVector.h"
-  
+#include<type_traits>  
+#include<deque>
+#include<map>  
+
 namespace JinEngine
 {
 	namespace Core

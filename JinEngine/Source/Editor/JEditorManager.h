@@ -5,12 +5,8 @@
 #include"Interface/JEditorProjectInterface.h"
 #include"../Core/Event/JEventListener.h"
 #include"../Core/JCoreEssential.h"  
-#include"../Core/Utility/JCommonUtility.h"
-#include<vector>
-#include<unordered_map>
-#include<functional>
-#include<memory> 
-#include<string> 
+#include"../Core/Utility/JCommonUtility.h" 
+#include<functional> 
 
 namespace JinEngine
 { 

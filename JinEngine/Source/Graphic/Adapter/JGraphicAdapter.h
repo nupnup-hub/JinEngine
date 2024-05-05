@@ -4,8 +4,7 @@
 #include"../Device/JGraphicDeviceUser.h"
 #include"../DataSet/JGraphicDataSet.h"
 #include"../DataSet/JGraphicIndirectDataSet.h"
-#include"../../Core/JCoreEssential.h"
-#include<memory>
+#include"../../Core/JCoreEssential.h" 
 
 namespace JinEngine
 {

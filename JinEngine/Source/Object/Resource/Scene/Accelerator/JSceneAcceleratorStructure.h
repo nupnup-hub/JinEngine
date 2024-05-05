@@ -2,26 +2,20 @@
 #include"JAcceleratorType.h"     
 #include"Octree/JOctreeOption.h"
 #include"Bvh/JBvhOption.h"
-#include"Kd-tree/JKdTreeOption.h"
+#include"Kd-tree/JKdTreeOption.h" 
 #include"../../../../Core/JCoreEssential.h" 
 #include"../../../../Core/Geometry/JBBox.h"
 #include"../../../../Graphic/Culling/JCullingInterface.h"
 #include"../../../../Graphic/Accelerator/JGpuAcceleratorType.h"
 #include"../../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
 #include<DirectXMath.h>
-#include<DirectXCollision.h>
-#include<memory>
-#include<vector>
+#include<DirectXCollision.h> 
 
 namespace JinEngine
 {
 	class JGameObject;
 	class JScene;
-	class JLight;
-	namespace Editor
-	{ 
-		class JEditorBinaryTreeView;
-	}
+	class JLight; 
 
 	class JOctree;
 	class JBvh;
@@ -35,6 +29,7 @@ namespace JinEngine
 		class JRay;		 
 	}
 	 
+	class JAcceleratorVisualizeInterface;
 	class JSceneAcceleratorStructure
 	{
 	private:
@@ -129,9 +124,7 @@ namespace JinEngine
 		void Activate()noexcept;
 		void DeAcitvate()noexcept;
 	public:
-		void BuildDebugTree(const J_ACCELERATOR_TYPE type,
-			const J_ACCELERATOR_LAYER layer,
-			Editor::JEditorBinaryTreeView& tree)noexcept;
+		void BuildDebugTree(const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept;
 	public:
 		void RegisterInterfacePointer();
 	};

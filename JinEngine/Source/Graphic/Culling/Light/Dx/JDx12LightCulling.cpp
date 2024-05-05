@@ -15,7 +15,7 @@
 #include"../../../../Core/Platform/JHardwareInfo.h"
 #include"../../../../Core/Geometry/Mesh/JMeshType.h"
 #include"../../../../Core/Geometry/Mesh/Loader/ObjLoader/JObjFileLoader.h"
-#include"../../../../Application/JApplicationProject.h"
+#include"../../../../Application/Project/JApplicationProject.h"
 #include"../../../../Object/Component/Camera/JCamera.h"
 #include"../../../../Object/Component/Light/JPointLight.h"
 #include"../../../../Object/Component/Light/JPointLightPrivate.h"
@@ -1032,9 +1032,9 @@ namespace JinEngine::Graphic
 	{
 		//Unuse
 		/*
-		//const JFileImportHelpData& pathData, JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData
-		Core::JFileImportHelpData lowSpherePathData(JApplicationEngine::DefaultResourcePath() + L"\\LowSphereC.obj");
-		Core::JFileImportHelpData lowConePathData(JApplicationEngine::DefaultResourcePath() + L"\\LowConeC.obj");
+		//const JFileImportPathData& pathData, JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData
+		Core::JFileImportPathData lowSpherePathData(JApplicationEngine::DefaultResourcePath() + L"\\LowSphereC.obj");
+		Core::JFileImportPathData lowConePathData(JApplicationEngine::DefaultResourcePath() + L"\\LowConeC.obj");
 		Core::JStaticMeshGroup lowSphereMeshGroup;
 		Core::JStaticMeshGroup lowConeMeshGroup;
 		Core::ObjMaterialMap lowSphereMaterialMap;

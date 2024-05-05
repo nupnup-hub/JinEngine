@@ -21,7 +21,7 @@ namespace JinEngine
 	public:
 		bool useSplitMesh = false;		//ignore split mesh if skinned geometry
 	public:
-		JMeshGeometryImportDesc(const Core::JFileImportHelpData& importPathData);
+		JMeshGeometryImportDesc(const Core::JFileImportPathData& importPathData);
 	};
 
 	class JMeshGeometry : public JResourceObject,

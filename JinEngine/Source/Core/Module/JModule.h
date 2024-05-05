@@ -1,8 +1,7 @@
 #pragma once 
 #include"JModuleDesc.h"
 #include"../Platform/JPlatformInfo.h"
-#include"../Utility/JMacroUtility.h" 
-#include<string>
+#include"../Utility/JMacroUtility.h"  
 
 #ifdef OS_WINDOW
 #define MODULE_HANDLE HMODULE
@@ -26,7 +25,7 @@ namespace JinEngine
 			/** @brief It is same as meta file and library file */
 			const std::wstring name;
 			/** @brief Library path */
-			const std::wstring path;  
+			const std::wstring path;   
 		private:
 			JModuleDesc desc;
 		private:
@@ -36,7 +35,7 @@ namespace JinEngine
 			JModule(const std::wstring& name, const std::wstring& path, const JModuleDesc& desc);
 		public:
 			J_SIMPLE_GET(std::wstring, name, Name)
-			J_SIMPLE_GET(std::wstring, path, Path) 
+			J_SIMPLE_GET(std::wstring, path, Path)  
 			J_SIMPLE_GET(JModuleDesc, desc, Desc)
 		public:
 			static std::wstring MetafileFormat()noexcept;
@@ -55,6 +54,8 @@ namespace JinEngine
 			* @return return True if unload success, false if not unload or didn't loaded
 			*/
 			bool UnLoad();   
+		public:
+			static bool IsValidFormat(const std::wstring& format)noexcept;
 		public:
 			static MODULE_HANDLE TryLoadModule(const std::wstring& path);
 		};

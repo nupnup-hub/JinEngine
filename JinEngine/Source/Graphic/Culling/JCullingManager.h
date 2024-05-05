@@ -3,8 +3,7 @@
 #include"JCullingInfo.h"
 #include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"
-#include"../../Core/Reflection/JReflection.h" 
-#include<vector>
+#include"../../Core/Reflection/JReflection.h"  
   
 namespace JinEngine
 {

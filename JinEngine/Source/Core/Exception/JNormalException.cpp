@@ -1,6 +1,5 @@
 #include"JNormalException.h"
-#include"../Utility/JCommonUtility.h"
-#include"../../Window/JWindow.h"
+#include"../Utility/JCommonUtility.h" 
 
 namespace JinEngine
 {

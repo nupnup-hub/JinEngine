@@ -1,12 +1,11 @@
 #include"JTypeToString.h"
-#include<type_traits>
-#include<string> 
-#include<Windows.h>
-#include <DirectXMath.h>
 #include"fbxsdk/core/math/fbxmatrix.h"
 #include"fbxsdk/core/math/fbxvector4.h"
 #include"fbxsdk/core/math/fbxdualquaternion.h"
 #include"fbxsdk/core/math/fbxaffinematrix.h" 
+#include<type_traits> 
+#include<Windows.h>
+#include <DirectXMath.h>
 
 using namespace DirectX;
 using namespace fbxsdk;

@@ -8,8 +8,7 @@
 #include"../../Core/Interface/JValidInterface.h"
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Handle/JDataHandleStructure.h"
-#include"../../Core/Func/Functor/JFunctor.h"
-#include<memory>
+#include"../../Core/Func/Functor/JFunctor.h" 
 
 namespace JinEngine
 {

@@ -2,10 +2,7 @@
 #include"JEditorPopupType.h"
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Math/JVector.h"
-
-#include<string>
-#include<memory>
-
+ 
 namespace JinEngine
 {
 	namespace Editor

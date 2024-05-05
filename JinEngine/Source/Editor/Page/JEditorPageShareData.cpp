@@ -1,9 +1,7 @@
 #include"JEditorPageShareData.h" 
 #include"../Page/JEditorPage.h" 
 #include"../../Core/Identity/JIdentifier.h"
-#include"../../Core/Utility/JCommonUtility.h"
-#include<vector>
-#include<unordered_map>
+#include"../../Core/Utility/JCommonUtility.h" 
 
 namespace JinEngine
 {

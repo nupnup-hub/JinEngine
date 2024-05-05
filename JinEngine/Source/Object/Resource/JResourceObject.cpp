@@ -14,8 +14,8 @@
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/File/JFileConstant.h" 
 #include"../../Core/File/JFileIOHelper.h" 
-#include"../../Application/JApplicationEngine.h"
-#include"../../Application/JApplicationProject.h"
+#include"../../Application/Engine/JApplicationEngine.h"
+#include"../../Application/Project/JApplicationProject.h"
 #include<fstream>
 #include<io.h>
 
@@ -283,7 +283,7 @@ namespace JinEngine
 		return RTypeCommonCall::GetFormat(rType, formatIndex);
 	}
 
-	JResourceObject::LoadData::LoadData(const JUserPtr<JDirectory>& directory, const Core::JAssetFileLoadPathData& pathData)
+	JResourceObject::LoadData::LoadData(const JUserPtr<JDirectory>& directory, const Core::JAssetFilePathData& pathData)
 		:directory(directory), pathData(pathData)
 	{}
 	JResourceObject::LoadData::~LoadData()
@@ -510,7 +510,7 @@ namespace JinEngine
 		if (rObj->IsActivated())
 			rObj->DeActivate();
 	}
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JDirectory>& owner, const Core::JAssetFileLoadPathData& pathData)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JDirectory>& owner, const Core::JAssetFilePathData& pathData)
 	{
 		return std::make_unique<JResourceObject::LoadData>(owner, pathData);
 	}

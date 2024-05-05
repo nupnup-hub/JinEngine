@@ -1,5 +1,4 @@
-#pragma once
-#include<memory>
+#pragma once 
 #include"../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine

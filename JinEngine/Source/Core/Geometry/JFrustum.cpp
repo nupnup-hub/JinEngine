@@ -4,24 +4,24 @@
 
 #define CONVERT_J(f) JFrustum{f.Origin, f.Orientation, f.RightSlope, f.LeftSlope, f.TopSlope, f.BottomSlope, f.Near, f.Far }
 #define CONVERT_DX() DirectX::BoundingFrustum{this->origin.ToSimilar<XMFLOAT3>(), this->orientation.ToSimilar<XMFLOAT4>(), this->rightSlope, this->leftSlope, this->topSlope, this->bottomSlope, this->nearRange,this->farRange }
-
-template<typename S, typename U = void>
-struct HasXY
-{
-public:
-	static constexpr bool value = false;
-};
-template<typename S>
-struct HasXY<S, std::void_t<decltype(&S::x), decltype(&S::y)>>
-{
-public:
-	static constexpr bool value = std::is_convertible_v<decltype(S::x), float> &&
-		std::is_convertible_v<decltype(S::y), float>;
-};
-
+ 
 using namespace DirectX;
 namespace JinEngine::Core
 {
+	template<typename S, typename U = void>
+	struct HasXY
+	{
+	public:
+		static constexpr bool value = false;
+	};
+	template<typename S>
+	struct HasXY<S, std::void_t<decltype(&S::x), decltype(&S::y)>>
+	{
+	public:
+		static constexpr bool value = std::is_convertible_v<decltype(S::x), float> &&
+			std::is_convertible_v<decltype(S::y), float>;
+	};
+
 	JFrustum::JFrustum()
 		:origin(JVector3F::Zero()), orientation(JVector4F::Zero()),
 		rightSlope(0), leftSlope(0),

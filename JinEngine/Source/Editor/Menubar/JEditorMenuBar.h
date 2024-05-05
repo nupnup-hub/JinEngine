@@ -1,7 +1,4 @@
-#pragma once  
-#include<vector>
-#include<memory>
-#include<string>
+#pragma once   
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Func/Callable/JCallable.h"

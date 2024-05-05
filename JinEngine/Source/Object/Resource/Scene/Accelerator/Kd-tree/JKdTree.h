@@ -3,9 +3,7 @@
 #include"JKdTreeOption.h"
 #include"../JAccelerator.h"
 #include"../JAcceleratorType.h"
-#include<memory>
-#include<vector>
-#include<unordered_map>
+#include"../JAcceleratorVisualizeInterface.h"  
 #include<DirectXCollision.h>
 
 namespace JinEngine
@@ -91,6 +89,6 @@ namespace JinEngine
 		uint CalculateMaxDepth(const uint objCount)const noexcept;
 		Core::JBBox CalculateObjectBBox(const std::vector<JUserPtr<JGameObject>>& objList, const uint st, const uint ed)const noexcept;
 	public:
-		void BuildDebugTree(Editor::JEditorBinaryTreeView& treeView);
+		void BuildDebugTree(JAcceleratorVisualizeInterface* treeView);
 	};
 }

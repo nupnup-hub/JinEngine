@@ -1,9 +1,7 @@
 #pragma once
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Func/Functor/JFunctor.h"
-#include"../../Core/Math/JVector.h"
-#include<memory>
-#include<string>
+#include"../../Core/Math/JVector.h" 
 
 namespace JinEngine
 { 

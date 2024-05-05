@@ -2,10 +2,9 @@
 #include"JAcceleratorType.h" 
 #include"JAcceleratorOption.h" 
 #include"../../../../Core/Geometry/JRay.h"
-#include"../../../../Core/Geometry/JBBox.h" 
+#include"../../../../Core/Geometry/JBBox.h"  
 #include"../../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
-#include<DirectXCollision.h>
-#include<vector>
+#include<DirectXCollision.h> 
 
 namespace JinEngine
 {
@@ -111,4 +110,5 @@ namespace JinEngine
 	public:
 		void RegisterInterfacePointer();
 	};
+ 
 }

@@ -5,9 +5,7 @@
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/JResourceObjectType.h" 
 #include<stdlib.h> 
-#include<locale.h> 
-#include<vector>
-#include<unordered_map>
+#include<locale.h>  
  
 namespace JinEngine
 {

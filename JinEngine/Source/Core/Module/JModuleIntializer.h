@@ -1,6 +1,5 @@
 #pragma once 
-#include"JModuleDesc.h"
-#include<string>
+#include"JModuleDesc.h" 
 
 
 namespace JinEngine
@@ -15,6 +14,7 @@ namespace JinEngine
 		public:
 			const JModuleDesc desc;
 		public:
+			JModuleIntializer(const std::wstring& path, const JModuleDesc& desc);
 			JModuleIntializer(const std::wstring& name,
 				const std::wstring& path,
 				const JModuleDesc& desc);

@@ -4,9 +4,7 @@
 #include"../Component/RenderItem/JRenderItemPrimitive.h"
 #include"../Component/RenderItem/JRenderItemAcceleratorMask.h"
 #include"../Component/Light/JLightType.h"
-#include"../Component/JComponentType.h"
-#include<string>
-#include <vector>
+#include"../Component/JComponentType.h" 
 
 namespace JinEngine
 {

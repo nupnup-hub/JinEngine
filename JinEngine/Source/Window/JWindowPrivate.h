@@ -1,16 +1,11 @@
 #pragma once
-#include<windows.h>
-#include<memory>
-#include<optional>
 #include"../Core/Func/Functor/JFunctor.h"
+#include<windows.h> 
+#include<optional>
 
 namespace JinEngine
 {
-	class JMain;
-	namespace Core
-	{
-		class JWindowException;
-	}
+	class JMain; 
 	namespace Graphic
 	{
 		class JGraphic;
@@ -24,6 +19,7 @@ namespace JinEngine
 
 	namespace Window
 	{
+		class JWindowException;
 		class JWindowPrivate
 		{
 		public:
@@ -44,7 +40,7 @@ namespace JinEngine
 			{
 			private:
 				friend class JMain;
-				friend class Core::JWindowException;
+				friend class JWindowException;
 				friend class Graphic::JGraphic;
 				friend class Graphic::JGraphicResourceManager; 
 				friend class Editor::JEditorCameraControl;

@@ -1,6 +1,6 @@
 #pragma once  
-#include<windows.h> 
-#include<memory>
+#include"../Core/JCoreEssential.h"
+#include<windows.h>  
 
 class JMainEntry;
 namespace JinEngine

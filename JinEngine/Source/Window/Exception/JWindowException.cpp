@@ -1,10 +1,10 @@
 #include"JWindowException.h"
-#include"../Utility/JCommonUtility.h"
-#include"../../Window/JWindowPrivate.h"
+#include"../JWindowPrivate.h"
+#include"../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
-	namespace Core
+	namespace Window
 	{
 		JWindowException::JWindowException(int line, const std::string file)
 			:JException(line, JCUtil::StrToWstr(file)), lastError(GetLastError())

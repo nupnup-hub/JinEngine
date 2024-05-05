@@ -2,10 +2,7 @@
 #include"JPreviewEnum.h" 
 #include"../../../JObjectType.h"
 #include"../../../../Core/JCoreEssential.h"
-#include"../../../../Core/Pointer/JOwnerPtr.h"
-#include<vector>
-#include<string> 
-#include<memory> 
+#include"../../../../Core/Pointer/JOwnerPtr.h" 
 
 namespace JinEngine
 {  

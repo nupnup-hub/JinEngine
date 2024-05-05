@@ -2,11 +2,10 @@
 #include"JGpuAcceleratorType.h"
 #include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"
-#include"../DataSet/JGraphicDataSet.h"
-#include"../../Core/JCoreEssential.h" 
+#include"../DataSet/JGraphicDataSet.h" 
 #include"../../Core/Math/JVector.h"
-#include"../../Core/Reflection/JReflection.h" 
-#include<string> 
+#include"../../Core/Reflection/JReflection.h"  
+
 namespace JinEngine
 {  
 	class JComponent;

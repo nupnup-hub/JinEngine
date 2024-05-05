@@ -1,8 +1,7 @@
 #pragma once  
 #include"../Exception/JExceptionMacro.h"
 #include"../Singleton/JSingletonHolder.h"
-#include"../Func/Callable/JCallable.h" 
-#include<unordered_map>
+#include"../Func/Callable/JCallable.h"  
 #include<windows.h>
 namespace JinEngine
 {

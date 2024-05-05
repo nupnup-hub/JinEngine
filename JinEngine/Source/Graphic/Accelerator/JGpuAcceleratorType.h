@@ -1,7 +1,7 @@
 #pragma once
 #include"../../Core/Reflection/JReflection.h"
-#include"../../Core/Math/JMatrix.h"
-#include<vector>
+#include"../../Core/Math/JMatrix.h" 
+
 namespace JinEngine
 {
 	class JGameObject; 

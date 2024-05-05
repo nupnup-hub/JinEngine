@@ -11,7 +11,7 @@
 #include"../../FrameResource/JCameraConstants.h" 
 #include"../../FrameResource/Dx/JDx12FrameResource.h" 
 #include"../../JGraphicUpdateHelper.h"
-#include"../../../Application/JApplicationEngine.h"
+#include"../../../Application/Engine/JApplicationEngine.h"
 #include"../../../Core/Platform/JHardwareInfo.h"
 #include"../../../Core/Math/JVectorExtend.h"
 #include"../../../Object/Component/Camera/JCamera.h" 

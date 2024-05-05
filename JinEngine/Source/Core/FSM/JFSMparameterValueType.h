@@ -1,7 +1,6 @@
-#pragma once
-#include<string>
-#include<algorithm>
+#pragma once 
 #include"../Reflection/JReflection.h"
+#include<algorithm>
  
 namespace JinEngine
 {

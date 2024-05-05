@@ -1,5 +1,4 @@
-#pragma once
-#include<string>    
+#pragma once 
 #include"../JObjectFlag.h"
 #include"../Resource/JResourceObjectType.h"
 #include"../../Core/Pointer/JOwnerPtr.h"

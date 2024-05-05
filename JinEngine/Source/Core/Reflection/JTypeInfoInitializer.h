@@ -1,6 +1,6 @@
 #pragma once
-#include<type_traits>
-#include<string> 
+#include"../JCoreEssential.h"
+#include<type_traits> 
 
 namespace JinEngine
 {

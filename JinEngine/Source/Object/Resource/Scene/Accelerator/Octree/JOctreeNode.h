@@ -1,7 +1,6 @@
 #pragma once
 #include"../JAcceleratorNode.h"
-#include"../JAcceleratorOption.h"  
-#include<vector> 
+#include"../JAcceleratorOption.h"   
 #include<DirectXCollision.h>
 
 namespace JinEngine

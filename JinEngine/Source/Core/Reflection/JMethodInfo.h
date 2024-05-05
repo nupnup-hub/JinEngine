@@ -2,8 +2,7 @@
 #include"JMethodInfoInitializer.h" 
 #include"JMethodOptionInfo.h"
 #include"../Func/Callable/JCallable.h"   
-#include"../Utility/JTypeTraitUtility.h" 
-#include<memory>
+#include"../Utility/JTypeTraitUtility.h"  
 
 namespace JinEngine
 {

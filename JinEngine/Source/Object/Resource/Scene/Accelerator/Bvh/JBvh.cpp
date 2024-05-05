@@ -4,8 +4,7 @@
 #include"../../../../Component/RenderItem/JRenderItemPrivate.h"
 #include"../../../../../Core/Geometry/JBBox.h"
 #include"../../../../../Core/Geometry/JDirectXCollisionEx.h"
-#include"../../../../../Core/Math/JMathHelper.h"  
-#include"../../../../../Editor/EditTool/JEditorViewStructure.h"
+#include"../../../../../Core/Math/JMathHelper.h"   
 #include"../../../../../Graphic/Culling/JCullingInterface.h"
 #include <algorithm> 
 namespace JinEngine
@@ -625,13 +624,11 @@ namespace JinEngine
 				allNodes[i]->SetNodeNumber(i);
 		}
 	}
-	void JBvh::BuildDebugTree(Editor::JEditorBinaryTreeView& treeView)
+	void JBvh::BuildDebugTree(JAcceleratorVisualizeInterface* treeView)
 	{
 		if (root == nullptr)
 			return;
-
-		treeView.ClearNode();
-		treeView.SetGridSize(2500);
+		 
 		root->BuildDebugNode(treeView);
 	}
 }

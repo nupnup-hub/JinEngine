@@ -2,8 +2,7 @@
 #include"../../Gui/JGuiType.h"
 #include"../../../Core/JCoreEssential.h"
 #include"../../../Core/Func/Functor/JFunctor.h"
-#include"../../../Core/Math/JVector.h"
-#include<vector>
+#include"../../../Core/Math/JVector.h" 
 
 namespace JinEngine
 {

@@ -3,8 +3,7 @@
 #include"../Event/JEditorEventType.h"   
 #include"../Event/JEditorEventStruct.h"  
 #include"../Gui/JGuiType.h"
-#include"../DragAndDrop/JDragDropData.h"
-#include<memory>
+#include"../DragAndDrop/JDragDropData.h" 
 
 namespace JinEngine
 {

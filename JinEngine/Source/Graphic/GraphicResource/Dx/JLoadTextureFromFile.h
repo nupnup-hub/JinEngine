@@ -1,10 +1,10 @@
 #pragma once 
 #include<d3d12.h> 
 #include<assert.h>
-#include <wrl.h>
-#include<string>
-using Microsoft::WRL::ComPtr;
+#include<wrl.h> 
+#include"../../../Core/JCoreEssential.h"
 
+using Microsoft::WRL::ComPtr;
 namespace JinEngine
 {
 	bool LoadTextureFromFile(const std::wstring& path,

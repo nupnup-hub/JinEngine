@@ -1,8 +1,7 @@
 #pragma once
 #include"JPluginManagerInterface.h"  
 #include"JPluginDesc.h"
-#include"../Singleton/JSingletonHolder.h"
-#include<memory> 
+#include"../Singleton/JSingletonHolder.h" 
 
 namespace JinEngine
 {

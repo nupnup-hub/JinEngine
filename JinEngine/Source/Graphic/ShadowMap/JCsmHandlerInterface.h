@@ -5,8 +5,7 @@
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/Geometry/JBBox.h"
 #include"../../Core/Math/JMatrix.h"
-#include<DirectXCollision.h>
-#include<vector>
+#include<DirectXCollision.h> 
 
 namespace JinEngine
 {

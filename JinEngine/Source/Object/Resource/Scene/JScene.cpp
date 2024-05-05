@@ -24,7 +24,7 @@
 #include"../../Directory/JDirectory.h"
 #include"../../JObjectFileIOHelper.h"
 
-#include"../../../Application/JApplicationProject.h"
+#include"../../../Application/Project/JApplicationProject.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
@@ -588,7 +588,7 @@ namespace JinEngine
 			}
 		}
 	public:
-		void BuildDebugTree(const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, Editor::JEditorBinaryTreeView& tree)noexcept
+		void BuildDebugTree(const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept
 		{
 			if (accelerator != nullptr)
 				accelerator->BuildDebugTree(type, layer, tree);
@@ -1003,7 +1003,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 		JScene::LoadMetaData metadata(loadData->directory);
 
-		if (LoadMetaData(pathData.engineMetaFileWPath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JScene> newScene = nullptr;
@@ -1248,7 +1248,7 @@ namespace JinEngine
 		scene->impl->ViewCulling(info);
 	}
  
-	void DebugInterface::BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept
+	void DebugInterface::BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept
 	{
 		scene->impl->BuildDebugTree(type, layer, tree);
 	}

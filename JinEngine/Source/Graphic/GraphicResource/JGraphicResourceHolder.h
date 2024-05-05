@@ -1,9 +1,7 @@
 #pragma once 
 #include"JGraphicResourceType.h"
-#include"../Device/JGraphicDeviceUser.h"
-#include"../../Core/JCoreEssential.h" 
-#include"../../Core/Math/JVector.h"
-#include<string>
+#include"../Device/JGraphicDeviceUser.h" 
+#include"../../Core/Math/JVector.h" 
  
 namespace JinEngine
 {

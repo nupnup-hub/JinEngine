@@ -29,6 +29,7 @@ namespace JinEngine
 			static constexpr uint outlineStencilRange = 7;
 			static constexpr uint cubeMapPlaneCount = 6; 
 			 
+			static constexpr Core::JRangeVarSetting<uint, 3, 1, 4> restirBounceRange;
 			static constexpr Core::JRangeVarSetting<uint, 32, 1, 1024> restirTemporalSampleRange;
 			static constexpr Core::JRangeVarSetting<uint, 128, 1, 4096> restirSpatialSampleRange;
 			static constexpr Core::JRangeVarSetting<uint, 128, 1, 1024> restirSampleAgeRange;

@@ -13,10 +13,10 @@
 #include"../../../Core/Log/JLogMacro.h"
 #include"../../../Graphic/JGraphic.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../../Application/JApplicationProject.h" 
-#include<memory>
+#include"../../../Application/Project/JApplicationProject.h"  
 #include<fstream>
 #include<io.h>  
+
 namespace JinEngine
 {
 	namespace
@@ -418,12 +418,12 @@ namespace JinEngine
 
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
-			auto textureClassifyLam = [](const Core::JFileImportHelpData importPathData)->std::vector<J_RESOURCE_TYPE>
+			auto textureClassifyLam = [](const Core::JFileImportPathData importPathData)->std::vector<J_RESOURCE_TYPE>
 			{
 				auto foramatVec = JTexture::GetAvailableFormat();
 				for (const auto& data : foramatVec)
 				{
-					if (data == importPathData.format)
+					if (data == importPathData.oriFileFormat)
 						return std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::TEXTURE};
 				}
 				return std::vector<J_RESOURCE_TYPE>();
@@ -433,7 +433,7 @@ namespace JinEngine
 				std::unique_ptr<InitData> initData = std::make_unique<InitData>(desc->importPathData.name,
 					Core::MakeGuid(),
 					(J_OBJECT_FLAG)desc->importPathData.flag,
-					RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), desc->importPathData.format),
+					RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), desc->importPathData.oriFileFormat),
 					desc->dir,
 					desc->importPathData.oriFileWPath);
 				if (desc->GetTypeInfo().IsChildOf<JTextureImportDesc>())
@@ -461,7 +461,7 @@ namespace JinEngine
 		}
 	};
 
-	JTextureImportDesc::JTextureImportDesc(const Core::JFileImportHelpData& importPathData)
+	JTextureImportDesc::JTextureImportDesc(const Core::JFileImportPathData& importPathData)
 		:JResourceObjectImportDesc(importPathData)
 	{
 		useMipmap = importPathData.format == L".dds" ? true : false;
@@ -610,7 +610,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 		JTexture::LoadMetaData metadata(loadData->directory);
 
-		if (LoadMetaData(pathData.engineMetaFileWPath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
  
 		JUserPtr<JTexture> newTex = nullptr;
@@ -624,7 +624,7 @@ namespace JinEngine
 				metadata.flag,
 				(uint8)metadata.formatIndex,
 				directory,
-				pathData.engineFileWPath,
+				pathData.path,
 				metadata.textureType);
 
 			initData->resoultion = metadata.resoultion;

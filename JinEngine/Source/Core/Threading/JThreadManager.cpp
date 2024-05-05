@@ -1,8 +1,6 @@
 #include"JThreadManager.h" 
 #include"JThreadManagerPrivate.h"
-#include"../Func//Functor/JFunctor.h" 
-#include<memory>
-#include<string>
+#include"../Func//Functor/JFunctor.h"  
 #include<mutex>
 #include<condition_variable>
 

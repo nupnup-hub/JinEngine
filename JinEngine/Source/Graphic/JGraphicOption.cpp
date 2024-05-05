@@ -1,7 +1,7 @@
 #include"JGraphicOption.h"
 #include"../Core/File/JFileIOHelper.h"
 #include"../Core/File/JFileConstant.h"
-#include"../Application/JApplicationProject.h"
+#include"../Application/Project/JApplicationProject.h"
 
 
 namespace JinEngine
@@ -24,19 +24,23 @@ namespace JinEngine
 
 		bool JGraphicOption::Rendering::Restir::operator==(const Restir& rhs)const noexcept
 		{
-			return temporalSampleCount == rhs.temporalSampleCount &&
+			return bounceCount == rhs.bounceCount &&
+				temporalSampleCount == rhs.temporalSampleCount &&
 				spatialSampleCount == rhs.spatialSampleCount &&
 				sampleMaxAge == rhs.sampleMaxAge &&
 				neighborWeightSumThreshold == rhs.neighborWeightSumThreshold &&
-				spatialWeightAverageThreshold == rhs.spatialWeightAverageThreshold;
+				spatialWeightAverageThreshold == rhs.spatialWeightAverageThreshold && 
+				useDenoiser == rhs.useDenoiser;
 		}
 		bool JGraphicOption::Rendering::Restir::operator!=(const Restir& rhs)const noexcept
 		{
-			return temporalSampleCount != rhs.temporalSampleCount ||
+			return bounceCount != rhs.bounceCount ||
+				temporalSampleCount != rhs.temporalSampleCount ||
 				spatialSampleCount != rhs.spatialSampleCount ||
 				sampleMaxAge != rhs.sampleMaxAge ||
 				neighborWeightSumThreshold != rhs.neighborWeightSumThreshold ||
-				spatialWeightAverageThreshold != rhs.spatialWeightAverageThreshold;
+				spatialWeightAverageThreshold != rhs.spatialWeightAverageThreshold || 
+				useDenoiser != rhs.useDenoiser;
 		}
 
 		uint JGraphicOption::GetClusterTotalCount()const noexcept
@@ -122,11 +126,13 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(tool, rendering.useShirleyDiffuse, "UseShirleyDiffuse:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.useLambertianDiffuse, "UseLambertianDiffuse:");
 
+			JFileIOHelper::LoadAtomicData(tool, rendering.restir.bounceCount.GetRef(), "RestirBounceCount:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.restir.temporalSampleCount.GetRef(), "RestirTemporalSampleCount:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.restir.spatialSampleCount.GetRef(), "RestirSpatialSampleCount:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.restir.sampleMaxAge.GetRef(), "RestirSampleMaxAge:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.restir.neighborWeightSumThreshold.GetRef(), "RestirNeighborWeightSumThreshold:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.restir.spatialWeightAverageThreshold.GetRef(), "RestirSpatialWeightAverageThreshold:");
+			JFileIOHelper::LoadAtomicData(tool, rendering.restir.useDenoiser, "ResitrUseDenoiser:");
 			tool.PopStack();
 
 			tool.PushExistStack("--Shadow--");
@@ -210,11 +216,13 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(tool, rendering.useShirleyDiffuse, "UseShirleyDiffuse:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.useLambertianDiffuse, "UseLambertianDiffuse:");
 
+			JFileIOHelper::StoreAtomicData(tool, rendering.restir.bounceCount.Get(), "RestirBounceCount:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.restir.temporalSampleCount.Get(), "RestirTemporalSampleCount:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.restir.spatialSampleCount.Get(), "RestirSpatialSampleCount:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.restir.sampleMaxAge.Get(), "RestirSampleMaxAge:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.restir.neighborWeightSumThreshold.Get(), "RestirNeighborWeightSumThreshold:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.restir.spatialWeightAverageThreshold.Get(), "RestirSpatialWeightAverageThreshold:");
+			JFileIOHelper::StoreAtomicData(tool, rendering.restir.useDenoiser, "ResitrUseDenoiser:");
 
 			tool.PopStack();
 

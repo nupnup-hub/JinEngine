@@ -1,5 +1,4 @@
-#pragma once
-#include<vector>   
+#pragma once 
 #include"../JResourceObject.h"
 #include"../Skeleton/JSkeletonAsset.h"
 

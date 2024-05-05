@@ -1,7 +1,4 @@
-#pragma once
-#include<vector>
-#include<string>
-#include<memory>
+#pragma once 
 #include"JEditorEventType.h"
 #include"../Page/JEditorPageEnum.h"
 #include"../Page/JEditorWindowEnum.h"

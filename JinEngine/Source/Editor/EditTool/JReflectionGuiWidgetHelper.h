@@ -2,11 +2,7 @@
 #include"../../Editor/Page/JEditorPageEnum.h"
 #include"../../Object/JObjectModifyInterface.h"
 #include"../../Core/Reflection/JGuiWidgetInfo.h"
-#include"../../Core/Reflection/JGuiWidgetType.h"
-#include<vector>
-#include<unordered_map>
-#include<string> 
-#include<memory>
+#include"../../Core/Reflection/JGuiWidgetType.h"  
 #include<stack>
 
 namespace JinEngine

@@ -2,8 +2,7 @@
 #include"../../Shader/JShaderDataHandler.h"
 #include"../../JGraphicTaskInterface.h" 
 #include"../../JGraphicSubClassInterface.h"
-#include"../../Thread/JGraphicMultiThreadDrawInterface.h"
-#include<memory> 
+#include"../../Thread/JGraphicMultiThreadDrawInterface.h" 
 
 namespace JinEngine
 {

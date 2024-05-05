@@ -3,9 +3,7 @@
 #include"JModule.h"
 #include"JModulePrivate.h"
 #include"JModuleIntializer.h"
-#include"../Utility/JCommonUtility.h"
-#include<vector>
-#include<unordered_map>
+#include"../Utility/JCommonUtility.h" 
  
 namespace JinEngine::Core
 {
@@ -46,7 +44,7 @@ namespace JinEngine::Core
 		}
 	public:
 		bool AddModule(JOwnerPtr<JModule>&& newMod)
-		{ 
+		{  
 			if (newMod == nullptr)
 				return false;
 			 
@@ -99,7 +97,7 @@ namespace JinEngine::Core
 			if (JModule::TryLoadModule(filePath) == NULL)
 				return nullptr;		
 
-			//dll이 JModuleManager에 등록했으면 Success
+			//dll에서 JModuleManager에 요청한 Register가 성공시 GetModule은 유효한 값을 반환
 			exist = GetModule(filePath);
 			if (exist == nullptr)
 				return nullptr;
@@ -144,6 +142,10 @@ namespace JinEngine::Core
 	bool JModuleManager::RegisterModule(const JModuleIntializer& init)
 	{ 
 		return impl->AddModule(JPtrUtil::MakeOwnerPtr<JModule>(init.name, init.path, init.desc));
+	}
+	JOwnerPtr<JModule> JModuleManager::CreateModule(const JModuleIntializer& init)
+	{
+		return JPtrUtil::MakeOwnerPtr<JModule>(init.name, init.path, init.desc);
 	}
 	JModuleManager::JModuleManager()
 		:impl(std::make_unique<JModuleManagerImpl>())

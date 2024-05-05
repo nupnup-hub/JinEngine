@@ -6,8 +6,7 @@
 #include"../../Core/Math/JVector.h"  
 #include"../../Core/Reflection/JTypeBase.h"
 #include<DirectXMath.h>
-#include<fstream>
-#include<memory>
+#include<fstream> 
 
 #define FILE_ASSERTION(result) if(result != Core::J_FILE_IO_RESULT::SUCCESS)  MessageBoxA(0, ("Fali\n" + std::string(__FILE__) + " " + std::to_string(__LINE__)).c_str(), 0, 0);
 #define FILE_TOOL_ASSERTION(res) if(!res) MessageBoxA(0, ("FileToolError\n" + std::string(__FILE__) + " " + std::to_string(__LINE__)).c_str(), 0, 0);

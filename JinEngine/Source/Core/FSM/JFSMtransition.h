@@ -1,8 +1,6 @@
 #pragma once  
 #include"JFSMinterface.h"
-#include"../JCoreEssential.h"
-#include<vector>  
-#include<memory>
+#include"../JCoreEssential.h" 
  
 namespace JinEngine
 {

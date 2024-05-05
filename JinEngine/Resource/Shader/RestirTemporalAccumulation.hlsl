@@ -139,12 +139,12 @@ bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float v
     currentHistory = 0;
     
     float2 preUv = uv + velocity;
-    float2 prePixelCenterCoord = pixelCoord + float2(0.5f, 0.5f);
+    float2 prePixelCenterCoord = preUv * cb.rtSize; //pixelCoord + float2(0.5f, 0.5f);
     
     bool cubicPass;
     bool bilinearPass;
     DeterminSamplingMethod(preUv, viewZ, normal, velocity, dxdy, cubicPass, bilinearPass);
-    
+     
     if (cubicPass)
     {
         preColor = TextureSampling::CatmullRom(preColorHistory, samLinearClmap, preUv, cb.rtSize);

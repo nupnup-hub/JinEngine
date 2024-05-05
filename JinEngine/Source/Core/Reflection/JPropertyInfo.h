@@ -2,8 +2,7 @@
 #include"JPropertyInfoInitializer.h" 
 #include"JPropertyHandler.h" 
 #include"JPropertyOptionInfo.h"
-#include<assert.h>
-#include<memory>
+#include<assert.h> 
 
 namespace JinEngine
 {

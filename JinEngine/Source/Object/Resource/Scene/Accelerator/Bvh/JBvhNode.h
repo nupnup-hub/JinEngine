@@ -1,16 +1,12 @@
 #pragma once
-#include"../JAcceleratorNode.h"   
-#include<unordered_map>
+#include"../JAcceleratorNode.h"    
 
 namespace JinEngine
 {
 	class JGameObject; 
+	class JAcceleratorVisualizeInterface;
 	struct JAcceleratorCullingInfo;
-	struct JAcceleratorIntersectInfo;
-	namespace Editor
-	{
-		class JEditorBinaryTreeView;
-	}
+	struct JAcceleratorIntersectInfo; 
 	enum class J_BVH_NODE_TYPE
 	{
 		ROOT,
@@ -86,6 +82,6 @@ namespace JinEngine
 		void FindIntersectNotSort(JAcceleratorIntersectInfo& info, const float dist)const noexcept;
 		void FindContainNotSort(JAcceleratorContainInfo& info)const noexcept;
 	public:
-		void BuildDebugNode(Editor::JEditorBinaryTreeView& treeView);
+		void BuildDebugNode(JAcceleratorVisualizeInterface* treeView);
 	};
 }

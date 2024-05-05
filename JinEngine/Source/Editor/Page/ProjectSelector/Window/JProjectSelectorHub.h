@@ -3,8 +3,7 @@
 #include"../../../Interface/JEditorProjectInterface.h"
 #include"../../../../Core/Event/JEventListener.h"
 #include"../../../../Object/Resource/JResourceObjectEventType.h"
-#include"../../../../Object/Resource/JResourceObject.h"
-#include<string>
+#include"../../../../Object/Resource/JResourceObject.h" 
 
 namespace JinEngine
 {

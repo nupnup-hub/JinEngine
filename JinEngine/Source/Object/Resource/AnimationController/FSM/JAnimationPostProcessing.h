@@ -1,5 +1,4 @@
-#pragma once
-#include<vector>
+#pragma once 
 #include<DirectXMath.h> 
 #include"../../Skeleton/Avatar/JAvatar.h"
 #include"../../../../Core/Math/JMatrix.h"

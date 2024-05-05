@@ -1,6 +1,5 @@
 #pragma once 
-#include<Windows.h>
-#include<string>
+#include<Windows.h> 
 #include<sstream> 
 #include<DirectXMath.h>
 #include"../../Core/Utility/JTypeTraitUtility.h"

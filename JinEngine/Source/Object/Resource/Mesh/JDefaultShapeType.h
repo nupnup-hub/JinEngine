@@ -1,5 +1,4 @@
-#pragma once
-#include<string>
+#pragma once 
 #include"../../../Core/Geometry/Mesh/JMeshType.h"
 
 namespace JinEngine

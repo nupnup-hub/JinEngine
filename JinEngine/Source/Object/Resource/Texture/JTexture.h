@@ -15,7 +15,7 @@ namespace JinEngine
 	public:
 		bool useMipmap = false;		 
 	public:
-		JTextureImportDesc(const Core::JFileImportHelpData& importPathData);
+		JTextureImportDesc(const Core::JFileImportPathData& importPathData);
 	};
 
 	class JTexturePrivate;

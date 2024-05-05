@@ -8,9 +8,7 @@
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h" 
 #include"../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
-#include"../../../Core/Geometry/Mesh/JMeshType.h"
-#include<memory>
-#include<vector>  
+#include"../../../Core/Geometry/Mesh/JMeshType.h" 
 #include<DirectXCollision.h>
 
 namespace JinEngine

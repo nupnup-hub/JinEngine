@@ -2,9 +2,7 @@
 #include"JGraphicDrawListType.h"
 #include"../Core/JCoreEssential.h"
 #include"../Object/Component/JComponentType.h"  
-#include<deque> 
-#include<vector>
-#include<memory>
+#include<deque>  
 
 struct ID3D12Device;
 namespace JinEngine

@@ -1,11 +1,10 @@
 #pragma once
-#include<stdio.h>
-#include<string> 
 #include"JObjectFlag.h"
 #include"JObjectType.h" 
 #include"../Core/File/JFileIOResult.h"
 #include"../Core/Identity/JIdentifier.h"
 #include"../Core/Interface/JActivatedInterface.h"
+#include<stdio.h> 
 
 namespace JinEngine
 { 

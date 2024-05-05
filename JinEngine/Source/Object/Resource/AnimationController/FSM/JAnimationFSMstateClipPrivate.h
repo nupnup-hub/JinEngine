@@ -1,6 +1,6 @@
 #pragma once
-#include"JAnimationFSMstatePrivate.h"
-#include<vector>
+#include"JAnimationFSMstatePrivate.h" 
+
 namespace JinEngine
 {  
 	class JAnimationFSMstateClipPrivate : public JAnimationFSMstatePrivate

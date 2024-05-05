@@ -4,8 +4,7 @@
 #include"../../../../../Core/Geometry/JBBox.h" 
 #include"../../../../../Core/Geometry/JRay.h"
 #include"../../../../../Core/Math/JMathHelper.h"  
-#include"../../../../../Core/Math/JVector.h"
-#include"../../../../../Editor/EditTool/JEditorViewStructure.h"
+#include"../../../../../Core/Math/JVector.h" 
 #include<algorithm>
 
 //Debug
@@ -605,10 +604,8 @@ namespace JinEngine
 			result = Core::JBBox::Union(result, objList[i]->GetRenderItem()->GetBoundingBox());
 		return result;
 	}
-	void JKdTree::BuildDebugTree(Editor::JEditorBinaryTreeView& treeView)
-	{
-		treeView.ClearNode();
-		treeView.SetGridSize(20000);
+	void JKdTree::BuildDebugTree(JAcceleratorVisualizeInterface* treeView)
+	{ 
 		if (root != nullptr)
 			root->BuildDebugNode(treeView);
 	}

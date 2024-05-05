@@ -107,9 +107,9 @@
 #include"../Window/JWindow.h"
 #include"../Window/JWindowPrivate.h"
 
-#include"../Application/JApplicationEngine.h"
-#include"../Application/JApplicationEnginePrivate.h"
-#include"../Application/JApplicationProject.h"  
+#include"../Application/Engine/JApplicationEngine.h"
+#include"../Application/Engine/JApplicationEnginePrivate.h"
+#include"../Application/Project/JApplicationProject.h"  
 
 #ifdef DEVELOP
 #include"../Develop/Debug/JDevelopDebug.h"

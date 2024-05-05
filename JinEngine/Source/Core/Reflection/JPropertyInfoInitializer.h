@@ -1,6 +1,4 @@
-#pragma once    
-#include<string>
-#include<memory>
+#pragma once     
 #include"JParameter.h" 
 #include"JPropertyOptionInfo.h"
 

@@ -1,11 +1,9 @@
 #pragma once
-#include<deque>
-#include<string>
-#include<memory>
 #include"../Log/JLogHandler.h"
 #include"../Func/Functor/JFunctor.h"
 #include"../Handle/JDataHandleStructure.h"
- 
+#include<deque> 
+
 namespace JinEngine
 {
 	namespace Core

@@ -1,6 +1,7 @@
 #pragma once 
 #include"JGraphicInfo.h"
 #include"JGraphicOption.h"
+#include"Exception/JGraphicException.h"
 
 namespace JinEngine
 {

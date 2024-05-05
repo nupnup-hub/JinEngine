@@ -1,7 +1,5 @@
 #include"../../Core/Func/Callable/JCallable.h" 
-#include"JResourceObjectType.h"
-#include<vector> 
-#include<string>
+#include"JResourceObjectType.h" 
 
 namespace JinEngine
 {

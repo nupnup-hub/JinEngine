@@ -1,11 +1,9 @@
 #pragma once 
-#include<utility>
-#include<memory> 
-#include<vector>
 #include"../../Reflection/JParameter.h"
 #include"../../Empty/JEmptyType.h"
 #include"../../Utility/JTypeTraitUtility.h" 
 #include"../../../../ThirdParty/Loki/Typelist/Typelist.h"   
+#include<utility> 
 
 namespace JinEngine
 {

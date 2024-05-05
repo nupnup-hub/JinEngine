@@ -1,7 +1,5 @@
 #pragma once
-#include"JPreviewScene.h" 
-#include<vector>
-#include<memory>
+#include"JPreviewScene.h"  
 
 namespace JinEngine
 {

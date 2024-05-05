@@ -4,8 +4,7 @@
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Reflection/JReflection.h"
-#include"../Gui/JGuiType.h"
-#include<string>
+#include"../Gui/JGuiType.h" 
 
 namespace JinEngine
 {

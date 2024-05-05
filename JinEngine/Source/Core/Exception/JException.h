@@ -1,8 +1,8 @@
 #pragma once
-#include<exception>
-#include<string>
+#include<exception> 
 #include <sstream>
 #include<Windows.h>
+#include"../JCoreEssential.h"
 
 namespace JinEngine
 {

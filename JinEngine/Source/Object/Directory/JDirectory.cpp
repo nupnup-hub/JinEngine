@@ -6,7 +6,7 @@
 #include"../JObjectFileIOHelper.h"
 #include"../Resource/JResourceObject.h" 
 #include"../Resource/JResourceObjectPrivate.h"
-#include"../../Application/JApplicationProject.h" 
+#include"../../Application/Project/JApplicationProject.h" 
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/Reflection/JTypeBasePrivate.h"
@@ -14,8 +14,7 @@
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include<io.h>
-#include<fstream>
-#include<vector>  
+#include<fstream> 
 
 namespace JinEngine
 {
@@ -235,7 +234,7 @@ namespace JinEngine
 			InitData::name = JCUtil::MakeUniqueName(parent->impl->children, EraseInvalidNameChar(name));
 	}
 
-	JDirectory::LoadData::LoadData(const JUserPtr<JDirectory>& parent, const Core::JAssetFileLoadPathData& pathData)
+	JDirectory::LoadData::LoadData(const JUserPtr<JDirectory>& parent, const Core::JAssetFilePathData& pathData)
 		: parent(parent), pathData(pathData)
 	{}
 	JDirectory::LoadData::~LoadData()
@@ -555,7 +554,7 @@ namespace JinEngine
 		static_cast<JDirectory*>(ptr)->impl->DeRegisterInstance();
 	}
 
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JDirectory>& parent, const Core::JAssetFileLoadPathData& pathData)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JDirectory>& parent, const Core::JAssetFilePathData& pathData)
 	{
 		return std::make_unique<JDirectory::LoadData>(parent, pathData);
 	}
@@ -568,7 +567,7 @@ namespace JinEngine
 		auto& pathData = loadData->pathData;
 
 		JFileIOTool tool;
-		if (!tool.Begin(pathData.engineMetaFileWPath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+		if (!tool.Begin(pathData.metaFilePath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return nullptr;
 
 		std::unique_ptr<JDirectory::InitData> initData = std::make_unique<JDirectory::InitData>(loadData->parent);

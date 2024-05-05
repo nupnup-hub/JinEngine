@@ -3,9 +3,7 @@
 #include"GraphicResource/JGraphicResourceType.h"  
 #include"FrameResource/JFrameResourceEnum.h"   
 #include"Culling/JCullingType.h"
-#include"Accelerator/JGpuAcceleratorType.h" 
-#include"../Core/JCoreEssential.h"  
-#include<string>
+#include"Accelerator/JGpuAcceleratorType.h"  
  
 namespace JinEngine
 { 

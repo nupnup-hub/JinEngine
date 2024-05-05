@@ -391,7 +391,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
  
     set.prePixelCoord = clamp(preUv * cb.rtSize, 0, cb.rtSize - 1); 
     set.prePixelIndex = set.prePixelCoord.y * cb.rtSize.x + set.prePixelCoord.x;
- 
+    
     set.rng.Initialize(set.pixelCoord, cb.currSampleSetIndex);
     bool isPreValid = cb.updateCount > 0 && !cb.forceClearReservoirs && all(preUv > 0.0f) && all(preUv < 1.0f);
     if (isPreValid)

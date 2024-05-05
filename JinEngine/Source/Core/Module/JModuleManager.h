@@ -3,9 +3,7 @@
 #include"../Pointer/JOwnerPtr.h"
 #include"../JCoreEssential.h"
 #include"JModuleMacro.h"
-#include"JModuleDesc.h"
-#include<string>
-#include<memory>
+#include"JModuleDesc.h" 
 
 namespace JinEngine
 {
@@ -41,6 +39,8 @@ namespace JinEngine
 			JUserPtr<JModule> TryAddModule(const std::wstring& filePath, const bool keppLoadState);
 		public:
 			bool RegisterModule(const JModuleIntializer& init);
+		private:
+			JOwnerPtr<JModule> CreateModule(const JModuleIntializer& init);
 		private:
 			JModuleManager();
 			~JModuleManager();

@@ -1,9 +1,7 @@
 #pragma once 
-#include<direct.h>	 
-#include<memory>  
-#include<string>
 #include"JResourceObjectType.h"
 #include"../JObjectFlag.h"
+#include<direct.h>	  
 
 namespace JinEngine
 {
@@ -12,7 +10,7 @@ namespace JinEngine
 
 	namespace Core
 	{
-		struct JAssetFileLoadPathData;
+		struct JAssetFilePathData;
 	}
 	class JResourceObjectIO
 	{ 

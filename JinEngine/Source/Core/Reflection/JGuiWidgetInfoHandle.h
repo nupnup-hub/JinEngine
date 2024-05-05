@@ -1,8 +1,5 @@
 #pragma once
-#include"JGuiWidgetInfoHandleBase.h" 
-#include"../JCoreEssential.h" 
-#include<memory>
-#include<vector>
+#include"JGuiWidgetInfoHandleBase.h"  
 
 namespace JinEngine
 {
