@@ -1,8 +1,14 @@
-Name: skeleton
-ObjGuid: 4691233805676830588
-TypeGuid: 5146432936074107289
-ObjFlag: 15
-J_RESOURCE_TYPE: 2
-FormatIdnex: .png
-Format: 1
-TextureType: 7
+{
+	"Format: " : ".png",
+	"FormatIdnex: " : 1,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "skeleton",
+	"ObjFlag: " : 143,
+	"ObjGuid: " : 11956738836539551946,
+	"Resoultion" : 0,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

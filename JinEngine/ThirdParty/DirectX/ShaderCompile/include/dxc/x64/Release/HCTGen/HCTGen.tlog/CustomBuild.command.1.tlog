@@ -1,0 +1,10 @@
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

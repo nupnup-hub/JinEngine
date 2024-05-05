@@ -1,0 +1,22 @@
+﻿빌드 시작: 2024-03-27 오전 12:47:25
+로깅의 세부 정보 표시가 Normal(으)로 설정되었습니다.     1>20 노드의 "D:\Visual_Studio_src\Build\include\llvm\IR\intrinsics_gen.vcxproj" 프로젝트(Rebuild 대상)입니다.
+     1>_PrepareForClean:
+         "x64\Release\intrinsics_gen\intrinsics_gen.tlog\intrinsics_gen.lastbuildstate" 파일을 삭제하고 있습니다.
+       InitializeBuildStatus:
+         "x64\Release\intrinsics_gen\intrinsics_gen.tlog\unsuccessfulbuild"에 연결(touching)하고 있습니다.
+       CustomBuild:
+         "'D:\Visual_Studio_src\Build\CMakeFiles\91e5879a06726cd696f446183413c9f5\Intrinsics.gen.rule'의 빌드는 'D:\Visual_Studio_src\Build\CMakeFiles\91e5879a06726cd696f446183413c9f5\Intrinsics.gen.tmp.rule'의 빌드로 생성되는 'D:\VISUAL_STUDIO_SRC\BUILD\INCLUDE\LLVM\IR\INTRINSICS.GEN.TMP'에 따라 달라집니다. 항목은 동시에 빌드할 수 없습니다."
+         "'D:\Visual_Studio_src\Build\CMakeFiles\bc089eb87f59f17f67541ef50bd0a4c1\intrinsics_gen.rule'의 빌드는 'D:\Visual_Studio_src\Build\CMakeFiles\91e5879a06726cd696f446183413c9f5\Intrinsics.gen.rule'의 빌드로 생성되는 'D:\VISUAL_STUDIO_SRC\BUILD\INCLUDE\LLVM\IR\INTRINSICS.GEN'에 따라 달라집니다. 항목은 동시에 빌드할 수 없습니다."
+         Building Intrinsics.gen...
+         Building Custom Rule D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/llvm/IR/CMakeLists.txt
+         Updating Intrinsics.gen...
+       FinalizeBuildStatus:
+         "x64\Release\intrinsics_gen\intrinsics_gen.tlog\unsuccessfulbuild" 파일을 삭제하고 있습니다.
+         "x64\Release\intrinsics_gen\intrinsics_gen.tlog\intrinsics_gen.lastbuildstate"에 연결(touching)하고 있습니다.
+     1>"D:\Visual_Studio_src\Build\include\llvm\IR\intrinsics_gen.vcxproj" 프로젝트를 빌드했습니다(Rebuild 대상).
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:11.63

@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <memory>
 #include <wrl.h>
-
+#include<cmath>
 #include "DDSTextureLoader11.h" 
 
 using namespace Microsoft::WRL;
@@ -1241,13 +1241,18 @@ static HRESULT CreateD3DResources12(
 	_In_ bool isCubeMap,
 	_In_reads_opt_(mipCount*arraySize) D3D12_SUBRESOURCE_DATA* initData,
 	ComPtr<ID3D12Resource>& texture,
-	ComPtr<ID3D12Resource>& textureUploadHeap)
+	ComPtr<ID3D12Resource>& textureUploadHeap,
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
 {
 	if (device == nullptr)
 		return E_POINTER;
 
 	if (forceSRGB)
 		format = MakeSRGB(format);
+
+    int maxMipLevel = std::log2(width) + 1;
+    if (mipCount > 1 && maxMipLevel < mipCount)
+        mipCount = maxMipLevel;
 
 	HRESULT hr = E_FAIL;
 	switch (resDim)
@@ -1266,7 +1271,7 @@ static HRESULT CreateD3DResources12(
 		texDesc.SampleDesc.Count = 1;
 		texDesc.SampleDesc.Quality = 0;
 		texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		texDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+		texDesc.Flags = flags; 
 
         CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 		hr = device->CreateCommittedResource(
@@ -1307,13 +1312,13 @@ static HRESULT CreateD3DResources12(
                 CD3DX12_RESOURCE_BARRIER barrirer = CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(),
                     D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 				cmdList->ResourceBarrier(1, &barrirer);
-
+                 
 				// Use Heap-allocating UpdateSubresources implementation for variable number of subresources (which is the case for textures).
 				UpdateSubresources(cmdList, texture.Get(), textureUploadHeap.Get(), 0, 0, num2DSubresources, initData);
 
                 barrirer = CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(),
                     D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-				cmdList->ResourceBarrier(1, &barrirer);
+				cmdList->ResourceBarrier(1, &barrirer); 
 			}
 		}
 	} break;
@@ -1682,7 +1687,8 @@ static HRESULT CreateTextureFromDDS12(
 	_In_ size_t maxsize,
 	_In_ bool forceSRGB,
 	ComPtr<ID3D12Resource>& texture,
-	ComPtr<ID3D12Resource>& textureUploadHeap)
+	ComPtr<ID3D12Resource>& textureUploadHeap,
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
 {
 	HRESULT hr = S_OK;
 
@@ -1871,7 +1877,8 @@ static HRESULT CreateTextureFromDDS12(
 			isCubeMap,
 			initData.get(),
 			texture, 
-			textureUploadHeap);
+			textureUploadHeap,
+            flags);
 	}
 
 	return hr;
@@ -2144,7 +2151,9 @@ HRESULT DirectX::CreateDDSTextureFromFile12(_In_ ID3D12Device* device,
 	_Out_ ComPtr<ID3D12Resource>& texture,
 	_Out_ ComPtr<ID3D12Resource>& textureUploadHeap,
 	_In_ size_t maxsize,
-	_Out_opt_ DDS_ALPHA_MODE* alphaMode)
+	_Out_opt_ DDS_ALPHA_MODE* alphaMode,
+    _In_ D3D12_RESOURCE_FLAGS flags,
+    _In_ bool useMipmap)
 {
 	if (texture)
 	{
@@ -2174,9 +2183,11 @@ HRESULT DirectX::CreateDDSTextureFromFile12(_In_ ID3D12Device* device,
 	{
 		return hr;
 	}
+    if (!useMipmap)
+        header->mipMapCount = 1;
 
 	hr = CreateTextureFromDDS12(device, cmdList, header,
-		bitData, bitSize, maxsize, false, texture, textureUploadHeap);
+		bitData, bitSize, maxsize, false, texture, textureUploadHeap, flags);
 
 	if (SUCCEEDED(hr))
 	{

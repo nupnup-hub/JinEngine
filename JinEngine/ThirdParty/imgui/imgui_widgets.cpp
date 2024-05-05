@@ -751,7 +751,7 @@ bool ImGui::InvisibleButton(const char* str_id, const ImVec2& size_arg, ImGuiBut
     return pressed;
 }
 
-bool ImGui::ArrowButtonEx(const char* str_id, ImGuiDir dir, ImVec2 size, ImGuiButtonFlags flags)
+bool ImGui::ArrowButtonEx(const char* str_id, ImGuiDir dir, ImVec2 size, ImGuiButtonFlags flags, const float arrowScale)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
@@ -776,7 +776,7 @@ bool ImGui::ArrowButtonEx(const char* str_id, ImGuiDir dir, ImVec2 size, ImGuiBu
     const ImU32 text_col = GetColorU32(ImGuiCol_Text);
     RenderNavHighlight(bb, id);
     RenderFrame(bb.Min, bb.Max, bg_col, true, g.Style.FrameRounding);
-    RenderArrow(window->DrawList, bb.Min + ImVec2(ImMax(0.0f, (size.x - g.FontSize) * 0.5f), ImMax(0.0f, (size.y - g.FontSize) * 0.5f)), text_col, dir);
+    RenderArrow(window->DrawList, bb.Min + ImVec2(ImMax(0.0f, (size.x - g.FontSize) * 0.5f), ImMax(0.0f, (size.y - g.FontSize) * 0.5f)), text_col, dir, arrowScale);
 
     return pressed;
 }
@@ -1610,6 +1610,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
         ImU32 bg_col = GetColorU32((popup_open || hovered) ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
         ImU32 text_col = GetColorU32(ImGuiCol_Text);
         window->DrawList->AddRectFilled(ImVec2(value_x2, bb.Min.y), bb.Max, bg_col, style.FrameRounding, (w <= arrow_size) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersRight);
+         
         if (value_x2 + arrow_size - style.FramePadding.x <= bb.Max.x)
             RenderArrow(window->DrawList, ImVec2(value_x2 + style.FramePadding.y, bb.Min.y + style.FramePadding.y), text_col, ImGuiDir_Down, 1.0f);
     }
@@ -1639,7 +1640,6 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     g.NextWindowData.Flags = backup_next_window_data_flags;
     return BeginComboPopup(popup_id, bb, flags);
 }
-
 bool ImGui::BeginComboPopup(ImGuiID popup_id, const ImRect& bb, ImGuiComboFlags flags)
 {
     ImGuiContext& g = *GImGui;
@@ -3153,6 +3153,11 @@ bool ImGui::SliderInt(const char* label, int* v, int v_min, int v_max, const cha
     return SliderScalar(label, ImGuiDataType_S32, v, &v_min, &v_max, format, flags);
 }
 
+bool ImGui::SliderInt(const char* label, unsigned int* v, unsigned int v_min, unsigned int v_max, const char* format, ImGuiSliderFlags flags)
+{
+    return SliderScalar(label, ImGuiDataType_S32, v, &v_min, &v_max, format, flags);
+}
+
 bool ImGui::SliderInt2(const char* label, int v[2], int v_min, int v_max, const char* format, ImGuiSliderFlags flags)
 {
     return SliderScalarN(label, ImGuiDataType_S32, v, 2, &v_min, &v_max, format, flags);
@@ -3233,6 +3238,11 @@ bool ImGui::VSliderFloat(const char* label, const ImVec2& size, float* v, float 
 }
 
 bool ImGui::VSliderInt(const char* label, const ImVec2& size, int* v, int v_min, int v_max, const char* format, ImGuiSliderFlags flags)
+{
+    return VSliderScalar(label, size, ImGuiDataType_S32, v, &v_min, &v_max, format, flags);
+}
+
+bool ImGui::VSliderInt(const char* label, const ImVec2& size, unsigned int* v, unsigned int v_min, unsigned int v_max, const char* format, ImGuiSliderFlags flags)
 {
     return VSliderScalar(label, size, ImGuiDataType_S32, v, &v_min, &v_max, format, flags);
 }
@@ -3552,6 +3562,13 @@ bool ImGui::InputFloat4(const char* label, float v[4], const char* format, ImGui
 }
 
 bool ImGui::InputInt(const char* label, int* v, int step, int step_fast, ImGuiInputTextFlags flags)
+{
+    // Hexadecimal input provided as a convenience but the flag name is awkward. Typically you'd use InputText() to parse your own data, if you want to handle prefixes.
+    const char* format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
+    return InputScalar(label, ImGuiDataType_S32, (void*)v, (void*)(step > 0 ? &step : NULL), (void*)(step_fast > 0 ? &step_fast : NULL), format, flags);
+}
+
+bool ImGui::InputInt(const char* label, unsigned int* v, int step, int step_fast, ImGuiInputTextFlags flags)
 {
     // Hexadecimal input provided as a convenience but the flag name is awkward. Typically you'd use InputText() to parse your own data, if you want to handle prefixes.
     const char* format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
@@ -5838,7 +5855,7 @@ bool ImGui::TreeNodeBehaviorIsOpen(ImGuiID id, ImGuiTreeNodeFlags flags)
     {
         if (g.NextItemData.OpenCond & ImGuiCond_Always)
         {
-            is_open = g.NextItemData.OpenVal;
+            is_open = g.NextItemData.OpenVal; 
             storage->SetInt(id, is_open);
         }
         else
@@ -8402,3 +8419,114 @@ void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, 
 
 
 #endif // #ifndef IMGUI_DISABLE
+
+#pragma region Custom
+bool ImGui::CustomArrowButton(const char* str_id, ImGuiDir dir, ImVec2 size, ImGuiButtonFlags flags, const float arrowScale)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    ImGuiContext& g = *GImGui;
+    const ImGuiID id = window->GetID(str_id);
+    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    const float default_size = GetFrameHeight();
+    ItemSize(size, (size.y >= default_size) ? g.Style.FramePadding.y : -1.0f);
+    if (!ItemAdd(bb, id))
+        return false;
+
+    if (g.LastItemData.InFlags & ImGuiItemFlags_ButtonRepeat)
+        flags |= ImGuiButtonFlags_Repeat;
+
+    bool hovered, held;
+    bool pressed = ButtonBehavior(bb, id, &hovered, &held, flags);
+
+    // Render
+    const ImU32 bg_col = GetColorU32((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+    const ImU32 text_col = GetColorU32(ImGuiCol_Text);
+    RenderNavHighlight(bb, id);
+    RenderFrame(bb.Min, bb.Max, bg_col, true, g.Style.FrameRounding);
+    RenderArrowEx(window->DrawList, bb.Min + ImVec2(ImMax(0.0f, (size.x - g.FontSize) * 0.5f), ImMax(0.0f, (size.y - g.FontSize) * 0.5f)), text_col, dir, arrowScale);
+
+    return pressed;
+}
+#pragma endregion
+
+//CUSTOM
+
+bool ImGui::BeginComboEx(const char* label, const char* preview_value, ImGuiComboFlags flags, ImGuiDir_ initArrowDir, ImGuiDir_ activateArrowDir)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = GetCurrentWindow();
+
+    ImGuiNextWindowDataFlags backup_next_window_data_flags = g.NextWindowData.Flags;
+    g.NextWindowData.ClearFlags(); // We behave like Begin() and need to consume those values
+    if (window->SkipItems)
+        return false;
+
+    const ImGuiStyle& style = g.Style;
+    const ImGuiID id = window->GetID(label);
+    IM_ASSERT((flags & (ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_NoPreview)) != (ImGuiComboFlags_NoArrowButton | ImGuiComboFlags_NoPreview)); // Can't use both flags together
+
+    const float arrow_size = (flags & ImGuiComboFlags_NoArrowButton) ? 0.0f : GetFrameHeight();
+    const ImVec2 label_size = CalcTextSize(label, NULL, true);
+    const float w = (flags & ImGuiComboFlags_NoPreview) ? arrow_size : CalcItemWidth();
+    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(w, label_size.y + style.FramePadding.y * 2.0f));
+    const ImRect total_bb(bb.Min, bb.Max + ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f, 0.0f));
+    ItemSize(total_bb, style.FramePadding.y);
+    if (!ItemAdd(total_bb, id, &bb))
+        return false;
+
+    // Open on click
+    bool hovered, held;
+    bool pressed = ButtonBehavior(bb, id, &hovered, &held);
+    const ImGuiID popup_id = ImHashStr("##ComboPopup", 0, id);
+    bool popup_open = IsPopupOpen(popup_id, ImGuiPopupFlags_None);
+    if (pressed && !popup_open)
+    {
+        OpenPopupEx(popup_id, ImGuiPopupFlags_None);
+        popup_open = true;
+    }
+
+    // Render shape
+    const ImU32 frame_col = GetColorU32(hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+    const float value_x2 = ImMax(bb.Min.x, bb.Max.x - arrow_size);
+    RenderNavHighlight(bb, id);
+    if (!(flags & ImGuiComboFlags_NoPreview))
+        window->DrawList->AddRectFilled(bb.Min, ImVec2(value_x2, bb.Max.y), frame_col, style.FrameRounding, (flags & ImGuiComboFlags_NoArrowButton) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersLeft);
+    if (!(flags & ImGuiComboFlags_NoArrowButton))
+    {
+        ImU32 bg_col = GetColorU32((popup_open || hovered) ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+        ImU32 text_col = GetColorU32(ImGuiCol_Text);
+        window->DrawList->AddRectFilled(ImVec2(value_x2, bb.Min.y), bb.Max, bg_col, style.FrameRounding, (w <= arrow_size) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersRight);
+
+        ImGuiDir_ arrowDir = popup_open ? activateArrowDir : initArrowDir;
+        if (value_x2 + arrow_size - style.FramePadding.x <= bb.Max.x)
+            RenderArrow(window->DrawList, ImVec2(value_x2 + style.FramePadding.y, bb.Min.y + style.FramePadding.y), text_col, arrowDir, 1.0f);
+    }
+    RenderFrameBorder(bb.Min, bb.Max, style.FrameRounding);
+
+    // Custom preview
+    if (flags & ImGuiComboFlags_CustomPreview)
+    {
+        g.ComboPreviewData.PreviewRect = ImRect(bb.Min.x, bb.Min.y, value_x2, bb.Max.y);
+        IM_ASSERT(preview_value == NULL || preview_value[0] == 0);
+        preview_value = NULL;
+    }
+
+    // Render preview and label
+    if (preview_value != NULL && !(flags & ImGuiComboFlags_NoPreview))
+    {
+        if (g.LogEnabled)
+            LogSetNextTextDecoration("{", "}");
+        RenderTextClipped(bb.Min + style.FramePadding, ImVec2(value_x2, bb.Max.y), preview_value, NULL, NULL);
+    }
+    if (label_size.x > 0)
+        RenderText(ImVec2(bb.Max.x + style.ItemInnerSpacing.x, bb.Min.y + style.FramePadding.y), label);
+
+    if (!popup_open)
+        return false;
+
+    g.NextWindowData.Flags = backup_next_window_data_flags;
+    return BeginComboPopup(popup_id, bb, flags);
+}

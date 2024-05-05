@@ -1,0 +1,22 @@
+﻿빌드 시작: 2024-03-27 오전 12:47:06
+로깅의 세부 정보 표시가 Normal(으)로 설정되었습니다.     1>4 노드의 "D:\Visual_Studio_src\Build\include\dxc\DxilContainer\RDAT_LibraryTypes.vcxproj" 프로젝트(Rebuild 대상)입니다.
+     1>_PrepareForClean:
+         "x64\Release\RDAT_LibraryTypes\RDAT_Lib.5E1B3233.tlog\RDAT_LibraryTypes.lastbuildstate" 파일을 삭제하고 있습니다.
+       InitializeBuildStatus:
+         "AlwaysCreate"이(가) 지정되었기 때문에 "x64\Release\RDAT_LibraryTypes\RDAT_Lib.5E1B3233.tlog\unsuccessfulbuild"을(를) 만들고 있습니다.
+       CustomBuild:
+         "'D:\Visual_Studio_src\Build\CMakeFiles\140b62b4d07ee913759a376c2856a9d0\RDAT_LibraryTypes.inl.stamp.rule'의 빌드는 'D:\Visual_Studio_src\Build\CMakeFiles\140b62b4d07ee913759a376c2856a9d0\RDAT_LibraryTypes.inl.rule'의 빌드로 생성되는 'D:\VISUAL_STUDIO_SRC\BUILD\INCLUDE\DXC\DXILCONTAINER\TMP\RDAT_LIBRARYTYPES.INL'에 따라 달라집니다. 항목은 동시에 빌드할 수 없습니다."
+         "'D:\Visual_Studio_src\Build\CMakeFiles\9a1202c0865a0b5af99c135837c25120\RDAT_LibraryTypes.rule'의 빌드는 'D:\Visual_Studio_src\Build\CMakeFiles\140b62b4d07ee913759a376c2856a9d0\RDAT_LibraryTypes.inl.stamp.rule'의 빌드로 생성되는 'D:\VISUAL_STUDIO_SRC\BUILD\INCLUDE\DXC\DXILCONTAINER\TMP\RDAT_LIBRARYTYPES.INL.STAMP'에 따라 달라집니다. 항목은 동시에 빌드할 수 없습니다."
+         Building RDAT_LibraryTypes.inl...
+         Building Custom Rule D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/DxilContainer/CMakeLists.txt
+         Verifying clang-format results...
+       FinalizeBuildStatus:
+         "x64\Release\RDAT_LibraryTypes\RDAT_Lib.5E1B3233.tlog\unsuccessfulbuild" 파일을 삭제하고 있습니다.
+         "x64\Release\RDAT_LibraryTypes\RDAT_Lib.5E1B3233.tlog\RDAT_LibraryTypes.lastbuildstate"에 연결(touching)하고 있습니다.
+     1>"D:\Visual_Studio_src\Build\include\dxc\DxilContainer\RDAT_LibraryTypes.vcxproj" 프로젝트를 빌드했습니다(Rebuild 대상).
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:00.26

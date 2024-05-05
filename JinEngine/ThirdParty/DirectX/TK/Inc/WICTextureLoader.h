@@ -85,6 +85,15 @@ namespace DirectX
         bool generateMips = false,
         size_t maxsize = 0);
 
+    HRESULT __cdecl CreateWICTextureFromMemory(
+        _In_ ID3D12Device* d3dDevice,
+        ResourceUploadBatch& resourceUpload,
+        _In_reads_bytes_(wicDataSize) const uint8_t* wicData,
+        size_t wicDataSize,
+        _Outptr_ ID3D12Resource** texture,
+        bool generateMips,
+        size_t maxsize);
+
     HRESULT __cdecl CreateWICTextureFromFile(
         _In_ ID3D12Device* d3dDevice,
         ResourceUploadBatch& resourceUpload,

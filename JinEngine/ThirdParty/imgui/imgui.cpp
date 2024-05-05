@@ -11059,7 +11059,7 @@ bool ImGui::BeginDragDropSource(ImGuiDragDropFlags flags)
 }
 
 void ImGui::EndDragDropSource()
-{
+{ 
     ImGuiContext& g = *GImGui;
     IM_ASSERT(g.DragDropActive);
     IM_ASSERT(g.DragDropWithinSource && "Not after a BeginDragDropSource()?");
@@ -18053,7 +18053,7 @@ IMGUI_API void ImGui::CallDockNodeAddWindow(ImGuiDockNode* node, ImGuiWindow* wi
 IMGUI_API void ImGui::CallDockNodeAddTab(ImGuiDockNode* node)
 {
     ImGui::DockNodeAddTabBar(node);
-}
+} 
 #pragma endregion
 
 

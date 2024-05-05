@@ -1,0 +1,22 @@
+﻿빌드 시작: 2024-03-27 오전 12:47:06
+로깅의 세부 정보 표시가 Normal(으)로 설정되었습니다.     1>8 노드의 "D:\Visual_Studio_src\Build\include\dxc\Support\HLSLOptions.vcxproj" 프로젝트(Rebuild 대상)입니다.
+     1>_PrepareForClean:
+         "x64\Release\HLSLOptions\HLSLOptions.tlog\HLSLOptions.lastbuildstate" 파일을 삭제하고 있습니다.
+       InitializeBuildStatus:
+         "AlwaysCreate"이(가) 지정되었기 때문에 "x64\Release\HLSLOptions\HLSLOptions.tlog\unsuccessfulbuild"을(를) 만들고 있습니다.
+       CustomBuild:
+         "'D:\Visual_Studio_src\Build\CMakeFiles\b0a67e73167d4893a0de6133b68f9f92\HLSLOptions.td.stamp.rule'의 빌드는 'D:\Visual_Studio_src\Build\CMakeFiles\b0a67e73167d4893a0de6133b68f9f92\HLSLOptions.td.rule'의 빌드로 생성되는 'D:\VISUAL_STUDIO_SRC\BUILD\INCLUDE\DXC\SUPPORT\TMP\HLSLOPTIONS.TD'에 따라 달라집니다. 항목은 동시에 빌드할 수 없습니다."
+         "'D:\Visual_Studio_src\Build\CMakeFiles\5ae8c2e1259f78c9e6b705b03284b821\HLSLOptions.rule'의 빌드는 'D:\Visual_Studio_src\Build\CMakeFiles\b0a67e73167d4893a0de6133b68f9f92\HLSLOptions.td.stamp.rule'의 빌드로 생성되는 'D:\VISUAL_STUDIO_SRC\BUILD\INCLUDE\DXC\SUPPORT\TMP\HLSLOPTIONS.TD.STAMP'에 따라 달라집니다. 항목은 동시에 빌드할 수 없습니다."
+         Building HLSLOptions.td...
+         Building Custom Rule D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/Support/CMakeLists.txt
+         Verifying clang-format results...
+       FinalizeBuildStatus:
+         "x64\Release\HLSLOptions\HLSLOptions.tlog\unsuccessfulbuild" 파일을 삭제하고 있습니다.
+         "x64\Release\HLSLOptions\HLSLOptions.tlog\HLSLOptions.lastbuildstate"에 연결(touching)하고 있습니다.
+     1>"D:\Visual_Studio_src\Build\include\dxc\Support\HLSLOptions.vcxproj" 프로젝트를 빌드했습니다(Rebuild 대상).
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:00.28

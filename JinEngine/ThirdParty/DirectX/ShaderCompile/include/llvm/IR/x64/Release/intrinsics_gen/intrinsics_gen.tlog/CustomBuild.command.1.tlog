@@ -1,0 +1,38 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\91E5879A06726CD696F446183413C9F5\INTRINSICS.GEN.TMP.RULE
+setlocal
+..\..\..\Release\bin\llvm-tblgen.exe -gen-intrinsic -I D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/llvm/IR -I D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/lib/Target -I D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/llvm/IR/Intrinsics.td -o D:/Visual_Studio_src/Build/include/llvm/IR/Intrinsics.gen.tmp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\91E5879A06726CD696F446183413C9F5\INTRINSICS.GEN.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different D:/Visual_Studio_src/Build/include/llvm/IR/Intrinsics.gen.tmp D:/Visual_Studio_src/Build/include/llvm/IR/Intrinsics.gen
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\BC089EB87F59F17F67541EF50BD0A4C1\INTRINSICS_GEN.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\LLVM\IR\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/llvm/IR/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

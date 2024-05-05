@@ -1,0 +1,20 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\EAE9AC4C4362D4E6F6CFED8813FD72DA\INSTALL-DXC-HEADERS.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_COMPONENT=dxc-headers -P D:/Visual_Studio_src/Build/cmake_install.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,38 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\6D06B6FB30C9FF1451A865B17F76214E\HLSLOPTIONS.INC.TMP.RULE
+setlocal
+..\..\..\Release\bin\llvm-tblgen.exe -gen-opt-parser-defs -I D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/Support -I D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/lib/Target -I D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/Support/HLSLOptions.td -o D:/Visual_Studio_src/Build/include/dxc/Support/HLSLOptions.inc.tmp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\6D06B6FB30C9FF1451A865B17F76214E\HLSLOPTIONS.INC.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different D:/Visual_Studio_src/Build/include/dxc/Support/HLSLOptions.inc.tmp D:/Visual_Studio_src/Build/include/dxc/Support/HLSLOptions.inc
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\5AE8C2E1259F78C9E6B705B03284B821\TABLEGENHLSLOPTIONS.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\SUPPORT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/Support/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
