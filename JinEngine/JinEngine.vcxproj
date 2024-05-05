@@ -1,0 +1,1538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{33c86692-02fa-4464-bc0c-fed5c54d4412}</ProjectGuid>
+    <RootNamespace>JinEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.2.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)\\Binary\\$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Fbx\Include;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Cuda\lib\x64;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Inc;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Src;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Src\Shaders;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Src\Shaders\Compiled;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Tif;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\ShaderCompile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Fbx\lib\vs2017\x64\release;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Cuda\lib\x64;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\fast-lzma2-master\lib;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\jsoncpp-master;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Tif;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\ShaderCompile\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;cudart_static.lib;fast-lzma2.lib;jsoncpp_static.lib;tiff.lib;tiffxx.lib;dxcompiler.lib;dxrfallbackcompiler.lib;dxlib_sample.lib;DxilConvPasses.lib;dxilconv.lib;dxclib.lib;DxbcConverter.lib;d3dcompiler_dxc_bridge.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <StackReserveSize>
+      </StackReserveSize>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Application\Binary\JEngineTool.h" />
+    <ClInclude Include="Source\Application\Binary\JEngineToolType.h" />
+    <ClInclude Include="Source\Application\Engine\JApplicationEngine.h" />
+    <ClInclude Include="Source\Application\Engine\JApplicationEnginePrivate.h" />
+    <ClInclude Include="Source\Application\JApplicationType.h" />
+    <ClInclude Include="Source\Application\Project\JApplicationProject.h" />
+    <ClInclude Include="Source\Application\Project\JApplicationProjectPrivate.h" />
+    <ClInclude Include="Source\Application\Project\Script\JCplusScriptCreator.h" />
+    <ClInclude Include="Source\Core\Animation\JAnimationData.h" />
+    <ClInclude Include="Source\Core\Animation\JAnimationSample.h" />
+    <ClInclude Include="Source\Core\Animation\Joint.h" />
+    <ClInclude Include="Source\Core\Animation\JointPose.h" />
+    <ClInclude Include="Source\Core\DI\JDIDataBase.h" />
+    <ClInclude Include="Source\Core\Empty\JEmptyType.h" />
+    <ClInclude Include="Source\Core\Encrypt\JEncryption.h" />
+    <ClInclude Include="Source\Core\Event\JEventListener.h" />
+    <ClInclude Include="Source\Core\Event\JEventManager.h" />
+    <ClInclude Include="Source\Core\Exception\JCudaException.h" />
+    <ClInclude Include="Source\Core\Exception\JException.h" />
+    <ClInclude Include="Source\Core\Exception\JExceptionMacro.h" />
+    <ClInclude Include="Source\Core\Exception\JHresultException.h" />
+    <ClInclude Include="Source\Core\Exception\JNormalException.h" />
+    <ClInclude Include="Source\Core\Factory\JFactory.h" />
+    <ClInclude Include="Source\Core\File\JFileCompress.h" />
+    <ClInclude Include="Source\Core\File\JFileConstant.h" />
+    <ClInclude Include="Source\Core\File\JFileIOHelper.h" />
+    <ClInclude Include="Source\Core\File\JFileIOResult.h" />
+    <ClInclude Include="Source\Core\File\JFilePackage.h" />
+    <ClInclude Include="Source\Core\File\JFilePathData.h" />
+    <ClInclude Include="Source\Core\File\JJSon.h" />
+    <ClInclude Include="Source\Core\File\JXmlHelper.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMcondition.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMconditionPrivate.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMdiagram.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMdiagramPrivate.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMinterface.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMinterfacePrivate.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMobjectType.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMownerInterface.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMparameter.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMparameterPrivate.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMparameterStorage.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMparameterStorageAccess.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMparameterValueType.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMstate.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMstatePrivate.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMtransition.h" />
+    <ClInclude Include="Source\Core\FSM\JFSMtransitionPrivate.h" />
+    <ClInclude Include="Source\Core\Func\Callable\JCallable.h" />
+    <ClInclude Include="Source\Core\Func\Functor\JFunctor.h" />
+    <ClInclude Include="Source\Core\Func\JFuncList.h" />
+    <ClInclude Include="Source\Core\Geometry\JBBox.h" />
+    <ClInclude Include="Source\Core\Geometry\JDirectXCollisionEx.h" />
+    <ClInclude Include="Source\Core\Geometry\JFrustum.h" />
+    <ClInclude Include="Source\Core\Geometry\JGeometryEnum.h" />
+    <ClInclude Include="Source\Core\Geometry\JRay.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\JMaterialProperty.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\JMeshStruct.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\JMeshType.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\Loader\FbxLoader\JFbxFileLoader.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\Loader\FbxLoader\JFbxResult.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\Loader\FbxLoader\JFbxUtility.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\Loader\MeshLoader\JMeshFileLoader.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\Loader\MeshLoader\JMeshFileLoaderUtility.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\Loader\ObjLoader\JObjFileLoader.h" />
+    <ClInclude Include="Source\Core\Geometry\Mesh\Loader\ObjLoader\JObjFileLoaderUtility.h" />
+    <ClInclude Include="Source\Core\Guid\JGuidCreator.h" />
+    <ClInclude Include="Source\Core\Handle\JDataHandleStructure.h" />
+    <ClInclude Include="Source\Core\Identity\JIdenCreator.h" />
+    <ClInclude Include="Source\Core\Identity\JIdentifier.h" />
+    <ClInclude Include="Source\Core\Identity\JIdentifierPrivate.h" />
+    <ClInclude Include="Source\Core\Input\JKeyboard.h" />
+    <ClInclude Include="Source\Core\Input\JMouse.h" />
+    <ClInclude Include="Source\Core\Interface\JActivatedInterface.h" />
+    <ClInclude Include="Source\Core\Interface\JGroupInterface.h" />
+    <ClInclude Include="Source\Core\Interface\JTreeInterface.h" />
+    <ClInclude Include="Source\Core\Interface\JValidInterface.h" />
+    <ClInclude Include="Source\Core\JCoreEssential.h" />
+    <ClInclude Include="Source\Core\JDataType.h" />
+    <ClInclude Include="Source\Core\JEngineCommonConstants.h" />
+    <ClInclude Include="Source\Core\JEngineInfo.h" />
+    <ClInclude Include="Source\Core\Lazy\JLazyDestruction.h" />
+    <ClInclude Include="Source\Core\Lazy\JLazyDestructionInfo.h" />
+    <ClInclude Include="Source\Core\Log\JLog.h" />
+    <ClInclude Include="Source\Core\Log\JLogHandler.h" />
+    <ClInclude Include="Source\Core\Log\JLogMacro.h" />
+    <ClInclude Include="Source\Core\Math\JMathHelper.h" />
+    <ClInclude Include="Source\Core\Math\JMatrix.h" />
+    <ClInclude Include="Source\Core\Math\JVector.h" />
+    <ClInclude Include="Source\Core\Math\JVectorExtend.h" />
+    <ClInclude Include="Source\Core\Memory\JAllocationDesc.h" />
+    <ClInclude Include="Source\Core\Memory\JAllocationInterface.h" />
+    <ClInclude Include="Source\Core\Memory\JChunkAlloc.h" />
+    <ClInclude Include="Source\Core\Memory\JHeapAlloc.h" />
+    <ClInclude Include="Source\Core\Memory\JMemoryCapture.h" />
+    <ClInclude Include="Source\Core\Memory\JVirtualAlloc.h" />
+    <ClInclude Include="Source\Core\Module\JModule.h" />
+    <ClInclude Include="Source\Core\Module\JModuleDesc.h" />
+    <ClInclude Include="Source\Core\Module\JModuleFuncDefenitions.h" />
+    <ClInclude Include="Source\Core\Module\JModuleIntializer.h" />
+    <ClInclude Include="Source\Core\Module\JModuleMacro.h" />
+    <ClInclude Include="Source\Core\Module\JModuleManager.h" />
+    <ClInclude Include="Source\Core\Module\JModuleManagerPrivate.h" />
+    <ClInclude Include="Source\Core\Module\JModulePrivate.h" />
+    <ClInclude Include="Source\Core\Module\JModuleRegister.h" />
+    <ClInclude Include="Source\Core\Module\JModuleType.h" />
+    <ClInclude Include="Source\Core\Module\JModuleUser.h" />
+    <ClInclude Include="Source\Core\Platform\JHardwareInfo.h" />
+    <ClInclude Include="Source\Core\Platform\JLanguageType.h" />
+    <ClInclude Include="Source\Core\Platform\JPlatformInfo.h" />
+    <ClInclude Include="Source\Core\Plugin\JPlugin.h" />
+    <ClInclude Include="Source\Core\Plugin\JPluginDesc.h" />
+    <ClInclude Include="Source\Core\Plugin\JPluginInterface.h" />
+    <ClInclude Include="Source\Core\Plugin\JPluginManager.h" />
+    <ClInclude Include="Source\Core\Plugin\JPluginManagerInterface.h" />
+    <ClInclude Include="Source\Core\Plugin\JPluginManagerPrivate.h" />
+    <ClInclude Include="Source\Core\Plugin\JPluginPrivate.h" />
+    <ClInclude Include="Source\Core\Pointer\JOwnerPtr.h" />
+    <ClInclude Include="Source\Core\Reflection\JEnumInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JEnumInitializer.h" />
+    <ClInclude Include="Source\Core\Reflection\JEnumRegister.h" />
+    <ClInclude Include="Source\Core\Reflection\JGuiWidgetInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JGuiWidgetInfoHandle.h" />
+    <ClInclude Include="Source\Core\Reflection\JGuiWidgetInfoHandleBase.h" />
+    <ClInclude Include="Source\Core\Reflection\JGuiWidgetType.h" />
+    <ClInclude Include="Source\Core\Reflection\JMethodInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JMethodInfoInitializer.h" />
+    <ClInclude Include="Source\Core\Reflection\JMethodInfoRegister.h" />
+    <ClInclude Include="Source\Core\Reflection\JMethodOptionInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JParameter.h" />
+    <ClInclude Include="Source\Core\Reflection\JParameterType.h" />
+    <ClInclude Include="Source\Core\Reflection\JPropertyHandler.h" />
+    <ClInclude Include="Source\Core\Reflection\JPropertyInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JPropertyInfoInitializer.h" />
+    <ClInclude Include="Source\Core\Reflection\JPropertyInfoRegister.h" />
+    <ClInclude Include="Source\Core\Reflection\JPropertyOptionInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JReflection.h" />
+    <ClInclude Include="Source\Core\Reflection\JReflectionInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JReflectionInfoPrivate.h" />
+    <ClInclude Include="Source\Core\Reflection\JReflectionMacro.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeAllocationCreator.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeBase.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeBasePrivate.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeImplBase.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeInfo.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeInfoGuiOption.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeInfoInitializer.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeInfoRegister.h" />
+    <ClInclude Include="Source\Core\Reflection\JTypeTemplate.h" />
+    <ClInclude Include="Source\Core\Singleton\JCreatePolicy.h" />
+    <ClInclude Include="Source\Core\Singleton\JLifetimePolicy.h" />
+    <ClInclude Include="Source\Core\Singleton\JSingletonHolder.h" />
+    <ClInclude Include="Source\Core\Singleton\JThreadingModel.h" />
+    <ClInclude Include="Source\Core\Storage\JStorageInterface.h" />
+    <ClInclude Include="Source\Core\Storage\JStorage.h" />
+    <ClInclude Include="Source\Core\Threading\JThread.h" />
+    <ClInclude Include="Source\Core\Threading\JThreadInfo.h" />
+    <ClInclude Include="Source\Core\Threading\JThreadManager.h" />
+    <ClInclude Include="Source\Core\Threading\JThreadManagerPrivate.h" />
+    <ClInclude Include="Source\Core\Threading\JThreadType.h" />
+    <ClInclude Include="Source\Core\Time\JGameTimer.h" />
+    <ClInclude Include="Source\Core\Time\JRealTime.h" />
+    <ClInclude Include="Source\Core\Time\JStopWatch.h" />
+    <ClInclude Include="Source\Core\Transition\JTransition.h" />
+    <ClInclude Include="Source\Core\Unit\JBigInt.h" />
+    <ClInclude Include="Source\Core\Unit\JBigIntEx.h" />
+    <ClInclude Include="Source\Core\Unit\JByteUnit.h" />
+    <ClInclude Include="Source\Core\Unit\JManagedVariable.h" />
+    <ClInclude Include="Source\Core\Utility\JCommonUtility.h" />
+    <ClInclude Include="Source\Core\Utility\JCompileTimeChecker.h" />
+    <ClInclude Include="Source\Core\Utility\JDelegate.h" />
+    <ClInclude Include="Source\Core\Utility\JMacroUtility.h" />
+    <ClInclude Include="Source\Core\Utility\JSimpleCompiler.h" />
+    <ClInclude Include="Source\Core\Utility\JTypeTraitUtility.h" />
+    <ClInclude Include="Source\Develop\Debug\JDevelopDebug.h" />
+    <ClInclude Include="Source\Develop\Debug\JDevelopDebugConstants.h" />
+    <ClInclude Include="Source\Develop\Debug\JDevelopDebugMain.h" />
+    <ClInclude Include="Source\Develop\Debug\JTypeToString.h" />
+    <ClInclude Include="Source\Editor\Align\JEditorAlignCalculator.h" />
+    <ClInclude Include="Source\Editor\Align\JEditorAlignType.h" />
+    <ClInclude Include="Source\Editor\DragAndDrop\JDragDropData.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorAddressBar.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorCameraControl.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorCoordGrid.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorDynamicColor.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorGameObjectSurpportTool.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorGameObjectSurpportToolType.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorIdentifierList.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorInputBuffHelper.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorMouseDragBox.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorPageCounter.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorRenameHelper.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorSceneImageInteraction.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorSearchBar.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorSelectableStructure.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorSliderBar.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorTabBarHelper.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorTreeStructure.h" />
+    <ClInclude Include="Source\Editor\EditTool\JEditorViewStructure.h" />
+    <ClInclude Include="Source\Editor\EditTool\JReflectionGuiWidgetHelper.h" />
+    <ClInclude Include="Source\Editor\Event\JEditorEvent.h" />
+    <ClInclude Include="Source\Editor\Event\JEditorEventStruct.h" />
+    <ClInclude Include="Source\Editor\Event\JEditorEventType.h" />
+    <ClInclude Include="Source\Editor\Gui\Adapter\ImGui\Dx\JDx12ImGuiAdaptee.h" />
+    <ClInclude Include="Source\Editor\Gui\Adapter\ImGui\Dx\JDx12ImGuiBackendDataAdaptee.h" />
+    <ClInclude Include="Source\Editor\Gui\Adapter\ImGui\JImGuiAdaptee.h" />
+    <ClInclude Include="Source\Editor\Gui\Adapter\ImGui\JImGuiBackendDataAdaptee.h" />
+    <ClInclude Include="Source\Editor\Gui\Adapter\JGuiBehaviorAdaptee.h" />
+    <ClInclude Include="Source\Editor\Gui\Adapter\JGuiBehaviorAdapter.h" />
+    <ClInclude Include="Source\Editor\Gui\Data\ImGui\Dx\JDx12ImGuiDrawData.h" />
+    <ClInclude Include="Source\Editor\Gui\Data\ImGui\Dx\JDx12ImGuiInitData.h" />
+    <ClInclude Include="Source\Editor\Gui\Data\ImGui\JImGuiDrawData.h" />
+    <ClInclude Include="Source\Editor\Gui\Data\ImGui\JImGuiPrivateData.h" />
+    <ClInclude Include="Source\Editor\Gui\Data\ImGui\JImGuiInitData.h" />
+    <ClInclude Include="Source\Editor\Gui\Data\JGuiPrivateData.h" />
+    <ClInclude Include="Source\Editor\Gui\JGuiWindow.h" />
+    <ClInclude Include="Source\Editor\Gui\JGuiImageInfo.h" />
+    <ClInclude Include="Source\Editor\Gui\JGui.h" />
+    <ClInclude Include="Source\Editor\Gui\JGuiOption.h" />
+    <ClInclude Include="Source\Editor\Gui\JGuiType.h" />
+    <ClInclude Include="Source\Editor\Gui\JGuiUser.h" />
+    <ClInclude Include="Source\Editor\Interface\JEditorObjectCreationInterface.h" />
+    <ClInclude Include="Source\Editor\Interface\JEditorProjectInterface.h" />
+    <ClInclude Include="Source\Editor\Interface\JEditorTransitionInterface.h" />
+    <ClInclude Include="Source\Editor\JEditorManager.h" />
+    <ClInclude Include="Source\Editor\Menubar\JEditorMenuBar.h" />
+    <ClInclude Include="Source\Editor\Menubar\JEditorMenuNodeUtilData.h" />
+    <ClInclude Include="Source\Editor\Page\AnimationControllerSetting\JEditorAniContPage.h" />
+    <ClInclude Include="Source\Editor\Page\AnimationControllerSetting\Window\JAnimationDiagramList.h" />
+    <ClInclude Include="Source\Editor\Page\AnimationControllerSetting\Window\JAnimationParameterList.h" />
+    <ClInclude Include="Source\Editor\Page\AnimationControllerSetting\Window\JAnimationStateView.h" />
+    <ClInclude Include="Source\Editor\Page\AnimationControllerSetting\Window\JEditorAniContInterface.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\Debug\JApplicationWatcher.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\Debug\JGraphicResourceWatcher.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\Debug\JStringConvertTest.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\Detail\JObjectDetail.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\Explorer\JObjectExplorer.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\View\JSceneObserver.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\View\JSceneObserverSettingType.h" />
+    <ClInclude Include="Source\Editor\Page\CommonWindow\View\JSceneViewer.h" />
+    <ClInclude Include="Source\Editor\Page\Docking\ImGui\JImGuiDockUpdateHelper.h" />
+    <ClInclude Include="Source\Editor\Page\Docking\JDockUpdateHelper.h" />
+    <ClInclude Include="Source\Editor\Page\JEditor.h" />
+    <ClInclude Include="Source\Editor\Page\JEditorAttribute.h" />
+    <ClInclude Include="Source\Editor\Page\JEditorPage.h" />
+    <ClInclude Include="Source\Editor\Page\JEditorPageEnum.h" />
+    <ClInclude Include="Source\Editor\Page\JEditorPageShareData.h" />
+    <ClInclude Include="Source\Editor\Page\JEditorWindow.h" />
+    <ClInclude Include="Source\Editor\Page\JEditorWindowEnum.h" />
+    <ClInclude Include="Source\Editor\Page\ProjectMain\JProjectMainPage.h" />
+    <ClInclude Include="Source\Editor\Page\ProjectMain\Window\JGraphicOptionSetting.h" />
+    <ClInclude Include="Source\Editor\Page\ProjectMain\Window\JLogViewer.h" />
+    <ClInclude Include="Source\Editor\Page\ProjectMain\Window\JWindowDirectory.h" />
+    <ClInclude Include="Source\Editor\Page\ProjectMain\Window\JWindowStateViewer.h" />
+    <ClInclude Include="Source\Editor\Page\ProjectSelector\JProjectSelectorPage.h" />
+    <ClInclude Include="Source\Editor\Page\ProjectSelector\Window\JProjectSelectorHub.h" />
+    <ClInclude Include="Source\Editor\Page\SkeletonaAssetSetting\JEditorSkeletonPage.h" />
+    <ClInclude Include="Source\Editor\Page\SkeletonaAssetSetting\Window\JAvatarEditor.h" />
+    <ClInclude Include="Source\Editor\Page\WindowInterface\JEditorPreviewInterface.h" />
+    <ClInclude Include="Source\Editor\Popup\JEditorPopupMenu.h" />
+    <ClInclude Include="Source\Editor\Popup\JEditorPopupNode.h" />
+    <ClInclude Include="Source\Editor\Popup\JEditorPopupType.h" />
+    <ClInclude Include="Source\Editor\Popup\JEditorPopupWindow.h" />
+    <ClInclude Include="Source\Editor\String\JEditorStringMap.h" />
+    <ClInclude Include="Source\Graphic\Accelerator\Dx\JDx12GpuAcceleratorManager.h" />
+    <ClInclude Include="Source\Graphic\Accelerator\JGpuAcceleratorHolder.h" />
+    <ClInclude Include="Source\Graphic\Accelerator\JGpuAcceleratorInfo.h" />
+    <ClInclude Include="Source\Graphic\Accelerator\JGpuAcceleratorInterface.h" />
+    <ClInclude Include="Source\Graphic\Accelerator\JGpuAcceleratorManager.h" />
+    <ClInclude Include="Source\Graphic\Accelerator\JGpuAcceleratorType.h" />
+    <ClInclude Include="Source\Graphic\Adapter\JDx12Adaptee.h" />
+    <ClInclude Include="Source\Graphic\Adapter\JGraphicAdaptee.h" />
+    <ClInclude Include="Source\Graphic\Adapter\JGraphicAdapter.h" />
+    <ClInclude Include="Source\Graphic\Buffer\Dx\JDx12GraphicBuffer.h" />
+    <ClInclude Include="Source\Graphic\Buffer\Dx\JDxGraphicBufferInterface.h" />
+    <ClInclude Include="Source\Graphic\Buffer\Dx\JHlslDebug.h" />
+    <ClInclude Include="Source\Graphic\Buffer\JGraphicBuffer.h" />
+    <ClInclude Include="Source\Graphic\Buffer\JBufferType.h" />
+    <ClInclude Include="Source\Graphic\Command\Dx\JDx12CommandContext.h" />
+    <ClInclude Include="Source\Graphic\Command\JCommandContext.h" />
+    <ClInclude Include="Source\Graphic\Command\JCommandContextLog.h" />
+    <ClInclude Include="Source\Graphic\Culling\Dx\JDx12CullingResourceHolder.h" />
+    <ClInclude Include="Source\Graphic\Culling\Dx\JDx12CullingManager.h" />
+    <ClInclude Include="Source\Graphic\Culling\Frustum\JFrustumCulling.h" />
+    <ClInclude Include="Source\Graphic\Culling\JCullingConstants.h" />
+    <ClInclude Include="Source\Graphic\Culling\JCullingInfo.h" />
+    <ClInclude Include="Source\Graphic\Culling\JCullingInterface.h" />
+    <ClInclude Include="Source\Graphic\Culling\JCullingManager.h" />
+    <ClInclude Include="Source\Graphic\Culling\JCullingResultHolder.h" />
+    <ClInclude Include="Source\Graphic\Culling\JCullingType.h" />
+    <ClInclude Include="Source\Graphic\Culling\JCullingUserAccess.h" />
+    <ClInclude Include="Source\Graphic\Culling\Light\Dx\JDx12LightCulling.h" />
+    <ClInclude Include="Source\Graphic\Culling\Light\JLightCulling.h" />
+    <ClInclude Include="Source\Graphic\Culling\Occlusion\Dx\JDx12HardwareOccCulling.h" />
+    <ClInclude Include="Source\Graphic\Culling\Occlusion\Dx\JDx12HZBOccCulling.h" />
+    <ClInclude Include="Source\Graphic\Culling\Occlusion\JHardwareOccCulling.h" />
+    <ClInclude Include="Source\Graphic\Culling\Occlusion\JHZBOccCulling.h" />
+    <ClInclude Include="Source\Graphic\Culling\Occlusion\JOccCulling.h" />
+    <ClInclude Include="Source\Graphic\DataSet\Dx\JDx12GraphicDataSet.h" />
+    <ClInclude Include="Source\Graphic\DataSet\JGraphicDataSet.h" />
+    <ClInclude Include="Source\Graphic\DataSet\JGraphicIndirectDataSet.h" />
+    <ClInclude Include="Source\Graphic\DataSet\JGraphicSubclassDataSet.h" />
+    <ClInclude Include="Source\Graphic\Debug\Dx\JDx12GraphicDebug.h" />
+    <ClInclude Include="Source\Graphic\Debug\JGraphicDebug.h" />
+    <ClInclude Include="Source\Graphic\DepthMap\Dx\JDx12DepthTest.h" />
+    <ClInclude Include="Source\Graphic\DepthMap\JDepthTest.h" />
+    <ClInclude Include="Source\Graphic\Device\Dx\JDx12GraphicDevice.h" />
+    <ClInclude Include="Source\Graphic\Device\Dx\JDxGraphicDeviceInterface.h" />
+    <ClInclude Include="Source\Graphic\Device\JGraphicDevice.h" />
+    <ClInclude Include="Source\Graphic\Device\JGraphicDeviceType.h" />
+    <ClInclude Include="Source\Graphic\Device\JGraphicDeviceUser.h" />
+    <ClInclude Include="Source\Graphic\Exception\JGraphicException.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\Dx\JDx12FrameResource.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JAnimationConstants.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JCameraConstants.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JFrameConstantsSet.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JFrameIndexAccess.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JFrameResource.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JFrameResourceConstant.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JFrameResourceEnum.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JFrameUpdate.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JFrameUpdateUserAccess.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JLightConstants.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JMaterialConstants.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JObjectConstants.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JOcclusionConstants.h" />
+    <ClInclude Include="Source\Graphic\FrameResource\JSceneConstants.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceConstants.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceHolder.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceManager.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceInfo.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceCreation.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceShareData.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceFormat.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JDxGraphicResourceHolderInterface.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\Dx\JLoadTextureFromFile.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceConstants.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceHolder.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceInfo.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceInterface.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceManager.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceShareData.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceType.h" />
+    <ClInclude Include="Source\Graphic\GraphicResource\JGraphicResourceUserAccess.h" />
+    <ClInclude Include="Source\Graphic\Gui\JGuiBackendDataAdaptee.h" />
+    <ClInclude Include="Source\Graphic\Gui\JGuiBackendDataAdapter.h" />
+    <ClInclude Include="Source\Graphic\Gui\JGuiConstants.h" />
+    <ClInclude Include="Source\Graphic\Gui\JGuiData.h" />
+    <ClInclude Include="Source\Graphic\Gui\JGuiBackendInterface.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12Antialise.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12Bloom.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12Blur.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12DownSampling.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12ImageConstants.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12PostProcessExposure.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12PostProcessHistogram.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12Ssao.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12ConvertColor.h" />
+    <ClInclude Include="Source\Graphic\Image\Dx\JDx12ToneMapping.h" />
+    <ClInclude Include="Source\Graphic\Image\JAntialise.h" />
+    <ClInclude Include="Source\Graphic\Image\JBloom.h" />
+    <ClInclude Include="Source\Graphic\Image\JBlur.h" />
+    <ClInclude Include="Source\Graphic\Image\JDownSampling.h" />
+    <ClInclude Include="Source\Graphic\Image\JImageProcessingConstants.h" />
+    <ClInclude Include="Source\Graphic\Image\JImageProcessingDesc.h" />
+    <ClInclude Include="Source\Graphic\Image\JImageProcessingEnum.h" />
+    <ClInclude Include="Source\Graphic\Image\JImageProcessingFilter.h" />
+    <ClInclude Include="Source\Graphic\Image\JPostProcessPipeline.h" />
+    <ClInclude Include="Source\Graphic\Image\JPostProcessExposure.h" />
+    <ClInclude Include="Source\Graphic\Image\JPostProcessHistogram.h" />
+    <ClInclude Include="Source\Graphic\Image\JSsao.h" />
+    <ClInclude Include="Source\Graphic\Image\JConvertColor.h" />
+    <ClInclude Include="Source\Graphic\Image\JToneMapping.h" />
+    <ClInclude Include="Source\Graphic\JGraphic.h" />
+    <ClInclude Include="Source\Graphic\JGraphicConstants.h" />
+    <ClInclude Include="Source\Graphic\JGraphicDrawList.h" />
+    <ClInclude Include="Source\Graphic\JGraphicDrawListInterface.h" />
+    <ClInclude Include="Source\Graphic\JGraphicDrawListType.h" />
+    <ClInclude Include="Source\Graphic\JGraphicEnum.h" />
+    <ClInclude Include="Source\Graphic\JGraphicEvent.h" />
+    <ClInclude Include="Source\Graphic\JGraphicInfo.h" />
+    <ClInclude Include="Source\Graphic\JGraphicOption.h" />
+    <ClInclude Include="Source\Graphic\JGraphicPrivate.h" />
+    <ClInclude Include="Source\Graphic\JGraphicSubClassInterface.h" />
+    <ClInclude Include="Source\Graphic\JGraphicTaskInterface.h" />
+    <ClInclude Include="Source\Graphic\JGraphicUpdateHelper.h" />
+    <ClInclude Include="Source\Graphic\Outline\Dx\JDx12Outline.h" />
+    <ClInclude Include="Source\Graphic\Outline\JOutline.h" />
+    <ClInclude Include="Source\Graphic\Outline\JOutlineConstants.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Denoiser\Dx\JDx12RaytracingDenoiser.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Denoiser\JRaytracingDenoiser.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Dx\JDx12RaytracingConstants.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Dx\JDx12RaytracingUtility.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Light\Global\Dx\JDx12RaytracingGI.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Light\Global\JRaytracingGI.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Occlusion\Dx\JDx12RaytracingAmbientOcclusion.h" />
+    <ClInclude Include="Source\Graphic\Raytracing\Occlusion\JRaytracingAmbientOcclusion.h" />
+    <ClInclude Include="Source\Graphic\Scene\Dx\JDx12SceneDraw.h" />
+    <ClInclude Include="Source\Graphic\Scene\JSceneDraw.h" />
+    <ClInclude Include="Source\Graphic\Shader\Dx\JDx12ShaderDataHolder.h" />
+    <ClInclude Include="Source\Graphic\Shader\Dx\JDxShaderDataHolderInterface.h" />
+    <ClInclude Include="Source\Graphic\Shader\JShaderCondition.h" />
+    <ClInclude Include="Source\Graphic\Shader\JShaderDataHandler.h" />
+    <ClInclude Include="Source\Graphic\Shader\JShaderDataHolder.h" />
+    <ClInclude Include="Source\Graphic\Shader\JShaderType.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\Dx\JDx12ShadowMap.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\JCsmHandlerInterface.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\JCsmManager.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\JCsmOption.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\JCsmTargetInfo.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\JCsmTargetInterface.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\JCsmType.h" />
+    <ClInclude Include="Source\Graphic\ShadowMap\JShadowMap.h" />
+    <ClInclude Include="Source\Graphic\Thread\JGraphicMultiThreadDrawInterface.h" />
+    <ClInclude Include="Source\Graphic\Thread\JGraphicThreadType.h" />
+    <ClInclude Include="Source\Graphic\Utility\Dx\JDx12ClearBuffer.h" />
+    <ClInclude Include="Source\Graphic\Utility\Dx\JDx12ObjectCreation.h" />
+    <ClInclude Include="Source\Graphic\Utility\Dx\JDx12Utility.h" />
+    <ClInclude Include="Source\Graphic\Utility\JSampler.h" />
+    <ClInclude Include="Source\Main\JMain.h" />
+    <ClInclude Include="Source\Object\Component\Animator\JAnimator.h" />
+    <ClInclude Include="Source\Object\Component\Animator\JAnimatorPrivate.h" />
+    <ClInclude Include="Source\Object\Component\Behavior\JBehavior.h" />
+    <ClInclude Include="Source\Object\Component\Behavior\JBehaviorFactory.h" />
+    <ClInclude Include="Source\Object\Component\Behavior\JBehaviorMacro.h" />
+    <ClInclude Include="Source\Object\Component\Behavior\JBehaviorPrivate.h" />
+    <ClInclude Include="Source\Object\Component\Camera\JCamera.h" />
+    <ClInclude Include="Source\Object\Component\Camera\JCameraConstants.h" />
+    <ClInclude Include="Source\Object\Component\Camera\JCameraPrivate.h" />
+    <ClInclude Include="Source\Object\Component\Camera\JCameraState.h" />
+    <ClInclude Include="Source\Object\Component\JComponent.h" />
+    <ClInclude Include="Source\Object\Component\JComponentCreator.h" />
+    <ClInclude Include="Source\Object\Component\JComponentHint.h" />
+    <ClInclude Include="Source\Object\Component\JComponentPrivate.h" />
+    <ClInclude Include="Source\Object\Component\JComponentType.h" />
+    <ClInclude Include="Source\Object\Component\Light\JRectLight.h" />
+    <ClInclude Include="Source\Object\Component\Light\JRectLightPrivate.h" />
+    <ClInclude Include="Source\Object\Component\Light\JDirectionalLight.h" />
+    <ClInclude Include="Source\Object\Component\Light\JDirectionalLightPrivate.h" />
+    <ClInclude Include="Source\Object\Component\Light\JLight.h" />
+    <ClInclude Include="Source\Object\Component\Light\JLightConstants.h" />
+    <ClInclude Include="Source\Object\Component\Light\JLightPrivate.h" />
+    <ClInclude Include="Source\Object\Component\Light\JLightType.h" />
+    <ClInclude Include="Source\Object\Component\Light\JPointLight.h" />
+    <ClInclude Include="Source\Object\Component\Light\JPointLightPrivate.h" />
+    <ClInclude Include="Source\Object\Component\Light\JSpotLight.h" />
+    <ClInclude Include="Source\Object\Component\Light\JSpotLightPrivate.h" />
+    <ClInclude Include="Source\Object\Component\RenderItem\JRenderItem.h" />
+    <ClInclude Include="Source\Object\Component\RenderItem\JRenderItemPrivate.h" />
+    <ClInclude Include="Source\Object\Component\RenderItem\JRenderItemAcceleratorMask.h" />
+    <ClInclude Include="Source\Object\Component\RenderItem\JRenderItemPrimitive.h" />
+    <ClInclude Include="Source\Object\Component\RenderItem\JRenderLayer.h" />
+    <ClInclude Include="Source\Object\Component\Transform\JTransform.h" />
+    <ClInclude Include="Source\Object\Component\Transform\JTransformPrivate.h" />
+    <ClInclude Include="Source\Object\Directory\JDirectory.h" />
+    <ClInclude Include="Source\Object\Directory\JDirectoryPrivate.h" />
+    <ClInclude Include="Source\Object\Directory\JFile.h" />
+    <ClInclude Include="Source\Object\Directory\JFileInitData.h" />
+    <ClInclude Include="Source\Object\Directory\JFilePrivate.h" />
+    <ClInclude Include="Source\Object\GameObject\JGameObject.h" />
+    <ClInclude Include="Source\Object\GameObject\JGameObjectCreator.h" />
+    <ClInclude Include="Source\Object\GameObject\JGameObjectPrivate.h" />
+    <ClInclude Include="Source\Object\JObjectModifyInterface.h" />
+    <ClInclude Include="Source\Object\JModifiedObjectInfo.h" />
+    <ClInclude Include="Source\Object\JObject.h" />
+    <ClInclude Include="Source\Object\JObjectFileIOHelper.h" />
+    <ClInclude Include="Source\Object\JObjectFlag.h" />
+    <ClInclude Include="Source\Object\JObjectPrivate.h" />
+    <ClInclude Include="Source\Object\JObjectType.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationClip\JAnimationClip.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationClip\JAnimationClipPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMdiagram.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMdiagramPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMstate.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMstateClip.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMstateClipPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMstatePrivate.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMtransition.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMtransitionPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationPostProcessing.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationRetargeting.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationStateType.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationTime.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JAnimationUpdateData.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\FSM\JBlender.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\JAnimationController.h" />
+    <ClInclude Include="Source\Object\Resource\AnimationController\JAnimationControllerPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\JClearableInterface.h" />
+    <ClInclude Include="Source\Object\Resource\JReferenceInterface.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceManager.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceManagerPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObject.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectDefualtData.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectEventDesc.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectEventType.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectHint.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectImporter.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectIO.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectType.h" />
+    <ClInclude Include="Source\Object\Resource\JResourceObjectUserInterface.h" />
+    <ClInclude Include="Source\Object\Resource\Material\JDefaultMaterialSetting.h" />
+    <ClInclude Include="Source\Object\Resource\Material\JDefaultMaterialType.h" />
+    <ClInclude Include="Source\Object\Resource\Material\JMaterial.h" />
+    <ClInclude Include="Source\Object\Resource\Material\JMaterialPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JDefaultGeometryGenerator.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JDefaultShapeType.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JMeshGeometry.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JMeshGeometryPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JSkinnedMeshGeometry.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JSkinnedMeshGeometryPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JStaticMeshGeometry.h" />
+    <ClInclude Include="Source\Object\Resource\Mesh\JStaticMeshGeometryPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Bvh\JBvh.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Bvh\JBvhNode.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Bvh\JBvhOption.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\JAccelerator.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\JAcceleratorNode.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\JAcceleratorOption.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\JAcceleratorVisualizeInterface.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\JSceneAcceleratorStructure.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\JAcceleratorType.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Kd-tree\JKdTree.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Kd-tree\JKdTreeNode.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Kd-tree\JKdTreeOption.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Octree\JOctree.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Octree\JOctreeNode.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Accelerator\Octree\JOctreeOption.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\JScene.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\JSceneManager.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\JSceneManagerPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\JScenePrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\JSceneType.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Preview\JPreviewDirectory.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Preview\JPreviewEnum.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Preview\JPreviewResourceScene.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Preview\JPreviewScene.h" />
+    <ClInclude Include="Source\Object\Resource\Scene\Preview\JPreviewSceneGroup.h" />
+    <ClInclude Include="Source\Object\Resource\Shader\JDefaultShaderType.h" />
+    <ClInclude Include="Source\Object\Resource\Shader\JShader.h" />
+    <ClInclude Include="Source\Object\Resource\Shader\JShaderPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\Avatar\JAvatar.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\Avatar\JAvatarJoint.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\Avatar\JAvatarJointType.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\JSkeleton.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\JSkeletonAsset.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\JSkeletonAssetPrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\JSkeletonFixedData.h" />
+    <ClInclude Include="Source\Object\Resource\Skeleton\JSkeletonType.h" />
+    <ClInclude Include="Source\Object\Resource\Texture\JDefaulTextureType.h" />
+    <ClInclude Include="Source\Object\Resource\Texture\JTexture.h" />
+    <ClInclude Include="Source\Object\Resource\Texture\JTexturePrivate.h" />
+    <ClInclude Include="Source\Object\Resource\Texture\JTextureType.h" />
+    <ClInclude Include="Source\Window\Exception\JWindowException.h" />
+    <ClInclude Include="Source\Window\JWindow.h" />
+    <ClInclude Include="Source\Window\JWindowEventType.h" />
+    <ClInclude Include="Source\Window\JWindowPrivate.h" />
+    <ClInclude Include="ThirdParty\DirectX\DDSTextureLoader11.h" />
+    <ClInclude Include="ThirdParty\DirectX\DirectXMesh.h" />
+    <ClInclude Include="ThirdParty\DirectX\DirectXMeshP.h" />
+    <ClInclude Include="ThirdParty\DirectX\scoped.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Inc\DDSTextureLoader.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Inc\DirectXHelpers.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Inc\GraphicsMemory.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Inc\ResourceUploadBatch.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Inc\ScreenGrab.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Inc\WICTextureLoader.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Src\d3dx12.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Src\DDS.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Src\LinearAllocator.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Src\LoaderHelpers.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Src\pch.h" />
+    <ClInclude Include="ThirdParty\DirectX\TK\Src\PlatformHelpers.h" />
+    <ClInclude Include="ThirdParty\fast-lzma2-master\fast-lzma2.h" />
+    <ClInclude Include="ThirdParty\Fbx\Include\fbxsdk.h" />
+    <ClInclude Include="ThirdParty\hash-library-master\sha3.h" />
+    <ClInclude Include="ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="ThirdParty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="ThirdParty\imgui\imstb_textedit.h" />
+    <ClInclude Include="ThirdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="ThirdParty\jsoncpp-master\json.h" />
+    <ClInclude Include="ThirdParty\Loki\Typelist\NullType.h" />
+    <ClInclude Include="ThirdParty\Loki\Typelist\Typelist.h" />
+    <ClInclude Include="ThirdParty\Loki\Typelist\TypelistMacros.h" />
+    <ClInclude Include="ThirdParty\Loki\Typelist\TypeManip.h" />
+    <ClInclude Include="ThirdParty\stb-master\stb.h" />
+    <ClInclude Include="ThirdParty\Tif\t4.h" />
+    <ClInclude Include="ThirdParty\Tif\tiff.h" />
+    <ClInclude Include="ThirdParty\Tif\tiffconf.h" />
+    <ClInclude Include="ThirdParty\Tif\tiffio.h" />
+    <ClInclude Include="ThirdParty\Tif\tiffiop.h" />
+    <ClInclude Include="ThirdParty\Tif\tiffvers.h" />
+    <ClInclude Include="ThirdParty\Tif\tif_config.h" />
+    <ClInclude Include="ThirdParty\Tif\tif_dir.h" />
+    <ClInclude Include="ThirdParty\Tif\tif_fax3.h" />
+    <ClInclude Include="ThirdParty\Tif\tif_hash_set.h" />
+    <ClInclude Include="ThirdParty\Tif\tif_predict.h" />
+    <ClInclude Include="ThirdParty\Tif\uvcode.h" />
+    <ClInclude Include="ThirdParty\tinyxml2-master\tinyxml2.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\Application\Binary\JEngineTool.cpp" />
+    <ClCompile Include="Source\Application\Engine\JApplicationEngine.cpp" />
+    <ClCompile Include="Source\Application\Project\JApplicationProject.cpp" />
+    <ClCompile Include="Source\Application\Project\Script\JCplusScriptCreator.cpp" />
+    <ClCompile Include="Source\Core\Animation\JAnimationData.cpp" />
+    <ClCompile Include="Source\Core\Animation\JointPose.cpp" />
+    <ClCompile Include="Source\Core\DI\JDIDataBase.cpp" />
+    <ClCompile Include="Source\Core\Encrypt\JEncryption.cpp" />
+    <ClCompile Include="Source\Core\Exception\JCudaException.cpp" />
+    <ClCompile Include="Source\Core\Exception\JException.cpp" />
+    <ClCompile Include="Source\Core\Exception\JHresultException.cpp" />
+    <ClCompile Include="Source\Core\Exception\JNormalException.cpp" />
+    <ClCompile Include="Source\Core\File\JFileCompress.cpp" />
+    <ClCompile Include="Source\Core\File\JFileConstant.cpp" />
+    <ClCompile Include="Source\Core\File\JFileIOHelper.cpp" />
+    <ClCompile Include="Source\Core\File\JFilePackage.cpp" />
+    <ClCompile Include="Source\Core\File\JFilePathData.cpp" />
+    <ClCompile Include="Source\Core\File\JJSon.cpp" />
+    <ClCompile Include="Source\Core\File\JXmlHelper.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMcondition.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMdiagram.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMinterface.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMownerInterface.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMparameter.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMparameterStorage.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMstate.cpp" />
+    <ClCompile Include="Source\Core\FSM\JFSMtransition.cpp" />
+    <ClCompile Include="Source\Core\Geometry\JBBox.cpp" />
+    <ClCompile Include="Source\Core\Geometry\JDirectXCollisionEx.cpp" />
+    <ClCompile Include="Source\Core\Geometry\JFrustum.cpp" />
+    <ClCompile Include="Source\Core\Geometry\JRay.cpp" />
+    <ClCompile Include="Source\Core\Geometry\Mesh\JMeshStruct.cpp" />
+    <ClCompile Include="Source\Core\Geometry\Mesh\Loader\FbxLoader\JFbxFileLoader.cpp" />
+    <ClCompile Include="Source\Core\Geometry\Mesh\Loader\FbxLoader\JFbxUtility.cpp" />
+    <ClCompile Include="Source\Core\Geometry\Mesh\Loader\MeshLoader\JMeshFileLoader.cpp" />
+    <ClCompile Include="Source\Core\Geometry\Mesh\Loader\ObjLoader\JObjFileLoader.cpp" />
+    <ClCompile Include="Source\Core\Guid\JGuidCreator.cpp" />
+    <ClCompile Include="Source\Core\Identity\JIdenCreator.cpp" />
+    <ClCompile Include="Source\Core\Identity\JIdentifier.cpp" />
+    <ClCompile Include="Source\Core\Input\JKeyboard.cpp" />
+    <ClCompile Include="Source\Core\Input\JMouse.cpp" />
+    <ClCompile Include="Source\Core\Interface\JActivatedInterface.cpp" />
+    <ClCompile Include="Source\Core\Interface\JGroupInterface.cpp" />
+    <ClCompile Include="Source\Core\Interface\JValidInterface.cpp" />
+    <ClCompile Include="Source\Core\Lazy\JLazyDestruction.cpp" />
+    <ClCompile Include="Source\Core\Lazy\JLazyDestructionInfo.cpp" />
+    <ClCompile Include="Source\Core\Log\JLog.cpp" />
+    <ClCompile Include="Source\Core\Log\JLogHandler.cpp" />
+    <ClCompile Include="Source\Core\Math\JMathHelper.cpp" />
+    <ClCompile Include="Source\Core\Math\JMatrix.cpp" />
+    <ClCompile Include="Source\Core\Memory\JAllocationInterface.cpp" />
+    <ClCompile Include="Source\Core\Memory\JChunkAlloc.cpp" />
+    <ClCompile Include="Source\Core\Memory\JHeapAlloc.cpp" />
+    <ClCompile Include="Source\Core\Memory\JMemoryCapture.cpp" />
+    <ClCompile Include="Source\Core\Memory\JVirtualAlloc.cpp" />
+    <ClCompile Include="Source\Core\Module\JModule.cpp" />
+    <ClCompile Include="Source\Core\Module\JModuleIntializer.cpp" />
+    <ClCompile Include="Source\Core\Module\JModuleManager.cpp" />
+    <ClCompile Include="Source\Core\Platform\JHardwareInfo.cpp" />
+    <ClCompile Include="Source\Core\Plugin\JPlugin.cpp" />
+    <ClCompile Include="Source\Core\Plugin\JPluginManager.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JEnumInfo.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JEnumInitializer.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JGuiWidgetInfo.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JGuiWidgetInfoHandleBase.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JMethodInfo.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JPropertyInfo.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JReflectionInfo.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JTypeAllocationCreator.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JTypeBase.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JTypeInfo.cpp" />
+    <ClCompile Include="Source\Core\Reflection\JTypeInfoGuiOption.cpp" />
+    <ClCompile Include="Source\Core\Storage\JStorageInterface.cpp" />
+    <ClCompile Include="Source\Core\Threading\JThread.cpp" />
+    <ClCompile Include="Source\Core\Threading\JThreadInfo.cpp" />
+    <ClCompile Include="Source\Core\Threading\JThreadManager.cpp" />
+    <ClCompile Include="Source\Core\Time\JGameTimer.cpp" />
+    <ClCompile Include="Source\Core\Time\JRealTime.cpp" />
+    <ClCompile Include="Source\Core\Time\JStopWatch.cpp" />
+    <ClCompile Include="Source\Core\Transition\JTransition.cpp" />
+    <ClCompile Include="Source\Core\Unit\JBigInt.cpp" />
+    <ClCompile Include="Source\Core\Utility\JCommonUtility.cpp" />
+    <ClCompile Include="Source\Core\Utility\JSimpleCompiler.cpp" />
+    <ClCompile Include="Source\Develop\Debug\JDevelopDebug.cpp" />
+    <ClCompile Include="Source\Develop\Debug\JDevelopDebugMain.cpp" />
+    <ClCompile Include="Source\Develop\Debug\JTypeToString.cpp" />
+    <ClCompile Include="Source\Editor\Align\JEditorAlignCalculator.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorAddressBar.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorCameraControl.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorCoordGrid.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorDynamicColor.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorGameObjectSurpportTool.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorInputBuffHelper.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorMouseDragBox.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorPageCounter.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorRenameHelper.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorSceneImageInteraction.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorSearchBar.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorSelectableStructure.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorSliderBar.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorTreeStructure.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorIdentifierList.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JEditorViewStructure.cpp" />
+    <ClCompile Include="Source\Editor\EditTool\JReflectionGuiWidgetHelper.cpp" />
+    <ClCompile Include="Source\Editor\Event\JEditorEvent.cpp" />
+    <ClCompile Include="Source\Editor\Event\JEditorEventStruct.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Adapter\ImGui\Dx\JDx12ImGuiAdaptee.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Adapter\ImGui\Dx\JDx12ImGuiBackendDataAdaptee.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Adapter\ImGui\JImGuiAdaptee.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Adapter\ImGui\JImGuiBackendDataAdaptee.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Adapter\JGuiBehaviorAdaptee.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Adapter\JGuiBehaviorAdapter.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Data\ImGui\Dx\JDx12ImGuiDrawData.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Data\ImGui\Dx\JDx12ImGuiInitData.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Data\ImGui\JImGuiDrawData.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Data\ImGui\JImGuiPrivateData.cpp" />
+    <ClCompile Include="Source\Editor\Gui\Data\ImGui\JImGuiInitData.cpp" />
+    <ClCompile Include="Source\Editor\Gui\JGui.cpp" />
+    <ClCompile Include="Source\Editor\Gui\JGuiWindow.cpp" />
+    <ClCompile Include="Source\Editor\Gui\JGuiImageInfo.cpp" />
+    <ClCompile Include="Source\Editor\Gui\JGuiUser.cpp" />
+    <ClCompile Include="Source\Editor\Interface\JEditorObjectCreationInterface.cpp" />
+    <ClCompile Include="Source\Editor\Interface\JEditorProjectInterface.cpp" />
+    <ClCompile Include="Source\Editor\Interface\JEditorTransitionInterface.cpp" />
+    <ClCompile Include="Source\Editor\JEditorManager.cpp" />
+    <ClCompile Include="Source\Editor\Menubar\JEditorMenuBar.cpp" />
+    <ClCompile Include="Source\Editor\Page\AnimationControllerSetting\JEditorAniContPage.cpp" />
+    <ClCompile Include="Source\Editor\Page\AnimationControllerSetting\Window\JAnimationDiagramList.cpp" />
+    <ClCompile Include="Source\Editor\Page\AnimationControllerSetting\Window\JAnimationParameterList.cpp" />
+    <ClCompile Include="Source\Editor\Page\AnimationControllerSetting\Window\JAnimationStateView.cpp" />
+    <ClCompile Include="Source\Editor\Page\CommonWindow\Debug\JApplicationWatcher.cpp" />
+    <ClCompile Include="Source\Editor\Page\CommonWindow\Debug\JGraphicResourceWatcher.cpp" />
+    <ClCompile Include="Source\Editor\Page\CommonWindow\Debug\JStringConvertTest.cpp" />
+    <ClCompile Include="Source\Editor\Page\CommonWindow\Detail\JObjectDetail.cpp" />
+    <ClCompile Include="Source\Editor\Page\CommonWindow\Explorer\JObjectExplorer.cpp" />
+    <ClCompile Include="Source\Editor\Page\CommonWindow\View\JSceneObserver.cpp" />
+    <ClCompile Include="Source\Editor\Page\CommonWindow\View\JSceneViewer.cpp" />
+    <ClCompile Include="Source\Editor\Page\Docking\ImGui\JImGuiDockUpdateHelper.cpp" />
+    <ClCompile Include="Source\Editor\Page\JEditor.cpp" />
+    <ClCompile Include="Source\Editor\Page\JEditorPage.cpp" />
+    <ClCompile Include="Source\Editor\Page\JEditorPageShareData.cpp" />
+    <ClCompile Include="Source\Editor\Page\JEditorWindow.cpp" />
+    <ClCompile Include="Source\Editor\Page\ProjectMain\JProjectMainPage.cpp" />
+    <ClCompile Include="Source\Editor\Page\ProjectMain\Window\JGraphicOptionSetting.cpp" />
+    <ClCompile Include="Source\Editor\Page\ProjectMain\Window\JLogViewer.cpp" />
+    <ClCompile Include="Source\Editor\Page\ProjectMain\Window\JWindowDirectory.cpp" />
+    <ClCompile Include="Source\Editor\Page\ProjectMain\Window\JWindowStateViewer.cpp" />
+    <ClCompile Include="Source\Editor\Page\ProjectSelector\JProjectSelectorPage.cpp" />
+    <ClCompile Include="Source\Editor\Page\ProjectSelector\Window\JProjectSelectorHub.cpp" />
+    <ClCompile Include="Source\Editor\Page\SkeletonaAssetSetting\JEditorSkeletonPage.cpp" />
+    <ClCompile Include="Source\Editor\Page\SkeletonaAssetSetting\Window\JAvatarEditor.cpp" />
+    <ClCompile Include="Source\Editor\Page\WindowInterface\JEditorPreviewInterface.cpp" />
+    <ClCompile Include="Source\Editor\Popup\JEditorPopupMenu.cpp" />
+    <ClCompile Include="Source\Editor\Popup\JEditorPopupNode.cpp" />
+    <ClCompile Include="Source\Editor\Popup\JEditorPopupWindow.cpp" />
+    <ClCompile Include="Source\Editor\String\JEditorStringMap.cpp" />
+    <ClCompile Include="Source\Graphic\Accelerator\Dx\JDx12GpuAcceleratorHolder.cpp" />
+    <ClCompile Include="Source\Graphic\Accelerator\Dx\JDx12GpuAcceleratorManager.cpp" />
+    <ClCompile Include="Source\Graphic\Accelerator\JGpuAcceleratorInfo.cpp" />
+    <ClCompile Include="Source\Graphic\Accelerator\JGpuAcceleratorInterface.cpp" />
+    <ClCompile Include="Source\Graphic\Accelerator\JGpuAcceleratorManager.cpp" />
+    <ClCompile Include="Source\Graphic\Adapter\JDx12Adaptee.cpp" />
+    <ClCompile Include="Source\Graphic\Adapter\JGraphicAdapter.cpp" />
+    <ClCompile Include="Source\Graphic\Buffer\Dx\JDx12GraphicBuffer.cpp" />
+    <ClCompile Include="Source\Graphic\Command\Dx\JDx12CommandContext.cpp" />
+    <ClCompile Include="Source\Graphic\Command\JCommandContext.cpp" />
+    <ClCompile Include="Source\Graphic\Command\JCommandContextLog.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Dx\JDx12CullingResourceHolder.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Dx\JDx12CullingManager.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Frustum\JFrustumCulling.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\JCullingInfo.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\JCullingInterface.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\JCullingManager.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\JCullingResultHolder.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\JCullingUserAccess.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Light\Dx\JDx12LightCulling.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Light\JLightCulling.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Occlusion\Dx\JDx12HardwareOccCulling.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Occlusion\Dx\JDx12HZBOccCulling.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Occlusion\JHardwareOccCulling.cpp" />
+    <ClCompile Include="Source\Graphic\Culling\Occlusion\JHZBOccCulling.cpp" />
+    <ClCompile Include="Source\Graphic\DataSet\Dx\JDx12GraphicDataSet.cpp" />
+    <ClCompile Include="Source\Graphic\DataSet\JGraphicDataSet.cpp" />
+    <ClCompile Include="Source\Graphic\DataSet\JGraphicIndirectDataSet.cpp" />
+    <ClCompile Include="Source\Graphic\Debug\Dx\JDx12GraphicDebug.cpp" />
+    <ClCompile Include="Source\Graphic\Debug\JGraphicDebug.cpp" />
+    <ClCompile Include="Source\Graphic\DepthMap\Dx\JDx12DepthTest.cpp" />
+    <ClCompile Include="Source\Graphic\DepthMap\JDepthTest.cpp" />
+    <ClCompile Include="Source\Graphic\Device\Dx\JDx12GraphicDevice.cpp" />
+    <ClCompile Include="Source\Graphic\Device\JGraphicDevice.cpp" />
+    <ClCompile Include="Source\Graphic\Device\JGraphicDeviceUser.cpp" />
+    <ClCompile Include="Source\Graphic\Exception\JGraphicException.cpp" />
+    <ClCompile Include="Source\Graphic\FrameResource\Dx\JDx12FrameResource.cpp" />
+    <ClCompile Include="Source\Graphic\FrameResource\JAnimationConstants.cpp" />
+    <ClCompile Include="Source\Graphic\FrameResource\JFrameIndexAccess.cpp" />
+    <ClCompile Include="Source\Graphic\FrameResource\JFrameResource.cpp" />
+    <ClCompile Include="Source\Graphic\FrameResource\JFrameUpdate.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceHolder.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceInfo.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceManager.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceCreation.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\Dx\JDx12GraphicResourceShareData.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\Dx\JLoadTextureFromFile.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\JGraphicResourceInfo.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\JGraphicResourceInterface.cpp" />
+    <ClCompile Include="Source\Graphic\GraphicResource\JGraphicResourceManager.cpp" />
+    <ClCompile Include="Source\Graphic\Gui\JGuiBackendDataAdapter.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12Antialise.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12Bloom.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12Blur.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12DownSampling.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12PostProcessExposure.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12PostProcessHistogram.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12Ssao.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12ConvertColor.cpp" />
+    <ClCompile Include="Source\Graphic\Image\Dx\JDx12ToneMapping.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JAntialise.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JBloom.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JBlur.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JDownSampling.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JImageProcessingFilter.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JPostProcessPipeline.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JPostProcessExposure.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JPostProcessHistogram.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JSsao.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JConvertColor.cpp" />
+    <ClCompile Include="Source\Graphic\Image\JToneMapping.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphic.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphicDrawList.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphicDrawListInterface.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphicEvent.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphicInfo.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphicOption.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphicSubClassInterface.cpp" />
+    <ClCompile Include="Source\Graphic\JGraphicUpdateHelper.cpp" />
+    <ClCompile Include="Source\Graphic\Outline\Dx\JDx12Outline.cpp" />
+    <ClCompile Include="Source\Graphic\Outline\JOutline.cpp" />
+    <ClCompile Include="Source\Graphic\Raytracing\Denoiser\Dx\JDx12RaytracingDenoiser.cpp" />
+    <ClCompile Include="Source\Graphic\Raytracing\Denoiser\JRaytracingDenoiser.cpp" />
+    <ClCompile Include="Source\Graphic\Raytracing\Dx\JDx12RaytracingUtility.cpp" />
+    <ClCompile Include="Source\Graphic\Raytracing\Light\Global\Dx\JDx12RaytracingGI.cpp" />
+    <ClCompile Include="Source\Graphic\Raytracing\Light\Global\JRaytracingGI.cpp" />
+    <ClCompile Include="Source\Graphic\Raytracing\Occlusion\Dx\JDx12RaytracingAmbientOcclusion.cpp" />
+    <ClCompile Include="Source\Graphic\Raytracing\Occlusion\JRaytracingAmbientOcclusion.cpp" />
+    <ClCompile Include="Source\Graphic\Scene\Dx\JDx12SceneDraw.cpp" />
+    <ClCompile Include="Source\Graphic\Scene\JSceneDraw.cpp" />
+    <ClCompile Include="Source\Graphic\Shader\Dx\JDxShaderDataHolderInterface.cpp" />
+    <ClCompile Include="Source\Graphic\Shader\JShaderCondition.cpp" />
+    <ClCompile Include="Source\Graphic\Shader\JShaderDataHandler.cpp" />
+    <ClCompile Include="Source\Graphic\Shader\JShaderDataHolder.cpp" />
+    <ClCompile Include="Source\Graphic\Shader\JShaderType.cpp" />
+    <ClCompile Include="Source\Graphic\ShadowMap\Dx\JDx12ShadowMap.cpp" />
+    <ClCompile Include="Source\Graphic\ShadowMap\JCsmHandlerInterface.cpp" />
+    <ClCompile Include="Source\Graphic\ShadowMap\JCsmManager.cpp" />
+    <ClCompile Include="Source\Graphic\ShadowMap\JCsmOption.cpp" />
+    <ClCompile Include="Source\Graphic\ShadowMap\JCsmTargetInfo.cpp" />
+    <ClCompile Include="Source\Graphic\ShadowMap\JCsmTargetInterface.cpp" />
+    <ClCompile Include="Source\Graphic\ShadowMap\JShadowMap.cpp" />
+    <ClCompile Include="Source\Graphic\Utility\Dx\JDx12ClearBuffer.cpp" />
+    <ClCompile Include="Source\Graphic\Utility\Dx\JDx12ObjectCreation.cpp" />
+    <ClCompile Include="Source\Graphic\Utility\Dx\JDx12Utility.cpp" />
+    <ClCompile Include="Source\Graphic\Utility\JSampler.cpp" />
+    <ClCompile Include="Source\Main\JMain.cpp" />
+    <ClCompile Include="Source\Main\JMainEntry.cpp" />
+    <ClCompile Include="Source\Object\Component\Animator\JAnimator.cpp" />
+    <ClCompile Include="Source\Object\Component\Behavior\JBehavior.cpp" />
+    <ClCompile Include="Source\Object\Component\Camera\JCamera.cpp" />
+    <ClCompile Include="Source\Object\Component\JComponent.cpp" />
+    <ClCompile Include="Source\Object\Component\JComponentCreator.cpp" />
+    <ClCompile Include="Source\Object\Component\JComponentHint.cpp" />
+    <ClCompile Include="Source\Object\Component\Light\JRectLight.cpp" />
+    <ClCompile Include="Source\Object\Component\Light\JDirectionalLight.cpp" />
+    <ClCompile Include="Source\Object\Component\Light\JLight.cpp" />
+    <ClCompile Include="Source\Object\Component\Light\JPointLight.cpp" />
+    <ClCompile Include="Source\Object\Component\Light\JSpotLight.cpp" />
+    <ClCompile Include="Source\Object\Component\RenderItem\JRenderItem.cpp" />
+    <ClCompile Include="Source\Object\Component\Transform\JTransform.cpp" />
+    <ClCompile Include="Source\Object\Directory\JDirectory.cpp" />
+    <ClCompile Include="Source\Object\Directory\JFile.cpp" />
+    <ClCompile Include="Source\Object\Directory\JFileInitData.cpp" />
+    <ClCompile Include="Source\Object\GameObject\JGameObject.cpp" />
+    <ClCompile Include="Source\Object\GameObject\JGameObjectCreator.cpp" />
+    <ClCompile Include="Source\Object\JObjectModifyInterface.cpp" />
+    <ClCompile Include="Source\Object\JObject.cpp" />
+    <ClCompile Include="Source\Object\JObjectFileIOHelper.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationClip\JAnimationClip.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMdiagram.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMstate.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMstateClip.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationFSMtransition.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationPostProcessing.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationRetargeting.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationTime.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JAnimationUpdateData.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\FSM\JBlender.cpp" />
+    <ClCompile Include="Source\Object\Resource\AnimationController\JAnimationController.cpp" />
+    <ClCompile Include="Source\Object\Resource\JReferenceInterface.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceManager.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceObject.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceObjectDefualtData.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceObjectEventDesc.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceObjectHint.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceObjectImporter.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceObjectIO.cpp" />
+    <ClCompile Include="Source\Object\Resource\JResourceObjectUserInterface.cpp" />
+    <ClCompile Include="Source\Object\Resource\Material\JDefaultMaterialSetting.cpp" />
+    <ClCompile Include="Source\Object\Resource\Material\JMaterial.cpp" />
+    <ClCompile Include="Source\Object\Resource\Mesh\JDefaultGeometryGenerator.cpp" />
+    <ClCompile Include="Source\Object\Resource\Mesh\JMeshGeometry.cpp" />
+    <ClCompile Include="Source\Object\Resource\Mesh\JSkinnedMeshGeometry.cpp" />
+    <ClCompile Include="Source\Object\Resource\Mesh\JStaticMeshGeometry.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Bvh\JBvh.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Bvh\JBvhNode.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Bvh\JBvhOption.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\JAccelerator.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\JAcceleratorNode.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\JAcceleratorOption.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\JSceneAcceleratorStructure.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Kd-tree\JKdTree.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Kd-tree\JKdTreeNode.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Kd-tree\JKdTreeOption.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Octree\JOctree.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Octree\JOctreeNode.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Accelerator\Octree\JOctreeOption.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\JScene.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\JSceneManager.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Preview\JPreviewDirectory.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Preview\JPreviewResourceScene.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Preview\JPreviewScene.cpp" />
+    <ClCompile Include="Source\Object\Resource\Scene\Preview\JPreviewSceneGroup.cpp" />
+    <ClCompile Include="Source\Object\Resource\Shader\JShader.cpp" />
+    <ClCompile Include="Source\Object\Resource\Skeleton\Avatar\JAvatar.cpp" />
+    <ClCompile Include="Source\Object\Resource\Skeleton\Avatar\JAvatarJoint.cpp" />
+    <ClCompile Include="Source\Object\Resource\Skeleton\JSkeleton.cpp" />
+    <ClCompile Include="Source\Object\Resource\Skeleton\JSkeletonAsset.cpp" />
+    <ClCompile Include="Source\Object\Resource\Texture\JTexture.cpp" />
+    <ClCompile Include="Source\Window\Exception\JWindowException.cpp" />
+    <ClCompile Include="Source\Window\JWindow.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\DDSTextureLoader11.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\DirectXMeshTangentFrame.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\TK\Src\DDSTextureLoader.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\TK\Src\GraphicsMemory.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\TK\Src\LinearAllocator.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\TK\Src\pch.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\TK\Src\ResourceUploadBatch.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\TK\Src\ScreenGrab.cpp" />
+    <ClCompile Include="ThirdParty\DirectX\TK\Src\WICTextureLoader.cpp" />
+    <ClCompile Include="ThirdParty\hash-library-master\sha3.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="ThirdParty\tinyxml2-master\tinyxml2.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="JinEngine.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="Resource\Shader\PostProcessHistogram.hlsl" />
+    <None Include="Resource\Shader\PixelShaderCommon.hlsl">
+      <FileType>Document</FileType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.0</ShaderModel>
+    </None>
+    <None Include="Resource\Shader\DepthFunc.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\DepthTest.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\Hierarchical z-buffer.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\BxDF.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\Outline.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\PixelLayout.hlsl" />
+    <None Include="Resource\Shader\PostProcessingCommon.hlsl" />
+    <None Include="Resource\Shader\ShadowMapDraw.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\SsaoPs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\VertexLayout.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\VertexShader.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Source\Graphic\Accelerator\Dx\JDx12GpuAcceleratorHolder.h" />
+    <None Include="Source\Graphic\FrameResource\JRaytracingConstants.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\ShadowCompute.hlsl">
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </DeploymentContent>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.5</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </EntryPointName>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\Math.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\VertexShaderCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\Blur.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\LightCompute.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\LightDefine.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\DownSampling.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\LightClusterCompute.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\LightShapeDrawCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\LightShapeDrawGeo.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\LightShapeDrawPixel.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\LightShapeDrawVertex.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\LightClusterCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\LightClusterDebug.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PixelDeferredShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\PixelForwardShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PixelStuffGBuffer.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\SsaoBlur.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\SsaoCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\FilterCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\DebugVisualize.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\DepthInterleave.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\DepthLinearize.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\SsaoCombine.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\FullScreenTriangleVs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\SsaoGs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\ColorSpaceUtility.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\ColorPacking.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\ColorPacking_R11G11B10.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\ColorPacking_RGBE.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\ColorPacking_RGBM.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\ToneMapping.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PostProcessAdaptExposure.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\PostProcessExtractLuma.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\ConvertDisplayColor.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\ClearBuffer.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PostProcessDrawHistogram.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PostProcessBloomExtract.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\ConvertLinearColor.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PostProcessBloomBlur.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\PostProcessBloomDownSample.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\PostProcessBloomUpSample.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PostProcessFxaaCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\PostProcessFxaaResolveWork.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\PostProcessFxaaPass1.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\PostProcessFxaaPass2.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RaytracingTest.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RaytracingCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirGiFinal.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\RestirGiPathTracing.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirGiCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RandomNumberGenerator.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\Sampling.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\MaterialData.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\Packing.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirGiReuse.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirGiClear.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiseCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\RestirDenoiseBlur.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiserClear.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\RestirTemporalAccumulation.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Resource\Shader\RestirDenoisePrepare.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\ConvertTextureComponent.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\VelocityBuffer.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\GBufferCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\CommonConstantsStructureDefine.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\Poisson.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiseDownSampling.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirReconstruct.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiseDownSampling2.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiserBlurHotHistory.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiseAtorus.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiseHistoryClamping.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shader\RestirDenoiseAntifirefly.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.2.targets" />
+    <Import Project="..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets" Condition="Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets'))" />
+  </Target>
+</Project>
