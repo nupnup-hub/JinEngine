@@ -31,7 +31,7 @@
 #include"../../../../Object/Resource/Scene/JScene.h"
 #include"../../../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../../../Object/Resource/Material/JMaterial.h"
-#include"../../../../Application/JApplicationEngine.h"
+#include"../../../../Application/Engine/JApplicationEngine.h"
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
 
 //Debug

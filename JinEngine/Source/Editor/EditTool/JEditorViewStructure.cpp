@@ -6,7 +6,7 @@
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Math/JMathHelper.h"
 #include"../../Core/Storage/JStorage.h"
-#include<unordered_map>
+#include"../../Window/JWindow.h" 
 #include<algorithm>
 
 namespace JinEngine
@@ -20,7 +20,7 @@ namespace JinEngine
 			static constexpr float nodeSpacingRate = 0.05f;
 			static constexpr float nodeInnerPaddingRate = 0.025f;
 			static constexpr uint descBlankCount = 8;
-			static constexpr uint initGridSize = 1000;
+			//static constexpr uint initGridSize = 1000;
 			static constexpr float thicknessFactor = 7.5f;
 			static constexpr float triangleLengthFactor = 12.5f;
 		}
@@ -799,7 +799,7 @@ namespace JinEngine
 		{
 			Private::AddViewData(GetGuid());
 			coordGrid = std::make_unique<JEditorGuiCoordGrid>();
-			coordGrid->SetGridSize(Private::initGridSize);
+			coordGrid->SetGridSize(JWindow::GetDisplaySize().GetMaxElemet() * 2.0f);
 			updateHelper = std::make_unique<JEditorViewUpdateHelper>(GetGuid());
 			RegisterGroup(GetDefaultGroupGuid());
 		}
@@ -845,6 +845,13 @@ namespace JinEngine
 			fromGuid = updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::SELECTED].fromGuid;
 			toGuid = updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::SELECTED].toGuid;
 		}
+		void JEditorViewBase::SetGridSize(const uint gridSize)noexcept
+		{
+			if (coordGrid == nullptr)
+				return;
+
+			coordGrid->SetGridSize(gridSize);
+		} 
 		bool JEditorViewBase::IsLastUpdateHoveredNode()const noexcept
 		{
 			return updateHelper->lastNodeHint[(uint)LAST_HINT_TYPE::HOVERED].condition;
@@ -860,11 +867,6 @@ namespace JinEngine
 		bool JEditorViewBase::IsLastUpdateSeletedEdge()const noexcept
 		{
 			return updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::SELECTED].condition;
-		}
-		void JEditorViewBase::SetGridSize(const uint gridSize)noexcept
-		{
-			if (coordGrid != nullptr)
-				coordGrid->SetGridSize(gridSize);
 		}
 		JEditorNodeBase* JEditorViewBase::GetRootNode()const noexcept
 		{
@@ -1040,6 +1042,15 @@ namespace JinEngine
 		{
 			static_cast<JEditorTreeNodeBase*>(GetRootNode())->NodeOnScreen(updateHelper);
 		}
+
+		void JEditorBinaryTreeView::Initialize()
+		{
+
+		}
+		bool JEditorBinaryTreeView::IsMatch(const J_ACCELERATOR_TYPE type)const noexcept
+		{
+			return type == J_ACCELERATOR_TYPE::BVH || type == J_ACCELERATOR_TYPE::KD_TREE;
+		}
 		void JEditorBinaryTreeView::BuildNode(const std::string& name,
 			const size_t nodeGuid,
 			const size_t groupGuid,
@@ -1048,6 +1059,10 @@ namespace JinEngine
 			const bool isSelectedParentEdge)noexcept
 		{
 			AddNode(groupGuid, std::make_unique<JEditorBinaryNode>(name, nodeGuid, desc, isSelectedNode, isSelectedParentEdge, static_cast<JEditorBinaryNode*>(GetLastAddedNode())));
+		}
+		void JEditorBinaryTreeView::BuildNode(const std::string& name, const size_t nodeGuid, const std::string& desc)noexcept
+		{
+			BuildNode(name, nodeGuid, GetDefaultGroupGuid(), desc);
 		}
 		void JEditorBinaryTreeView::BuildEndSplit()noexcept
 		{

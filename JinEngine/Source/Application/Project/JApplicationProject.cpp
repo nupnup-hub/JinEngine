@@ -1,19 +1,19 @@
 #include"JApplicationProject.h" 
 #include"JApplicationProjectPrivate.h"  
-#include"JApplicationEngine.h"
-#include"JApplicationEnginePrivate.h"
-#include"../Core/JCoreEssential.h"
-#include"../Core/File/JFileIOHelper.h"
-#include"../Core/Guid/JGuidCreator.h"
-#include"../Core/Module/JModuleManager.h"
-#include"../Core/Plugin/JPluginManager.h"
-#include"../Core/Script/JCplusScriptCreator.h"
-#include"../Core/Binary/JEngineTool.h"
-#include"../Core/Platform/JPlatformInfo.h"
-#include"../Core/Utility/JCommonUtility.h"
-#include"../Core/Log/JLogMacro.h"
+#include"Script/JCplusScriptCreator.h"
+#include"../Engine/JApplicationEngine.h"
+#include"../Engine/JApplicationEnginePrivate.h"
+#include"../Binary/JEngineTool.h"
+#include"../../Core/JCoreEssential.h"
+#include"../../Core/File/JFileIOHelper.h"
+#include"../../Core/Guid/JGuidCreator.h"
+#include"../../Core/Module/JModuleManager.h"
+#include"../../Core/Plugin/JPluginManager.h"
+#include"../../Core/Platform/JPlatformInfo.h"
+#include"../../Core/Utility/JCommonUtility.h"
+#include"../../Core/Log/JLogMacro.h"
 #include<Windows.h> 
-#include <direct.h>	 
+#include<direct.h>	 
 #include<fstream>  
 #include<io.h>
 
@@ -67,15 +67,16 @@ namespace JinEngine
 				const std::string thirdPartyPath = JCUtil::WstrToU8Str(JApplicationEngine::ThirdPartyPath());
 				 
 				std::vector<std::string> fconfig;
-				fconfig.push_back("Property, OutDir, $(SolutionDir)..\\Binary\\" + JCUtil::WstrToU8Str(GetOutDirName()) + "\\");
 				fconfig.push_back("Meta, AdditionalIncludeDirectories, " + engineSrcPath + ";$(SolutionDir)..\\Source;");
+				fconfig.push_back("Property, OutDir, $(SolutionDir)..\\Binary\\" + JCUtil::WstrToU8Str(GetOutDirName()) + "\\;");		
+				fconfig.push_back("Meta, AdditionalIncludeDirectories, " + engineSrcPath + ";");
 				fconfig.push_back("Meta, AdditionalLibraryDirectories, " + engineExeFolderPath + ";" +
 					objFileFolderPath + ";" + 
-					thirdPartyPath +"\\Cuda\\lib\\x64;" +
+					thirdPartyPath + "\\Cuda\\lib\\x64;" +
 					thirdPartyPath + "\\fast-lzma2-master\\lib;"  + 
 					thirdPartyPath + "\\Fbx\\lib\\vs2017\\x64\\release;" + 
 					thirdPartyPath + "\\jsoncpp-master;");
-				fconfig.push_back("Meta, AdditionalDependencies, JinEngine_static.lib;"
+				fconfig.push_back("Meta, AdditionalDependencies, JinEngine.lib;"
 					"cudart_static.lib;" 
 					"fast-lzma2.lib;"
 					"libfbxsdk-md.lib;"
@@ -86,9 +87,9 @@ namespace JinEngine
 				std::vector<std::string> sconfig;
 				sconfig.push_back("Meta, AdditionalDependencies, " + objFileFolderPath + ", reference .obj");
 
-				Core::JEngineTool::CreateNewProject(name, path, fconfig);
-				Core::JEngineTool::SetProjectConfig(path + "\\" + name + ".sln", path + "\\" + name + "\\" + name + ".vcxproj", sconfig);
-				Core::JEngineTool::RemoveAllProjectItem(path + "\\" + name + ".sln", name);
+				Application::JEngineTool::CreateNewProject(name, path, fconfig);
+				//Application::JEngineTool::SetProjectConfig(path + "\\" + name + ".sln", path + "\\" + name + "\\" + name + ".vcxproj", sconfig);
+				Application::JEngineTool::RemoveAllProjectItem(path + "\\" + name + ".sln", name);
 
 				const std::string projectPath = path + "\\" + name;
 				const std::string dllMainPath = projectPath + "\\dllmain.cpp";
@@ -109,9 +110,11 @@ namespace JinEngine
 			{
 				const std::string name = JCUtil::WstrToU8Str(JApplicationProject::Name());
 				const std::string path = JCUtil::WstrToU8Str(JApplicationProject::SolutionPath());
+				const std::string engineSrcPath = JCUtil::WstrToU8Str(JApplicationEngine::SouceCodePath());		 
 				const std::string slnPath = path + "\\" + name + ".sln";
 
-				Core::JEngineTool::CreateProjectVirtualDir(slnPath, name, GetSrcFolderName());
+				Application::JEngineTool::CreateProjectVirtualDir(slnPath, name, GetSrcFolderName());
+				//Application::JEngineTool::AddDirectory(slnPath, name, engineSrcPath, GetSrcFolderName());
 			}
 			static void CreateProjectDefaultFile()
 			{
@@ -122,11 +125,11 @@ namespace JinEngine
 
 				const std::string aName = JCUtil::WstrToU8Str(JApplicationProject::Name());
 
-				const std::string pchHeaderContetns = Core::JCplusScriptCreator::CreateProjectPchHeader();
-				const std::string pchCppContetnsh = Core::JCplusScriptCreator::CreateProjectPchCpp();
-				const std::string dllMainContetns = Core::JCplusScriptCreator::CreateProjectDllMainCpp(aName);
-				const std::string projHeaderContents = Core::JCplusScriptCreator::CreateProjectDefaultHeader(aName);
-				const std::string projCppContetns = Core::JCplusScriptCreator::CreateProjectDefaultCpp(aName);
+				const std::string pchHeaderContetns = JCplusScriptCreator::CreateProjectPchHeader();
+				const std::string pchCppContetnsh = JCplusScriptCreator::CreateProjectPchCpp();
+				const std::string dllMainContetns = JCplusScriptCreator::CreateProjectDllMainCpp(aName);
+				const std::string projHeaderContents = JCplusScriptCreator::CreateProjectDefaultHeader(aName);
+				const std::string projCppContetns = JCplusScriptCreator::CreateProjectDefaultCpp(aName);
 
 				const std::string pchHeaderPath = srcPath + "\\pch.h";
 				const std::string pchCppPath = srcPath + "\\pch.cpp";
@@ -155,17 +158,17 @@ namespace JinEngine
 				stream << projCppContetns;
 				stream.close();
 
-				std::vector<Core::JEngineTool::SolFileInfo> fileInfo;
-				fileInfo.push_back(Core::JEngineTool::SolFileInfo(pchHeaderPath, GetSrcFolderName()));
-				fileInfo.push_back(Core::JEngineTool::SolFileInfo(pchCppPath, GetSrcFolderName()));
-				fileInfo.push_back(Core::JEngineTool::SolFileInfo(dllMainPath, GetSrcFolderName()));
-				fileInfo.push_back(Core::JEngineTool::SolFileInfo(projHeaderPath, GetSrcFolderName()));
-				fileInfo.push_back(Core::JEngineTool::SolFileInfo(projCppPath, GetSrcFolderName()));
+				std::vector<Application::JEngineTool::SolFileInfo> fileInfo;
+				fileInfo.push_back(Application::JEngineTool::SolFileInfo(pchHeaderPath, GetSrcFolderName()));
+				fileInfo.push_back(Application::JEngineTool::SolFileInfo(pchCppPath, GetSrcFolderName()));
+				fileInfo.push_back(Application::JEngineTool::SolFileInfo(dllMainPath, GetSrcFolderName()));
+				fileInfo.push_back(Application::JEngineTool::SolFileInfo(projHeaderPath, GetSrcFolderName()));
+				fileInfo.push_back(Application::JEngineTool::SolFileInfo(projCppPath, GetSrcFolderName()));
 
-				Core::JEngineTool::SolAddFileConfig config;
+				Application::JEngineTool::SolAddFileConfig config;
 				config.allowBuild = true;
 
-				Core::JEngineTool::AddMultiFile(slnPath, name, fileInfo, config);
+				Application::JEngineTool::AddMultiFile(slnPath, name, fileInfo, config);
 			}
 			static void CreateProjectModule()
 			{
@@ -301,11 +304,11 @@ namespace JinEngine
 			bool MakeProjectSolution()
 			{
 				std::wstring filePath;
-				if (!JCUtil::FindFirstFilePathByFormat(activatedProjectPath, L".sln", filePath))
+				if (!JCUtil::FindFirstFilePathByFormat(JApplicationProject::SolutionPath(), L".sln", filePath))
 				{
 					CreateProjectSolution();
 					if (!JCUtil::FindFirstFilePathByFormat(JApplicationProject::SolutionPath(), L".sln", filePath))
-						return false;
+						return false; 
 
 					CreateProjectDirectory();
 					CreateProjectDefaultFile();

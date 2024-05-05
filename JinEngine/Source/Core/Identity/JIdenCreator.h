@@ -1,6 +1,5 @@
 #pragma once
-#include"../DI/JDIDataBase.h" 
-#include<string>
+#include"../DI/JDIDataBase.h"  
 
 namespace JinEngine
 {

@@ -1,8 +1,5 @@
-#pragma once
-#include"../JCoreEssential.h" 
+#pragma once 
 #include"../Math/JVector.h"
-#include<memory>
-#include<vector>
 
 namespace JinEngine
 {

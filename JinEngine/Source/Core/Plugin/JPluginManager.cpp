@@ -3,8 +3,7 @@
 #include"JPlugin.h" 
 #include"JPluginPrivate.h" 
 #include"../File/JXmlHelper.h"
-#include"../Utility/JCommonUtility.h" 
-#include<unordered_map>
+#include"../Utility/JCommonUtility.h"  
 
 namespace JinEngine::Core
 {

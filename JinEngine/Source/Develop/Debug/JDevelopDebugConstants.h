@@ -1,6 +1,6 @@
-#pragma once
-#include<string>
-#include<vector>
+#pragma once 
+#include"../../Core/JCoreEssential.h"
+
 namespace JinEngine
 {
 	namespace Develop

@@ -13,8 +13,8 @@
 #include"../../../Graphic/JGraphicPrivate.h"
 #include"../../../Graphic/Shader/JShaderDataHolder.h"
 #include"../../../Graphic/Shader/JShaderType.h"
-#include"../../../Application/JApplicationEngine.h"
-#include"../../../Application/JApplicationProject.h"
+#include"../../../Application/Engine/JApplicationEngine.h"
+#include"../../../Application/Project/JApplicationProject.h"
 #include<fstream> 
 
 namespace JinEngine
@@ -478,7 +478,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = std::make_unique<JShader::InitData>();	//for load metadata
-		if (LoadMetaData(pathData.engineMetaFileWPath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JShader> newShdaer = nullptr;

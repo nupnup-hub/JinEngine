@@ -1,11 +1,10 @@
 #pragma once
-#include"JEngineToolType.h"
-#include<string>
-#include<vector>
+#include"JEngineToolType.h" 
+#include"../../Core/JCoreEssential.h"
 
 namespace JinEngine
 {
-	namespace Core
+	namespace Application
 	{
 		class JEngineTool
 		{
@@ -28,7 +27,7 @@ namespace JinEngine
 		public:
 			static constexpr char invalidArgPerChar = ' ';
 		public:
-			static void ExecuteTool(const J_ENGINE_TOOL_TYPE type, const std::string& args);
+			static void ExecuteTool(const J_ENGINE_TOOL_TYPE type, std::string args);
 			/**
 			* @param[in] argPerChar input char end of args[0... n - 2] if char is not invalidArgPerChar
 			*/
@@ -60,6 +59,12 @@ namespace JinEngine
 				const std::string& projName,
 				const std::vector<SolFileInfo>& fileInfo,
 				SolAddFileConfig config = SolAddFileConfig());
+			/**
+			* @brief solutionManager utility
+			* @detail Adding files and folders recursively to a project filter.
+			* @param[in] dirPath it is path from project to dir
+			*/
+			static void AddDirectory(const std::string& slnPath, const std::string& projName, const std::string& dirPath, const std::string& virtualDirPath);
 			/**
 			* @brief solutionManager utility 
 			*/

@@ -1,6 +1,5 @@
 #pragma once 
-#include"JEditorSimpleWindow.h"
-#include<vector>
+#include"JEditorSimpleWindow.h" 
 
 namespace JinEngine
 {

@@ -1,8 +1,5 @@
-#pragma once 
-#include<vector>
-#include<memory>
-#include"JValidInterface.h"
-#include"../JCoreEssential.h" 
+#pragma once  
+#include"JValidInterface.h" 
 #include "../Pointer/JOwnerPtr.h" 
 
 //Not Use

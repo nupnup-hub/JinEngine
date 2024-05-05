@@ -1,8 +1,8 @@
 #pragma once 
 #include"JEditorAlignType.h" 
 #include"../Gui/JGui.h"
-#include"../../Core/Math/JVector.h" 
-#include<string>
+#include"../../Core/Math/JVector.h"  
+
 namespace JinEngine
 {
 	namespace Editor

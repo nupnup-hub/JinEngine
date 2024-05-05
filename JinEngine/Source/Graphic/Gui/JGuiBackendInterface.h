@@ -1,7 +1,6 @@
 #pragma once
 #include"JGuiData.h"
-#include"JGuiConstants.h" 
-#include<memory>
+#include"JGuiConstants.h"  
 
 namespace JinEngine
 {

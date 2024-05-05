@@ -1,8 +1,6 @@
 #pragma once 
 #include"JException.h"
-#include"JHresultException.h"
-#include"JGraphicException.h"
-#include"JWindowException.h"
+#include"JHresultException.h"  
 #include"JNormalException.h"
 #include"JCudaException.h"
 #include <stdio.h>
@@ -16,11 +14,6 @@ namespace JinEngine
     HRESULT hr__ = (hr);                                                         \
     if(hr__ != S_OK) {throw Core::JHresultException(__LINE__, __FILE__, hr__); }       \
 }
-#define ThrowIfFailedW(b)                                                        \
-{                                                                                \
-    bool b_ = (b);                                                               \
-    if(!b_) {throw Core::JWindowException(__LINE__, __FILE__); }                       \
-}
 #define ThrowIfFailedNM(b, msg)                                                  \
 {                                                                                \
     bool b_ = (b);                                                               \
@@ -30,11 +23,6 @@ namespace JinEngine
 {                                                                                \
     bool b_ = (b);                                                               \
     if(!b_) {throw Core::JNormalException(__LINE__, __FILE__); }                       \
-}
-#define ThrowIfFailedG(hr)                                                       \
-{                                                                                \
-    HRESULT hr__ = (hr);                                                         \
-    if(hr__ != S_OK) {throw Core::JGraphicException(__LINE__, __FILE__, hr__); }       \
 }
 #define ThrowIfFailedC(err)                                                       \
 {                                                                                 \
@@ -51,11 +39,6 @@ namespace JinEngine
     if(hr__ != S_OK) {HrException(__LINE__, __FILE__, hr__); return ret;}        \
 }
 
-#define ReturnIfFailedW(b, ret)                                                  \
-{                                                                                \
-    bool b_ = (b);                                                               \
-    if(!b_) {WindowException(__LINE__, __FILE__); return ret;}                        \
-}
 #define ReturnIfFailedNM(b, msg, ret)                                            \
 {                                                                                \
     bool b_ = (b);                                                               \
@@ -65,11 +48,6 @@ namespace JinEngine
 {                                                                                \
     bool b_ = (b);                                                               \
     if(!b_) {JNormalException(__LINE__, __FILE__); return ret;}                   \
-}
-#define ReturnIfFailedG(hr, ret)                                                 \
-{                                                                                \
-    HRESULT hr__ = (hr);                                                         \
-    if(hr__ != S_OK) {GfxException(__LINE__, __FILE__, hr__); return ret;}       \
 }
 #endif
    

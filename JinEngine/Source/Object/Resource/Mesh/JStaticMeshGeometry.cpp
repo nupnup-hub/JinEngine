@@ -255,7 +255,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto metaData = std::make_unique<JStaticMeshGeometry::LoadMetaData>(directory);	//for load metadata
-		if (LoadMetaData(pathData.engineMetaFileWPath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JStaticMeshGeometry> newMesh = nullptr;
@@ -265,7 +265,7 @@ namespace JinEngine
 		if (newMesh == nullptr)
 		{
 			using Impl = JStaticMeshGeometry::JStaticMeshGeometryImpl;
-			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.engineFileWPath, metaData.get()), &sPrivate);
+			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &sPrivate);
 			newMesh.ConnnectChild(idenUser);
 		} 
 		   

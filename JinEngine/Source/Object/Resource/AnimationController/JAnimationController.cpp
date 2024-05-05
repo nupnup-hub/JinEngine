@@ -21,7 +21,7 @@
 #include"../../../Core/FSM/JFSMownerInterface.h"  
 #include"../../../Core/Utility/JCommonUtility.h"
 
-#include"../../../Application/JApplicationProject.h" 
+#include"../../../Application/Project/JApplicationProject.h" 
 #include"../../../Graphic/Frameresource/JAnimationConstants.h" 
 
 //수정필요  
@@ -422,7 +422,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = JAnimationController::JAnimationControllerImpl::CreateLoadAssetInitData(directory);
-		if (LoadMetaData(pathData.engineMetaFileWPath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JAnimationController> newCont; 

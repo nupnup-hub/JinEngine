@@ -5,10 +5,7 @@
 #include"../../../Core/JCoreEssential.h"  
 #include"../../../Core/Pointer/JOwnerPtr.h"
 #include"../../../Core/Handle/JDataHandleStructure.h"
-#include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
-#include<vector>
-#include<string>
-#include<memory>
+#include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"  
 #include<WindowsX.h> 
 #include<wrl/client.h>  
 #include<d3d12.h>

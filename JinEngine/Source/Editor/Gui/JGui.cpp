@@ -14,8 +14,8 @@
 #include"../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include"../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 #include"../../Window/JWindow.h" 
-#include"../../Application/JApplicationEngine.h"
-#include"../../Application/JApplicationProject.h"
+#include"../../Application/Engine/JApplicationEngine.h"
+#include"../../Application/Project/JApplicationProject.h"
 #include<bitset>
 #include <sstream>
 #include <iomanip>

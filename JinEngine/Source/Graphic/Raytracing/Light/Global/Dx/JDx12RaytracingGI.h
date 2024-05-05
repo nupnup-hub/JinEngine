@@ -196,8 +196,8 @@ namespace JinEngine
 		private:
 			//build raytracing resource
 			void BuildRtRootSignature(ID3D12Device5* device);
-			void BuildRtStateObject(ID3D12Device5* device, const JGraphicInfo& info, const STATE_OBJECT_TYPE type);
-			void BuildDxilLibrarySubobject(JStateObjectBuildData& buildData);
+			void BuildRtStateObject(ID3D12Device5* device, const JGraphicInfo& info, const JGraphicOption& option, const STATE_OBJECT_TYPE type);
+			void BuildDxilLibrarySubobject(JStateObjectBuildData& buildData, const JGraphicOption& option);
 			void BuildHitGroupSubobjects(JStateObjectBuildData& buildData);
 			void BuildShaderConfig(JStateObjectBuildData& buildData); 
 			void BuildGlobalRootSignatureSubobjects(JStateObjectBuildData& buildData);

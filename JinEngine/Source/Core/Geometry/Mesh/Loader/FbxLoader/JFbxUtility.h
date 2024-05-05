@@ -1,5 +1,4 @@
-#pragma once
-#include<string>  
+#pragma once 
 #include"../../JMeshStruct.h"
 #include"../../JMaterialProperty.h"
 #include"../../../../Animation/JAnimationSample.h"

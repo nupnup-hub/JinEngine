@@ -1,8 +1,7 @@
 #pragma once 
 #include"JOutlineConstants.h"  
 #include"../JGraphicTaskInterface.h"
-#include"../JGraphicSubClassInterface.h"
-#include<memory> 
+#include"../JGraphicSubClassInterface.h" 
  
 namespace JinEngine
 {

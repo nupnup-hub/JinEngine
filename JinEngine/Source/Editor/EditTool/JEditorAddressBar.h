@@ -1,8 +1,6 @@
 #pragma once
 #include"JEditorInputBuffHelper.h" 
-#include"../../Object/Directory/JDirectory.h"
-#include<memory>
-#include<string>
+#include"../../Object/Directory/JDirectory.h" 
 
 namespace JinEngine
 {

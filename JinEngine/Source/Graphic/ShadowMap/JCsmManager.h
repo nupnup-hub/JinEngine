@@ -1,8 +1,7 @@
 #pragma once 
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../JGraphicSubClassInterface.h"
-#include"JCsmType.h"
-#include<unordered_map>
+#include"JCsmType.h" 
 
 namespace JinEngine
 {

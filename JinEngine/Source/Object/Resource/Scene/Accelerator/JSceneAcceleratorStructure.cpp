@@ -1,4 +1,5 @@
 #include"JSceneAcceleratorStructure.h"
+#include"JAcceleratorVisualizeInterface.h"
 #include"Octree/JOctree.h"
 #include"Bvh/JBvh.h"
 #include"Kd-tree/JKdTree.h"
@@ -382,10 +383,11 @@ namespace JinEngine
 			activateTrigger = false;
 		}
 	}
-	void JSceneAcceleratorStructure::BuildDebugTree(const J_ACCELERATOR_TYPE type,
-		const J_ACCELERATOR_LAYER layer,
-		Editor::JEditorBinaryTreeView& tree)noexcept
+	void JSceneAcceleratorStructure::BuildDebugTree(const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept
 	{
+		if (tree == nullptr || !tree->IsMatch(type))
+			return;
+ 
 		if (activateTrigger)
 		{
 			switch (type)

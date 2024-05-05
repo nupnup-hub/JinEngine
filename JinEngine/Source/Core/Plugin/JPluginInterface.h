@@ -1,6 +1,4 @@
-#pragma once
-#include<string>
-#include"../JCoreEssential.h"
+#pragma once  
 #include"../Module/JModuleMacro.h"
 #include"../Pointer/JOwnerPtr.h"
 #include"JPluginDesc.h" 

@@ -1,7 +1,4 @@
-#pragma once
-#include<vector>
-#include<bitset>
-#include"../JCoreEssential.h"
+#pragma once 
 #include"../Pointer/JOwnerPtr.h"
 #include"../Guid/JGuidCreator.h"
  

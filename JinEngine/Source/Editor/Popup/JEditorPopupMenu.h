@@ -1,9 +1,6 @@
 #pragma once
 #include"JEditorPopupType.h"
-#include"../../Core/JCoreEssential.h"  
-#include<vector>
-#include<string>
-#include<memory> 
+#include"../../Core/JCoreEssential.h"   
 
 namespace JinEngine
 {

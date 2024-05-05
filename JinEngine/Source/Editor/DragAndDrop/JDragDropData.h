@@ -1,6 +1,5 @@
 #pragma once
-#include"../../Core/Reflection/JTypeInfo.h"
-#include<vector>
+#include"../../Core/Reflection/JTypeInfo.h" 
 namespace JinEngine
 {
 	namespace Editor

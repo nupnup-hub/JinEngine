@@ -1,6 +1,4 @@
-#pragma once 
-#include<vector>
-#include<unordered_map> 
+#pragma once  
 #include"JAnimationStateType.h"
 #include"JAnimationTime.h"
 #include"JBlender.h" 

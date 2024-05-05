@@ -114,11 +114,13 @@ namespace JinEngine
 				isChanged |= JGui::CheckBox("LambertianDiffuse##JGraphicOptionSetting", option.rendering.useLambertianDiffuse);
 				
 				JGui::Text("Restir Gi");
-				isChanged |= JGui::InputIntClamp("TemporalSampleCount##JGraphicOptionSetting", option.rendering.restir.temporalSampleCount, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
-				isChanged |= JGui::InputIntClamp("SpatialSampleCount##JGraphicOptionSetting", option.rendering.restir.spatialSampleCount, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
-				isChanged |= JGui::InputIntClamp("SampleMaxAge##JGraphicOptionSetting", option.rendering.restir.sampleMaxAge, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
-				isChanged |= JGui::InputFloatClamp("NeighborWeightSumThreshold##JGraphicOptionSetting", option.rendering.restir.neighborWeightSumThreshold, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
-				isChanged |= JGui::InputFloatClamp("SpatialWeightAverageThreshold##JGraphicOptionSetting", option.rendering.restir.spatialWeightAverageThreshold, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
+				isChanged |= JGui::InputIntClamp("BounceCount##JGraphicOptionSettingRestirGi", option.rendering.restir.bounceCount, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
+				isChanged |= JGui::InputIntClamp("TemporalSampleCount##JGraphicOptionSettingRestirGi", option.rendering.restir.temporalSampleCount, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
+				isChanged |= JGui::InputIntClamp("SpatialSampleCount##JGraphicOptionSettingRestirGi", option.rendering.restir.spatialSampleCount, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
+				isChanged |= JGui::InputIntClamp("SampleMaxAge##JGraphicOptionSettingRestirGi", option.rendering.restir.sampleMaxAge, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
+				isChanged |= JGui::InputFloatClamp("NeighborWeightSumThreshold##JGraphicOptionSettingRestirGi", option.rendering.restir.neighborWeightSumThreshold, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
+				isChanged |= JGui::InputFloatClamp("SpatialWeightAverageThreshold##JGraphicOptionSettingRestirGi", option.rendering.restir.spatialWeightAverageThreshold, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
+				isChanged |= JGui::CheckBox("Denoise##JGraphicOptionSettingRestirGi", option.rendering.restir.useDenoiser);
 				JGui::Separator();
 
 				JGui::Text("Shadow");

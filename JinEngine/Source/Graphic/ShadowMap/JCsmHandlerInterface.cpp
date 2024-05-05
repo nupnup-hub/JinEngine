@@ -2,8 +2,7 @@
 #include"JCsmTargetInfo.h"
 #include"../JGraphicPrivate.h"
 #include"../../Core/Guid/JGuidCreator.h"
-#include"../../Core/Utility/JCommonUtility.h"
-#include<unordered_map>
+#include"../../Core/Utility/JCommonUtility.h" 
  
 using namespace DirectX;
 namespace JinEngine::Graphic

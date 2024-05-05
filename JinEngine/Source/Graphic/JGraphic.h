@@ -2,7 +2,7 @@
 #include"GraphicResource/JGraphicResourceType.h"
 #include"JGraphicOption.h" 
 #include"JGraphicInfo.h" 
-#include"JGraphicEvent.h"
+#include"JGraphicEvent.h" 
 #include"../Core/Event/JEventManager.h"   
 #include"Command/JCommandContextLog.h"
 

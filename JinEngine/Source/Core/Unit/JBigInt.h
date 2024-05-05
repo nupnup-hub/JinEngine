@@ -1,8 +1,6 @@
-// Original: https://www.geeksforgeeks.org/bigint-big-integers-in-c-with-example/
-#pragma once
-#include <string>
-#include<vector>
-#include <bitset> 
+// reference: https://www.geeksforgeeks.org/bigint-big-integers-in-c-with-example/
+#pragma once 
+#include"../JCoreEssential.h"
 
 namespace JinEngine
 {

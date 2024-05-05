@@ -2,8 +2,7 @@
 #include"JComponentType.h"
 #include"../../Core/Func/Callable/JCallable.h"
 #include"../../Core/DI/JDIDataBase.h"
-#include"../../Core/Pointer/JOwnerPtr.h"
-#include<memory>
+#include"../../Core/Pointer/JOwnerPtr.h" 
 
 namespace JinEngine
 {

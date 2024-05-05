@@ -1,8 +1,7 @@
 #pragma once
 #include"../../../../Core/FSM/JFSMstatePrivate.h"
 #include"../../../../Core/File/JFileIOResult.h"
-#include"../../../../Core/Math/JVector.h"
-#include<vector>
+#include"../../../../Core/Math/JVector.h" 
 
 namespace JinEngine
 {

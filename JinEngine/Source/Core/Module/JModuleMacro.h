@@ -18,8 +18,7 @@
  
 #define INIT_MODULE "InitModule"
 #define FREE_MODULE "FreeModule" 
-
  
-#define REGISTER_MODULE(name, ...)	\
-inline static JinEngine::Core::JModuleRegister<name> name##ModuleRegister(#name, __VA_ARGS__);   \
-																						 \
+#define REGISTER_MODULE(path, ...)	\
+inline static JinEngine::Core::JModuleRegister<name> name##ModuleRegister(#path, __VA_ARGS__);   \
+																								 \

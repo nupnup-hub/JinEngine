@@ -75,9 +75,8 @@ namespace JinEngine
 
 			static constexpr uint menuIconCount = 7;
 			static constexpr uint sceneIconCount = 5; //4 lit 1 cam
-			static constexpr uint camTextureIndex = sceneIconCount - 1;
-
-			static JVector2F cursor;
+			static constexpr uint camTextureIndex = sceneIconCount - 1; 
+			 
 			static constexpr int GetLightTextureIndex(const J_LIGHT_TYPE type)
 			{
 				switch (type)
@@ -1107,14 +1106,18 @@ namespace JinEngine
 		}
 		void JSceneObserver::DebugTreeOnScreen()
 		{
+			//수정필요
+			//소수의 object에 대해서는 정확하나
+			//다수의 object에는 정확한 대응을 하지못함
+			//폐기하거나 수정하거나 추후에 결정할것.
 			auto spaceData = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL];
 			auto treeData = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_SETTING_ACCELERATOR_TREE];
 
 			if (spaceData->selectedIndex != -1)
 			{
-				J_ACCELERATOR_TYPE type = (J_ACCELERATOR_TYPE)spaceData->selectedIndex;
-				editBTreeView->ClearNode();
-				SceneDebugInterface::BuildDebugTree(scene, type, J_ACCELERATOR_LAYER::COMMON_OBJECT, *editBTreeView);
+				J_ACCELERATOR_TYPE type = (J_ACCELERATOR_TYPE)spaceData->selectedIndex; 
+				editBTreeView->ClearNode(); 
+				SceneDebugInterface::BuildDebugTree(scene, type, J_ACCELERATOR_LAYER::COMMON_OBJECT, editBTreeView.get());
 				if (editBTreeView->BeginView(Core::GetName(type) + +"##DebugTreeView", &treeData->isOpen, J_GUI_WINDOW_FLAG_NO_DOCKING))
 				{
 					editBTreeView->OnScreen();

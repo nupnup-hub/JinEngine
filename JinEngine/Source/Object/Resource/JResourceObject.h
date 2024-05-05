@@ -59,9 +59,9 @@ namespace JinEngine
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
 		public:
 			JUserPtr<JDirectory> directory;
-			const Core::JAssetFileLoadPathData pathData;
+			const Core::JAssetFilePathData pathData;
 		public:
-			LoadData(const JUserPtr<JDirectory>& directory, const Core::JAssetFileLoadPathData& pathData);
+			LoadData(const JUserPtr<JDirectory>& directory, const Core::JAssetFilePathData& pathData);
 			~LoadData();
 		public:
 			bool IsValidData()const noexcept final;

@@ -1,7 +1,6 @@
 #pragma once
-#include<type_traits>
-#include<memory>
 #include"../Pointer/JOwnerPtr.h" 
+#include<type_traits> 
 
 namespace JinEngine
 {

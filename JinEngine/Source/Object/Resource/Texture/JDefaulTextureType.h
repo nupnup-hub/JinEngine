@@ -1,5 +1,4 @@
-#pragma once
-#include<string>
+#pragma once 
 #include"../../JObjectFlag.h"
 
 namespace JinEngine

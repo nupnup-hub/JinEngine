@@ -1,8 +1,8 @@
 #include"JApplicationEngine.h" 
 #include"JApplicationEnginePrivate.h"  
-#include"../Core/JCoreEssential.h"
-#include"../Core/File/JFileIOHelper.h"
-#include"../Core/Utility/JCommonUtility.h"
+#include"../../Core/JCoreEssential.h"
+#include"../../Core/File/JFileIOHelper.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include<Windows.h> 
 #include <direct.h>	 
 #include<fstream>  

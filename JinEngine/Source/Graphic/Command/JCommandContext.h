@@ -4,10 +4,7 @@
 #include"../Thread/JGraphicThreadType.h"
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Time/JStopWatch.h"
-#include"../../Core/Singleton/JSingletonHolder.h"
-#include<string>
-#include<memory>
-#include<vector>
+#include"../../Core/Singleton/JSingletonHolder.h" 
 
 namespace JinEngine
 {

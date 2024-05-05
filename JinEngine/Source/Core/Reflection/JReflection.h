@@ -10,8 +10,7 @@
 #include"JReflectionInfo.h" 
 #include"JEnumRegister.h"    
 #include"../Utility/JCommonUtility.h"
-#include"../Pointer/JOwnerPtr.h"
-#include<vector>
+#include"../Pointer/JOwnerPtr.h" 
 
 namespace JinEngine
 { 

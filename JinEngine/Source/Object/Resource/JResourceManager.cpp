@@ -34,8 +34,8 @@
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Utility/JCommonUtility.h"
 
-#include"../../Application/JApplicationEngine.h"
-#include"../../Application/JApplicationProject.h"
+#include"../../Application/Engine/JApplicationEngine.h"
+#include"../../Application/Project/JApplicationProject.h"
 //#include"../../Core/Geometry/JDirectXCollisionEx.h"
 
 #include"../../Graphic/JGraphic.h"
@@ -540,7 +540,7 @@ namespace JinEngine
 							OBJECT_FLAG_UNCOPYABLE |
 							OBJECT_FLAG_HIDDEN | 
 							OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
-						Core::JFileImportHelpData pathData{ projectDefualDir->GetPath() + L"\\" + meshName, objFlag };
+						Core::JFileImportPathData pathData{ projectDefualDir->GetPath() + L"\\" + meshName, objFlag };
 						
 						const JResourceObjectImportDesc importDesc(pathData, projectDefualDir);
 						std::vector<JUserPtr<JResourceObject>> result = JResourceObjectImporter::Instance().ImportResource(&importDesc);

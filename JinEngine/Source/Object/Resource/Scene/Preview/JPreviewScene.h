@@ -5,10 +5,7 @@
 #include"../../../../Graphic/JGraphicConstants.h" 
 #include"../../../../Core/Pointer/JOwnerPtr.h"
 #include"../../../../Core/Utility/JMacroUtility.h"
-#include"../../../../Core/Math/JVector.h" 
-#include<memory>
-#include<string>
-#include<vector> 
+#include"../../../../Core/Math/JVector.h"  
 
 namespace JinEngine
 {   

@@ -2,8 +2,7 @@
 #include"JEditorPageEnum.h"
 #include"../../Core/JDataType.h"
 #include"../../Core/Func/Functor/JFunctor.h"
-#include"../../Utility/JVector.h"
-#include<vector>
+#include"../../Utility/JVector.h" 
 
 namespace JinEngine
 {

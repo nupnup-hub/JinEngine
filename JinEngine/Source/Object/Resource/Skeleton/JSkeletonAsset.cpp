@@ -8,7 +8,7 @@
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Utility/JCommonUtility.h"
-#include"../../../Application/JApplicationProject.h"
+#include"../../../Application/Project/JApplicationProject.h"
 #include<fstream>
 #include<DirectXMath.h>
 
@@ -457,7 +457,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 		JSkeletonAsset::LoadMetaData metadata(loadData->directory);
 
-		if (LoadMetaData(pathData.engineMetaFileWPath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JSkeletonAsset> newSkel = nullptr;
@@ -472,7 +472,7 @@ namespace JinEngine
 				(uint8)metadata.formatIndex,
 				directory,
 				metadata.modelHint,
-				JSkeletonAsset::JSkeletonAssetImpl::ReadAssetData(pathData.engineFileWPath));
+				JSkeletonAsset::JSkeletonAssetImpl::ReadAssetData(pathData.path));
 
 			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
 			newSkel.ConnnectChild(idenUser);

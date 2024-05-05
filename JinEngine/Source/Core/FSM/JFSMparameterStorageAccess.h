@@ -1,9 +1,7 @@
 #pragma once 
 #include"JFSMparameterValueType.h"
 #include"../File/JFileIOResult.h"
-#include"../JCoreEssential.h"
-#include<string>
-#include<vector>
+#include"../JCoreEssential.h" 
 
 namespace JinEngine
 {

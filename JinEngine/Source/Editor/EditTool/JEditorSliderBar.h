@@ -1,8 +1,6 @@
 #pragma once
 #include"JEditorInputBuffHelper.h"  
-#include"../../Core/Unit/JManagedVariable.h"
-#include<memory>
-#include<string>
+#include"../../Core/Unit/JManagedVariable.h" 
 
 namespace JinEngine
 {

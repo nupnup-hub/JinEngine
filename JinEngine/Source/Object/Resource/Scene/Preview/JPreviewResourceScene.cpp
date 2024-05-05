@@ -16,7 +16,7 @@
 #include"../../../GameObject/JGameObject.h"  
 #include"../../../GameObject/JGameObjectCreator.h" 
 #include"../../../../Graphic/JGraphicDrawList.h"
-#include"../../../../Application/JApplicationProject.h"
+#include"../../../../Application/Project/JApplicationProject.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Core/Identity/JIdenCreator.h" 

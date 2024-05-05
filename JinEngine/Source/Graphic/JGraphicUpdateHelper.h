@@ -7,9 +7,7 @@
 #include"FrameResource/JFrameIndexAccess.h"
 #include"../Object/Component/JComponentType.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"
-#include"../Core/Geometry/Mesh/JMeshType.h"
-#include<vector>
-#include<memory>
+#include"../Core/Geometry/Mesh/JMeshType.h" 
 
 namespace JinEngine
 {

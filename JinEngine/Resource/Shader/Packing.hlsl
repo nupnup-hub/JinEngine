@@ -48,6 +48,7 @@ float3 SignedOctDecode(float3 n)
 }
 uint2 PackSignedOct(float3 rgb)
 {
+    //10, 10, 2 -> uint2(32(full), 32(1bit))
     uint r = f32tof16(rgb.x);
     uint g = f32tof16(rgb.y);
 	//z is 0 or 1 1(byte)

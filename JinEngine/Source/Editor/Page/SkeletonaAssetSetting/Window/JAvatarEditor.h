@@ -3,9 +3,7 @@
 #include"../../../../Object/JObjectModifyInterface.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
-#include"../../../../Core/Math/JVector.h"
-#include<vector>
-#include<bitset>
+#include"../../../../Core/Math/JVector.h" 
 
 namespace JinEngine
 {

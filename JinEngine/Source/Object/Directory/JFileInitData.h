@@ -1,5 +1,4 @@
-#pragma once
-#include<string>   
+#pragma once 
 #include"../Resource/JResourceObjectType.h" 
 #include"../JObjectFlag.h"
 

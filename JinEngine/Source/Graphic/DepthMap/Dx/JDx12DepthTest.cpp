@@ -26,7 +26,7 @@
 #include"../../../Object/Resource/Mesh/JMeshGeometryPrivate.h"  
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Core/Identity/JIdentifier.h"
-#include"../../../Application/JApplicationEngine.h"
+#include"../../../Application/Engine/JApplicationEngine.h"
  
 namespace JinEngine::Graphic
 {

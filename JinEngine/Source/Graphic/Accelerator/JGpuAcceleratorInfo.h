@@ -1,8 +1,7 @@
 #pragma once  
 #include"JGpuAcceleratorType.h"
 #include"../../Core/JCoreEssential.h"   
-#include"../../Core/Reflection/JReflection.h"
-#include<memory>
+#include"../../Core/Reflection/JReflection.h" 
 
 namespace JinEngine
 {

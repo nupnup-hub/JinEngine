@@ -3,9 +3,8 @@
 #include"../JGraphicSubClassInterface.h"
 #include"../DataSet/JGraphicDataSet.h"
 #include"../JGraphicConstants.h"
-#include"../../Core/JCoreEssential.h"
-#include<memory>
-#include<string>
+#include"../../Core/JCoreEssential.h" 
+
 namespace JinEngine
 {
 	namespace Graphic

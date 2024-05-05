@@ -4,8 +4,7 @@
 #include"../Component/Light/JLightType.h"
 #include"../Resource/Mesh/JDefaultShapeType.h"
 #include"../Resource/Material/JDefaultMaterialType.h" 
-#include"../JObjectFlag.h"
-#include<string>
+#include"../JObjectFlag.h" 
 
 namespace JinEngine
 {

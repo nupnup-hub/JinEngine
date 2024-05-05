@@ -83,6 +83,10 @@ namespace JinEngine::Core
 			moduleHandle = NULL;
 		return res;
 	}
+	bool JModule::IsValidFormat(const std::wstring& format)noexcept
+	{ 
+		return format == L".dll" || format == L".DLL" || format == L".Dll";
+	}
 	MODULE_HANDLE JModule::TryLoadModule(const std::wstring& path)
 	{
 #ifdef OS_WINDOW
@@ -114,7 +118,7 @@ namespace JinEngine::Core
 
 		if (!isSuccess)
 			return nullptr;
-		return JPtrUtil::MakeOwnerPtr<JModule>(name, path, desc);
+		return JModule::IsValidFormat(JCUtil::GetFileFormat(path)) ? JPtrUtil::MakeOwnerPtr<JModule>(name, path, desc) : nullptr;
 	}
 	bool IOInterface::StoreModule(const JUserPtr<JModule>& m)
 	{

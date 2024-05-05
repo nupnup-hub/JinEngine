@@ -1,7 +1,6 @@
 #pragma once 
 #include"JGuiConstants.h"
-#include"../Device/JGraphicDeviceUser.h"
-#include<memory>
+#include"../Device/JGraphicDeviceUser.h" 
 
 namespace JinEngine
 {

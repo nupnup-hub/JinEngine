@@ -1,8 +1,7 @@
 #pragma once    
 #include"../JObject.h"
 #include"../Component/JComponentType.h"
-#include"../../Core/Utility/JTypeTraitUtility.h" 
-#include<vector>
+#include"../../Core/Utility/JTypeTraitUtility.h"  
 #include<fstream>
 
 namespace JinEngine

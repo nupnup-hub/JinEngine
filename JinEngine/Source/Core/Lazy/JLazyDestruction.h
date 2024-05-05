@@ -1,9 +1,7 @@
 #pragma once
 #include"JLazyDestructionInfo.h"
-#include"../Module/JModuleMacro.h"
-#include"../JCoreEssential.h"
-#include<vector>
-#include<memory>
+#include"../Module/JModuleMacro.h" 
+#include"../JCoreEssential.h" 
 
 namespace JinEngine
 {

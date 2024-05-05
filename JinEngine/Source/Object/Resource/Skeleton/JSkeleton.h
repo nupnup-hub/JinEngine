@@ -1,9 +1,8 @@
 #pragma once 
-#include<stdint.h>
-#include<vector>
 #include"../../../Core/Animation/Joint.h" 
 #include"../../../Core/JCoreEssential.h" 
 #include"../../../Core/Reflection/JReflection.h"
+#include<stdint.h> 
 
 namespace JinEngine
 {  

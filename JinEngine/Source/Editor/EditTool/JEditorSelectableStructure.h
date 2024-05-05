@@ -3,8 +3,7 @@
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Reflection/JReflection.h" 
 #include"../../Core/Interface/JTreeInterface.h"  
-#include"../../Core/Geometry/JBBox.h"
-#include<vector>
+#include"../../Core/Geometry/JBBox.h" 
 
 namespace JinEngine
 {

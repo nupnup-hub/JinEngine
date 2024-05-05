@@ -1,7 +1,4 @@
-#pragma once
-#include<vector>
-#include<unordered_map>
-#include"../JCoreEssential.h" 
+#pragma once   
 #include"../Func/Callable/JCallable.h"
 
 namespace JinEngine

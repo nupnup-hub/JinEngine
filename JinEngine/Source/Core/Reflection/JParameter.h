@@ -1,10 +1,7 @@
-#pragma once
-#include"../JCoreEssential.h"
+#pragma once 
 #include"../Utility/JTypeTraitUtility.h" 
 #include"../Math/JVector.h"
-#include"JParameterType.h"
-#include<string>
-#include<vector>
+#include"JParameterType.h" 
 #include<DirectXMath.h>
 
 namespace JinEngine

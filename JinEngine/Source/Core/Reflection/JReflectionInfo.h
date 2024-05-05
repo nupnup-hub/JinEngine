@@ -1,7 +1,5 @@
 #pragma once 
-#include"../Singleton/JSingletonHolder.h"   
-#include<memory> 
-#include<vector>
+#include"../Singleton/JSingletonHolder.h"    
 
 namespace JinEngine
 { 

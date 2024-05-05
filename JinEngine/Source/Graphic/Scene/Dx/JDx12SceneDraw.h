@@ -4,8 +4,7 @@
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/JGraphicResourceInterface.h"
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
-#include<d3d12.h>    
-#include<vector>
+#include<d3d12.h>     
 #include<wrl/client.h>
 
 namespace JinEngine

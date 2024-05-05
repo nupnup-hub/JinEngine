@@ -1,6 +1,5 @@
 #pragma once
-#include"JGuiBehaviorAdaptee.h"
-#include<memory>
+#include"JGuiBehaviorAdaptee.h" 
 
 namespace JinEngine
 {

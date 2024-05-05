@@ -30,9 +30,9 @@ namespace JinEngine
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
 		public:
 			JUserPtr<JDirectory> parent;
-			Core::JAssetFileLoadPathData pathData;
+			Core::JAssetFilePathData pathData;
 		public:
-			LoadData(const JUserPtr<JDirectory>& parent, const Core::JAssetFileLoadPathData& pathData);
+			LoadData(const JUserPtr<JDirectory>& parent, const Core::JAssetFilePathData& pathData);
 			~LoadData();
 		};
 	private:

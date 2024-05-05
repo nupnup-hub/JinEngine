@@ -51,11 +51,15 @@ namespace JinEngine
 				struct Restir
 				{
 				public:
+					Core::JRestrictedConstRangeVar<int> bounceCount = Core::JRestrictedConstRangeVar<int>(Constants::restirBounceRange.CreateConstRangeVar<int>());
+				public:
 					Core::JRestrictedConstRangeVar<int> temporalSampleCount = Core::JRestrictedConstRangeVar<int>(Constants::restirTemporalSampleRange.CreateConstRangeVar<int>());
 					Core::JRestrictedConstRangeVar<int> spatialSampleCount = Core::JRestrictedConstRangeVar<int>(Constants::restirSpatialSampleRange.CreateConstRangeVar<int>());
 					Core::JRestrictedConstRangeVar<int> sampleMaxAge = Core::JRestrictedConstRangeVar<int>(Constants::restirSampleAgeRange.CreateConstRangeVar<int>());
 					Core::JRestrictedConstRangeVar<float> neighborWeightSumThreshold = Core::JRestrictedConstRangeVar<float>(Constants::neighborWeightSumThresholdRange.CreateConstRangeVar<float>());
 					Core::JRestrictedConstRangeVar<float> spatialWeightAverageThreshold = Core::JRestrictedConstRangeVar<float>(Constants::spatialWeightAverageThresholdRange.CreateConstRangeVar<float>());
+				public:
+					bool useDenoiser = true;
 				public:
 					bool operator==(const Restir& rhs)const noexcept;
 					bool operator!=(const Restir& rhs)const noexcept;

@@ -3,8 +3,7 @@
 #include"../../../Object/JObjectType.h"
 #include"../../../Core/JCoreEssential.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
-#include"../../../Core/Reflection/JTypeInfo.h"
-#include<memory>	
+#include"../../../Core/Reflection/JTypeInfo.h" 
 
 namespace JinEngine
 {

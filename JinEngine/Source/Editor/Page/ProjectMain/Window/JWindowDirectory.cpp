@@ -38,7 +38,7 @@
 #include"../../../../Object/Resource/JResourceObjectPrivate.h" 
 #include"../../../../Object/Resource/JResourceObjectImporter.h" 
 #include"../../../../Window/JWindow.h"
-#include"../../../../Application/JApplicationProject.h"   
+#include"../../../../Application/Project/JApplicationProject.h"   
 #include<filesystem>
 
 // #include "../../../../Graphic/GraphicResource/JGraphicResourceInfo.h"
@@ -946,9 +946,9 @@ namespace JinEngine
 						importData.descIndex = 0;
 						for (const auto& pData : path)
 						{
-							Core::JFileImportHelpData pathData{ pData }; 
+							Core::JFileImportPathData pathData{ pData }; 
 							size_t fileSizeSum = 0;
-							if (!JResourceObjectImporter::Instance().IsValidFormat(pathData.format))
+							if (!JResourceObjectImporter::Instance().IsValidFormat(pathData.oriFileFormat))
 							{
 								J_LOG_PRINT_OUTW(L"Is not valid format", pData); 
 								continue;

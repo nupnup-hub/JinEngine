@@ -2,9 +2,7 @@
 #include"../JGpuAcceleratorHolder.h"
 #include"../../Buffer/Dx/JDx12GraphicBuffer.h"
 #include<wrl/client.h>   
-#include<d3dx12.h>
-#include<memory>
-#include<unordered_map>
+#include<d3dx12.h> 
 
 namespace JinEngine
 {

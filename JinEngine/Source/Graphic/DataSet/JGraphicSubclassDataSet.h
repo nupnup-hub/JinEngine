@@ -1,8 +1,7 @@
 #pragma once
 #include"../JGraphicConstants.h"
-#include"../../Core/JCoreEssential.h"
-#include<memory>
-#include<vector>
+#include"../../Core/JCoreEssential.h" 
+
 namespace JinEngine
 {
 	namespace Graphic

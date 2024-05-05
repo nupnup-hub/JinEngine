@@ -1,9 +1,7 @@
 #pragma once
 #include"../JCoreEssential.h"
 #include"../Time/JRealTime.h"
-#include"../Utility/JMacroUtility.h"
-#include<vector>
-#include<memory>
+#include"../Utility/JMacroUtility.h" 
 
 namespace JinEngine
 {

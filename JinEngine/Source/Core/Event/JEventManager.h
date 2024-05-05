@@ -2,9 +2,7 @@
 #include"JEventListener.h"
 #include"../JCoreEssential.h"
 #include"../Func/Functor/JFunctor.h"
-//#include"../Func/Callable/JCallable.h"
-#include<unordered_map>
-#include<vector>   
+//#include"../Func/Callable/JCallable.h" 
   
 namespace JinEngine
 {

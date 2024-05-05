@@ -1,11 +1,11 @@
-#pragma once
-#include<string>
-#include<unordered_map>
+#pragma once 
+#include"../../Core/JCoreEssential.h"
  
 namespace JinEngine
 {
 	namespace Editor
 	{
+		//manage editor string per language type
 		class JEditorStringMap
 		{
 		private:

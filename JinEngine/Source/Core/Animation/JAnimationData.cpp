@@ -1,4 +1,3 @@
-#include<vector>
 #include"JAnimationData.h"  
 #include"../Geometry/Mesh/Loader/FbxLoader/JFbxUtility.h"
 

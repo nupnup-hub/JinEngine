@@ -12,7 +12,7 @@
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Math/JMathHelper.h" 
-#include"../../../Application/JApplicationProject.h"
+#include"../../../Application/Project/JApplicationProject.h"
 #include"../../../Graphic/JGraphicConstants.h"
 #include"../../../Graphic/Frameresource/JMaterialConstants.h"
 #include"../../../Graphic/Frameresource/JFrameUpdate.h"
@@ -1053,7 +1053,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = std::make_unique< JMaterial::InitData>(directory);	//for load metadata
-		if (LoadMetaData(pathData.engineMetaFileWPath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JMaterial> newMat = nullptr;

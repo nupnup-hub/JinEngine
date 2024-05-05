@@ -23,7 +23,7 @@
 #include"../../../Object/Resource/JResourceManager.h"
 #include"../../../Object/Resource/Scene/JScene.h"
 #include"../../../Object/Resource/Scene/JSceneManager.h"  
-#include"../../../Application/JApplicationProjectPrivate.h"
+#include"../../../Application/Project/JApplicationProjectPrivate.h"
 #include"../../../Core/Math/JVectorExtend.h" 
 
 namespace JinEngine

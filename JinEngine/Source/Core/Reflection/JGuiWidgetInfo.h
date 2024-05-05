@@ -1,15 +1,10 @@
 #pragma once
 #include"JParameterType.h"
-#include"JGuiWidgetType.h"
-#include"../JCoreEssential.h"      
+#include"JGuiWidgetType.h"     
 #include"../Utility/JTypeTraitUtility.h" 
 #include"../Utility/JSimpleCompiler.h"
 #include"../Pointer/JOwnerPtr.h"
 #include "../../../ThirdParty/Loki/Typelist/Typelist.h"
-#include<string>
-#include<vector>
-#include<memory> 
-#include<unordered_map>
  
 namespace JinEngine
 {

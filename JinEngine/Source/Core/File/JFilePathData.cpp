@@ -6,19 +6,24 @@ namespace JinEngine
 { 
 	namespace Core
 	{
-		JAssetFileLoadPathData::JAssetFileLoadPathData(const std::wstring& engineFileWPath)
-			:engineFileWPath(engineFileWPath)
-		{
-			JCUtil::DecomposeFilePath(engineFileWPath, folderPath, name, format); 
-			engineMetaFileWPath = folderPath + name + Core::JFileConstant::GetMetaFileFormatW();
-		}
-		JFileImportHelpData::JFileImportHelpData(const std::wstring& oriPath, const int flag)
-			: oriFileWPath(oriPath), oriFilePath(JCUtil::WstrToU8Str(oriPath)), flag(flag)
-		{
-			JCUtil::DecomposeFilePath(oriFileWPath, folderPath, name, format); 
-			engineFileWPath = folderPath + name + Core::JFileConstant::GetFileFormatW();
-			engineMetaFileWPath = folderPath + name + Core::JFileConstant::GetMetaFileFormatW();
+		JFilePathData::JFilePathData(const std::wstring& oriPath)
+			:path(oriPath)
+		{ 
+			JCUtil::DecomposeFilePath(oriPath, folderPath, name, format);
 			fullName = name + format;
+		}
+		JAssetFilePathData::JAssetFilePathData(const std::wstring& path)
+			: JFilePathData(path)
+		{ 
+			metaFilePath = folderPath + name + Core::JFileConstant::GetMetaFileFormatW();
+		}
+		JFileImportPathData::JFileImportPathData(const std::wstring& oriPath, const int flag)
+			:JAssetFilePathData(JCUtil::ChangeFileFormat(oriPath, Core::JFileConstant::GetFileFormatW())),
+			oriFileWPath(oriPath), 
+			oriFilePath(JCUtil::WstrToU8Str(oriPath)),
+			flag(flag)
+		{ 
+			oriFileFormat = JCUtil::GetFileFormat(oriFileWPath);
 		}
 	}
 }

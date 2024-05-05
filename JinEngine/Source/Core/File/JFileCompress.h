@@ -1,6 +1,5 @@
-#pragma once
-#include<vector>
-#include<string> 
+#pragma once 
+#include"../JCoreEssential.h"
 #include <sstream>
 
 namespace JinEngine

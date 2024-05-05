@@ -13,7 +13,7 @@
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../../Object/Resource/Mesh/JMeshGeometryPrivate.h"
 #include"../../../Core/Exception/JExceptionMacro.h"
-#include"../../../Application/JApplicationEngine.h"  
+#include"../../../Application/Engine/JApplicationEngine.h"  
 #include<DirectXMath.h>
 
 using namespace DirectX;

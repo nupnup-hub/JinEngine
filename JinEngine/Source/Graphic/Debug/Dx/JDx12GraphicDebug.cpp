@@ -7,7 +7,7 @@
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h" 
 #include"../../Utility/Dx/JDx12Utility.h" 
 #include"../../Utility/Dx/JDx12ObjectCreation.h" 
-#include"../../../Application/JApplicationEngine.h" 
+#include"../../../Application/Engine/JApplicationEngine.h" 
 #include"../../../Core/Exception/JExceptionMacro.h"  
 #include"../../../Core/Platform/JHardwareInfo.h"  
 #include"../../../Object/Component/Camera/JCamera.h"

@@ -131,8 +131,8 @@ namespace JinEngine::Graphic
 		static constexpr uint sampleSetDistribution = 8;
 
 		static constexpr float tMin = 1e-2;
-		static constexpr uint minDepth = 1;
-		static constexpr uint maxDepth = 2;
+		static constexpr uint minDepth = Constants::restirBounceRange.GetMin();
+		static constexpr uint maxDepth = Constants::restirBounceRange.GetMax();
 		static constexpr uint spp = 1;
 
 		static constexpr uint rayGenCount = 1;
@@ -425,8 +425,9 @@ namespace JinEngine::Graphic
 			auto dx12Device = static_cast<JDx12GraphicDevice*>(dx12Set.device);
 			BuildRootSignature(dx12Device);
 			const JGraphicInfo& gInfo = GetGraphicInfo();
+			const JGraphicOption& gOption = GetGraphicOption();
 			for (uint i = 0; i < STATE_OBJECT_TYPE_COUNT; ++i)
-				BuildRtStateObject(dx12Device->GetRaytracingDevice(), gInfo, (STATE_OBJECT_TYPE)i);
+				BuildRtStateObject(dx12Device->GetRaytracingDevice(), gInfo, gOption, (STATE_OBJECT_TYPE)i);
 			BuildRtShaderTables(dx12Device->GetRaytracingDevice(), gInfo);
 		}
 	}
@@ -650,7 +651,7 @@ namespace JinEngine::Graphic
 		const JGraphicInfo& gInfo = GetGraphicInfo();
 		const JGraphicOption& gOption = GetGraphicOption();
 		for (uint i = 0; i < STATE_OBJECT_TYPE_COUNT; ++i)
-			BuildRtStateObject(device->GetRaytracingDevice(), gInfo, (STATE_OBJECT_TYPE)i);
+			BuildRtStateObject(device->GetRaytracingDevice(), gInfo, gOption, (STATE_OBJECT_TYPE)i);
 		BuildRtShaderTables(device->GetRaytracingDevice(), gInfo);
 		BuildComputePso(device->GetDevice(), gInfo, gOption);
 	}
@@ -711,13 +712,13 @@ namespace JinEngine::Graphic
 			builder.PushSampler(data); 
 		builder.Create(device, L"rtRootSignature", raytracingRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED);
 	}
-	void JDx12RaytracingGI::BuildRtStateObject(ID3D12Device5* device, const JGraphicInfo& info, const STATE_OBJECT_TYPE type)
+	void JDx12RaytracingGI::BuildRtStateObject(ID3D12Device5* device, const JGraphicInfo& info, const JGraphicOption& option, const STATE_OBJECT_TYPE type)
 	{
 		JStateObjectBuildData buildData;
 		buildData.maxRecursion = Raytracing::maxDepth;
 
 		// DXIL library
-		BuildDxilLibrarySubobject(buildData);
+		BuildDxilLibrarySubobject(buildData, option);
 
 		// Hit groups
 		BuildHitGroupSubobjects(buildData);
@@ -741,13 +742,13 @@ namespace JinEngine::Graphic
 		// Create the state object.
 		ThrowIfFailedG(device->CreateStateObject(buildData.raytracingPipeline, IID_PPV_ARGS(&stateObject[type])));
 	}
-	void JDx12RaytracingGI::BuildDxilLibrarySubobject(JStateObjectBuildData& buildData)
+	void JDx12RaytracingGI::BuildDxilLibrarySubobject(JStateObjectBuildData& buildData, const JGraphicOption& option)
 	{
 		JComputeShaderInitData initData;
 		initData.macro.push_back({ TEXTURE_2D_COUNT, std::to_wstring(GetGraphicInfo().resource.binding2DTextureCapacity) });
 		//initData.macro.push_back({ T_MIN, std::to_wstring(Raytracing::tMin) });
 		initData.macro.push_back({ MIN_DEPTH, std::to_wstring(Raytracing::minDepth) });
-		//initData.macro.push_back({ MAX_DEPTH, std::to_wstring(Raytracing::maxDepth) });
+		initData.macro.push_back({ MAX_DEPTH, std::to_wstring(option.rendering.restir.bounceCount.Get()) });
 		initData.macro.push_back({ SAMPLE_COUNT, std::to_wstring(Raytracing::spp) });
 
 		initData.macro.push_back({ OBJECT_REF_INSTANCE_ID_OFFSET, std::to_wstring(Constants::objRefAsInstanceIdoffset) });

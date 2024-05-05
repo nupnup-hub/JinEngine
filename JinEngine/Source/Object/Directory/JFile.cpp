@@ -7,7 +7,7 @@
 #include"../Resource/JResourceObjectPrivate.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/File/JFileConstant.h"
-#include"../../Application/JApplicationProject.h"
+#include"../../Application/Project/JApplicationProject.h"
 
 namespace JinEngine
 {
@@ -215,7 +215,7 @@ namespace JinEngine
 		else
 		{
 			using IOInterface = JResourceObjectPrivate::AssetDataIOInterface;
-			auto initData = IOInterface::CreateLoadAssetDIData(fileData->GetOwnerDirectory(), Core::JAssetFileLoadPathData{ GetPath() });
+			auto initData = IOInterface::CreateLoadAssetDIData(fileData->GetOwnerDirectory(), Core::JAssetFilePathData{ GetPath() });
 			auto rPrivate = Core::JIdentifier::PrivateInterface(fileData->GetResourceTypeInfo().TypeGuid());
 			auto idenUser = static_cast<JResourceObjectPrivate*>(rPrivate)->GetAssetDataIOInterface().LoadAssetData(initData.get());
 			JUserPtr<JResourceObject> rUser = JUserPtr<JResourceObject>::ConvertChild(std::move(idenUser));

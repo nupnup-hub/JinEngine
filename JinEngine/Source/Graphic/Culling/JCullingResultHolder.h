@@ -1,9 +1,7 @@
 #pragma once
 #include"JCullingType.h"
 #include"../Buffer/JGraphicBuffer.h"
-#include"../Buffer/JBufferType.h"
-#include"../../Core/JCoreEssential.h"
-#include<string>
+#include"../Buffer/JBufferType.h" 
 
 namespace JinEngine
 {

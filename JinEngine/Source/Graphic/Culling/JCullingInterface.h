@@ -2,8 +2,7 @@
 #include"JCullingType.h"
 #include"JCullingInfo.h" 
 #include"../../Core/Pointer/JOwnerPtr.h"
-#include"../../Core/Reflection/JTypeImplBase.h"
-#include<vector>
+#include"../../Core/Reflection/JTypeImplBase.h" 
 
 namespace JinEngine
 {

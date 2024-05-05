@@ -7,10 +7,7 @@
 #include"../../Core/Identity/JIdentifier.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Handle/JDataHandleStructure.h"
-#include"../Interface/JEditorTransitionInterface.h"
- 
-#include<memory>
-#include<vector>
+#include"../Interface/JEditorTransitionInterface.h" 
 
 namespace JinEngine
 {

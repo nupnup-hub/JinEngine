@@ -18,8 +18,8 @@
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/GraphicResource/JGraphicResourceManager.h"
-#include"../../Application/JApplicationEngine.h"  
-#include"../../Application/JApplicationProject.h"  
+#include"../../Application/Engine/JApplicationEngine.h"  
+#include"../../Application/Project/JApplicationProject.h"  
 #include"../../Core/Guid/JGuidCreator.h"
 #include<Windows.h>
 #include<io.h>
@@ -52,15 +52,15 @@ namespace JinEngine
 	JResourceObjectIO::~JResourceObjectIO() {}
 	JUserPtr<JDirectory> JResourceObjectIO::LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag)
 	{
-		Core::JAssetFileLoadPathData pathData{ path };
-		if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
-			_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
+		Core::JAssetFilePathData pathData{ path };
+		if (_waccess(pathData.path.c_str(), 00) != -1 &&
+			_waccess(pathData.metaFilePath.c_str(), 00) != -1)
 		{
 			auto loadData = DirIOInterface::CreateLoadAssetDIData(nullptr, pathData);
 			return Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get()));
 		}
 		else
-			return JICI::Create<JDirectory>(pathData.engineFileWPath, Core::MakeGuid(), initFlag, nullptr);
+			return JICI::Create<JDirectory>(pathData.path, Core::MakeGuid(), initFlag, nullptr);
 	}
 	void JResourceObjectIO::LoadEngineDirectory(const JUserPtr<JDirectory>& engineRootDir)
 	{
@@ -112,9 +112,9 @@ namespace JinEngine
 			if (i == defaultResourceInedx)
 				parent = defaultFolderCash[3];
 
-			Core::JAssetFileLoadPathData pathData{ defaultFolderPath[i] };   
-			if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
-				_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
+			Core::JAssetFilePathData pathData{ defaultFolderPath[i] };   
+			if (_waccess(pathData.path.c_str(), 00) != -1 &&
+				_waccess(pathData.metaFilePath.c_str(), 00) != -1)
 			{
 				auto loadData = DirIOInterface::CreateLoadAssetDIData(parent, pathData);
 				defaultFolderCash.push_back(Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get())));
@@ -208,11 +208,11 @@ namespace JinEngine
 					JUserPtr<JDirectory> next = nullptr; 
 					if (!parentDir->HasChild(findFileData.cFileName))
 					{
-						Core::JAssetFileLoadPathData pathData{ Core::JFileConstant::MakeFilePath(parentDir->GetPath(),  findFileData.cFileName) };
-						if (!onlyDeafultFolder || isDefaultPtr(pathData.engineFileWPath))
+						Core::JAssetFilePathData pathData{ Core::JFileConstant::MakeFilePath(parentDir->GetPath(),  findFileData.cFileName) };
+						if (!onlyDeafultFolder || isDefaultPtr(pathData.path))
 						{
-							if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
-								_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
+							if (_waccess(pathData.path.c_str(), 00) != -1 &&
+								_waccess(pathData.metaFilePath.c_str(), 00) != -1)
 							{ 
 								auto loadData = DirIOInterface::CreateLoadAssetDIData(parentDir, pathData);
 								next = Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get())); 
@@ -231,14 +231,14 @@ namespace JinEngine
 			{
 				if (!Core::HasSQValueEnum(subDirFlag, OBJECT_FLAG_UNDESTROYABLE) && wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
 				{
-					Core::JAssetFileLoadPathData pathData(parentDir->GetPath() + L"\\" + findFileData.cFileName);
+					Core::JAssetFilePathData pathData(parentDir->GetPath() + L"\\" + findFileData.cFileName);
 					if (pathData.format == Core::JFileConstant::GetMetaFileFormatW())
 					{
 						const std::wstring name = JCUtil::GetFileNameWithOutFormat(findFileData.cFileName);
 						const std::wstring dirPath = parentDir->GetPath() + L"\\" + name;
 						const std::wstring assetPath = parentDir->GetPath() + L"\\" + name + Core::JFileConstant::GetFileFormatW();
 						if (!JFileIOHelper::HasFile(dirPath) && !JFileIOHelper::HasFile(assetPath))
-							JFileIOHelper::DestroyFile(pathData.engineMetaFileWPath);
+							JFileIOHelper::DestroyFile(pathData.metaFilePath);
 					}
 				}
 			}
@@ -276,7 +276,7 @@ namespace JinEngine
 	}
 	void JResourceObjectIO::LoadFile(const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const std::wstring& fileName, const bool canLoadResource)
 	{
-		Core::JAssetFileLoadPathData pathData(directory->GetPath() + L"\\" + fileName);
+		Core::JAssetFilePathData pathData(directory->GetPath() + L"\\" + fileName);
 		if (pathData.format != Core::JFileConstant::GetFileFormatW())
 		{
 			if (pathData.format == Core::JFileConstant::GetMetaFileFormatW() && !Core::HasSQValueEnum(directory->GetFlag(), OBJECT_FLAG_UNDESTROYABLE))
@@ -286,12 +286,12 @@ namespace JinEngine
 				
 				//asset file이 없는 경우 삭제 (directory는 meta만 있으므로 제외)
 				if (!JFileIOHelper::HasFile(dirPath) && !JFileIOHelper::HasFile(assetPath))
-					JFileIOHelper::DestroyFile(pathData.engineMetaFileWPath);
+					JFileIOHelper::DestroyFile(pathData.metaFilePath);
 			}
 			return;
 		}
 		JFileIOTool tool;
-		if (!tool.Begin(pathData.engineMetaFileWPath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+		if (!tool.Begin(pathData.metaFilePath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return;
  
 		size_t guid = 0;

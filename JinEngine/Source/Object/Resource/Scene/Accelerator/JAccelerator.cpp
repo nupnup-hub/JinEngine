@@ -311,5 +311,6 @@ namespace JinEngine
 	{
 		Graphic::JGpuAcceleratorInterface::SetInterfacePointer(this);
 	}
+ 
 }
  

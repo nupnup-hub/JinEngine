@@ -1,8 +1,7 @@
 #pragma once 
 #include"JOccCulling.h"
 #include"../../Shader/JShaderDataHandler.h"
-#include"../../JGraphicSubClassInterface.h"
-#include<vector>
+#include"../../JGraphicSubClassInterface.h" 
 
 namespace JinEngine
 {

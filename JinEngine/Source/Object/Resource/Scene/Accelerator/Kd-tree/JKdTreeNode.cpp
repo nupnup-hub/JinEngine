@@ -1,5 +1,6 @@
 #include"JKdTreeNode.h" 
 #include"../JAcceleratorOption.h"
+#include"../JAcceleratorVisualizeInterface.h"
 #include"../../../../Resource/Mesh/JMeshGeometry.h" 
 #include"../../../../GameObject/JGameObject.h" 
 #include"../../../../GameObject/JGameObjectCreator.h"
@@ -8,8 +9,7 @@
 #include"../../../../Component/Transform/JTransform.h" 
 #include"../../../../../Core/Math/JMathHelper.h"  
 #include"../../../../../Core/Math/JVectorExtend.h"
-#include"../../../../../Core/Utility/JCommonUtility.h" 
-#include"../../../../../Editor/EditTool/JEditorViewStructure.h"
+#include"../../../../../Core/Utility/JCommonUtility.h"  
 
 //Test
 //#include"../../../Object/Resource/JResourceManager.h"
@@ -539,11 +539,11 @@ namespace JinEngine
 				right->FindContainNotSort(info);
 		}
 	}
-	void JKdTreeNode::BuildDebugNode(Editor::JEditorBinaryTreeView& treeView)
+	void JKdTreeNode::BuildDebugNode(JAcceleratorVisualizeInterface* treeView)
 	{
 		if (nodeType == J_KDTREE_NODE_TYPE::ROOT)
 		{
-			treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, treeView.GetDefaultGroupGuid(), "Root");
+			treeView->BuildNode(std::to_string(nodeNumber), nodeNumber, "Root");
 			if (left != nullptr)
 				left->BuildDebugNode(treeView);
 			if (right != nullptr)
@@ -551,24 +551,24 @@ namespace JinEngine
 		}
 		else if (nodeType == J_KDTREE_NODE_TYPE::NODE)
 		{
-			treeView.BuildNode(std::to_string(nodeNumber), nodeNumber);
+			treeView->BuildNode(std::to_string(nodeNumber), nodeNumber);
 			left->BuildDebugNode(treeView);
 			right->BuildDebugNode(treeView);
 			if (IsLeftNode())
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 			else
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 		}
 		else
 		{
 			std::wstring info = L"InnerGameObject: \n";
 			for (const auto& data : innerGameObject)
 				info += data->GetName() + L"\n";
-			treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, treeView.GetDefaultGroupGuid(), JCUtil::WstrToU8Str(info));
+			treeView->BuildNode(std::to_string(nodeNumber), nodeNumber, JCUtil::WstrToU8Str(info));
 			if (IsLeftNode())
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 			else
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 		}
 	} 
 }

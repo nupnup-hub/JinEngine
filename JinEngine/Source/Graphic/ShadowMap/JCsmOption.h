@@ -1,7 +1,6 @@
 #pragma once
 #include"../../Core/JCoreEssential.h"  
-#include"../../Core/Utility/JMacroUtility.h"
-#include<vector>
+#include"../../Core/Utility/JMacroUtility.h" 
 
 namespace JinEngine
 {

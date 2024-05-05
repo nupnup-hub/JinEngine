@@ -1,14 +1,8 @@
 #pragma once 
-#include"../JCullingManager.h" 
-#include<vector>
+#include"../JCullingManager.h"  
+#include<d3d12.h>
+#include<wrl/client.h>
 
-struct ID3D12Device;
-struct ID3D12QueryHeap;
-struct ID3D12Resource;
-namespace Microsoft::WRL
-{
-	template <typename T> class ComPtr;
-}
 namespace JinEngine
 {
 	namespace Graphic

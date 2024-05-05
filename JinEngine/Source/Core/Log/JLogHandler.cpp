@@ -1,8 +1,7 @@
 #include"JLogHandler.h"
 #include"JLog.h"
 #include"../Platform/JPlatformInfo.h"
-#include<Windows.h>
-#include<unordered_map>
+#include<Windows.h> 
 #include<algorithm>
 #include<fstream>
 

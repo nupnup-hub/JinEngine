@@ -3,10 +3,8 @@
 //***************************************************************************************
 #include "JGameTimer.h"
 #include"../Guid/JGuidCreator.h" 
-#include <windows.h>
-#include<string>
-#include <chrono>  
-#include<vector>
+#include <windows.h> 
+#include <chrono>   
 
 namespace JinEngine
 {

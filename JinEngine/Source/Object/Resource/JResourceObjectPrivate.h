@@ -17,7 +17,7 @@ namespace JinEngine
 	}
 	namespace Core
 	{
-		struct JAssetFileLoadPathData;
+		struct JAssetFilePathData;
 	}
 
 	class JResourceObjectPrivate : public JObjectPrivate
@@ -50,7 +50,7 @@ namespace JinEngine
 			friend class JFile;		//load resource 
 			friend class CreateInstanceInterface;
 		private:
-			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JDirectory>& owner, const Core::JAssetFileLoadPathData& pathData);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JDirectory>& owner, const Core::JAssetFilePathData& pathData);
 			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIDate(const JUserPtr<JResourceObject>& rObj);
 		private:
 			virtual JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) = 0;

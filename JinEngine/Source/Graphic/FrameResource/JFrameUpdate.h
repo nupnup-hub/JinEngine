@@ -4,8 +4,7 @@
 #include"../../Core/Empty/JEmptyType.h"
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Guid/JGuidCreator.h"
-#include"../../Core/Pointer/JOwnerPtr.h"
-#include<vector>
+#include"../../Core/Pointer/JOwnerPtr.h" 
 
 namespace JinEngine
 {

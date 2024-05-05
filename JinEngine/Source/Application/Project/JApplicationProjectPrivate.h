@@ -1,8 +1,7 @@
-#pragma once
-#include<string> 
-#include"JApplicationType.h"  
-#include"../Core/Func/Functor/JFunctor.h"
-#include"../Core/File/JFileIOResult.h"
+#pragma once 
+#include"../JApplicationType.h"  
+#include"../../Core/Func/Functor/JFunctor.h"
+#include"../../Core/File/JFileIOResult.h"
 
 namespace JinEngine
 { 

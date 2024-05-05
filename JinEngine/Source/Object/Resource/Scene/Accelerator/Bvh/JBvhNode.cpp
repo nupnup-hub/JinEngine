@@ -1,5 +1,6 @@
 #include"JBvhNode.h" 
 #include"../JAcceleratorOption.h"
+#include"../JAcceleratorVisualizeInterface.h"
 #include"../../../../Resource/Mesh/JMeshGeometry.h" 
 #include"../../../../GameObject/JGameObject.h" 
 #include"../../../../GameObject/JGameObjectCreator.h"
@@ -7,8 +8,7 @@
 #include"../../../../Component/Transform/JTransform.h" 
 #include"../../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../../Core/Math/JMathHelper.h"  
-#include"../../../../../Core/Math/JVectorExtend.h"
-#include"../../../../../Editor/EditTool/JEditorViewStructure.h" 
+#include"../../../../../Core/Math/JVectorExtend.h" 
   
 using namespace DirectX;
 namespace JinEngine
@@ -564,11 +564,11 @@ namespace JinEngine
 				right->FindContainNotSort(info);
 		}
 	}
-	void JBvhNode::BuildDebugNode(Editor::JEditorBinaryTreeView& treeView)
+	void JBvhNode::BuildDebugNode(JAcceleratorVisualizeInterface* treeView)
 	{
 		if (type == J_BVH_NODE_TYPE::ROOT)
 		{
-			treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, treeView.GetDefaultGroupGuid(), "Root");
+			treeView->BuildNode(std::to_string(nodeNumber), nodeNumber, "Root");
 			if (left != nullptr)
 				left->BuildDebugNode(treeView);
 			if (right != nullptr)
@@ -576,24 +576,21 @@ namespace JinEngine
 		}
 		else if (type == J_BVH_NODE_TYPE::NODE)
 		{
-			treeView.BuildNode(std::to_string(nodeNumber), nodeNumber);
+			treeView->BuildNode(std::to_string(nodeNumber), nodeNumber);
 			left->BuildDebugNode(treeView);
 			right->BuildDebugNode(treeView);
 			if (IsLeftNode())
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 			else
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 		}
 		else
 		{
-			treeView.BuildNode(std::to_string(nodeNumber),
-				nodeNumber,
-				treeView.GetDefaultGroupGuid(),
-				"InnerGameObject: " + JCUtil::WstrToU8Str(innerGameObject->GetName()));
+			treeView->BuildNode(std::to_string(nodeNumber), nodeNumber, "InnerGameObject: " + JCUtil::WstrToU8Str(innerGameObject->GetName()));
 			if (IsLeftNode())
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 			else
-				treeView.BuildEndSplit();
+				treeView->BuildEndSplit();
 		}
 	}
 }

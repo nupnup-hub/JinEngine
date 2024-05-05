@@ -3,10 +3,10 @@
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../Utility/Dx/JDx12Utility.h" 
 #include"../../../Core/Exception/JExceptionMacro.h"
-#include<assert.h>
-#include<vector>
-#include<pix3.h>
+#include<assert.h> 
+//#include<pix3.h>
  
+//#define TRACE_REMOVE_REASON
 namespace JinEngine::Graphic
 {
 	namespace
@@ -115,6 +115,7 @@ namespace JinEngine::Graphic
 		debugController1->EnableDebugLayer(); 
 		//debugController1->SetEnableGPUBasedValidation(true);		
 
+#if TRACE_REMOVE_REASON
 		Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings1> pDredSettings;
 		ThrowIfFailedHr(D3D12GetDebugInterface(IID_PPV_ARGS(&pDredSettings)));
 
@@ -122,6 +123,7 @@ namespace JinEngine::Graphic
 		pDredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 		pDredSettings->SetBreadcrumbContextEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 		pDredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON); 
+#endif
 #endif
 		ThrowIfFailedHr(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
 		//ThrowIfFailedHr(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG,  IID_PPV_ARGS(&dxgiFactory)));

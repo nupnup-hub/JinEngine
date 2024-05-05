@@ -1,8 +1,6 @@
 #pragma once
 #include"../JGraphicResourceShareData.h" 
-#include"JDx12GraphicResourceConstants.h"
-#include<unordered_map>
-#include<memory>
+#include"JDx12GraphicResourceConstants.h" 
 
 namespace JinEngine
 {

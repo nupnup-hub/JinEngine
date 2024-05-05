@@ -29,7 +29,7 @@ namespace JinEngine
 			}
 		}
 
-		bool JObjFileLoader::LoadObjFile(const JFileImportHelpData& pathData, JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData)
+		bool JObjFileLoader::LoadObjFile(const JFileImportPathData& pathData, JStaticMeshGroup& meshGroup, ObjMaterialMap& objMatData)
 		{
 			set = std::make_unique<LoadDataSet>();
 			bool success = LoadMesh(pathData);
@@ -41,7 +41,7 @@ namespace JinEngine
 			set = nullptr;
 			return success;
 		}
-		bool JObjFileLoader::LoadMesh(const JFileImportHelpData& pathData)
+		bool JObjFileLoader::LoadMesh(const JFileImportPathData& pathData)
 		{
 			std::wifstream stream;
 			stream.open(pathData.oriFileWPath, std::ios::in, std::ios::binary);

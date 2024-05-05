@@ -2,8 +2,7 @@
 #include<DirectXMath.h> 
 #include<type_traits> 
 #include<functional>   
-#include <cmath>
-#include<string>
+#include<cmath> 
 #include<algorithm>
 #include"../JCoreEssential.h"
 
@@ -356,6 +355,10 @@ namespace JinEngine
 		static constexpr uint GetDigitCount()noexcept
 		{
 			return 2;
+		}
+		T GetMaxElemet()const noexcept
+		{
+			return x > y ? x : y;
 		}
 	};
 	template<typename T>

@@ -1,7 +1,6 @@
 #pragma once
-#include"JModuleType.h"
-#include<string>
-#include<vector>
+#include"JModuleType.h" 
+#include"../JCoreEssential.h" 
 
 namespace JinEngine
 {

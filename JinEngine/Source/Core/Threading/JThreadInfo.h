@@ -1,6 +1,6 @@
 #pragma once
-#include"JThreadType.h" 
-#include<string>
+#include"JThreadType.h"  
+#include"../JCoreEssential.h"
 
 namespace JinEngine
 {

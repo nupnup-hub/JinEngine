@@ -1,6 +1,6 @@
 #pragma once
-#include <chrono>  
-#include <string>   
+#include"../JCoreEssential.h" 
+#include <chrono>   
 
 namespace JinEngine
 {

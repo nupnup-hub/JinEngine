@@ -3,8 +3,7 @@
 #include"../Core/Math/JVector.h" 
 #include"../Core/Func/Functor/JFunctor.h"
 #include"../Core/Event/JEventManager.h"
-#include<windows.h>  
-#include<string>
+#include<windows.h>   
 
 namespace JinEngine
 {

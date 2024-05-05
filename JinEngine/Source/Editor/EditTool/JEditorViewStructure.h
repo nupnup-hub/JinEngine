@@ -5,9 +5,7 @@
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Utility/JMacroUtility.h"
 #include"../../Core/Math/JVector.h"
-#include<string>
-#include<vector>
-#include<memory>
+#include"../../Object/Resource/Scene/Accelerator/JAcceleratorVisualizeInterface.h" 
 
 namespace JinEngine
 {
@@ -93,7 +91,8 @@ namespace JinEngine
 			std::unique_ptr<JEditorGuiCoordGrid> coordGrid;
 			std::unique_ptr<JEditorViewUpdateHelper> updateHelper;
 		private:
-			uint maxDepth = 0;
+			uint maxDepth = 0; 
+		private:
 			bool isLastViewOpen = false;
 			bool hasNewNode = false;
 			bool useViewWindow = true;
@@ -112,11 +111,13 @@ namespace JinEngine
 			size_t GetLastUpdateSeletedNodeGuid()const noexcept;
 			void GetLastUpdateHoveredEdgeGuid(_Out_ size_t& fromGuid, _Out_ size_t& toGuid)const noexcept;
 			void GetLastUpdateSelectedEdgeGuid(_Out_ size_t& fromGuid, _Out_ size_t& toGuid)const noexcept;
+		public:
+			void SetGridSize(const uint gridSize)noexcept; 
+		public:
 			bool IsLastUpdateHoveredNode()const noexcept;
 			bool IsLastUpdateHoveredEdge()const noexcept;
 			bool IsLastUpdateSeletedNode()const noexcept;
 			bool IsLastUpdateSeletedEdge()const noexcept;
-			void SetGridSize(const uint gridSize)noexcept;
 		protected:
 			JEditorNodeBase* GetRootNode()const noexcept;
 			JEditorNodeBase* GetNode(const size_t guid)const noexcept;
@@ -148,8 +149,12 @@ namespace JinEngine
 		protected:
 			void NodeOnScreen(const JEditorViewUpdateHelper* updateHelper)noexcept final;
 		};
-		class JEditorBinaryTreeView : public JEditorTreeViewBase
+		class JEditorBinaryTreeView : public JEditorTreeViewBase, public JAcceleratorVisualizeInterface
 		{
+		public:
+			void Initialize();
+		public:
+			bool IsMatch(const J_ACCELERATOR_TYPE type)const noexcept final;
 		public:
 			void BuildNode(const std::string& name,
 				const size_t nodeGuid, 
@@ -157,7 +162,8 @@ namespace JinEngine
 				const std::string& desc = "",
 				const bool isSelectedNode = false,
 				const bool isSelectedParentEdge = false)noexcept;
-			void BuildEndSplit()noexcept;
+			void BuildNode(const std::string& name, const size_t nodeGuid, const std::string& desc = "")noexcept final;
+			void BuildEndSplit()noexcept final;
 		};
 		class JEdtiorTreeView : public JEditorTreeViewBase
 		{

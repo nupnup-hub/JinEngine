@@ -4,12 +4,10 @@
 #include"../DataSet/JGraphicDataSet.h"
 #include"../JGraphicConstants.h"
 #include"../JGraphicSubClassInterface.h"
-#include"../Device/JGraphicDeviceUser.h" 
-#include"../../Core/JCoreEssential.h"  
+#include"../Device/JGraphicDeviceUser.h"  
 #include"../../Core/Pointer/JOwnerPtr.h" 
 #include"../../Core/Geometry/Mesh/JMeshStruct.h"
-#include"../../Core/Handle/JDataHandleStructure.h"
-#include<string>
+#include"../../Core/Handle/JDataHandleStructure.h" 
 
 namespace JinEngine
 {

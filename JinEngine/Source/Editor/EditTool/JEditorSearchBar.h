@@ -1,7 +1,6 @@
 #pragma once
-#include"JEditorInputBuffHelper.h" 
-#include<memory>
-#include<string>
+#include"JEditorInputBuffHelper.h"  
+
 namespace JinEngine
 {
 	class JObject;

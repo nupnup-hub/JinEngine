@@ -2,6 +2,7 @@
 #include"JCreatePolicy.h"
 #include"JLifetimePolicy.h"
 #include"JThreadingModel.h" 
+#include"../JCoreEssential.h" 
 
 namespace JinEngine
 {

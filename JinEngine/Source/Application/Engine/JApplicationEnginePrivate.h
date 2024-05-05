@@ -1,5 +1,5 @@
 #pragma once 
-#include"JApplicationType.h"  
+#include"../JApplicationType.h"  
 
 namespace JinEngine
 { 

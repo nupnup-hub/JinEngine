@@ -1,6 +1,6 @@
 #pragma once
-#include <stdio.h>
-#include<string>
+#include <stdio.h> 
+#include"../JCoreEssential.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #if defined(_WIN32) 

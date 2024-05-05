@@ -1,8 +1,7 @@
 #pragma once
 #include"../JGraphicTaskInterface.h" 
 #include"../JGraphicSubClassInterface.h"
-#include"../../Core/Pointer/JOwnerPtr.h" 
-#include<vector>
+#include"../../Core/Pointer/JOwnerPtr.h"  
 
 namespace JinEngine
 {

@@ -2,10 +2,7 @@
 #include"JOctreeNode.h"
 #include"JOctreeOption.h"
 #include"../JAccelerator.h" 
-#include<DirectXCollision.h>
-#include<memory>
-#include<vector>
-#include<unordered_map>
+#include<DirectXCollision.h> 
 
 namespace JinEngine
 {

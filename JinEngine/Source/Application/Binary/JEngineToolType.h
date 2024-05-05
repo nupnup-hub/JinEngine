@@ -2,7 +2,7 @@
 
 namespace JinEngine
 {
-	namespace Core
+	namespace Application
 	{
 		enum class J_ENGINE_TOOL_TYPE
 		{

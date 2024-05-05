@@ -1,10 +1,7 @@
 #pragma once
 #include"JEditorPopupType.h" 
 #include"../../Core/Func/Functor/JFunctor.h"
-#include"../../Core/JCoreEssential.h"
-#include"../../Core/Math/JVector.h"
-#include<vector>
-#include<string> 
+#include"../../Core/Math/JVector.h" 
 
 namespace JinEngine
 {

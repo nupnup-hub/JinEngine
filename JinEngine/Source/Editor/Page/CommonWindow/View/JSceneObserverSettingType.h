@@ -1,5 +1,6 @@
-#pragma once
-#include<vector>
+#pragma once 
+#include"../../../../Core/JCoreEssential.h"
+
 namespace JinEngine
 {
 	namespace Editor

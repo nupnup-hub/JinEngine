@@ -5,7 +5,7 @@
 
 namespace JinEngine
 { 
-	JResourceObjectImportDesc::JResourceObjectImportDesc(const Core::JFileImportHelpData& importPathData, const JUserPtr<JDirectory>& dir)
+	JResourceObjectImportDesc::JResourceObjectImportDesc(const Core::JFileImportPathData& importPathData, const JUserPtr<JDirectory>& dir)
 		: importPathData(importPathData), dir(dir)
 	{}
 
@@ -39,7 +39,7 @@ namespace JinEngine
 		if (desc == nullptr || desc->dir == nullptr)
 			return {};
 
-		auto data = GetFormatInfo(desc->importPathData.format);
+		auto data = GetFormatInfo(desc->importPathData.oriFileFormat);
 		if (data == nullptr)
 			return {};
 		 
@@ -83,9 +83,9 @@ namespace JinEngine
 			return retVec;
 		}
 	}
-	std::vector<J_RESOURCE_TYPE> JResourceObjectImporterImpl::DeterminFileResourceType(const Core::JFileImportHelpData importPathData)const noexcept
+	std::vector<J_RESOURCE_TYPE> JResourceObjectImporterImpl::DeterminFileResourceType(const Core::JFileImportPathData importPathData)const noexcept
 	{
-		auto data = GetFormatInfo(importPathData.format); 
+		auto data = GetFormatInfo(importPathData.oriFileFormat);
 		if (data == nullptr)
 			return std::vector<J_RESOURCE_TYPE>();
 

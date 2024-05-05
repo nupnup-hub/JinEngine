@@ -14,7 +14,7 @@
 #include"../Texture/JTexture.h"
 #include"../../Directory/JDirectory.h" 
 #include"../../JObjectFileIOHelper.h"
-#include"../../../Application/JApplicationProject.h" 
+#include"../../../Application/Project/JApplicationProject.h" 
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
@@ -374,7 +374,7 @@ namespace JinEngine
 					if (textureDir == nullptr)
 						textureDir = JICI::Create<JDirectory>(L"Texture", Core::MakeGuid(), flag, parentDir);
 
-					const JResourceObjectImportDesc importDesc(Core::JFileImportHelpData{ nameRef[j] }, textureDir);
+					const JResourceObjectImportDesc importDesc(Core::JFileImportPathData{ nameRef[j] }, textureDir);
 					auto existData = newTextureMap.find(importDesc.importPathData.oriFileWPath);
 					if (existData != newTextureMap.end())
 						texture[j] = existData->second;
@@ -693,7 +693,7 @@ namespace JinEngine
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
 			//JResourceObject*, const std::wstring, JDirectory*, const std::wstring>
-			auto fbxClassifyC = [](const Core::JFileImportHelpData importPathData) -> std::vector<J_RESOURCE_TYPE>
+			auto fbxClassifyC = [](const Core::JFileImportPathData importPathData) -> std::vector<J_RESOURCE_TYPE>
 			{
 				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
 				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
@@ -711,7 +711,7 @@ namespace JinEngine
 			auto fbxMeshImportC = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
 			{
 				const JMeshGeometryImportDesc* meshDesc = static_cast<const JMeshGeometryImportDesc*>(desc);
-				const Core::JFileImportHelpData& importPathData = meshDesc->importPathData;
+				const Core::JFileImportPathData& importPathData = meshDesc->importPathData;
 				const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)importPathData.flag;
 				const JUserPtr<JDirectory>& dir = meshDesc->dir;
 
@@ -744,7 +744,7 @@ namespace JinEngine
 						newSkeleton = JICI::Create<JSkeletonAsset>(importPathData.name + L"Skel",
 							skeletonGuid,
 							flag,
-							RTypeCommonCall::CallFormatIndex(JSkeletonAsset::GetStaticResourceType(), importPathData.format),
+							RTypeCommonCall::CallFormatIndex(JSkeletonAsset::GetStaticResourceType(), importPathData.oriFileFormat),
 							modelDir,
 							skinendHint,
 							std::move(joint));
@@ -756,7 +756,7 @@ namespace JinEngine
 						JUserPtr<JMeshGeometry> newMesh = JICI::Create<JSkinnedMeshGeometry>(importPathData.name,
 							skinnedMeshGuid,
 							flag,
-							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
+							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.oriFileFormat),
 							modelDir,
 							std::move(skinnedGroup));
 						res.push_back(newMesh);
@@ -796,7 +796,7 @@ namespace JinEngine
 								JUserPtr<JMeshGeometry> newMesh = JICI::Create<JStaticMeshGeometry>(meshData->GetName(),
 									Core::MakeGuid(),
 									flag,
-									RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
+									RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.oriFileFormat),
 									modelDir,
 									std::move(data));
 								res.push_back(newMesh);
@@ -811,7 +811,7 @@ namespace JinEngine
 							JUserPtr<JMeshGeometry> newMesh = JICI::Create<JStaticMeshGeometry>(importPathData.name,
 								Core::MakeGuid(),
 								flag,
-								RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
+								RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.oriFileFormat),
 								modelDir,
 								std::move(staticMeshGroup));
 							res.push_back(newMesh);
@@ -828,7 +828,7 @@ namespace JinEngine
 			auto objMeshImportC = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
 			{				
 				const JMeshGeometryImportDesc* meshDesc = static_cast<const JMeshGeometryImportDesc*>(desc);
-				const Core::JFileImportHelpData& importPathData = meshDesc->importPathData;
+				const Core::JFileImportPathData& importPathData = meshDesc->importPathData;
 				const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)importPathData.flag;
 				const JUserPtr<JDirectory>& dir = meshDesc->dir;
 
@@ -845,7 +845,7 @@ namespace JinEngine
 					newMesh = JICI::Create<JStaticMeshGeometry>(importPathData.name,
 						Core::MakeGuid(),
 						flag,
-						RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
+						RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.oriFileFormat),
 						modelDir,
 						std::move(meshGroup));
 				}
@@ -868,7 +868,7 @@ namespace JinEngine
 		}
 	};
 
-	JMeshGeometryImportDesc::JMeshGeometryImportDesc(const Core::JFileImportHelpData& importPathData)
+	JMeshGeometryImportDesc::JMeshGeometryImportDesc(const Core::JFileImportPathData& importPathData)
 		:JResourceObjectImportDesc(importPathData)
 	{}
 

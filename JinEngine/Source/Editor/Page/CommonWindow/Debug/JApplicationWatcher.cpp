@@ -1,7 +1,7 @@
 #include"JApplicationWatcher.h"
 #include"../../JEditorAttribute.h"  
 #include"../../../Gui/JGui.h"
-#include"../../../../Application/JApplicationProject.h"
+#include"../../../../Application/Project/JApplicationProject.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Identity/JIdentifier.h"
 #include"../../../../Core/Time/JGameTimer.h"

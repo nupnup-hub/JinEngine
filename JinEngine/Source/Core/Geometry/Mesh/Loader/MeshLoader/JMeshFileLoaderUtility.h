@@ -1,7 +1,6 @@
 #pragma once
 #include"../../JMeshStruct.h" 
-#include"../../../../ThirdParty/DirectX/DirectXMesh.h"  
-#include<string>
+#include"../../../../ThirdParty/DirectX/DirectXMesh.h"   
 
 namespace JinEngine
 {

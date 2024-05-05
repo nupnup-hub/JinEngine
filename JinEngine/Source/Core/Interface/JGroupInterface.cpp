@@ -1,6 +1,5 @@
 #include"JGroupInterface.h"
-#include"../Guid/JGuidCreator.h"
-#include<unordered_map>
+#include"../Guid/JGuidCreator.h" 
 
 //Not Use
 namespace JinEngine

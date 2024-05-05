@@ -1,8 +1,7 @@
 #pragma once 
 #include"../JCoreEssential.h"
 #include"../Reflection/JTypeBase.h" 
-#include"../DI/JDIDataBase.h"
-#include<string> 
+#include"../DI/JDIDataBase.h" 
 
 namespace JinEngine
 {

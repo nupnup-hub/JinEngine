@@ -1,11 +1,7 @@
 #pragma once
 #include"JGuiData.h"
 #include"JGuiConstants.h"
-#include"../Device/JGraphicDeviceType.h"
-#include"../../Core/JCoreEssential.h"
-#include<memory>
-#include<vector>
-#include<unordered_map>
+#include"../Device/JGraphicDeviceType.h" 
 
 namespace JinEngine 
 {

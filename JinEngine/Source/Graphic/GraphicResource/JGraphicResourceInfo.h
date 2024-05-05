@@ -3,9 +3,7 @@
 #include"../JGraphicConstants.h"
 #include"../../Core/JCoreEssential.h"   
 #include"../../Core/Reflection/JReflection.h" 
-#include"JGraphicResourceType.h" 
-#include<memory>
-#include<string> 
+#include"JGraphicResourceType.h"  
  
 namespace JinEngine
 {

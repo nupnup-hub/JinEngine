@@ -1,21 +1,21 @@
-#include"JEngineTool.h"
-#include"../JCoreEssential.h"
-#include"../Platform/JPlatformInfo.h"
-#include"../Utility/JCommonUtility.h"
-#include"../../Application/JApplicationEngine.h"
-#include"../../Application/JApplicationProject.h"
+#include"JEngineTool.h" 
+#include"../Engine/JApplicationEngine.h" 
+#include"../../Core/Platform/JPlatformInfo.h"
+#include"../../Core/Utility/JCommonUtility.h"
 
-namespace JinEngine::Core
+namespace JinEngine::Application
 {
 	namespace
 	{
+		static constexpr bool debuggingMode = true;
+
 		static void GetToolExePath(const J_ENGINE_TOOL_TYPE type,
 			_Out_ std::string& folderPath,
 			_Out_ std::string& name)noexcept
 		{
 			switch (type)
 			{
-			case JinEngine::Core::J_ENGINE_TOOL_TYPE::SOLUTION_MANAGER:
+			case JinEngine::Application::J_ENGINE_TOOL_TYPE::SOLUTION_MANAGER:
 			{
 				folderPath = JCUtil::WstrToU8Str(JApplicationEngine::DotNetBinaryPath());
 				name = "JSolutionManager.exe";
@@ -26,7 +26,7 @@ namespace JinEngine::Core
 			}
 		}
 		static void CommandCall(const std::string& command)
-		{
+		{   
 			system(command.c_str());
 		}
 		static std::string CombineCommand(const std::string& drive,
@@ -58,12 +58,12 @@ namespace JinEngine::Core
 		:filePath(filePath), includePath(includePath)
 	{}
 
-	void JEngineTool::ExecuteTool(const J_ENGINE_TOOL_TYPE type, const std::string& args)
-	{
+	void JEngineTool::ExecuteTool(const J_ENGINE_TOOL_TYPE type, std::string args)
+	{  
 		std::string exeFoldePath;
 		std::string exeName;
 		GetToolExePath(type, exeFoldePath, exeName);
-
+		 
 		const std::string drive = JApplicationEngine::GetDriveAlpha();
 		CommandCall(CombineCommand(drive, exeFoldePath, exeName, args));
 	}
@@ -78,7 +78,7 @@ namespace JinEngine::Core
 		std::string args = "-pd, " + name + ", ";
 		args += path + ", ";
 		args += "Release, ";
-		args += GetSolutionPlatform() + ", ";
+		args += Core::GetSolutionPlatform() + ", ";
 		args += "false, ";
  
 		for (const auto& data : config)
@@ -87,7 +87,7 @@ namespace JinEngine::Core
 	}
 	void JEngineTool::CreateProjectVirtualDir(const std::string& slnPath, const std::string& projName, const std::string& dirPath)
 	{
-		std::string args = "-d, " + dirPath + ", ";
+		std::string args = "-vd, " + dirPath + ", ";
 		args += slnPath + ", ";
 		args += projName;
 		ExecuteTool(J_ENGINE_TOOL_TYPE::SOLUTION_MANAGER, args);
@@ -107,7 +107,7 @@ namespace JinEngine::Core
 		args += slnPath + ", ";
 		args += projName + ", ";
 		args += "Release, ";
-		args += GetSolutionPlatform();
+		args += Core::GetSolutionPlatform();
 		ExecuteTool(J_ENGINE_TOOL_TYPE::SOLUTION_MANAGER, args);
 	}
 	void JEngineTool::AddMultiFile(const std::string& slnPath,
@@ -123,12 +123,20 @@ namespace JinEngine::Core
 		args += slnPath + ", ";
 		args += projName + ", ";
 		args += "Release, ";
-		args += GetSolutionPlatform() + ", ";
+		args += Core::GetSolutionPlatform() + ", ";
 		for (const auto& data : fileInfo)
 		{
 			args += data.filePath + ", ";
 			args += data.includePath + ", ";
 		}
+		ExecuteTool(J_ENGINE_TOOL_TYPE::SOLUTION_MANAGER, args);
+	}
+	void JEngineTool::AddDirectory(const std::string& slnPath, const std::string& projName, const std::string& dirPath, const std::string& virtualDirPath)
+	{
+		std::string args = "-d, " + dirPath + ", ";
+		args += virtualDirPath + ", ";
+		args += slnPath + ", ";
+		args += projName;
 		ExecuteTool(J_ENGINE_TOOL_TYPE::SOLUTION_MANAGER, args);
 	}
 	void JEngineTool::RemoveProjectItem(const std::string& includePath,
