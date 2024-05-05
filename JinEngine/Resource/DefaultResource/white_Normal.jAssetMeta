@@ -1,8 +1,14 @@
-Name: white_Normal
-ObjGuid: 2789803208841982516
-TypeGuid: 5146432936074107289
-ObjFlag: 13
-J_RESOURCE_TYPE: 2
-FormatIdnex: .png
-Format: 1
-TextureType: 7
+{
+	"Format: " : ".png",
+	"FormatIdnex: " : 1,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "white_Normal",
+	"ObjFlag: " : 141,
+	"ObjGuid: " : 14330061352819515260,
+	"Resoultion" : 0,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

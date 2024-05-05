@@ -1,8 +1,14 @@
-Name: Missing
-ObjGuid: 11864041337889741909
-TypeGuid: 5146432936074107289
-ObjFlag: 15
-J_RESOURCE_TYPE: 2
-FormatIdnex: .jpg
-Format: 0
-TextureType: 7
+{
+	"Format: " : ".jpg",
+	"FormatIdnex: " : 0,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "Missing",
+	"ObjFlag: " : 143,
+	"ObjGuid: " : 18109707534408623887,
+	"Resoultion" : 0,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

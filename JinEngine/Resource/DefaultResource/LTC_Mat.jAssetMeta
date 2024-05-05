@@ -1,13 +1,13 @@
 {
-	"Format: " : ".png",
-	"FormatIdnex: " : 1,
+	"Format: " : ".dds",
+	"FormatIdnex: " : 2,
 	"J_RESOURCE_TYPE: " : 2,
 	"MipmapKernelSize" : 0,
 	"MipmapSharpnessFactor" : 1.0,
 	"MipmapType" : 1,
-	"Name: " : "SpotLight",
+	"Name: " : "LTC_Mat",
 	"ObjFlag: " : 143,
-	"ObjGuid: " : 7716473310576552601,
+	"ObjGuid: " : 2227776280276944402,
 	"Resoultion" : 0,
 	"TextureType" : 7,
 	"TypeGuid: " : 5146432936074107289

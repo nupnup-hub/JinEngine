@@ -1,8 +1,14 @@
-Name: Shiro_Background
-ObjGuid: 2782080788224731097
-TypeGuid: 5146432936074107289
-ObjFlag: 15
-J_RESOURCE_TYPE: 2
-FormatIdnex: .jpg
-Format: 0
-TextureType: 7
+{
+	"Format: " : ".jpg",
+	"FormatIdnex: " : 0,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "Shiro_Background",
+	"ObjFlag: " : 143,
+	"ObjGuid: " : 18041022461854652672,
+	"Resoultion" : 0,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

@@ -1,8 +1,14 @@
-Name: OptionSetting
-ObjGuid: 8799769812495202379
-TypeGuid: 5146432936074107289
-ObjFlag: 15
-J_RESOURCE_TYPE: 2
-FormatIdnex: .png
-Format: 1
-TextureType: 7
+{
+	"Format: " : ".png",
+	"FormatIdnex: " : 1,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "OptionSetting",
+	"ObjFlag: " : 143,
+	"ObjGuid: " : 6347956680401589734,
+	"Resoultion" : 0,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

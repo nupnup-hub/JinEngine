@@ -1,8 +1,14 @@
-Name: DefaultSky
-ObjGuid: 5683447605288995940
-TypeGuid: 5146432936074107289
-ObjFlag: 13
-J_RESOURCE_TYPE: 2
-FormatIdnex: .dds
-Format: 2
-TextureType: 8
+{
+	"Format: " : ".dds",
+	"FormatIdnex: " : 2,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "DefaultSky",
+	"ObjFlag: " : 141,
+	"ObjGuid: " : 13016935931189476114,
+	"Resoultion" : 0,
+	"TextureType" : 8,
+	"TypeGuid: " : 5146432936074107289
+}

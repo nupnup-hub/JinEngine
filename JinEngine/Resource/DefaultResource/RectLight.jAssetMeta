@@ -5,9 +5,9 @@
 	"MipmapKernelSize" : 0,
 	"MipmapSharpnessFactor" : 1.0,
 	"MipmapType" : 1,
-	"Name: " : "SpotLight",
+	"Name: " : "RectLight",
 	"ObjFlag: " : 143,
-	"ObjGuid: " : 7716473310576552601,
+	"ObjGuid: " : 1160117170166769375,
 	"Resoultion" : 0,
 	"TextureType" : 7,
 	"TypeGuid: " : 5146432936074107289

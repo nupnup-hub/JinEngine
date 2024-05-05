@@ -1,8 +1,14 @@
-Name: RotationArrow
-ObjGuid: 11918094414640453629
-TypeGuid: 5146432936074107289
-ObjFlag: 15
-J_RESOURCE_TYPE: 2
-FormatIdnex: .png
-Format: 1
-TextureType: 7
+{
+	"Format: " : ".png",
+	"FormatIdnex: " : 1,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "RotationArrow",
+	"ObjFlag: " : 143,
+	"ObjGuid: " : 7384640709660310178,
+	"Resoultion" : 0,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

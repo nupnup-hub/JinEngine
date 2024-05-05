@@ -1,8 +1,14 @@
-Name: Shader
-ObjGuid: 16903736068602929432
-TypeGuid: 5146432936074107289
-ObjFlag: 15
-J_RESOURCE_TYPE: 2
-FormatIdnex: .png
-Format: 1
-TextureType: 7
+{
+	"Format: " : ".png",
+	"FormatIdnex: " : 1,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "Shader",
+	"ObjFlag: " : 143,
+	"ObjGuid: " : 9474981596936766923,
+	"Resoultion" : 0,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}
