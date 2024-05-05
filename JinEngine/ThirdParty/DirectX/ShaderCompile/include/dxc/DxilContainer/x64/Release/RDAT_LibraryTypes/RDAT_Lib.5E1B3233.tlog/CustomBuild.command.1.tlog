@@ -1,0 +1,38 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\140B62B4D07EE913759A376C2856A9D0\RDAT_LIBRARYTYPES.INL.RULE
+setlocal
+C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/utils/hct/hctgen.py RDAT_LibraryTypes --output D:/Visual_Studio_src/Build/include/dxc/DxilContainer/tmp/RDAT_LibraryTypes.inl --input D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/DxilContainer/RDAT_LibraryTypes.inl
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\140B62B4D07EE913759A376C2856A9D0\RDAT_LIBRARYTYPES.INL.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Visual_Studio_src/Build/include/dxc/DxilContainer/tmp/RDAT_LibraryTypes.inl.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\9A1202C0865A0B5AF99C135837C25120\RDAT_LIBRARYTYPES.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\DXILCONTAINER\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/DxilContainer/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -286,14 +286,14 @@ LinearAllocatorPage* LinearAllocator::FindPageForAlloc(
 LinearAllocatorPage* LinearAllocator::GetNewPage()
 {
     const CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
-    const CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(m_increment);
+    const CD3DX12_RESOURCE_DESC uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(m_increment);
 
     // Allocate the upload heap
     ComPtr<ID3D12Resource> spResource;
     HRESULT hr = m_device->CreateCommittedResource(
         &uploadHeapProperties,
         D3D12_HEAP_FLAG_NONE,
-        &bufferDesc,
+        &uploadBufferDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr,
         IID_GRAPHICS_PPV_ARGS(spResource.ReleaseAndGetAddressOf()));

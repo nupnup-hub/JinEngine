@@ -1,0 +1,44 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\35316C13669F110D2C1DB64DB9B58141\TMPDXCETW.H.RULE
+setlocal
+mc -r D:/Visual_Studio_src/Build/include/dxc/Tracing -h D:/Visual_Studio_src/Build/include/dxc/Tracing -p DxcEtw_ -um -z tmpdxcetw D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/Tracing/dxcetw.man
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\35316C13669F110D2C1DB64DB9B58141\DXCETW.H.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different D:/Visual_Studio_src/Build/include/dxc/Tracing/tmpdxcetw.h D:/Visual_Studio_src/Build/include/dxc/Tracing/dxcetw.h
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different D:/Visual_Studio_src/Build/include/dxc/Tracing/tmpdxcetw.rc D:/Visual_Studio_src/Build/include/dxc/Tracing/dxcetw.rc
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different D:/Visual_Studio_src/Build/include/dxc/Tracing/tmpdxcetwTEMP.bin D:/Visual_Studio_src/Build/include/dxc/Tracing/dxcetwTEMP.bin
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different D:/Visual_Studio_src/Build/include/dxc/Tracing/tmpdxcetw_MSG00001.bin D:/Visual_Studio_src/Build/include/dxc/Tracing/MSG00001.bin
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\0F4C6C8FFD5F30D1B01A8BFD938C78E0\DXCETW.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\TRACING\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/Tracing/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,285 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{9098A89E-C84B-3166-8EA5-B5410919E568}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>HCTGen</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Visual_Studio_src\Build\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\llvm\llvm_assert;D:\Visual_Studio_src\Build\include;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include;D:\Visual_Studio_src\Build\include\dxc\Tracing;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Visual_Studio_src\Build\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\llvm\llvm_assert;D:\Visual_Studio_src\Build\include;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include;D:\Visual_Studio_src\Build\include\dxc\Tracing;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Visual_Studio_src\Build\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\llvm\llvm_assert;D:\Visual_Studio_src\Build\include;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include;D:\Visual_Studio_src\Build\include\dxc\Tracing;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Visual_Studio_src\Build\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\llvm\llvm_assert;D:\Visual_Studio_src\Build\include;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include;D:\Visual_Studio_src\Build\include\dxc\Tracing;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\cmake\modules\HCT.cmake;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\Test\TestConfig.h.in;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\config.h.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Visual_Studio_src\Build\include\dxc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\cmake\modules\HCT.cmake;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\Test\TestConfig.h.in;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\config.h.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Visual_Studio_src\Build\include\dxc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\cmake\modules\HCT.cmake;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\Test\TestConfig.h.in;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\config.h.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Visual_Studio_src\Build\include\dxc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\cmake\modules\HCT.cmake;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\Test\TestConfig.h.in;D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\config.h.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Visual_Studio_src\Build\include\dxc\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\ZERO_CHECK.vcxproj">
+      <Project>{580F7CBB-22A8-35D0-9195-239A1011E80F}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\tools\clang\tools\dxcompiler\DxcDisassembler.vcxproj">
+      <Project>{9763E608-C8A2-3ED8-B6EE-26B7FFFED0E8}</Project>
+      <Name>DxcDisassembler</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\lib\HLSL\DxcOptimizer.vcxproj">
+      <Project>{2979431D-C11E-3943-A6EE-12E5519B3A74}</Project>
+      <Name>DxcOptimizer</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\DXIL\DxilConstants.vcxproj">
+      <Project>{19C29F81-BDAD-37C6-B5DB-E3EAF2D0B626}</Project>
+      <Name>DxilConstants</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\DXIL\DxilCounters.vcxproj">
+      <Project>{FBA275C4-A6FB-34EA-A70B-18F03A5A67B4}</Project>
+      <Name>DxilCounters</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\DxilDocs.vcxproj">
+      <Project>{0BA0951E-2F83-3132-9ED2-9219E1470338}</Project>
+      <Name>DxilDocs</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\DXIL\DxilInstructions.vcxproj">
+      <Project>{46E4A42E-EBE8-3421-8DA2-E67E708FEF2A}</Project>
+      <Name>DxilInstructions</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\tools\clang\lib\Sema\DxilIntrinsicTables.vcxproj">
+      <Project>{33253F0D-5202-3808-BBA8-983CB9A80475}</Project>
+      <Name>DxilIntrinsicTables</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\lib\DXIL\DxilMetadata.vcxproj">
+      <Project>{AB6F8C7E-4706-3AF0-8287-45B6CC6DDC94}</Project>
+      <Name>DxilMetadata</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\lib\DXIL\DxilOperations.vcxproj">
+      <Project>{D7B77BAB-74C4-3628-B043-A59ABFDFF1F5}</Project>
+      <Name>DxilOperations</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\lib\DxilPIXPasses\DxilPIXPasses.vcxproj">
+      <Project>{3D494B38-8D65-302A-BD34-1EB9F7E3BA4B}</Project>
+      <Name>DxilPIXPasses</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\lib\DXIL\DxilShaderModel.vcxproj">
+      <Project>{5251B0D5-0FBA-3E1D-9490-5BC01314CD75}</Project>
+      <Name>DxilShaderModel</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\DXIL\DxilShaderModelInc.vcxproj">
+      <Project>{946DD4F4-01C8-3D92-828C-23D358DFA066}</Project>
+      <Name>DxilShaderModelInc</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\DXIL\DxilSigPoint.vcxproj">
+      <Project>{413DF8F9-B6EA-3776-9C82-498BECCBFCA2}</Project>
+      <Name>DxilSigPoint</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\lib\HLSL\DxilValidation.vcxproj">
+      <Project>{7C919A69-C048-3AB2-BBB2-B81282D3425A}</Project>
+      <Name>DxilValidation</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\HLSL\DxilValidationInc.vcxproj">
+      <Project>{04C1CA46-5243-3FC1-8921-280F7DBA5A3A}</Project>
+      <Name>DxilValidationInc</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\HLSLIntrinsicOp.vcxproj">
+      <Project>{2806672F-8365-33E3-8896-C39EDE3AFDB7}</Project>
+      <Name>HLSLIntrinsicOp</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\Support\HLSLOptions.vcxproj">
+      <Project>{2AAA224D-39CB-362D-A5A9-5A76CD64895C}</Project>
+      <Name>HLSLOptions</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Visual_Studio_src\Build\include\dxc\DxilContainer\RDAT_LibraryTypes.vcxproj">
+      <Project>{5E1B3233-4B13-3A3E-A9A0-0DDADD40CE89}</Project>
+      <Name>RDAT_LibraryTypes</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

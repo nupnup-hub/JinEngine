@@ -1,0 +1,38 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\B0A67E73167D4893A0DE6133B68F9F92\HLSLOPTIONS.TD.RULE
+setlocal
+C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/utils/hct/hctgen.py HLSLOptions --output D:/Visual_Studio_src/Build/include/dxc/Support/tmp/HLSLOptions.td --input D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/Support/HLSLOptions.td
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\B0A67E73167D4893A0DE6133B68F9F92\HLSLOPTIONS.TD.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Visual_Studio_src/Build/include/dxc/Support/tmp/HLSLOptions.td.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\5AE8C2E1259F78C9E6B705B03284B821\HLSLOPTIONS.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\SUPPORT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/Support/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

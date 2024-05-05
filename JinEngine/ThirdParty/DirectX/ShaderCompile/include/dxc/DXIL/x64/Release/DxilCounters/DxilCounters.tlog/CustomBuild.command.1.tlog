@@ -1,0 +1,38 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\4C446DC72AF289533ADBCE614455983E\DXILCOUNTERS.H.RULE
+setlocal
+C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/utils/hct/hctgen.py DxilCounters --output D:/Visual_Studio_src/Build/include/dxc/DXIL/tmp/DxilCounters.h --input D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/DXIL/DxilCounters.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\4C446DC72AF289533ADBCE614455983E\DXILCOUNTERS.H.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Visual_Studio_src/Build/include/dxc/DXIL/tmp/DxilCounters.h.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\1B34ECEDB546796501C6B22FFBD6015E\DXILCOUNTERS.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\DXIL\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/DXIL/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

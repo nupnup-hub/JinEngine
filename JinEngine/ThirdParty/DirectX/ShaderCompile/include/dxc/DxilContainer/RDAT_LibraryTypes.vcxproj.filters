@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Visual_Studio_src\Build\CMakeFiles\140b62b4d07ee913759a376c2856a9d0\RDAT_LibraryTypes.inl.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Visual_Studio_src\Build\CMakeFiles\140b62b4d07ee913759a376c2856a9d0\RDAT_LibraryTypes.inl.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Visual_Studio_src\Build\CMakeFiles\9a1202c0865a0b5af99c135837c25120\RDAT_LibraryTypes.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\DxilContainer\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Visual_Studio_src\Build\include\dxc\DxilContainer\CMakeFiles\RDAT_LibraryTypes" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{43AA3B53-536B-3095-A881-612AC866DCB8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

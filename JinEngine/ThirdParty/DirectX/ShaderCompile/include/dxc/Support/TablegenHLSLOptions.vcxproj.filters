@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Visual_Studio_src\Build\CMakeFiles\6d06b6fb30c9ff1451a865b17f76214e\HLSLOptions.inc.tmp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Visual_Studio_src\Build\CMakeFiles\6d06b6fb30c9ff1451a865b17f76214e\HLSLOptions.inc.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Visual_Studio_src\Build\CMakeFiles\5ae8c2e1259f78c9e6b705b03284b821\TablegenHLSLOptions.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Visual_Studio_src\Graphic_Sample\DirectXShaderCompiler\include\dxc\Support\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Visual_Studio_src\Build\include\dxc\Support\CMakeFiles\TablegenHLSLOptions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{43AA3B53-536B-3095-A881-612AC866DCB8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,2 @@
+visual studio shell을 사용해서 설치후 빌드
+해당 프로젝트에 git에 있는 dxil. dll 파일이 같은 버젼에 dxcompiler.dll와 같이 있어야 유효하게 동작함

@@ -1,0 +1,5 @@
+# CMake generation dependency list for this directory.
+D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/cmake/modules/HCT.cmake
+D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/CMakeLists.txt
+D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/Test/TestConfig.h.in
+D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/include/dxc/config.h.cmake

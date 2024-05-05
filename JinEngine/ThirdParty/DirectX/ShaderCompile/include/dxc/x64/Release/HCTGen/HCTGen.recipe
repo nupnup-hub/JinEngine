@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\ZERO_CHECK</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxcDisassembler</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxcOptimizer</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilConstants</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilCounters</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilDocs</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilInstructions</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilIntrinsicTables</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilMetadata</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilOperations</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilPIXPasses</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilShaderModel</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilShaderModelInc</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilSigPoint</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilValidation</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\DxilValidationInc</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\HLSLIntrinsicOp</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\HLSLOptions</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\RDAT_LibraryTypes</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>D:\Visual_Studio_src\Build\x64\Release\HCTGen</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles />
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>

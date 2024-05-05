@@ -1,0 +1,48 @@
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\7D6830185AFCB38552A66B3DBACE65CE\DXILVALIDATION.INC.RULE
+setlocal
+C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe D:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler/utils/hct/hctgen.py DxilValidationInc --output D:/Visual_Studio_src/Build/include/dxc/HLSL/tmp/DxilValidation.inc
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\9043672A40CE1D5C247E167DE222CEEC\DXILVALIDATION.INC.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different D:/Visual_Studio_src/Build/include/dxc/HLSL/tmp/DxilValidation.inc D:/Visual_Studio_src/Build/include/dxc/HLSL/DxilValidation.inc
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\7D6830185AFCB38552A66B3DBACE65CE\DXILVALIDATION.INC.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Visual_Studio_src/Build/include/dxc/HLSL/tmp/DxilValidation.inc.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\BUILD\CMAKEFILES\BD96A4C1A27B73B1120047CFBA9B11DA\DXILVALIDATIONINC.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\VISUAL_STUDIO_SRC\GRAPHIC_SAMPLE\DIRECTXSHADERCOMPILER\INCLUDE\DXC\HLSL\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Visual_Studio_src/Graphic_Sample/DirectXShaderCompiler -BD:/Visual_Studio_src/Build --check-stamp-file D:/Visual_Studio_src/Build/include/dxc/HLSL/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
