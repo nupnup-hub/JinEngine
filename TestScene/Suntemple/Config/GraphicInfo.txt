@@ -1,0 +1,24 @@
+{
+	"--FrameInfo--" : 
+	{
+		"UploadAniCapacity:" : 4,
+		"UploadBoundingObjCapacity:" : 1024,
+		"UploadCameraCapacity:" : 8,
+		"UploadDirectionalLightCapacity:" : 8,
+		"UploadHzbObjCapacity:" : 1024,
+		"UploadMaterialCapacity:" : 128,
+		"UploadObjCapacity:" : 1024,
+		"UploadPointLightCapacity:" : 4,
+		"UploadRectLightCapacity:" : 4,
+		"UploadScenePassCapacity:" : 8,
+		"UploadSpotLightCapacity:" : 4
+	},
+	"--ResourceInfo--" : 
+	{
+		"Bind2DTextureCapacity:" : 128,
+		"BindCubeMapCapacity:" : 4,
+		"BindShadowTextureArrayCapacity:" : 4,
+		"BindShadowTextureCapacity:" : 4,
+		"BindShadowTextureCubeCapacity:" : 4
+	}
+}
