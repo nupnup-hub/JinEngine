@@ -65,19 +65,19 @@ namespace JinEngine
 				const std::string binaryPath = JCUtil::WstrToU8Str(JApplicationProject::ProjectBinaryPath());
 				const std::string objFileFolderPath = JCUtil::WstrToU8Str(JApplicationEngine::SolutionPath()) + "\\JinEngine\\" + Core::GetSolutionPlatform() + "\\Release";
 				const std::string thirdPartyPath = JCUtil::WstrToU8Str(JApplicationEngine::ThirdPartyPath());
-				 
+
 				std::vector<std::string> fconfig;
 				fconfig.push_back("Meta, AdditionalIncludeDirectories, " + engineSrcPath + ";$(SolutionDir)..\\Source;");
-				fconfig.push_back("Property, OutDir, $(SolutionDir)..\\Binary\\" + JCUtil::WstrToU8Str(GetOutDirName()) + "\\;");		
+				fconfig.push_back("Property, OutDir, $(SolutionDir)..\\Binary\\" + JCUtil::WstrToU8Str(GetOutDirName()) + "\\;");
 				fconfig.push_back("Meta, AdditionalIncludeDirectories, " + engineSrcPath + ";");
 				fconfig.push_back("Meta, AdditionalLibraryDirectories, " + engineExeFolderPath + ";" +
-					objFileFolderPath + ";" + 
+					objFileFolderPath + ";" +
 					thirdPartyPath + "\\Cuda\\lib\\x64;" +
-					thirdPartyPath + "\\fast-lzma2-master\\lib;"  + 
-					thirdPartyPath + "\\Fbx\\lib\\vs2017\\x64\\release;" + 
+					thirdPartyPath + "\\fast-lzma2-master\\lib;" +
+					thirdPartyPath + "\\Fbx\\lib\\vs2017\\x64\\release;" +
 					thirdPartyPath + "\\jsoncpp-master;");
 				fconfig.push_back("Meta, AdditionalDependencies, JinEngine.lib;"
-					"cudart_static.lib;" 
+					"cudart_static.lib;"
 					"fast-lzma2.lib;"
 					"libfbxsdk-md.lib;"
 					"libxml2-md.lib;"
@@ -110,7 +110,7 @@ namespace JinEngine
 			{
 				const std::string name = JCUtil::WstrToU8Str(JApplicationProject::Name());
 				const std::string path = JCUtil::WstrToU8Str(JApplicationProject::SolutionPath());
-				const std::string engineSrcPath = JCUtil::WstrToU8Str(JApplicationEngine::SouceCodePath());		 
+				const std::string engineSrcPath = JCUtil::WstrToU8Str(JApplicationEngine::SouceCodePath());
 				const std::string slnPath = path + "\\" + name + ".sln";
 
 				Application::JEngineTool::CreateProjectVirtualDir(slnPath, name, GetSrcFolderName());
@@ -175,7 +175,7 @@ namespace JinEngine
 				std::wstring dllPath = ProjectDllPath();
 				auto m = _JModuleManager::Instance().TryAddModule(dllPath, true);
 				if (m == nullptr)
-					J_LOG_PRINT_OUT("", "Fail add module"); 
+					J_LOG_PRINT_OUT("", "Fail add module");
 			}
 			static void CreateProjectPlugin()
 			{
@@ -202,14 +202,23 @@ namespace JinEngine
 				_wremove((JCUtil::GetPathWithOutFormat(ddsPath) + L".jAsset").c_str());
 				_wremove((JCUtil::GetPathWithOutFormat(ddsPath) + L".jAssetMeta").c_str());
 			}
+
+			static std::wstring CreateConfigFolderPath(const std::wstring& projRootPath)
+			{
+				return projRootPath + L"\\Config";
+			}
+			static std::wstring CreateVersionFilePath(const std::wstring& projRootPath)
+			{
+				return CreateConfigFolderPath(projRootPath) + L"\\ProjectVersion.txt";
+			}
 		}
-		 
+
 		using SetAppStateF = JApplicationProjectPrivate::SetAppStateF;
 		class JApplicationProjectImpl
 		{
 		public:
 			std::wstring activatedProjectName;
-			std::wstring activatedProjectPath; 
+			std::wstring activatedProjectPath;
 			std::unique_ptr<SetAppStateF> setAppStateF;
 			std::unique_ptr<JApplicationProjectInfo> nextProjectInfo;
 			std::vector<std::unique_ptr<JApplicationProjectInfo>> projectList;
@@ -227,7 +236,8 @@ namespace JinEngine
 		public:
 			std::wstring ProjectVersionFilePath()noexcept
 			{
-				return JApplicationProject::ConfigPath() + L"\\" + L"ProjectVersion.txt";
+				return CreateVersionFilePath(activatedProjectPath);
+				//return JApplicationProject::ConfigPath() + L"\\" + L"ProjectVersion.txt";
 			}
 		public:
 			void SetProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath)
@@ -263,9 +273,9 @@ namespace JinEngine
 				}
 				return isValidVersion;
 			}
-			bool IsValidPath(const std::wstring& projectPath)noexcept
-			{   
-				return _waccess(ProjectVersionFilePath().c_str(), 00) != -1;
+			bool IsValidPath(const std::wstring& projectRootPath)noexcept
+			{
+				return _waccess(CreateVersionFilePath(projectRootPath).c_str(), 00) != -1;
 			}
 			bool CanStartProject()noexcept
 			{
@@ -280,9 +290,10 @@ namespace JinEngine
 			{
 				auto defulatFolderPathVec = JApplicationProject::GetDefaultFolderPath();
 				for (const auto& data : defulatFolderPathVec)
-				{ 
+				{
 					if (_waccess(data.c_str(), 00) == -1)
 					{
+						MessageBox(0, data.c_str(), 0, 0);
 						if (_wmkdir(data.c_str()) == -1)
 							return false;
 					}
@@ -308,7 +319,7 @@ namespace JinEngine
 				{
 					CreateProjectSolution();
 					if (!JCUtil::FindFirstFilePathByFormat(JApplicationProject::SolutionPath(), L".sln", filePath))
-						return false; 
+						return false;
 
 					CreateProjectDirectory();
 					CreateProjectDefaultFile();
@@ -322,8 +333,9 @@ namespace JinEngine
 				std::wstring name;
 				std::wstring folderPath;
 				JCUtil::DecomposeFolderPath(projectPath, folderPath, name);
+
 				std::string version;
-				Core::J_FILE_IO_RESULT res = LoadProejctVersion(version);
+				Core::J_FILE_IO_RESULT res = LoadProejctVersion(CreateVersionFilePath(projectPath), version);
 				if (!IsValidVersion(version))
 					return nullptr;
 
@@ -402,21 +414,21 @@ namespace JinEngine
 			{
 				if (JApplicationEngine::GetApplicationState() != J_APPLICATION_STATE::PROJECT_SELECT || projectList.size() <= projectIndex)
 					return;
-				 
+
 				if (nextProjectInfo != nullptr && nextProjectInfo->GetPath() == projectList[projectIndex]->GetPath())
 				{
 					nextProjectInfo = nullptr;
 					startProjectOnce = false;
 					loadOtherProjectOnce = false;
 				}
-				 
+
 				DestroyProjectPreviewAsset(projectList[projectIndex]->lastRsPath(), true);
 				JFileIOHelper::DestroyDirectory(projectList[projectIndex]->GetPath());
 				projectList.erase(projectList.begin() + projectIndex);
 			}
 		public:
 			void RegisterFunctor(std::unique_ptr<SetAppStateF>&& newSetAppStateF)
-			{ 
+			{
 				setAppStateF = std::move(newSetAppStateF);
 			}
 			bool Initialize()
@@ -426,7 +438,7 @@ namespace JinEngine
 				SetProjectFolderPath(nextProjectInfo->GetName(), nextProjectInfo->GetPath());
 				bool isValid = MakeProjectFolder();
 				isValid = isValid && MakeProjectVersionFile(JCUtil::WstrToU8Str(nextProjectInfo->GetVersion()));
-				
+
 				//미구현
 				//빌드시스템 완성후 추가
 				//isValid = isValid && MakeProjectSolution();
@@ -438,14 +450,14 @@ namespace JinEngine
 					else
 					{
 						bool (*ptr)(JApplicationProjectInfo*, std::wstring*) = [](JApplicationProjectInfo* a, std::wstring* path)
-						{  
+						{
 							return a->GetPath() == *path;
 						};
 						auto str = nextProjectInfo->GetPath();
-						int index = JCUtil::GetIndex(projectList, ptr,  &str);
+						int index = JCUtil::GetIndex(projectList, ptr, &str);
 						//<JApplicationProjectInfo, const std::wstring&>
 						projectList[index] = std::move(MakeProjectInfo(nextProjectInfo.get()));
-					} 
+					}
 					StoreProjectList();
 					(*setAppStateF)(J_APPLICATION_STATE::EDIT_GAME);
 				}
@@ -473,7 +485,7 @@ namespace JinEngine
 			{
 				if (!tool.CanLoad())
 					return Core::JRealTime::JTime(0, 0, 0, 0, 0, 0);
-				 
+
 				int year = 0;
 				int month = 0;
 				int day = 0;
@@ -481,7 +493,7 @@ namespace JinEngine
 				int minute = 0;
 				int sec = 0;
 
-				tool.PushExistStack(guide); 
+				tool.PushExistStack(guide);
 				JFileIOHelper::LoadAtomicData(tool, year, "Year");
 				JFileIOHelper::LoadAtomicData(tool, month, "Month");
 				JFileIOHelper::LoadAtomicData(tool, day, "Day");
@@ -492,12 +504,12 @@ namespace JinEngine
 				tool.PopStack();
 				return Core::JRealTime::JTime(year, month, day, hour, minute, sec);
 			}
-			Core::J_FILE_IO_RESULT LoadProejctVersion(_Out_ std::string& pVersion)
+			Core::J_FILE_IO_RESULT LoadProejctVersion(const std::wstring& path, _Out_ std::string& pVersion)
 			{
 				JFileIOTool tool;
-				if (!tool.Begin(ProjectVersionFilePath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+				if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-				  
+
 				std::wstring version;
 				Core::J_FILE_IO_RESULT result = JFileIOHelper::LoadJString(tool, version, "Version:");
 				if (result != Core::J_FILE_IO_RESULT::SUCCESS)
@@ -506,6 +518,10 @@ namespace JinEngine
 				pVersion = JCUtil::WstrToU8Str(version);
 				tool.Close();
 				return result;
+			}
+			Core::J_FILE_IO_RESULT LoadProejctVersion(_Out_ std::string& pVersion)
+			{
+				return LoadProejctVersion(ProjectVersionFilePath(), pVersion);
 			}
 			Core::J_FILE_IO_RESULT StoreProjectVersion(const std::string& pVersion)
 			{
@@ -525,14 +541,14 @@ namespace JinEngine
 				JFileIOTool tool;
 				if (!tool.Begin(JApplicationEngine::ProjectListFilePath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 					return;
-				 
+
 				uint projectCount;
 				size_t guid;
 				std::wstring name;
 				std::wstring path;
 				std::wstring version;
 				JFileIOHelper::LoadAtomicData(tool, projectCount, "ProjectCount: ");
-				 
+
 				// stream.eof == 파일끝을지나 읽기시도시
 				//https://stackoverflow.com/questions/4533063/how-does-ifstreams-eof-work
 
@@ -585,7 +601,7 @@ namespace JinEngine
 				tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			}
 		};
-		  
+
 		JApplicationProjectInfo::JApplicationProjectInfo(const size_t guid,
 			const std::wstring& name,
 			const std::wstring& path,
@@ -635,12 +651,12 @@ namespace JinEngine
 		}
 		std::wstring JApplicationProject::ConfigPath()noexcept
 		{
-			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Config";
+			return CreateConfigFolderPath(JApplicationProjectImpl::Instance().activatedProjectPath);
 		}
 		std::wstring JApplicationProject::ProjectPrivateResourcePath()noexcept
 		{
 			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Resource";
-		} 
+		}
 		std::wstring JApplicationProject::BinaryPath()noexcept
 		{
 			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Binary";
@@ -681,7 +697,7 @@ namespace JinEngine
 		{
 			return JApplicationProjectImpl::Instance().ProjectVersionFilePath();
 		}
-		  
+
 		std::wstring JApplicationProject::ShaderMetafilePath()noexcept
 		{
 			return ProjectPrivateResourcePath() + L"\\" + L"ShaderMetafile";
@@ -739,7 +755,7 @@ namespace JinEngine
 					ProjectPrivateResourcePath(),
 					BinaryPath(),
 					SolutionPath(),
-					ShaderMetafilePath(), 
+					ShaderMetafilePath(),
 					ModResourceCachePath(),
 					EditoConfigPath(),
 					LogPath(),
@@ -755,9 +771,9 @@ namespace JinEngine
 		{
 			return JApplicationProjectImpl::Instance().IsValidVersion(pVersion);
 		}
-		bool JApplicationProject::IsValidPath(const std::wstring& projectPath)noexcept
+		bool JApplicationProject::IsValidPath(const std::wstring& projectRootPath)noexcept
 		{
-			return JApplicationProjectImpl::Instance().IsValidPath(projectPath);
+			return JApplicationProjectImpl::Instance().IsValidPath(projectRootPath);
 		}
 		bool JApplicationProject::IsDefaultFolder(const std::wstring& path)noexcept
 		{
@@ -838,7 +854,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT IOInterface::LoadProejctVersion(_Out_ std::string& pVersion)
 		{
 			return JApplicationProjectImpl::Instance().LoadProejctVersion(pVersion);
-		} 
+		}
 		void IOInterface::StoreProjectList()
 		{
 			JApplicationProjectImpl::Instance().StoreProjectList();
