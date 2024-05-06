@@ -46,3 +46,6 @@ Game engine for studying graphics and software architecture
 - [Overview](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Overview.md)
 - [Documentation](https://github.com/nupnup-hub/JinEngine/tree/Main/docs)
 
+## Third party
+
+
