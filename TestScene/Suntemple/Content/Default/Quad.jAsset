@@ -1,0 +1,43 @@
+MeshCount: 1
+TotalVertexCount: 4
+TotalIndexCount: 6
+MeshData
+Name: Quad
+HasObjGuid:  12137570751246313812
+VertexCount: 4
+IndexCount: 6
+MeshType: 0
+VerticesData
+P: -0.5 0.5 0
+N: 0 0 -1
+U: 0 0
+T: 1 0 0
+P: -0.5 -0.5 0
+N: 0 0 -1
+U: 0 1
+T: 1 0 0
+P: 0.5 0.5 0
+N: 0 0 -1
+U: 1 0
+T: 1 0 0
+P: 0.5 -0.5 0
+N: 0 0 -1
+U: 1 1
+T: 1 0 0
+Index:
+SpaceOffset: 8
+VecCount: 6
+Element
+0 2 1 1 2 3 
+BBoxCenter: 0 0 0
+BBoxExtents: 0.5 0.5 0
+SphereCenter: 0 0 0
+SphereRadius: 0.707107
+HasUV: 1
+HasNormal: 1
+MaterialData
+0
+HasObject: 1
+Name: mQuad
+HasObjGuid: 11211070060192580839
+TypeGuid: 4400418496207119915

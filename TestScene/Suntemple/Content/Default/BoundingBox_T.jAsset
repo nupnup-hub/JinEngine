@@ -1,0 +1,63 @@
+MeshCount: 1
+TotalVertexCount: 8
+TotalIndexCount: 36
+MeshData
+Name: BoundingBox_T
+HasObjGuid:  4468351750031995535
+VertexCount: 8
+IndexCount: 36
+MeshType: 0
+VerticesData
+P: -0.5 0.5 -0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.5 0.5 -0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.5 0.5 0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.5 0.5 0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.5 -0.5 0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.5 -0.5 0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.5 -0.5 -0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.5 -0.5 -0.5
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+Index:
+SpaceOffset: 8
+VecCount: 36
+Element
+0 1 2 0 2 3 4 5 
+6 4 6 7 3 2 5 3 
+5 4 2 1 6 2 6 5 
+1 7 6 1 0 7 0 3 
+4 0 4 7 
+BBoxCenter: 0 0 0
+BBoxExtents: 0.5 0.5 0.5
+SphereCenter: 0 0 0
+SphereRadius: 0.866025
+HasUV: 0
+HasNormal: 0
+MaterialData
+0
+HasObject: 1
+Name: mBoundingBox_T
+HasObjGuid: 13742948836089743846
+TypeGuid: 4400418496207119915

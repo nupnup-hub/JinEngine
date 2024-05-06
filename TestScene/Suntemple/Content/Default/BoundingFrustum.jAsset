@@ -1,0 +1,48 @@
+MeshCount: 1
+TotalVertexCount: 5
+TotalIndexCount: 16
+MeshData
+Name: BoundingFrustum
+HasObjGuid:  16103042639252856138
+VertexCount: 5
+IndexCount: 16
+MeshType: 0
+VerticesData
+P: 0 0 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.5 -0.5 1
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.5 -0.5 1
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.5 0.5 1
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.5 0.5 1
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+Index:
+SpaceOffset: 8
+VecCount: 16
+Element
+0 1 1 2 2 0 0 3 
+3 4 4 0 1 4 2 3 
+BBoxCenter: 0 0 0.5
+BBoxExtents: 0.5 0.5 0.5
+SphereCenter: 0 0 0.5
+SphereRadius: 0.866025
+HasUV: 0
+HasNormal: 0
+MaterialData
+0
+HasObject: 1
+Name: mBoundingFrustum
+HasObjGuid: 5801469017778824536
+TypeGuid: 4400418496207119915

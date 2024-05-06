@@ -1,0 +1,926 @@
+JointCount: 231
+JointData
+Name: a
+ParentIndex: 255
+Length: 0
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: pelvic_2
+ParentIndex: 0
+Length: 0.215893
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: tail_1
+ParentIndex: 1
+Length: 4.37512e-07
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: tail_2
+ParentIndex: 2
+Length: 0.1159
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: tail_3
+ParentIndex: 3
+Length: 0.179308
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_ACT_tail_5
+ParentIndex: 4
+Length: 0.210277
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_ACT_tail_5_end
+ParentIndex: 5
+Length: 0.638043
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Oberschenkel_L
+ParentIndex: 1
+Length: 0.0542708
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lowerleg_L
+ParentIndex: 7
+Length: 0.102843
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: kneecap_Act_L
+ParentIndex: 8
+Length: 0.0132264
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: kneecap_Act_L_end
+ParentIndex: 9
+Length: 0.0988976
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lowerleg_muscle_L
+ParentIndex: 8
+Length: 0.110008
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lowerleg_muscle_L_end
+ParentIndex: 11
+Length: 0.159926
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Oberschenkel_R
+ParentIndex: 1
+Length: 0.0542708
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lowerleg_R
+ParentIndex: 13
+Length: 0.102843
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: kneecap_Act_R
+ParentIndex: 14
+Length: 0.0132258
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: kneecap_Act_R_end
+ParentIndex: 15
+Length: 0.0988286
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lowerleg_muscle_R
+ParentIndex: 14
+Length: 0.110008
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lowerleg_muscle_R_end
+ParentIndex: 17
+Length: 0.159884
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: pelvic_1
+ParentIndex: 1
+Length: 0.0655032
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: paunch
+ParentIndex: 19
+Length: 0.0552356
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: breast
+ParentIndex: 20
+Length: 0.0611648
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: paunch.002
+ParentIndex: 21
+Length: 0.0348331
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: paunch.002_end
+ParentIndex: 22
+Length: 0.16975
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ACT_neck_4
+ParentIndex: 21
+Length: 0.0542264
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ACT_neck_3
+ParentIndex: 24
+Length: 0.0296014
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ACT_neck_2
+ParentIndex: 25
+Length: 0.0367279
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ACT_neck_1
+ParentIndex: 26
+Length: 0.0409348
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: head
+ParentIndex: 27
+Length: 0.0346982
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_head
+ParentIndex: 28
+Length: 0.0248007
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Bone
+ParentIndex: 29
+Length: 0.00974202
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lower_lip
+ParentIndex: 30
+Length: 0.00280472
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lower_lip_end
+ParentIndex: 31
+Length: 0.301354
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: tongue_2
+ParentIndex: 30
+Length: 0.00254197
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: tongue_1
+ParentIndex: 33
+Length: 0.0070315
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_tongue
+ParentIndex: 34
+Length: 0.00643308
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_tongue_end
+ParentIndex: 35
+Length: 0.307059
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Cont_tongue
+ParentIndex: 30
+Length: 0.0259179
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Cont_tongue_end
+ParentIndex: 37
+Length: 0.312821
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augen_Control
+ParentIndex: 29
+Length: 0.0656093
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Target_Auge_L
+ParentIndex: 39
+Length: 0.035053
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Target_Auge_L_end
+ParentIndex: 40
+Length: 0.3259
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Target_Auge_R
+ParentIndex: 39
+Length: 0.0349545
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Target_Auge_R_end
+ParentIndex: 42
+Length: 0.325896
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Auge_L
+ParentIndex: 29
+Length: 0.00947634
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Auge_Lens_L
+ParentIndex: 44
+Length: 0.00200007
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Auge_Lens_L_end
+ParentIndex: 45
+Length: 0.313715
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_oben_L
+ParentIndex: 29
+Length: 0.0123496
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_oben_L_end
+ParentIndex: 47
+Length: 0.314048
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_unten_L
+ParentIndex: 29
+Length: 0.0112108
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_unten_L_end
+ParentIndex: 49
+Length: 0.311424
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Auge_R
+ParentIndex: 29
+Length: 0.00943921
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Auge_Lens_R
+ParentIndex: 51
+Length: 0.00200074
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Auge_Lens_R_end
+ParentIndex: 52
+Length: 0.313711
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: upper_lip
+ParentIndex: 29
+Length: 0.0099393
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: upper_lip_end
+ParentIndex: 54
+Length: 0.298777
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ACT_neck_skin
+ParentIndex: 29
+Length: 0.0274558
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ACT_neck_skin_end
+ParentIndex: 56
+Length: 0.281594
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenbraue_L
+ParentIndex: 29
+Length: 0.0125637
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenbraue_L_end
+ParentIndex: 58
+Length: 0.314793
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: cheek_muscle_L
+ParentIndex: 29
+Length: 0.0264307
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: cheek_muscle_L_end
+ParentIndex: 60
+Length: 0.31243
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_oben_R
+ParentIndex: 29
+Length: 0.0123494
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_oben_R_end
+ParentIndex: 62
+Length: 0.314043
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_unten_R
+ParentIndex: 29
+Length: 0.0112108
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenlid_unten_R_end
+ParentIndex: 64
+Length: 0.311419
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenbraue_R
+ParentIndex: 29
+Length: 0.0125636
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Augenbraue_R_end
+ParentIndex: 66
+Length: 0.314788
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: cheek_muscle_R
+ParentIndex: 29
+Length: 0.0264307
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: cheek_muscle_R_end
+ParentIndex: 68
+Length: 0.312424
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: mouth_Cont
+ParentIndex: 29
+Length: 0.0402486
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lips_Cont
+ParentIndex: 70
+Length: 0.0121907
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: lips_Cont_end
+ParentIndex: 71
+Length: 0.313999
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Bone.003
+ParentIndex: 29
+Length: 0.0336881
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Nase_L
+ParentIndex: 73
+Length: 0.0032684
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Nase_L_end
+ParentIndex: 74
+Length: 0.327117
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Nase_R
+ParentIndex: 73
+Length: 0.00326538
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Nase_R_end
+ParentIndex: 76
+Length: 0.327116
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: upper_arm_L
+ParentIndex: 21
+Length: 0.0513758
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_underarm_L
+ParentIndex: 78
+Length: 0.0645071
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_underarm_L_end
+ParentIndex: 79
+Length: 0.0887807
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: upper_arm_R
+ParentIndex: 21
+Length: 0.0513761
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_underarm_R
+ParentIndex: 81
+Length: 0.0645071
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: ik_underarm_R_end
+ParentIndex: 82
+Length: 0.0887135
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w_C_L.001
+ParentIndex: 21
+Length: 0.0999261
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w_C_L
+ParentIndex: 84
+Length: 0.0589618
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w1_L
+ParentIndex: 85
+Length: 0.00840378
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w2_L
+ParentIndex: 86
+Length: 0.207258
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w3_L
+ParentIndex: 87
+Length: 0.170037
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w3_L.001
+ParentIndex: 88
+Length: 0.44036
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w3_L.001_end
+ParentIndex: 89
+Length: 0.75954
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w4_L
+ParentIndex: 85
+Length: 0.00956224
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w5_L
+ParentIndex: 91
+Length: 0.133997
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w6_L
+ParentIndex: 92
+Length: 0.168305
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w6_L_end
+ParentIndex: 93
+Length: 0.38727
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w7_L
+ParentIndex: 85
+Length: 0.0172208
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w8_L
+ParentIndex: 95
+Length: 0.0665857
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w9_L
+ParentIndex: 96
+Length: 0.0700951
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w9_L_end
+ParentIndex: 97
+Length: 0.21332
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w_C_R.001
+ParentIndex: 21
+Length: 0.0999773
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w_C_R
+ParentIndex: 99
+Length: 0.0589572
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w1_R
+ParentIndex: 100
+Length: 0.00840384
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w2_R
+ParentIndex: 101
+Length: 0.207257
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w3_R
+ParentIndex: 102
+Length: 0.170037
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w3_R.001
+ParentIndex: 103
+Length: 0.440361
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w3_R.001_end
+ParentIndex: 104
+Length: 0.759517
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w4_R
+ParentIndex: 100
+Length: 0.00956224
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w5_R
+ParentIndex: 106
+Length: 0.133997
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w6_R
+ParentIndex: 107
+Length: 0.168305
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w6_R_end
+ParentIndex: 108
+Length: 0.387249
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w7_R
+ParentIndex: 100
+Length: 0.0172153
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w8_R
+ParentIndex: 110
+Length: 0.0665857
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w9_R
+ParentIndex: 111
+Length: 0.0700954
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: w9_R_end
+ParentIndex: 112
+Length: 0.213306
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Bone.002
+ParentIndex: 0
+Length: 0.388835
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Bone.002_end
+ParentIndex: 114
+Length: 0.388835
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Helper_Bone
+ParentIndex: 0
+Length: 0.128227
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Helper_Bone_end
+ParentIndex: 116
+Length: 0.128227
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_L
+ParentIndex: 0
+Length: 0.156661
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_1_L
+ParentIndex: 118
+Length: 0.0607772
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_1_L
+ParentIndex: 119
+Length: 2.29452e-06
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_2_L
+ParentIndex: 120
+Length: 0.0118995
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_3_L
+ParentIndex: 121
+Length: 0.0162954
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_3_L_end
+ParentIndex: 122
+Length: 0.0951485
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_2_L
+ParentIndex: 118
+Length: 0.0601578
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_1_L
+ParentIndex: 124
+Length: 1.74222e-06
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_2_L
+ParentIndex: 125
+Length: 0.0154801
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_3_L
+ParentIndex: 126
+Length: 0.0202184
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_3_L_end
+ParentIndex: 127
+Length: 0.0811094
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_3_L
+ParentIndex: 118
+Length: 0.060122
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_1_L
+ParentIndex: 129
+Length: 1.14039e-06
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_2_L
+ParentIndex: 130
+Length: 0.0144138
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_3_L
+ParentIndex: 131
+Length: 0.0191772
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_3_L_end
+ParentIndex: 132
+Length: 0.0800892
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_4_L
+ParentIndex: 118
+Length: 0.0435279
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_1_L
+ParentIndex: 134
+Length: 3.33071e-07
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_2_L
+ParentIndex: 135
+Length: 0.0117241
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_3_L
+ParentIndex: 136
+Length: 0.0124966
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_3_L_end
+ParentIndex: 137
+Length: 0.110214
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Hand_R
+ParentIndex: 0
+Length: 0.102715
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_1_R
+ParentIndex: 139
+Length: 0.0207899
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_1_R
+ParentIndex: 140
+Length: 0.000126992
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_2_R
+ParentIndex: 141
+Length: 0.00915708
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_3_R
+ParentIndex: 142
+Length: 0.0114886
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_3_R_end
+ParentIndex: 143
+Length: 0.142494
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_2_R
+ParentIndex: 139
+Length: 0.0192877
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_1_R
+ParentIndex: 145
+Length: 0.000126716
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_2_R
+ParentIndex: 146
+Length: 0.0114363
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_3_R
+ParentIndex: 147
+Length: 0.0138757
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_3_R_end
+ParentIndex: 148
+Length: 0.144055
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_3_R
+ParentIndex: 139
+Length: 0.0184708
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_1_R
+ParentIndex: 150
+Length: 7.3787e-07
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_2_R
+ParentIndex: 151
+Length: 0.0107731
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_3_R
+ParentIndex: 152
+Length: 0.0137886
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_3_R_end
+ParentIndex: 153
+Length: 0.138364
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_4_R
+ParentIndex: 139
+Length: 0.0136339
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_1_R
+ParentIndex: 155
+Length: 0.000354141
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_2_R
+ParentIndex: 156
+Length: 0.00621573
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_3_R
+ParentIndex: 157
+Length: 0.00632754
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_3_R_end
+ParentIndex: 158
+Length: 0.111339
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_R
+ParentIndex: 0
+Length: 0.156618
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_1_R
+ParentIndex: 160
+Length: 0.0607772
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_1_R
+ParentIndex: 161
+Length: 1.01353e-06
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_2_R
+ParentIndex: 162
+Length: 0.0118995
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_3_R
+ParentIndex: 163
+Length: 0.0162953
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_S_3_R_end
+ParentIndex: 164
+Length: 0.0950603
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_2_R
+ParentIndex: 160
+Length: 0.0601578
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_1_R
+ParentIndex: 166
+Length: 1.00258e-06
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_2_R
+ParentIndex: 167
+Length: 0.0154801
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_3_R
+ParentIndex: 168
+Length: 0.0202183
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_M_3_R_end
+ParentIndex: 169
+Length: 0.0810282
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_3_R
+ParentIndex: 160
+Length: 0.060122
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_1_R
+ParentIndex: 171
+Length: 7.06267e-07
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_2_R
+ParentIndex: 172
+Length: 0.0144138
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_3_R
+ParentIndex: 173
+Length: 0.0191773
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_Z_3_R_end
+ParentIndex: 174
+Length: 0.0800282
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_C_4_R
+ParentIndex: 160
+Length: 0.0435278
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_1_R
+ParentIndex: 176
+Length: 3.79269e-07
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_2_R
+ParentIndex: 177
+Length: 0.0117241
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_3_R
+ParentIndex: 178
+Length: 0.0124966
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_D_3_R_end
+ParentIndex: 179
+Length: 0.11019
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Hand_L
+ParentIndex: 0
+Length: 0.102781
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_1_L
+ParentIndex: 181
+Length: 0.0207899
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_1_L
+ParentIndex: 182
+Length: 0.000127049
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_2_L
+ParentIndex: 183
+Length: 0.00915705
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_3_L
+ParentIndex: 184
+Length: 0.0114886
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_S_3_L_end
+ParentIndex: 185
+Length: 0.142555
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_2_L
+ParentIndex: 181
+Length: 0.0192876
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_1_L
+ParentIndex: 187
+Length: 0.00012747
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_2_L
+ParentIndex: 188
+Length: 0.0114362
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_3_L
+ParentIndex: 189
+Length: 0.0138756
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_M_3_L_end
+ParentIndex: 190
+Length: 0.144105
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_3_L
+ParentIndex: 181
+Length: 0.0184708
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_1_L
+ParentIndex: 192
+Length: 5.46153e-07
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_2_L
+ParentIndex: 193
+Length: 0.0107731
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_3_L
+ParentIndex: 194
+Length: 0.0137887
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_Z_3_L_end
+ParentIndex: 195
+Length: 0.138403
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_food_C_4_L
+ParentIndex: 181
+Length: 0.0136339
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_1_L
+ParentIndex: 197
+Length: 0.000354333
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_2_L
+ParentIndex: 198
+Length: 0.00621575
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_3_L
+ParentIndex: 199
+Length: 0.00632742
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: front_D_3_L_end
+ParentIndex: 200
+Length: 0.111372
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_R.001
+ParentIndex: 0
+Length: 0.169961
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_R.001_end
+ParentIndex: 202
+Length: 0.169959
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_L.001
+ParentIndex: 0
+Length: 0.170001
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_L.001_end
+ParentIndex: 204
+Length: 0.169999
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_L.001
+ParentIndex: 0
+Length: 0.212476
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Leg_Cont_L
+ParentIndex: 206
+Length: 0.0606494
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Leg_Cont_L_end
+ParentIndex: 207
+Length: 0.156678
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: back_food_R.001
+ParentIndex: 0
+Length: 0.212444
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Leg_Cont_R
+ParentIndex: 209
+Length: 0.0606494
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Leg_Cont_R_end
+ParentIndex: 210
+Length: 0.156633
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_L.002
+ParentIndex: 0
+Length: 0.165629
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_L.002_end
+ParentIndex: 212
+Length: 0.165503
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Bone.001
+ParentIndex: 0
+Length: 0.383022
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Bone.001_end
+ParentIndex: 214
+Length: 0.383022
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Cont_tail.001
+ParentIndex: 0
+Length: 0.791852
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Cont_tail
+ParentIndex: 216
+Length: 0.0168019
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Cont_tail_end
+ParentIndex: 217
+Length: 0.790924
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Cont_tail.002
+ParentIndex: 0
+Length: 0.790551
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Cont_tail.002_end
+ParentIndex: 219
+Length: 0.790551
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Bone.004
+ParentIndex: 0
+Length: 0.337108
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Target_Kopf.001
+ParentIndex: 221
+Length: 0.0250539
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Target_Kopf
+ParentIndex: 222
+Length: 0.00146481
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: IK_Target_Kopf_end
+ParentIndex: 223
+Length: 0.321326
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_R
+ParentIndex: 0
+Length: 0.102715
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_R_end
+ParentIndex: 225
+Length: 0.102715
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_L
+ParentIndex: 0
+Length: 0.102781
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: Arm_Cont_L_end
+ParentIndex: 227
+Length: 0.102781
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: root
+ParentIndex: 0
+Length: 2.6656e-09
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)
+Name: root_end
+ParentIndex: 229
+Length: 2.6656e-09
+InBindPose: -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind) -nan(ind)

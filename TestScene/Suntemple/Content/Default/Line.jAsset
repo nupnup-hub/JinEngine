@@ -1,0 +1,59 @@
+MeshCount: 1
+TotalVertexCount: 8
+TotalIndexCount: 8
+MeshData
+Name: Line
+HasObjGuid:  7194286225886700163
+VertexCount: 8
+IndexCount: 8
+MeshType: 0
+VerticesData
+P: -0.0002 -0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.0002 0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.0001 -0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: -0.0001 0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0 -0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0 0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.0001 -0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+P: 0.0001 0.5 0
+N: 0 0 0
+U: 0 0
+T: 0 0 0
+Index:
+SpaceOffset: 8
+VecCount: 8
+Element
+0 1 2 3 4 5 6 7 
+BBoxCenter: -5e-05 0 0
+BBoxExtents: 0.00015 0.5 0
+SphereCenter: -5e-05 0 0
+SphereRadius: 0.5
+HasUV: 0
+HasNormal: 0
+MaterialData
+0
+HasObject: 1
+Name: mLine
+HasObjGuid: 9673093956201211008
+TypeGuid: 4400418496207119915
