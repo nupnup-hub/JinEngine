@@ -194,7 +194,7 @@ namespace JinEngine
 		BOOL bResult = TRUE;
 		if (hFindFile == INVALID_HANDLE_VALUE)
 			return;
-		 
+	 
 		IsDefaultFolderPtr isDefaultPtr = GetDefaultFolderPtr(searchProjectFolder);
 		if (onlyDeafultFolder && !isDefaultPtr(parentDir->GetPath()))
 			return;

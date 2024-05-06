@@ -17,12 +17,12 @@ namespace JinEngine::Graphic
 
 		base->CopyData(elementIndex, data);
 	}
-	void JFrameResource::CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const uint count, const void* data)
+	void JFrameResource::CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const uint count, const void* data, const uint dataElementSize)
 	{
 		auto base = GetGraphicBufferBase(type);
 		if (base == nullptr)
 			return;
 
-		base->CopyData(elementIndex, count, data);
+		base->CopyData(elementIndex, count, data, dataElementSize);
 	}
 }

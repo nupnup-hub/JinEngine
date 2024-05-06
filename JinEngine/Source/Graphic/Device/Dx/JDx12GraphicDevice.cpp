@@ -6,7 +6,7 @@
 #include<assert.h> 
 //#include<pix3.h>
  
-//#define TRACE_REMOVE_REASON
+#define TRACE_REMOVE_REASON
 namespace JinEngine::Graphic
 {
 	namespace
@@ -115,7 +115,7 @@ namespace JinEngine::Graphic
 		debugController1->EnableDebugLayer(); 
 		//debugController1->SetEnableGPUBasedValidation(true);		
 
-#if TRACE_REMOVE_REASON
+#ifdef TRACE_REMOVE_REASON
 		Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings1> pDredSettings;
 		ThrowIfFailedHr(D3D12GetDebugInterface(IID_PPV_ARGS(&pDredSettings)));
 

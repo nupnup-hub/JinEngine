@@ -1,4 +1,6 @@
-Name: ProjectRenderResult
-ObjGuid: 595459497472515667
-TypeGuid: 957351236803396765
-Flag: 47
+{
+	"Name: " : "ProjectRenderResult",
+	"ObjFlag: " : 175,
+	"ObjGuid: " : 8323711294517625217,
+	"TypeGuid: " : 957351236803396765
+}

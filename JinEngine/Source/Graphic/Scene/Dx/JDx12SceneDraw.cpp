@@ -1151,6 +1151,7 @@ namespace JinEngine::Graphic
 				context->SetGraphicsRootConstantBufferView(skinCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, helper.GetAnimationFrameIndex(animator.Get()));
 
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
+
 			for (uint j = 0; j < submeshCount; ++j)
 			{
 				const JShader* shader = renderItem->GetValidMaterial(j)->GetShader().Get();

@@ -20,14 +20,14 @@
 #include"../../../Graphic/Frameresource/JOcclusionConstants.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h" 
 #include<fstream>
-   
+    
 using namespace DirectX;
 namespace JinEngine
 {
 	namespace
 	{ 
 		using RitemFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder4< 
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, Graphic::JObjectConstants&, const uint>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, Graphic::JObjectCpuConstants&, const uint>,
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, Graphic::JBoundingObjectConstants&>,
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, Graphic::JHzbOccObjectConstants&>,
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT_REF_INFO, Graphic::JObjectRefereneceInfoConstants&, const uint>>,
@@ -335,7 +335,7 @@ namespace JinEngine
 			isActivated = false;
 		}
 	public:
-		void UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)noexcept final
+		void UpdateFrame(Graphic::JObjectCpuConstants& constant, const uint submeshIndex)noexcept final
 		{
 			JTransform* transform = thisPointer->GetOwner()->GetTransform().Get();
 			constant.world.StoreXM(XMMatrixTranspose(transform->GetWorldMatrix().LoadXM()));
@@ -795,7 +795,7 @@ namespace JinEngine
 		}
 
 		if (set.updateStart)
-		{ 
+		{  
 			for (uint i = 0; i < set.subMeshCount; ++i)
 			{
 				impl->UpdateFrame(set.object[i], i);

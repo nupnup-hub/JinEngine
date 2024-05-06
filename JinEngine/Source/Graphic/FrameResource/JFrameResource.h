@@ -32,7 +32,12 @@ namespace JinEngine
 			virtual GraphicFence GetFenceValue()const noexcept = 0; 
 		public:
 			void CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const void* data);
-			void CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const uint count, const void* data);
+			void CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const uint count, const void* data, const uint dataElementSize);
+			template<typename T>
+			void CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const uint count, const std::vector<T>& dataVec)
+			{
+				CopyData(type, elementIndex, count, dataVec.data(), sizeof(T));
+			}
 		public:
 			virtual void ReBuild(JGraphicDevice* device, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint newCount) = 0;
 		};
