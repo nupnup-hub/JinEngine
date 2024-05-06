@@ -54,8 +54,8 @@ namespace JinEngine
 			}
 			static void CreateProjectSolution()
 			{
-				//¼öÁ¤ÇÊ¿ä!
-				//build system °³¹ß È¤Àº cmakeµîÀ» »ç¿ëÇØ¼­ ºôµåÇÒ ÇÊ¿ä°¡ÀÖ´Ù.
+				//ìˆ˜ì •í•„ìš”!
+				//build system ê°œë°œ í˜¹ì€ cmakeë“±ì„ ì‚¬ìš©í•´ì„œ ë¹Œë“œí•  í•„ìš”ê°€ìˆë‹¤.
 
 				const std::string name = JCUtil::WstrToU8Str(JApplicationProject::Name());
 				const std::string path = JCUtil::WstrToU8Str(JApplicationProject::SolutionPath());
@@ -292,8 +292,7 @@ namespace JinEngine
 				for (const auto& data : defulatFolderPathVec)
 				{
 					if (_waccess(data.c_str(), 00) == -1)
-					{
-						MessageBox(0, data.c_str(), 0, 0);
+					{ 
 						if (_wmkdir(data.c_str()) == -1)
 							return false;
 					}
@@ -439,8 +438,8 @@ namespace JinEngine
 				bool isValid = MakeProjectFolder();
 				isValid = isValid && MakeProjectVersionFile(JCUtil::WstrToU8Str(nextProjectInfo->GetVersion()));
 
-				//¹Ì±¸Çö
-				//ºôµå½Ã½ºÅÛ ¿Ï¼ºÈÄ Ãß°¡
+				//ë¯¸êµ¬í˜„
+				//ë¹Œë“œì‹œìŠ¤í…œ ì™„ì„±í›„ ì¶”ê°€
 				//isValid = isValid && MakeProjectSolution();
 				if (isValid)
 				{
@@ -549,7 +548,7 @@ namespace JinEngine
 				std::wstring version;
 				JFileIOHelper::LoadAtomicData(tool, projectCount, "ProjectCount: ");
 
-				// stream.eof == ÆÄÀÏ³¡À»Áö³ª ÀĞ±â½Ãµµ½Ã
+				// stream.eof == íŒŒì¼ëì„ì§€ë‚˜ ì½ê¸°ì‹œë„ì‹œ
 				//https://stackoverflow.com/questions/4533063/how-does-ifstreams-eof-work
 
 				tool.PushExistStack("ProjectData");
