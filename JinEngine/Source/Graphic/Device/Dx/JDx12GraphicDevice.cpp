@@ -31,7 +31,7 @@ SOFTWARE.
 #include<assert.h> 
 //#include<pix3.h>
  
-#define TRACE_REMOVE_REASON
+//#define TRACE_REMOVE_REASON
 namespace JinEngine::Graphic
 {
 	namespace
@@ -176,8 +176,8 @@ namespace JinEngine::Graphic
 			D3D12_MESSAGE_ID hide[1] =
 			{
 				//RESOLVE_QUERY_INVALID_QUERY_STATE
-				//occ hd query´Â Ç×»ó À¯È¿ÇÑ ÆÄ¶ó¹ÌÅÍ¸¸ ÂüÁ¶ÇÏ¹Ç·Î resolve½Ã Á¤È®ÇÏÁö¾ÊÀº data¸¦ °¡Á®¿Íµµ µÈ´Ù.
-				//D3D12_MESSAGE_ID¿¡ Á¤ÀÇµÇ¾îÀÖÁö¾ÊÀ¸¹Ç·Î ¿À·ù¹øÈ£·Î ´ëÃ¼
+				//occ hd queryëŠ” í•­ìƒ ìœ íš¨í•œ íŒŒë¼ë¯¸í„°ë§Œ ì°¸ì¡°í•˜ë¯€ë¡œ resolveì‹œ ì •í™•í•˜ì§€ì•Šì€ dataë¥¼ ê°€ì ¸ì™€ë„ ëœë‹¤.
+				//D3D12_MESSAGE_IDì— ì •ì˜ë˜ì–´ìžˆì§€ì•Šìœ¼ë¯€ë¡œ ì˜¤ë¥˜ë²ˆí˜¸ë¡œ ëŒ€ì²´
 				(D3D12_MESSAGE_ID)1319
 			};
 			D3D12_INFO_QUEUE_FILTER filter = {};
@@ -498,7 +498,7 @@ namespace JinEngine::Graphic
 		if (!stCommand)
 		{
 			/*
-			* command queue¿¡ pushÇÑ commandµéÀº Á¦°ÅÇØ¾ßÇÑ´Ù.
+			* command queueì— pushí•œ commandë“¤ì€ ì œê±°í•´ì•¼í•œë‹¤.
 			* cmdListAlloc(command memory storage), cmdList(encapsulates a list of graphics command)
 			*/
 			ThrowIfFailedHr(publicCmdListAlloc->Reset()); 
