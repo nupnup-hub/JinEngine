@@ -141,7 +141,7 @@ namespace JinEngine
 		void JFrameUpdateData::RegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type,
 			JFrameUpdateData* holder,
 			const size_t areaGuid,
-			const ushort indexSize,
+			const uint indexSize,
 			const uint8 sortOrder)
 		{
 			if (holder == nullptr || holder->HasValidFrameIndex() || indexSize < 1)

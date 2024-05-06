@@ -1,4 +1,6 @@
-Name: Shader
-ObjGuid: 11002393478451211944
-TypeGuid: 957351236803396765
-Flag: 47
+{
+	"Name: " : "Shader",
+	"ObjFlag: " : 175,
+	"ObjGuid: " : 14904450131236610941,
+	"TypeGuid: " : 957351236803396765
+}

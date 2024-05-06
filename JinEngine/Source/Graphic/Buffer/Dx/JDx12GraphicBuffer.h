@@ -40,6 +40,8 @@ namespace JinEngine
 			uint elementByteSize = 0;
 			J_GRAPHIC_BUFFER_TYPE type;
 			D3D12_RESOURCE_STATES fixedInitState = (D3D12_RESOURCE_STATES)invalidIndex;
+		private:
+			uint originalElementSize = 0;
 		public:
 			JDx12GraphicBuffer(const std::wstring& name = L"", const J_GRAPHIC_BUFFER_TYPE type = J_GRAPHIC_BUFFER_TYPE::COMMON, const size_t elementByteSize = 1);
 			JDx12GraphicBuffer(const JDx12GraphicBuffer& rhs) = delete;
@@ -77,7 +79,22 @@ namespace JinEngine
 			void BuildHolder(Microsoft::WRL::ComPtr<ID3D12Resource>&& buffer, const D3D12_RESOURCE_STATES initState);
 		public:
 			void CopyData(const uint elementIndex, const void* data)final;
-			void CopyData(const uint elementIndex, const uint count, const void* data) final;
+			void CopyData(const uint elementIndex, const uint count, const void* data, const uint dataElementSize) final;
+			template<typename T>
+			void CopyData(const uint elementIndex, const uint count, const T& data)
+			{
+				CopyData(elementIndex, count, &data, sizeof(T));
+			}
+			template<typename T>
+			void CopyData(const uint elementIndex, const uint count, const T* data)
+			{
+				CopyData(elementIndex, count, data, sizeof(T));
+			}
+			template<typename T>
+			void CopyData(const uint elementIndex, const uint count, const std::vector<T>& dataVec)
+			{
+				CopyData(elementIndex, count, dataVec.data(), sizeof(T));
+			}
 		public:
 			std::wstring GetName()const noexcept;
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
@@ -148,11 +165,11 @@ namespace JinEngine
 			}
 			void CopyData(const uint elementIndex, const uint count, const T& data)
 			{
-				JDx12GraphicBuffer::CopyData(elementIndex, count, &data);
+				JDx12GraphicBuffer::CopyData(elementIndex, count, &data, sizeof(T));
 			}
 			void CopyData(const uint elementIndex, const uint count, const T* data)
 			{
-				JDx12GraphicBuffer::CopyData(elementIndex, count, data);
+				JDx12GraphicBuffer::CopyData(elementIndex, count, data, sizeof(T));
 			}
 		public: 
 			T* GetCpuPointer()const noexcept

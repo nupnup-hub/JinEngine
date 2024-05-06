@@ -1,4 +1,5 @@
 #include"JJSon.h"
+#include"../Log/JLogMacro.h"
 #include<fstream>
 
 namespace JinEngine::Core
@@ -36,6 +37,7 @@ namespace JinEngine::Core
 		std::string errors;
 		if (!Json::parseFromStream(builder, file, &contents, &errors))
 		{
+			J_LOG_PRINT_OUT("Json parse error", errors);
 			if (file.is_open())
 				file.close();
 			return false;

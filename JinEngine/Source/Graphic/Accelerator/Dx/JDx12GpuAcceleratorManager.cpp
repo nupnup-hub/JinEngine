@@ -687,8 +687,7 @@ namespace JinEngine::Graphic
 				++updatedStDescIndex;
 				++updatedCount;
 			}
-		}
-
+		} 
 		instanceData->CopyData(copyStIndex, updatedCount, &instanceDesc[copyStIndex]);
 
 		tlasDesc.Inputs.InstanceDescs = instanceData->GetResource()->GetGPUVirtualAddress();

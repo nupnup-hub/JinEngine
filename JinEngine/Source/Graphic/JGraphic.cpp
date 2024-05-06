@@ -264,6 +264,13 @@ namespace JinEngine
 			outV.push_back(denoiser.get());
 		}
 
+		/**
+		* Caution!
+		* Constants set은 256 byte단위로 Gpu에 upload되며
+		* 이는 Cpu Constants structure size와 다를수있으므로
+		* 복수의 data를 CopyData할시에는 Gpu에 upload되는 크기와 같은
+		* structure을 할당하거나(권장), 하나씩 CopyData를 해야한다(비권장 너무느림)
+		*/
 		class JConstantCache
 		{
 		public:
@@ -290,7 +297,7 @@ namespace JinEngine
 		template<size_t ...Is>
 		static void StuffGetElementLam(std::unordered_map<J_UPLOAD_FRAME_RESOURCE_TYPE, JUpdateHelper::GetElementCountT::Ptr>& uGetCountFunc,
 			std::index_sequence<Is...>)
-		{
+		{ 
 			using Type = J_UPLOAD_FRAME_RESOURCE_TYPE;
 			((uGetCountFunc.emplace((Type)Is, []() {return JFrameUpdateData::GetTotalFrameCount((Type)Is); })), ...);
 		}
@@ -1339,7 +1346,6 @@ namespace JinEngine
 					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].setDirty;
 
 				auto& objSet = contCache.objSet;
-
 				using FrameUpdateInterface = JRenderItemPrivate::FrameUpdateInterface;
 				auto updateInfo = target->updateInfo.get();
 				for (uint i = 0; i < renderItemCount; ++i)
@@ -1350,13 +1356,13 @@ namespace JinEngine
 
 					FrameUpdateInterface::UpdateFrame(renderItem, objSet);
 					if (objSet.isUpdated[ObjectFrameLayer::object])
-						currObjectCB->CopyData(objSet.frameIndex[ObjectFrameLayer::object], objSet.subMeshCount, objSet.object.data());
+						currObjectCB->CopyData(objSet.frameIndex[ObjectFrameLayer::object], objSet.subMeshCount, objSet.object);
 					if (objSet.isUpdated[ObjectFrameLayer::bounding])
 						currBoundingObjectCB->CopyData(objSet.frameIndex[ObjectFrameLayer::bounding], &objSet.bounding);
 					if (objSet.isUpdated[ObjectFrameLayer::hzb])
 						currOccObjectBuffer->CopyData(objSet.frameIndex[ObjectFrameLayer::hzb], &objSet.hzb);
 					if (objSet.isUpdated[ObjectFrameLayer::refInfo])
-						currRefInfoBuffer->CopyData(objSet.frameIndex[ObjectFrameLayer::refInfo], objSet.subMeshCount, objSet.refInfo.data());
+						currRefInfoBuffer->CopyData(objSet.frameIndex[ObjectFrameLayer::refInfo], objSet.subMeshCount, objSet.refInfo);
 					if (objSet.updateStart)
 					{
 						FrameUpdateInterface::UpdateEnd(renderItem);
@@ -1613,8 +1619,8 @@ namespace JinEngine
 							if (shadowLayer == LightFrameLayer::shadowMapArray)
 							{
 								const uint csmTargetCount = frameUpdateInterface.GetFrameIndexSize(light, shadowLayer);
-								currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, shadowMapFrameIndex, csmTargetCount, set.csm.data());
-								currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, shadowMapFrameIndex, csmTargetCount, set.shadowMapArray.data());
+								currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, shadowMapFrameIndex, csmTargetCount, set.csm);
+								currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, shadowMapFrameIndex, csmTargetCount, set.shadowMapArray);
 							}
 							else
 								currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, shadowMapFrameIndex, &set.shadowMap);

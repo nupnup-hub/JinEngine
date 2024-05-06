@@ -1,9 +1,11 @@
 #include"JDx12GraphicBuffer.h"
 #include"../../../Core/Math/JMathHelper.h"
+#include"../../../Core/Log/JLogMacro.h"
+
 namespace JinEngine::Graphic
 {
 	JDx12GraphicBuffer::JDx12GraphicBuffer(const std::wstring& name, const J_GRAPHIC_BUFFER_TYPE type, const size_t elementByteSize)
-		:name(name), type(type), elementByteSize(elementByteSize)
+		:name(name), type(type), originalElementSize(elementByteSize), elementByteSize(elementByteSize)
 	{
 		if (type == J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT)
 			JDx12GraphicBuffer::elementByteSize = CalcConstantBufferByteSize(elementByteSize);
@@ -163,8 +165,15 @@ namespace JinEngine::Graphic
 	{
 		memcpy(&mappedData[elementIndex * elementByteSize], data, elementByteSize);
 	}
-	void JDx12GraphicBuffer::CopyData(const uint elementIndex, const uint count, const void* data)
-	{ 
+	void JDx12GraphicBuffer::CopyData(const uint elementIndex, const uint count, const void* data, const uint dataElementSize)
+	{
+		if (elementByteSize != dataElementSize)
+		{
+#if DEVELOP
+			J_LOG_PRINT_OUT("CopyData elementSize error", std::to_string(elementByteSize) + " != " + std::to_string(dataElementSize));
+#endif
+			return;
+		}
 		memcpy(&mappedData[elementIndex * elementByteSize], data, (size_t)elementByteSize * count);
 	}
 	std::wstring JDx12GraphicBuffer::GetName()const noexcept
@@ -205,7 +214,7 @@ namespace JinEngine::Graphic
 	}
 	D3D12_GPU_VIRTUAL_ADDRESS JDx12GraphicBuffer::GetGpuAddress(const uint addressOffset)noexcept
 	{
-		return holder.GetResource()->GetGPUVirtualAddress() + addressOffset * elementByteSize;
+		return holder.GetResource()->GetGPUVirtualAddress() + (size_t)addressOffset * elementByteSize;
 	} 
 	BYTE JDx12GraphicBuffer::GetData(const uint index)const noexcept
 	{

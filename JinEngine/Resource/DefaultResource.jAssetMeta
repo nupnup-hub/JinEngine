@@ -1,4 +1,6 @@
-Name: DefaultResource
-ObjGuid: 11847194724817761909
-TypeGuid: 957351236803396765
-Flag: 47
+{
+	"Name: " : "DefaultResource",
+	"ObjFlag: " : 175,
+	"ObjGuid: " : 14679887144257049391,
+	"TypeGuid: " : 957351236803396765
+}

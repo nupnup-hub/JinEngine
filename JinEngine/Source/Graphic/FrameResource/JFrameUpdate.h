@@ -21,7 +21,7 @@ namespace JinEngine
 			//frame index	calculated) index = pre data index + pre data indexSize
 			int index = -1;
 			//frame index size
-			short indexSize = -1;
+			int indexSize = -1;
 		private:
 			int8 movedDataDirty = 0;
 			uint8 sortOrder = UCHAR_MAX;		//ascending order number
@@ -48,7 +48,7 @@ namespace JinEngine
 			static void RegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, 
 				JFrameUpdateData* holder,
 				const size_t areaGuid,
-				const ushort indexSize = 1,
+				const uint indexSize = 1,
 				const uint8 sortOrder = 255);
 			static void DeRegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder);
 			static void ReRegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder);

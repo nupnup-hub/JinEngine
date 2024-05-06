@@ -32,8 +32,7 @@
 #include"../../../Core/Utility/JCommonUtility.h" 
 #include"../../../Graphic/Frameresource/JFrameUpdate.h" 
 #include<DirectXColors.h> 
-
-//#include"../../../Develop/Debug/JDevelopDebug.h"
+ 
 namespace JinEngine
 {
 	namespace

@@ -19,7 +19,22 @@ namespace JinEngine
 			virtual void Clear()noexcept = 0;
 		public:
 			virtual void CopyData(const uint elementIndex, const void* data) = 0;
-			virtual void CopyData(const uint elementIndex, const uint count, const void* data) = 0;
+			virtual void CopyData(const uint elementIndex, const uint count, const void* data, const uint dataElementSize) = 0;
+			template<typename T>
+			void CopyData(const uint elementIndex, const uint count, const T& data)
+			{
+				CopyData(elementIndex, count, &data, sizeof(T));
+			}
+			template<typename T>
+			void CopyData(const uint elementIndex, const uint count, const T* data)
+			{
+				CopyData(elementIndex, count, data, sizeof(T));
+			}
+			template<typename T>
+			void CopyData(const uint elementIndex, const uint count, const std::vector<T>& dataVec)
+			{
+				CopyData(elementIndex, count, dataVec.data(), sizeof(T));
+			}
 		public:
 			virtual J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept = 0;
 			virtual uint GetElementCount()const noexcept = 0;
