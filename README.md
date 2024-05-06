@@ -28,7 +28,7 @@ Game engine for studying graphics and software architecture
   - Hardware culling using graphics API
   - HZB
   - Frustum culling with scene accelerator Structure(cpu)
-  - Light cluster culling
+  - Clustered light culling
 
 ### Engine
 - Manage engine resource(Load, store, import)
