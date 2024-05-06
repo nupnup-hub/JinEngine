@@ -47,5 +47,14 @@ Game engine for studying graphics and software architecture
 - [Documentation](https://github.com/nupnup-hub/JinEngine/tree/Main/docs)
 
 ## Third party
+- [DirectX TK](https://github.com/microsoft/DirectXTK)
+- [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
+- [ImGui](https://github.com/ocornut/imgui)
+- [stb](https://github.com/nothings/stb/blob/master/LICENSE)
+- [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
+- [LibTIFF](https://github.com/libsdl-org/libtiff)
+- 
+  
+  
 
 
