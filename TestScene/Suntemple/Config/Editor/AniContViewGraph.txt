@@ -1,4 +1,0 @@
-{
-	"GroupCount" : 0,
-	"GroupData" : []
-}

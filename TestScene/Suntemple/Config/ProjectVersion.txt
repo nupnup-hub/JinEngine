@@ -1,4 +1,0 @@
-{
-	"Symbol:" : "JinEngineProject",
-	"Version:" : "1.00"
-}
