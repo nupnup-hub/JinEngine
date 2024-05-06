@@ -50,11 +50,15 @@ Game engine for studying graphics and software architecture
 - [DirectX TK](https://github.com/microsoft/DirectXTK)
 - [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 - [ImGui](https://github.com/ocornut/imgui)
-- [stb](https://github.com/nothings/stb/blob/master/LICENSE)
+- [stb](https://github.com/nothings/stb/blob/master)
 - [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
 - [LibTIFF](https://github.com/libsdl-org/libtiff)
-- 
-  
+- [FBX SDK](https://aps.autodesk.com/developer/overview/fbx-sdk)
+- [hash-library](https://github.com/JusticeRage/hash-library)
+- [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders?tab=readme-ov-file)
+- [Loki](https://github.com/dutor/loki)
+- [TinyXML-2](https://github.com/leethomason/tinyxml2/tree/master?tab=readme-ov-file)
+- [NVIDIA GPU Computing Toolkit](https://developer.nvidia.com/cuda-downloads)
   
 
 
