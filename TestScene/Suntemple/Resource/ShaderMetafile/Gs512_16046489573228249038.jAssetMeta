@@ -1,0 +1,17 @@
+{
+	"ComputeShaderFuncFlag:" : 0,
+	"Format: " : ".shader",
+	"FormatIdnex: " : 0,
+	"J_RESOURCE_TYPE: " : 3,
+	"Name: " : "Gs512_16046489573228249038",
+	"ObjFlag: " : 143,
+	"ObjGuid: " : 10520337855204490793,
+	"ShaderFuncFlag:" : 512,
+	"SubPsoCullMode:" : false,
+	"SubPsoCullModeCondition:" : 0,
+	"SubPsoDepthComparesion:" : 0,
+	"SubPsoDepthComparesionCondition:" : 0,
+	"SubPsoPrimitive:" : 0,
+	"SubPsoPrimitiveCondition:" : 0,
+	"TypeGuid: " : 1398661923768419711
+}

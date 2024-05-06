@@ -1,0 +1,15 @@
+{
+	"Format: " : ".dds",
+	"FormatIdnex: " : 2,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "M_Trim_Inst_Inst_0_Specular",
+	"ObjFlag: " : 0,
+	"ObjGuid: " : 18369372132742933130,
+	"Resoultion" : 0,
+	"ReverseComponentY" : false,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

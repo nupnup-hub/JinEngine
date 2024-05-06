@@ -1,0 +1,17 @@
+{
+	"Format: " : ".fbx",
+	"FormatIdnex: " : 1,
+	"HasAvatar:" : false,
+	"J_RESOURCE_TYPE: " : 6,
+	"ModelHint:" : 
+	{
+		"HasObjGuid: " : 3217737463399179542,
+		"IsValid: " : true,
+		"TypeGuid: " : 9517763558082485607
+	},
+	"Name: " : "_DragonSkel",
+	"ObjFlag: " : 175,
+	"ObjGuid: " : 782534445134807111,
+	"SkeletonType:" : 0,
+	"TypeGuid: " : 6663364360592986283
+}

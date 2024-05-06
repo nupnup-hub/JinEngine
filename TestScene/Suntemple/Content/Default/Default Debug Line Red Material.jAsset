@@ -1,0 +1,58 @@
+{
+	"AlbedoColor" : "0.85 0.2 0.2 0.9",
+	"AlbedoMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"AlbedoOnly" : false,
+	"AlphaClip" : false,
+	"AmbientOcclusionMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"DebugMaterial" : true,
+	"DepthComparesionFunc" : 0,
+	"HeightMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"Light" : false,
+	"Matransform" : "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1",
+	"Metallic" : 0.25,
+	"MetallicMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"NonCulling" : true,
+	"NormalMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"PrimitiveType" : 1,
+	"Roughness" : 0.75,
+	"RoughnessMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"Shadow" : false,
+	"SkyMaterial" : false,
+	"Specular" : 0.5,
+	"SpecularMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	}
+}

@@ -1,0 +1,15 @@
+{
+	"Format: " : ".dds",
+	"FormatIdnex: " : 2,
+	"J_RESOURCE_TYPE: " : 2,
+	"MipmapKernelSize" : 0,
+	"MipmapSharpnessFactor" : 1.0,
+	"MipmapType" : 1,
+	"Name: " : "M_TreeTrunk01_Inst_0_BaseColor",
+	"ObjFlag: " : 0,
+	"ObjGuid: " : 17978653394130673922,
+	"Resoultion" : 0,
+	"ReverseComponentY" : false,
+	"TextureType" : 7,
+	"TypeGuid: " : 5146432936074107289
+}

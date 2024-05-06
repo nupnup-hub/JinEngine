@@ -1,0 +1,58 @@
+{
+	"AlbedoColor" : "1 1 1 1",
+	"AlbedoMap" : 
+	{
+		"HasObjGuid: " : 13722943454216205803,
+		"HasObject: " : true,
+		"TypeGuid: " : 5146432936074107289
+	},
+	"AlbedoOnly" : false,
+	"AlphaClip" : false,
+	"AmbientOcclusionMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"DebugMaterial" : false,
+	"DepthComparesionFunc" : 0,
+	"HeightMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"Light" : true,
+	"Matransform" : "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1",
+	"Metallic" : 0.25,
+	"MetallicMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"NonCulling" : false,
+	"NormalMap" : 
+	{
+		"HasObjGuid: " : 16971631701451094210,
+		"HasObject: " : true,
+		"TypeGuid: " : 5146432936074107289
+	},
+	"PrimitiveType" : 0,
+	"Roughness" : 0.75,
+	"RoughnessMap" : 
+	{
+		"HasObjGuid: " : 0,
+		"HasObject: " : false,
+		"TypeGuid: " : 0
+	},
+	"Shadow" : true,
+	"SkyMaterial" : false,
+	"Specular" : 0.5,
+	"SpecularMap" : 
+	{
+		"HasObjGuid: " : 15371752657851605940,
+		"HasObject: " : true,
+		"TypeGuid: " : 5146432936074107289
+	}
+}
