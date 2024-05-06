@@ -59,6 +59,7 @@ Game engine for studying graphics and software architecture
 - [Loki](https://github.com/dutor/loki)
 - [TinyXML-2](https://github.com/leethomason/tinyxml2/tree/master?tab=readme-ov-file)
 - [NVIDIA GPU Computing Toolkit](https://developer.nvidia.com/cuda-downloads)
+- [WinPixEventRuntime ](https://devblogs.microsoft.com/pix/winpixeventruntime/)
   
 
 
