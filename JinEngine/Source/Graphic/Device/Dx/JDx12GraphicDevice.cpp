@@ -31,7 +31,7 @@ SOFTWARE.
 #include<assert.h> 
 //#include<pix3.h>
  
-#define TRACE_REMOVE_REASON
+//#define TRACE_REMOVE_REASON
 namespace JinEngine::Graphic
 {
 	namespace
