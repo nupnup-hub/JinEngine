@@ -45,6 +45,7 @@ Game engine for studying graphics and software architecture
 ## Guide
 - [Overview](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Overview.md)
 - [Documentation](https://github.com/nupnup-hub/JinEngine/tree/Main/docs)
+- [Load test scene](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/LoadTestSceneGuide.md)
 
 ## Third party
 - [DirectX TK](https://github.com/microsoft/DirectXTK)
