@@ -9,8 +9,8 @@
 
 ## Graphic Option
 
-![OepnGraphicOption00](https://github.com/nupnup-hub/JinEngine/assets/59456231/ddf3366d-abb5-42d2-9534-d1c1dda4819f)
-![OepnGraphicOptio01](https://github.com/nupnup-hub/JinEngine/assets/59456231/484c5306-47ec-48ad-91e6-48cd707c502e)
+![OpenGraphicOption00](https://github.com/nupnup-hub/JinEngine/assets/59456231/89a0a84a-5605-447a-b27a-d42d649ed1b3)
+![OpenGraphicOption01](https://github.com/nupnup-hub/JinEngine/assets/59456231/0750937d-2718-4c30-93cd-9ab419fa7639)
 
 ## LoadTexture
 
