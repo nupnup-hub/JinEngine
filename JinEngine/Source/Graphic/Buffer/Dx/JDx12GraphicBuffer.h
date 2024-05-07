@@ -106,11 +106,6 @@ namespace JinEngine
 			void CopyData(const uint elementIndex, const void* data)final;
 			void CopyData(const uint elementIndex, const uint count, const void* data, const uint dataElementSize) final;
 			template<typename T>
-			void CopyData(const uint elementIndex, const uint count, const T& data)
-			{
-				CopyData(elementIndex, count, &data, sizeof(T));
-			}
-			template<typename T>
 			void CopyData(const uint elementIndex, const uint count, const T* data)
 			{
 				CopyData(elementIndex, count, data, sizeof(T));
