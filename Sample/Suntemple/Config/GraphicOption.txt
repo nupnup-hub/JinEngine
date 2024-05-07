@@ -49,7 +49,7 @@
 		"RenderTargetFormat:" : 2,
 		"ResitrUseDenoiser:" : true,
 		"RestirBounceCount:" : 3,
-		"RestirNeighborWeightSumThreshold:" : 12.0,
+		"RestirNeighborWeightSumThreshold:" : 16.0,
 		"RestirSampleMaxAge:" : 128,
 		"RestirSpatialSampleCount:" : 128,
 		"RestirSpatialWeightAverageThreshold:" : 10.0,
