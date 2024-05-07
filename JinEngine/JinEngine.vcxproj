@@ -134,7 +134,7 @@
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Fbx\Include;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Cuda\lib\x64;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Inc;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Src;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Src\Shaders;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\TK\Src\Shaders\Compiled;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Tif;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\ShaderCompile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\JinEngine\ThirdParty\Fbx\Include;$(SolutionDir)\JinEngine\ThirdParty\Cuda\lib\x64;$(SolutionDir)\JinEngine\ThirdParty\DirectX\TK\Inc;$(SolutionDir)\JinEngine\ThirdParty\DirectX\TK\Src;$(SolutionDir)\JinEngine\ThirdParty\DirectX\TK\Src\Shaders;$(SolutionDir)\JinEngine\ThirdParty\DirectX\TK\Src\Shaders\Compiled;$(SolutionDir)\JinEngine\ThirdParty\Tif;$(SolutionDir)\JinEngine\ThirdParty\DirectX\ShaderCompile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <Optimization>MaxSpeed</Optimization>
@@ -146,7 +146,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Fbx\lib\vs2017\x64\release;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Cuda\lib\x64;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\fast-lzma2-master\lib;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\jsoncpp-master;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\Tif;D:\Visual_Studio_src\JinEngine\JinEngine\ThirdParty\DirectX\ShaderCompile\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\JinEngine\ThirdParty\Fbx\lib\vs2017\x64\release;$(SolutionDir)\JinEngine\ThirdParty\Cuda\lib\x64;$(SolutionDir)\JinEngine\ThirdParty\fast-lzma2-master\lib;$(SolutionDir)\JinEngine\ThirdParty\jsoncpp-master;$(SolutionDir)\JinEngine\ThirdParty\Tif;$(SolutionDir)\JinEngine\ThirdParty\DirectX\ShaderCompile\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;cudart_static.lib;fast-lzma2.lib;jsoncpp_static.lib;tiff.lib;tiffxx.lib;dxcompiler.lib;dxrfallbackcompiler.lib;dxlib_sample.lib;DxilConvPasses.lib;dxilconv.lib;dxclib.lib;DxbcConverter.lib;d3dcompiler_dxc_bridge.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <StackReserveSize>
       </StackReserveSize>
