@@ -41,8 +41,8 @@ Game engine for studying graphics and software architecture
 ## Dependency
 - [Visual studio 2019](https://visualstudio.microsoft.com/ko/vs/older-downloads/)
 - [Window SDK](https://learn.microsoft.com/ko-kr/windows/apps/windows-app-sdk/downloads)
+- [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 - [NVIDIA GPU Computing Toolkit](https://developer.nvidia.com/cuda-downloads) 
-
 
 ## Platform
 |  |Directx12|...|
