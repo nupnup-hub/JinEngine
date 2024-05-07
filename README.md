@@ -8,6 +8,7 @@ Game engine for studying graphics and software architecture
 ![EngineImage01](https://github.com/nupnup-hub/JinEngine/assets/59456231/b46dd7fd-1a05-41ed-b6e1-cb9c2d6812f1)
 (Amazon Lumberyard Bistro model)
 
+
 ## Features
 ### Graphis
 - Dynamic global illumination
@@ -30,29 +31,37 @@ Game engine for studying graphics and software architecture
   - Frustum culling with scene accelerator Structure(cpu)
   - Clustered light culling
 
+
 ### Engine
 - Manage engine resource(Load, store, import)
 - Manage program memory
 - Edit scene object
 
 
+## Dependency
+- [Visual studio 2019](https://visualstudio.microsoft.com/ko/vs/older-downloads/)
+- [Window SDK](https://learn.microsoft.com/ko-kr/windows/apps/windows-app-sdk/downloads)
+- [NVIDIA GPU Computing Toolkit](https://developer.nvidia.com/cuda-downloads) 
+
+
 ## Platform
 |  |Directx12|...|
 |------|---|---|
-|Window| :heavy_check_mark: | |
+|Window 10 :arrow_up:| :heavy_check_mark: | |
 |...| | | 
+
 
 ## Developmental environment 
 - Rtx4070
 - AMD Ryzen 9 7900
-- Window11
-- Visual studio 2019
+- Window11 
 
 
 ## Guide
 - [Overview](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Overview.md)
 - [Documentation](https://github.com/nupnup-hub/JinEngine/tree/Main/docs)
 - [Sample](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/SampleGuide.md)
+
 
 ## Third party
 - [DirectX TK](https://github.com/microsoft/DirectXTK)
