@@ -42,6 +42,13 @@ Game engine for studying graphics and software architecture
 |Window| :heavy_check_mark: | |
 |...| | | 
 
+## Developmental environment 
+- Rtx4070
+- AMD Ryzen 9 7900
+- Window11
+- Visual studio 2019
+
+
 ## Guide
 - [Overview](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Overview.md)
 - [Documentation](https://github.com/nupnup-hub/JinEngine/tree/Main/docs)
