@@ -44,6 +44,7 @@ Game engine for studying graphics and software architecture
 - [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 - [NVIDIA GPU Computing Toolkit](https://developer.nvidia.com/cuda-downloads) 
 
+
 ## Platform
 |  |Directx12|...|
 |------|---|---|
@@ -51,13 +52,10 @@ Game engine for studying graphics and software architecture
 |...| | | 
 
 
-## Developmental environment 
-- Rtx4070
-- AMD Ryzen 9 7900
-- Window11 
-
-
 ## Build
+- Download repository data
+- Apply dependency
+- Build Release/x64
 
 
 ## Guide
