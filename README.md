@@ -55,7 +55,7 @@ Game engine for studying graphics and software architecture
 ## Build
 - Download repository data
 - Add dependencies
-- Build Release/x64
+- Build x64
 
 
 ## Guide
