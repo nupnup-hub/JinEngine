@@ -122,7 +122,7 @@ namespace JinEngine::Graphic
 		}
 		static JCompileInfo ComputeShaderCompileInfo(const J_BLUR_TYPE type)
 		{
-			return JCompileInfo(L"Blur.hlsl", L"Blur");
+			return JCompileInfo(ShaderRelativePath::Image(L"Blur.hlsl"), L"Blur");
 		} 
 	 
 		static uint CalIndex(const J_BLUR_TYPE blurType, const J_KERNEL_SIZE size, bool isVertical)

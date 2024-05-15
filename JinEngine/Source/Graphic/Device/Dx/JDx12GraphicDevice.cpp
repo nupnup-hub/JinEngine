@@ -512,7 +512,7 @@ namespace JinEngine::Graphic
 		{ 
 			ThrowIfFailedG(publicCmdList->Close()); 
 			ID3D12CommandList* cmdsLists[] = { publicCmdList.Get() };
-			commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists); 
+			commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);  
 			stCommand = false;
 		}
 	}

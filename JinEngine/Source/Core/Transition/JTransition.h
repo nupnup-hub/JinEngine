@@ -250,7 +250,7 @@ namespace JinEngine
 		private:
 			int doCount = 0;
 			int undoIndex = invalidIndex;
-			uint8 taskCapacity = 25;
+			uint8 taskCapacity = 100;
 			size_t frame = 0;
 			bool isLock = false;
 		public:

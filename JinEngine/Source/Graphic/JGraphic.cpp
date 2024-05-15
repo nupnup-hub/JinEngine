@@ -547,20 +547,26 @@ namespace JinEngine
 					guiBackendInterface->GetGuiIdentification());
 			}
 		public:
-			void SetGraphicInfo(const JGraphicInfo& newInfo, bool isFrameDirty, bool isResourceDirty)
+			void SetGraphicInfo(const JGraphicInfo& newInfo, bool isFrameDirty, bool isResourceDirty, bool useCommand)
 			{
+				if (useCommand)
+				{
+					device->FlushCommandQueue();
+					device->StartPublicCommand();
+				}
+
 				JGraphicInfo preInfo = info;
 				info = newInfo;
 				auto notifySet = adapter->CreateInfoChangedSet(option.deviceType, preInfo, *drawRefSet);
 				if (isResourceDirty)
-				{
+				{ 
 					notifySet->changedPart = JGraphicInfo::TYPE::RESOURCE;
 					for (const auto& data : infoChangedListener[(uint)JGraphicInfo::TYPE::RESOURCE])
-						data->NotifyGraphicInfoChanged(*notifySet);
+						data->NotifyGraphicInfoChanged(*notifySet); 
 				}
 
 				if (isFrameDirty)
-				{
+				{ 
 					notifySet->changedPart = JGraphicInfo::TYPE::FRAME;
 					for (const auto& data : infoChangedListener[(uint)JGraphicInfo::TYPE::FRAME])
 						data->NotifyGraphicInfoChanged(*notifySet);
@@ -568,6 +574,12 @@ namespace JinEngine
 
 				if (alignedObject.common.size() != info.frame.upBoundingObjCapacity)
 					alignedObject.common.resize(info.frame.upBoundingObjCapacity);
+
+				if (useCommand)
+				{
+					device->EndPublicCommand();
+					device->FlushCommandQueue();
+				}
 			}
 			void SetOption(JGraphicOption newGraphicOption)noexcept
 			{
@@ -1258,7 +1270,7 @@ namespace JinEngine
 							updateHelper.bData[i].capacity = CalculateCapacity(updateHelper.bData[i]);
 					}
 				}
-
+				 
 				JGraphicInfo newInfo = info;
 				updateHelper.WriteGraphicInfo(newInfo);
 				if (updateHelper.hasUploadDataDirty)
@@ -1273,26 +1285,18 @@ namespace JinEngine
 							updateHelper.uData[i].setDirty = Constants::gNumFrameResources;
 							updateHelper.uData[i].capacity = resourceManage.currFrame->GetElementCount((J_UPLOAD_FRAME_RESOURCE_TYPE)i);
 						}
-					}
+					} 
 					//Has sequency dependency
 					updateHelper.WriteGraphicInfo(newInfo);
-					SetGraphicInfo(newInfo, true, updateHelper.hasBindingDataDirty);
-
+					SetGraphicInfo(newInfo, true, updateHelper.hasBindingDataDirty, false);
+					device->EndPublicCommand();
+					device->FlushCommandQueue();
 					//drawing.scene->RecompileShader(JGraphicShaderCompileSet(device.get()));		
 					//use graphic info
 					//updateHelper.NotifyUpdateFrameCapacity(*thisGraphic);	//use graphic info		
-					device->EndPublicCommand();
-					device->FlushCommandQueue();
 				}
 				else if (updateHelper.hasBindingDataDirty)
-				{
-					device->FlushCommandQueue();
-					device->StartPublicCommand();
-					SetGraphicInfo(newInfo, false, true);
-					device->EndPublicCommand();
-					device->FlushCommandQueue();
-				}
-
+					SetGraphicInfo(newInfo, false, true, true);
 			}
 			void UpdateFrameBuffer()
 			{
@@ -1798,14 +1802,14 @@ namespace JinEngine
 					J_COMPONENT_TYPE cType = comp->GetComponentType();
 					if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 					{
-						if (CamFrameUpdateInterface::IsLastFrameHotUpdated(static_cast<JCamera*>(comp)))
+						if (CamFrameUpdateInterface::IsLastUpdated(static_cast<JCamera*>(comp)))
 							data->isUpdated = true;
 					}
 					else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
 					{
 						JLight* light = static_cast<JLight*>(comp);
 						JLightPrivate* lp = static_cast<JLightPrivate*>(&light->PrivateInterface());
-						if (lp->GetFrameUpdateInterface().IsLastFrameHotUpdated(light))
+						if (lp->GetFrameUpdateInterface().IsLastUpdated(light))
 							data->isUpdated = true;
 					}
 				}
@@ -1882,7 +1886,7 @@ namespace JinEngine
 				}
 				else
 					EndFrame(false);
-				resourceManage.context->End();
+				resourceManage.context->End(); 
 			}
 		private:
 			void DrawUseSingleThread()
@@ -2090,7 +2094,7 @@ namespace JinEngine
 			{
 				BeginFrame();
 				ComputeCpuFrustumCulling();
-
+				 
 				for (uint i = 0; i < info.frame.threadCount; ++i)
 					GraphicThreadInteface::CreateDrawThread(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
 
@@ -2608,7 +2612,7 @@ namespace JinEngine
 				newinfo.Load();
 				newOption.Load();
 
-				SetGraphicInfo(newinfo, true, true);
+				SetGraphicInfo(newinfo, true, true, true);
 				SetOption(newOption);
 			}
 			void StoreData()
@@ -2860,7 +2864,7 @@ namespace JinEngine
 			JinEngine::JGraphic::Instance().impl->UpdateFrameBuffer();
 		}
 		void MainAccess::Draw(const bool allowDrawScene)
-		{
+		{ 
 			JinEngine::JGraphic::Instance().impl->Draw(allowDrawScene);
 		}
 		void MainAccess::FlushCommandQueue()

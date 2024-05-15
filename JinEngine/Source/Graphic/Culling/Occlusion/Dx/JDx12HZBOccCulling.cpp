@@ -227,15 +227,15 @@ namespace JinEngine::Graphic
 			switch (type)
 			{
 			case COMPUTE_TYPE::HZB_COPY_PERSPECTIVE:
-				return JCompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBCopyDepthMap");
+				return JCompileInfo(ShaderRelativePath::HZB(L"Hierarchical z-buffer.hlsl"), L"HZBCopyDepthMap");
 			case COMPUTE_TYPE::HZB_COPY_ORTHOLOGIC:
-				return JCompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBCopyDepthMap");
+				return JCompileInfo(ShaderRelativePath::HZB(L"Hierarchical z-buffer.hlsl"), L"HZBCopyDepthMap");
 			case COMPUTE_TYPE::HZB_DOWN_SAMPLING:
-				return JCompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBDownSampling");
+				return JCompileInfo(ShaderRelativePath::HZB(L"Hierarchical z-buffer.hlsl"), L"HZBDownSampling");
 			case COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE:
-				return JCompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBOcclusion");
+				return JCompileInfo(ShaderRelativePath::HZB(L"Hierarchical z-buffer.hlsl"), L"HZBOcclusion");
 			case COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC:
-				return JCompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBOcclusion");
+				return JCompileInfo(ShaderRelativePath::HZB(L"Hierarchical z-buffer.hlsl"), L"HZBOcclusion");
 			default:
 				return JCompileInfo(L"Error", L"Error");
 			}
@@ -585,8 +585,14 @@ namespace JinEngine::Graphic
 		auto gRInterface = helper.GetOccGResourceInterface();
 		auto cInterface = helper.GetCullInterface();
 
+		const uint camFrustumIndex = cInterface.GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
+
 		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA && helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA &&
+			helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT) &&
+			helper.objVec.aligned[camFrustumIndex].size() > 0;
+
 		std::vector<JUserPtr<JGameObject>> alignedVec;
 		if (!hasAlignedData)
 		{
@@ -611,9 +617,7 @@ namespace JinEngine::Graphic
 			alignInfo.alignRange = JAcceleratorAlignInfo::ALIGN_RANGE::ALL;
 			alignedVec = helper.scene->AlignedObject(alignInfo);
 		}
-
-		const uint camFrustumIndex = cInterface.GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
+  
 		for (uint i = 0; i < dataCount; ++i)
 		{
 			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)helper.info.resource.occlusionWidth, (float)helper.info.resource.occlusionHeight, 0.0f, 1.0f };
@@ -657,8 +661,14 @@ namespace JinEngine::Graphic
 		auto gRInterface = helper.GetOccGResourceInterface();
 		auto cInterface = helper.GetCullingUserAccess();
 
+		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
+
 		const bool hasFrustumCulling = cInterface->CullingUserInterface().HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA && helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA &&
+			helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT) &&
+			helper.objVec.aligned[camFrustumIndex].size() > 0;
+
 		std::vector<JUserPtr<JGameObject>> alignedVec;
 		if (!hasAlignedData)
 		{
@@ -684,8 +694,6 @@ namespace JinEngine::Graphic
 			alignedVec = helper.scene->AlignedObject(alignInfo);
 		}
 
-		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
 		for (uint i = 0; i < dataCount; ++i)
 		{
 			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)helper.info.resource.occlusionWidth, (float)helper.info.resource.occlusionHeight, 0.0f, 1.0f };

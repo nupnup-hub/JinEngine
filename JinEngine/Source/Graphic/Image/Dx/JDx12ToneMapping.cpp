@@ -239,7 +239,7 @@ namespace JinEngine::Graphic
 				if (Core::HasSQValueEnum(addType, TM_ADDITIONAL_OPTION_BLOOM))
 					initData.macro.push_back({ APPLY_BLOOM_SYMBOL, std::to_wstring(1) });
 
-				auto compileInfo = JCompileInfo(L"ToneMapping.hlsl", L"ToneMapping");
+				auto compileInfo = JCompileInfo(ShaderRelativePath::Postprocessing(L"ToneMapping.hlsl"), L"ToneMapping");
 				tmHoloder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 				tmHoloder->dispatchInfo = initData.dispatchInfo;
 				 

@@ -25,6 +25,7 @@ SOFTWARE.
 
 #pragma once
 #include"JShaderCondition.h"
+#include"JShaderConstants.h"
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Platform/JHardwareInfo.h" 
@@ -116,7 +117,7 @@ namespace JinEngine
 		std::wstring functionName;
 	public:
 		JCompileInfo() = default;
-		JCompileInfo(const std::wstring& fileName, const std::wstring& functionName);
+		JCompileInfo(const std::wstring& relativePath, const std::wstring& functionName);
 	public:
 		bool IsValid()const noexcept;
 	};

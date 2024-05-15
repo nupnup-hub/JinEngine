@@ -336,7 +336,7 @@ namespace JinEngine::Graphic
 		JComputeShaderInitData initData; 
 		if (Private::allowDebug)
 			initData.macro.push_back(JMacroSet{ USE_DEBUG_SYMBOL, L"1" });
-		buildData.shader = JDxShaderDataUtil::CompileShader(JCompileInfo(L"RaytracingTest.hlsl", L"RayGenShader"), initData.macro,  L"lib_6_3");
+		buildData.shader = JDxShaderDataUtil::CompileShader(JCompileInfo(ShaderRelativePath::Restir(L"Test.hlsl"), L"RayGenShader"), initData.macro,  L"lib_6_3");
 		 
 		CD3DX12_SHADER_BYTECODE libdxil;
 		libdxil.pShaderBytecode = buildData.shader->GetBufferPointer();

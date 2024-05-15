@@ -21,8 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
-
-
+   
 #include"JDx12RaytracingGI.h"
 #include"../../../Dx/JDx12RaytracingUtility.h"
 #include"../../../Dx/JDx12RaytracingConstants.h"
@@ -787,7 +786,7 @@ namespace JinEngine::Graphic
 		initData.macro.push_back({ SPOIT_LIGHT_MASK, std::to_wstring(Constants::spotLightMask) });
 		initData.macro.push_back({ RECT_LIGHT_MASK, std::to_wstring(Constants::rectLightMask) });
  
-		buildData.shader = JDxShaderDataUtil::CompileShader(JCompileInfo(L"RestirGiPathTracing.hlsl", L"RayGenShader"), initData.macro, L"lib_6_6");
+		buildData.shader = JDxShaderDataUtil::CompileShader(JCompileInfo(ShaderRelativePath::RestirGi(L"PathTracing.hlsl"), L"RayGenShader"), initData.macro, L"lib_6_6");
 
 		CD3DX12_SHADER_BYTECODE libdxil;
 		libdxil.pShaderBytecode = buildData.shader->GetBufferPointer();
@@ -925,7 +924,7 @@ namespace JinEngine::Graphic
 		constexpr uint shaderCount = 3;
 		JDx12ComputePsoBulder<shaderCount> psoBuilder("JDx12RaytracingGI");
 		psoBuilder.PushHolder(reuseSamplingShader.get());
-		psoBuilder.PushCompileInfo(JCompileInfo(L"RestirGiReuse.hlsl", L"main"));
+		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirGi(L"Reuse.hlsl"), L"main"));
 		 
 		psoBuilder.PushMacroSet({ TEMPORAL_SAMPLE_MAX , std::to_wstring(option.rendering.restir.temporalSampleCount.Get())});
 		psoBuilder.PushMacroSet({ SPATIAL_SAMPLE_MAX , std::to_wstring(option.rendering.restir.spatialSampleCount.Get()) });
@@ -937,13 +936,13 @@ namespace JinEngine::Graphic
 		psoBuilder.Next();
 
 		psoBuilder.PushHolder(finalShader.get());
-		psoBuilder.PushCompileInfo(JCompileInfo(L"RestirGiFinal.hlsl", L"main"));
+		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirGi(L"Final.hlsl"), L"main"));
 		psoBuilder.PushThreadDim(Common::ThreadDim());
 		psoBuilder.PushRootSignature(finalRootSignature.Get());
 		psoBuilder.Next();
 
 		psoBuilder.PushHolder(clearShader.get());
-		psoBuilder.PushCompileInfo(JCompileInfo(L"RestirGiClear.hlsl", L"main"));
+		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirGi(L"Clear.hlsl"), L"main"));
 		psoBuilder.PushThreadDim(Common::ThreadDim());
 		psoBuilder.PushRootSignature(clearRootSignature.Get());
 		psoBuilder.Create(device);

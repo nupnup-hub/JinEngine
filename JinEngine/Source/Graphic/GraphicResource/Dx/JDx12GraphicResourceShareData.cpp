@@ -280,7 +280,7 @@ namespace JinEngine::Graphic
 		desc.formatHint = std::make_unique<JGraphicFormatHint>();
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
 		restirColorHistoryIntermediate00 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
-		restirColorHistoryIntermediate01 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		restirColorHistoryIntermediate01 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON); 
 
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
 		viewZ = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
@@ -302,7 +302,7 @@ namespace JinEngine::Graphic
 	JDx12GraphicResourceShareData::RestirTemporalAccumulationData::~RestirTemporalAccumulationData()
 	{
 		JGraphicResourceInfo::Destroy(restirColorHistoryIntermediate00.Release());
-		JGraphicResourceInfo::Destroy(restirColorHistoryIntermediate01.Release());
+		JGraphicResourceInfo::Destroy(restirColorHistoryIntermediate01.Release()); 
 		JGraphicResourceInfo::Destroy(viewZ.Release());
 		JGraphicResourceInfo::Destroy(preViewZ.Release());
 		JGraphicResourceInfo::Destroy(restirDepthDerivative.Release()); 

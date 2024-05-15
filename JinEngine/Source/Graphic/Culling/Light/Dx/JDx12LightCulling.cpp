@@ -248,27 +248,27 @@ namespace JinEngine::Graphic
 		}
 		static JCompileInfo GraphicDrawLightShapeVsCompileInfo()
 		{
-			return JCompileInfo(L"LightShapeDrawVertex.hlsl", L"VS");
+			return JCompileInfo(ShaderRelativePath::LightCulling(L"LightShapeDrawVertex.hlsl"), L"VS");
 		}
 		static JCompileInfo GraphicDrawLightShapeGsCompileInfo()
 		{
-			return JCompileInfo(L"LightShapeDrawGeo.hlsl", L"GS");
+			return JCompileInfo(ShaderRelativePath::LightCulling(L"LightShapeDrawGeo.hlsl"), L"GS");
 		}
 		static JCompileInfo GraphicDrawLightShapePsCompileInfo()
 		{
-			return JCompileInfo(L"LightShapeDrawPixel.hlsl", L"PS");
+			return JCompileInfo(ShaderRelativePath::LightCulling(L"LightShapeDrawPixel.hlsl"), L"PS");
 		}
 		static JCompileInfo ComputeLightClusterCompileInfo()
 		{
-			return JCompileInfo(L"LightClusterCompute.hlsl", L"CS");
+			return JCompileInfo(ShaderRelativePath::LightCulling(L"ClusterCompute.hlsl"), L"CS");
 		}
 		static JCompileInfo GraphicDrawDebugVsCompileInfo()
 		{
-			return JCompileInfo(L"LightClusterDebug.hlsl", L"FullScreenTriangleVS");
+			return JCompileInfo(ShaderRelativePath::LightCulling(L"ClusterDebug.hlsl"), L"FullScreenTriangleVS");
 		}
 		static JCompileInfo GraphicDrawDebugPsCompileInfo()
 		{
-			return JCompileInfo(L"LightClusterDebug.hlsl", L"PS");
+			return JCompileInfo(ShaderRelativePath::LightCulling(L"ClusterDebug.hlsl"), L"PS");
 		}
 
 		static void StreamOutLightInfo(const JUserPtr<JCamera> cam, JDx12GraphicResourceManager* dx12Gm, const size_t sceneGuid)

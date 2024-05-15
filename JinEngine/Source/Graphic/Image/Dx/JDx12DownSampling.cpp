@@ -207,7 +207,7 @@ namespace JinEngine::Graphic
 			else if (type == DOWN_SAMPLE_STATE::WIDTH_HEIGHT_DOWN)
 				initData.macro.push_back({ WIDTH_HEIGHT_DOWN_SYMBOL, std::to_wstring(1) });
 
-			auto compileInfo = JCompileInfo(L"DownSampling.hlsl", L"DownSample");
+			auto compileInfo = JCompileInfo(ShaderRelativePath::Image(L"DownSampling.hlsl"), L"DownSample");
 
 			holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 			holder->dispatchInfo = initData.dispatchInfo;

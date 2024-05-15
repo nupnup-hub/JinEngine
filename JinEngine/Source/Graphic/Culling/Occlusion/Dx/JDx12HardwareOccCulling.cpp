@@ -40,6 +40,7 @@ SOFTWARE.
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Resource/Scene/JScene.h" 
  
+//#include"../../../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine::Graphic
 {
 	namespace Private
@@ -267,10 +268,13 @@ namespace JinEngine::Graphic
 		if (upData.CanPassThisFrame(helper.info.frame.currIndex))
 			return;
 
-		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
 		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-	 
+
+		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA &&
+			helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT) &&
+			helper.objVec.aligned[camFrustumIndex].size() > 0;
+
 		upData.Update();
 
 		//use SCENE_LAYER_DEPTH_STENCIL after scene draw
@@ -283,7 +287,11 @@ namespace JinEngine::Graphic
 		JDrawCondition drawCondition(helper, false, true, false, helper.option.culling.allowHDOcclusionUseOccluder);
 		drawCondition.SetRestrictRange(upData.offset, upData.count);
 
-		if (hasAlignedData && helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT))
+		//Develop::JDevelopDebug::PushLog("oCC " + std::to_string(helper.objVec.aligned[camFrustumIndex].size()));
+		//Develop::JDevelopDebug::PushLog("\n");
+		//Develop::JDevelopDebug::Write();
+
+		if (hasAlignedData)
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, helper.objVec.aligned[camFrustumIndex], helper, drawCondition);
 		else
 		{
@@ -308,10 +316,13 @@ namespace JinEngine::Graphic
 		if (upData.CanPassThisFrame(helper.info.frame.currIndex))
 			return;
 
-		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
 		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
- 
+
+		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA && 
+			helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT) && 
+			helper.objVec.aligned[camFrustumIndex].size() > 0;
+	 
 		auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		context->SetViewportAndRect(dsSet.info->GetResourceSize());
 		context->SetDepthStencilView(dsSet);
@@ -320,7 +331,7 @@ namespace JinEngine::Graphic
 		JDrawCondition drawCondition(helper, false, true, false, helper.option.culling.allowHDOcclusionUseOccluder);
 		drawCondition.SetRestrictRange(upData.offset, upData.count);
 
-		if (hasAlignedData && helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT))
+		if (hasAlignedData)
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, helper.objVec.aligned[camFrustumIndex], helper, drawCondition);
 		else
 		{

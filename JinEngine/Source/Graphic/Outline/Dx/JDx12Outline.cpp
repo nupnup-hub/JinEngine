@@ -186,8 +186,8 @@ namespace JinEngine
 			const DXGI_FORMAT dsvHformat = Constants::GetDepthStencilFormat();
 
 			//const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat
-			std::wstring vertexPath = JApplicationEngine::ShaderPath() + L"\\FullScreenTriangleVs.hlsl";
-			std::wstring pixelPath = JApplicationEngine::ShaderPath() + L"\\Outline.hlsl";
+			std::wstring vertexPath = JApplicationEngine::ShaderPath() + L"\\" + ShaderRelativePath::Common(L"FullScreenTriangleVs.hlsl");
+			std::wstring pixelPath = JApplicationEngine::ShaderPath() + L"\\" + ShaderRelativePath::Image(L"Outline.hlsl");
 
 			gShaderData = std::make_unique<JDx12GraphicShaderDataHolder>();
 			gShaderData->vs = JDxShaderDataUtil::CompileShader(vertexPath, L"FullScreenTriangleVS", L"vs_6_0");

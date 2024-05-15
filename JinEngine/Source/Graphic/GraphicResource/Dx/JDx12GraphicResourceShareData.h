@@ -117,7 +117,7 @@ namespace JinEngine
 			{
 			public: 
 				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate00;
-				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate01;
+				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate01; 
 				JUserPtr<JGraphicResourceInfo> restirDepthDerivative;
 				JUserPtr<JGraphicResourceInfo> restirDenoiseMipmap[Constants::restirDenoiseMipmapCount];
 			public:

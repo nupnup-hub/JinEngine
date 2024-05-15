@@ -32,6 +32,7 @@ SOFTWARE.
 #include"../../../../Core/Storage/JStorageInterface.h"
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
 #include"../../../../Core/Math/JMatrix.h"
+#include"../../../../Core/Interface/JActivatedInterface.h"
 #include<wrl/client.h>  
 #include<random>
 
@@ -45,27 +46,34 @@ namespace JinEngine
 		class JDx12RaytracingDenoiser : public JRaytracingDenoiser
 		{
 		private:
+			static constexpr uint denoiserCount = 2;
+		private:
 			using JDx12ComputeShaderDataHolder = JDx12ComputeShaderDataHolder<1>;
 		private:
 			struct GIDenoiserPassConstants
 			{
 			public:
 				JMatrix4x4 camInvView = JMatrix4x4::Identity();
+				JMatrix4x4 camPreInvView = JMatrix4x4::Identity();
 				JMatrix4x4 camPreViewProj = JMatrix4x4::Identity();
-				JVector2F rtSize;
-				JVector2F invRtSize;
 
-				JVector2F uvToViewA;
-				JVector2F uvToViewB;
+				JVector2F rtSize = JVector2F::One();
+				JVector2F invRtSize = JVector2F::One();
 
-				JVector2F camNearFar;
-				float camNearMulFar;
-				float denoiseRange; 
+				JVector2F uvToViewA = JVector2F::One();
+				JVector2F uvToViewB = JVector2F::One();
 
-				float baseRadius;
-				float radiusRange;
+				JVector2F preUvToViewA = JVector2F::One();
+				JVector2F preUvToViewB = JVector2F::One();
+
+				JVector2F camNearFar = JVector2F::One();
+				float camNearMulFar = 0;
+				float denoiseRange = 0;
+
+				float baseRadius = 0;
+				float radiusRange = 0;
 				uint sampleNumber = 0;
-				uint pad00; 
+				uint pad00 = 0;
 			};
 		private:
 			struct UserPrivateData : public Core::JVolatileStorageInterface
@@ -78,6 +86,10 @@ namespace JinEngine
 				JUserPtr<JGraphicResourceInfo> historyLength[historyCount];
 			public:
 				JDx12GraphicBufferT<GIDenoiserPassConstants> frameBuffer;
+			private:
+				JMatrix4x4 camPreInvView = JMatrix4x4::Identity();
+				JVector2F preUvToViewA = JVector2F::One();
+				JVector2F preUvToViewB = JVector2F::One();
 			private:
 				std::random_device rd;	//use hardware
 				std::mt19937 gen;
@@ -128,10 +140,19 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet preHistoryLengthSet;
 			public:
 				JDx12GraphicResourceComputeSet colorHistoryIntermediateSet00; 
-				JDx12GraphicResourceComputeSet colorHistoryIntermediateSet01;
+				JDx12GraphicResourceComputeSet colorHistoryIntermediateSet01; 
 				JDx12GraphicResourceComputeSet denoiseMipmapSet[Constants::restirDenoiseMipmapCount];
 			public:
 				JDx12GraphicResourceComputeSet depthDerivative;
+			public:
+				JDx12GraphicResourceComputeSet* srcColor = nullptr;
+				JDx12GraphicResourceComputeSet* destColor = nullptr;
+				JDx12GraphicResourceComputeSet* colorHistory = nullptr;
+				JDx12GraphicResourceComputeSet* preColorHistory = nullptr;
+				JDx12GraphicResourceComputeSet* fastColorHistory = nullptr;
+				JDx12GraphicResourceComputeSet* preFastColorHistory = nullptr; 
+				JDx12GraphicResourceComputeSet* intermediate00 = nullptr;
+				JDx12GraphicResourceComputeSet* intermediate01 = nullptr;
 			public:
 				JVector2<uint> resolution;
 			public:
@@ -146,28 +167,83 @@ namespace JinEngine
 				bool IsValid()const noexcept;
 			};
 		private:
-			//main process
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> giPrepareRootSignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> giTaRootSignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> giHistoryClampingRootSignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> giAntiFireflyRootSignature;
-			//Microsoft::WRL::ComPtr<ID3D12RootSignature> giBlurHotHistoryRootSignature;;
-			//Microsoft::WRL::ComPtr<ID3D12RootSignature> giDownSamplingRootSignature;
-			//Microsoft::WRL::ComPtr<ID3D12RootSignature> giReconstructRootSignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> giAtorusRootSignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> giBlurRootSignature;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> giPrepareShader;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> giTaShader;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> giHistoryClampingShader;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> giAntiFireflyShader;
-			//std::unique_ptr<JDx12ComputeShaderDataHolder> giBlurHotHistoryShader;
-			//std::unique_ptr<JDx12ComputeShaderDataHolder> giDownSamplingShader; 
-			//std::unique_ptr<JDx12ComputeShaderDataHolder> giReconstructShader;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> giAtorusShader;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> giBlurShader;
+			class DenoiserBase : public Core::JActivatedInterface
+			{ 
+			public:
+				void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);
+			private:
+				virtual void BuildRootSignature(JDx12GraphicDevice* device) = 0;
+				virtual void BuildPso(JDx12GraphicDevice* device) = 0;
+			public:
+				void ClearResource();
+			private:
+				virtual void ClearRootSignature() = 0;
+				virtual void ClearPso() = 0;
+			};
+			class RestirDenoiser : public DenoiserBase
+			{
+				//for restir gi
+			private:
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> prepareRootSignature;
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> taRootSignature;
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyFixRootSignature;
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyClampingRootSignature;
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> antiFireflyRootSignature;
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> atorusRootSignature;
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyStabilizationRootSignature;
+			private:
+				std::unique_ptr<JDx12ComputeShaderDataHolder> prepareShader;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> taShader;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> historyFixShader;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> historyClampingShader;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> antiFireflyShader;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> atorusShader;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> historyStabilizationShader;
+			private:
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> clearRootSignature;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> clearShader;
+			public:
+				~RestirDenoiser();  
+			private:
+				void BuildRootSignature(JDx12GraphicDevice* device) final;
+				void BuildPso(JDx12GraphicDevice* device) final;
+			private:
+				void ClearRootSignature() final;
+				void ClearPso() final;
+			public:
+				void Prepare(const DenoiseDataSet& set, const JDrawHelper& helper);
+				void TemporalAccumulation(const DenoiseDataSet& set, const JDrawHelper& helper);
+				void HistoryFix(const DenoiseDataSet& set, const JDrawHelper& helper);
+				void HistoryClamping(const DenoiseDataSet& set, const JDrawHelper& helper);
+				void AnitiFirefly(const DenoiseDataSet& set, const JDrawHelper& helper);
+				//void GiBlurHotHistory(const DenoiseDataSet& set, const JDrawHelper& helper);
+				//void GiDownSampling(DenoiseDataSet& set, const JDrawHelper& helper); 
+				//void GiReconstructHistory(DenoiseDataSet& set, const JDrawHelper& helper);
+				void Atorus(DenoiseDataSet& set, const JDrawHelper& helper);
+				void HistoryStabilization(const DenoiseDataSet& set, const JDrawHelper& helper);
+				void ClearDenoiseResource(const DenoiseDataSet& set, const JDrawHelper& helper);
+			public:
+				void SettingFirstLoop(DenoiseDataSet& set, const JDrawHelper& helper);
+				void SettingSecondLoop(DenoiseDataSet& set, const JDrawHelper& helper);
+				void SettingThirdLoop(DenoiseDataSet& set, const JDrawHelper& helper);
+			};
+			class ReCurrentDenoiser : public DenoiserBase
+			{
+				//common deoniser
+			public:
+				~ReCurrentDenoiser(); 
+			private:
+				void BuildRootSignature(JDx12GraphicDevice* device)final;
+				void BuildPso(JDx12GraphicDevice* device)final;
+			private:
+				void ClearRootSignature()final;
+				void ClearPso();
+			};
 		private:
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> clearRootSignature;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> clearShader;
+			RestirDenoiser restirDenoiser;
+			ReCurrentDenoiser reCurrentDenoiser;
+		private:
+			DenoiserBase* denoiser[denoiserCount];
 		private:
 			std::unordered_map<size_t, std::unique_ptr<UserPrivateData>> userPrivate;
 			uint computeCount = 0;
@@ -191,29 +267,15 @@ namespace JinEngine
 			void ApplyGIDenoise(const JGraphicRtDenoiseComputeSet* computeSet, const JDrawHelper& helper);
 		private:
 			void Begin(DenoiseDataSet& set, const JDrawHelper& helper);
-			void Prepare(const DenoiseDataSet& set, const JDrawHelper& helper);
-			void GiTemporalAccumulation(const DenoiseDataSet& set, const JDrawHelper& helper);
-			void GiHistoryClamping(const DenoiseDataSet& set, const JDrawHelper& helper);
-			void GiAnitiFirefly(const DenoiseDataSet& set, const JDrawHelper& helper);
-			//void GiBlurHotHistory(const DenoiseDataSet& set, const JDrawHelper& helper);
-			//void GiDownSampling(DenoiseDataSet& set, const JDrawHelper& helper); 
-			//void GiReconstructHistory(DenoiseDataSet& set, const JDrawHelper& helper);
-			void GiAtorus(DenoiseDataSet& set, const JDrawHelper& helper);
-			void GiBlur(const DenoiseDataSet& set, const JDrawHelper& helper); 
-			void ClearDenoiseResource(const DenoiseDataSet& set, const JDrawHelper& helper);
 			void End(const DenoiseDataSet& set, const JDrawHelper& helper);
 		private:
 			void CreateDependencyData(JGraphicDevice* device, JGraphicResourceManager* gm, UserPrivateData* userPrivate, JVector2<uint> rtSize);
 		private:
-			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);
-			void BuildRootSignature(JDx12GraphicDevice* device);
-			void BuildPso(JDx12GraphicDevice* device);
+			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM); 
 		private:
 			//void BuildBuffer(JDx12GraphicDevice* device);
 		private:
-			void ClearResource();
-			void ClearRootSignature();
-			void ClearPso();
+			void ClearResource(); 
 			//void ClearUserPrivateData();
 		};
 	}

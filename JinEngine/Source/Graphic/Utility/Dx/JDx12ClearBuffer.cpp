@@ -67,7 +67,7 @@ namespace JinEngine::Graphic
 		initData.macro.push_back({ INDEX_PER_BYTE, std::to_wstring(dataSize) });
 		initData.macro.push_back({ OFFER_BUFFER_CLEAR_VALUE, std::to_wstring(clearValue) });
 
-		auto compileInfo = JCompileInfo(L"ClearBuffer.hlsl", L"ClearBuffer");
+		auto compileInfo = JCompileInfo(ShaderRelativePath::Common(L"ClearBuffer.hlsl"), L"ClearBuffer");
 		holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 		holder->dispatchInfo = initData.dispatchInfo;
 

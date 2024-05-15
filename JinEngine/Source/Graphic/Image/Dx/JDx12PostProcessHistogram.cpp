@@ -221,13 +221,13 @@ namespace JinEngine::Graphic
 			device,
 			createHistogramRootSignature.Get(),
 			JVector3F(Histogram::ThreadDimXY(), Histogram::ThreadDimXY(), 1),
-			JCompileInfo(L"PostProcessHistogram.hlsl", L"CreateHistgram"));
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"Histogram.hlsl"), L"CreateHistgram"));
 
 		createPsoLam(drawHistogram.get(),
 			device,
 			drawHistogramRootSignature.Get(),
 			JVector3F(Constants::histogramBufferCount, 1, 1),
-			JCompileInfo(L"PostProcessDrawHistogram.hlsl", L"DrawHistogram"));
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"DrawHistogram.hlsl"), L"DrawHistogram"));
 	}  
 	void JDx12PostProcessHistogram::ClearResource()
 	{

@@ -459,7 +459,7 @@ namespace JinEngine::Graphic
 		const std::vector<JMacroSet>& macroSet,
 		_Out_ JDx12GraphicShaderDataHolder& data)
 	{
-		std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\ShadowMapDraw.hlsl";
+		std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\" + ShaderRelativePath::ShadowMap(L"Draw.hlsl");
 		const uint smIndex = (uint)smType;
 
 		data.inputLayout = GetInputLayout(meshType); 
