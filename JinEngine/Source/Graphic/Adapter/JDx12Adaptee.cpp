@@ -209,7 +209,7 @@ namespace JinEngine::Graphic
 		}
 		static JDx12CommandContext* Get(const J_THREAD_TASK_TYPE threadTask, const uint threadIndex)
 		{
-			auto ptr = CashData()(threadTask, threadIndex);
+			auto ptr = CashData()(threadTask, threadIndex); 
 			return ptr->CanUse() ? ptr : nullptr;
 		}
 		static void Claer()
@@ -665,7 +665,7 @@ namespace JinEngine::Graphic
 		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
 		if (set.useDataHandle)
 		{
-			srcHandle = dx12Gm->GetMPBGpuDescriptorHandle(*set.fromDH, J_GRAPHIC_BIND_TYPE::SRV);		//0.. n-1
+			srcHandle = dx12Gm->GetMPBGpuDescriptorHandle(*set.fromDH, J_GRAPHIC_BIND_TYPE::SRV);			//0.. n-1
 			destHandle = dx12Gm->GetMPBGpuDescriptorHandle(*set.toDH, J_GRAPHIC_BIND_TYPE::UAV);			//1.. n
 		}
 		else

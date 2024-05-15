@@ -215,41 +215,15 @@ namespace JinEngine::Graphic
 			initHelper.dispatchInfo.threadDim = JVector3<uint>(threadDimX, threadDimY, 1);
 			initHelper.dispatchInfo.groupDim = JVector3<uint>(groupDimX, groupDimY, 1);
 			initHelper.dispatchInfo.taskOriCount = 512 * 512;
-		}
-		static JCompileInfo ComputeShaderCompileInfo(const J_BLUR_TYPE type)
-		{
-			switch (type)
-			{
-			case J_BLUR_TYPE::BOX:
-				return JCompileInfo(L"Blur.hlsl", L"Blur");
-			case J_BLUR_TYPE::GAUSIAAN:
-				return JCompileInfo(L"Blur.hlsl", L"Blur");
-			default:
-				return JCompileInfo(L"Error", L"Error");
-			}
-		}
-		static JCompileInfo ComputeShaderCompileInfo(const J_DOWN_SAMPLING_TYPE type)
-		{
-			switch (type)
-			{
-			case J_DOWN_SAMPLING_TYPE::BOX:
-				return JCompileInfo(L"DownSampling.hlsl", L"DownSamplingUseBox");
-			case J_DOWN_SAMPLING_TYPE::GAUSIAAN:
-				return JCompileInfo(L"DownSampling.hlsl", L"DownSamplingUseKernel");
-			case J_DOWN_SAMPLING_TYPE::KAISER:
-				return JCompileInfo(L"DownSampling.hlsl", L"DownSamplingUseKernel");
-			default:
-				return JCompileInfo(L"Error", L"Error");
-			}
-		}
+		}  
 		static JCompileInfo GraphicShaderCompileInfo(const J_SSAO_TYPE type)
 		{
 			switch (type)
 			{
 			case J_SSAO_TYPE::DEFAULT:
-				return JCompileInfo(L"SsaoPs.hlsl", L"SsaoPs");
+				return JCompileInfo(ShaderRelativePath::Ssao(L"Ps.hlsl"), L"SsaoPs");
 			case J_SSAO_TYPE::HORIZON_BASED:
-				return JCompileInfo(L"SsaoPs.hlsl", L"HbaoPs");
+				return JCompileInfo(ShaderRelativePath::Ssao(L"Ps.hlsl"), L"HbaoPs");
 			default:
 				return JCompileInfo(L"Error", L"Error");
 			}
@@ -259,9 +233,9 @@ namespace JinEngine::Graphic
 			switch (type)
 			{
 			case J_SSAO_BLUR_SHADER::BILATERAL_X:
-				return JCompileInfo(L"SsaoBlur.hlsl", L"BilateralBlurX");
+				return JCompileInfo(ShaderRelativePath::Ssao(L"Blur.hlsl"), L"BilateralBlurX");
 			case J_SSAO_BLUR_SHADER::BILATERAL_Y:
-				return JCompileInfo(L"SsaoBlur.hlsl", L"BilateralBlurY");
+				return JCompileInfo(ShaderRelativePath::Ssao(L"Blur.hlsl"), L"BilateralBlurY");
 			default:
 				return JCompileInfo(L"Error", L"Error");
 			}
@@ -878,7 +852,7 @@ namespace JinEngine::Graphic
 					holder->ps = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro[0], compileInfo.functionName, L"ps_6_0");
 					if (canUseInterleave)
 					{
-						auto gsInfo = JCompileInfo(L"SsaoGs.hlsl", L"SsaoGs");
+						auto gsInfo = JCompileInfo(ShaderRelativePath::Ssao(L"Gs.hlsl"), L"SsaoGs");
 						holder->gs = JDxShaderDataUtil::CompileShader(gsInfo.filePath, initData.macro[0], gsInfo.functionName, L"gs_6_0");
 					}
 
@@ -975,7 +949,7 @@ namespace JinEngine::Graphic
 			Private::StuffGraphicShaderMacro(initData, func);
 			initData.macro[0].push_back({ USE_HBAO, std::to_wstring(1) });
 
-			auto compileInfo = JCompileInfo(L"SsaoCombine.hlsl", L"SsaoCombine");
+			auto compileInfo = JCompileInfo(ShaderRelativePath::Ssao(L"Combine.hlsl"), L"SsaoCombine");
 			holder->vs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro[0], L"FullScreenTriangleVS", L"vs_6_0");
 			holder->ps = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro[0], compileInfo.functionName, L"ps_6_0");
 
@@ -996,7 +970,7 @@ namespace JinEngine::Graphic
 		auto* holder = ssaoDepthLinearize.get();
 
 		JGraphicShaderInitData initData;
-		auto compileInfo = JCompileInfo(L"DepthLinearize.hlsl", L"DepthLinearize");
+		auto compileInfo = JCompileInfo(ShaderRelativePath::Ssao(L"DepthLinearize.hlsl"), L"DepthLinearize");
 		holder->vs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro[0], L"FullScreenTriangleVS", L"vs_6_0");
 		holder->ps = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro[0], compileInfo.functionName, L"ps_6_0");
 
@@ -1026,7 +1000,7 @@ namespace JinEngine::Graphic
 		auto* holder = ssaoDepthInterleave.get();
 
 		JGraphicShaderInitData initData;
-		auto compileInfo = JCompileInfo(L"DepthInterleave.hlsl", L"DepthInterleave");
+		auto compileInfo = JCompileInfo(ShaderRelativePath::Ssao(L"DepthInterleave.hlsl"), L"DepthInterleave");
 		holder->vs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro[0], L"FullScreenTriangleVS", L"vs_6_0");
 		holder->ps = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro[0], compileInfo.functionName, L"ps_6_0");
 

@@ -45,7 +45,7 @@ SOFTWARE.
 #include"../../../../Core/Identity/JIdentifier.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Core/Utility/JCommonUtility.h"     
-
+ 
 namespace JinEngine
 {
 	namespace Editor

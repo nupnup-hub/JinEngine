@@ -38,7 +38,7 @@ namespace JinEngine
 		
 		enum class J_THREAD_TASK_TYPE
 		{
-			OCC,
+			OCC = 0,
 			SHADOW_MAP,
 			SCENE,
 			COUNT

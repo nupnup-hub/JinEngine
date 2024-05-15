@@ -69,7 +69,7 @@ namespace JinEngine
 			private:
 				static constexpr float defaultUpCapacityFactor = 2.0f;
 				static constexpr float defaultDownCapacityFactor = 2.0f;
-				static constexpr uint defaultDownCapacityCountMax = 3600;
+				static constexpr uint defaultDownCapacityCountMax = 16;
 			public:
 				//buffer count
 				uint count = 0;
@@ -129,7 +129,7 @@ namespace JinEngine
 			using OpaqueVecPerCam = std::vector<OpaqueVec>;
 		public:
 			OpaqueVec common;
-			OpaqueVecPerCam aligned;		//applied frustum culling
+			OpaqueVecPerCam aligned;		//applied frustum culling 
 		public:
 			void ClearAlignedVecElement();
 		};

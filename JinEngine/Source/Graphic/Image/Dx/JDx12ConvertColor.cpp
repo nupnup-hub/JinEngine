@@ -247,7 +247,7 @@ namespace JinEngine::Graphic
 				initData.macro.push_back({ HDR_DISPLAY_MAPPING, std::to_wstring(1) });
 
 			//initData.macro.push_back({ COPY_TM_RESULT, std::to_wstring(1) });
-			auto compileInfo = JCompileInfo(L"ConvertLinearColor.hlsl", L"main");
+			auto compileInfo = JCompileInfo(ShaderRelativePath::Image(L"ConvertLinearColor.hlsl"), L"main");
 
 			holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 			holder->dispatchInfo = initData.dispatchInfo;
@@ -282,7 +282,7 @@ namespace JinEngine::Graphic
 				initData.macro.push_back({ HDR_DISPLAY_MAPPING, std::to_wstring(1) });
 
 			//initData.macro.push_back({ COPY_TM_RESULT, std::to_wstring(1) });
-			auto compileInfo = JCompileInfo(L"ConvertDisplayColor.hlsl", L"main");
+			auto compileInfo = JCompileInfo(ShaderRelativePath::Image(L"ConvertDisplayColor.hlsl"), L"main");
 
 			holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 			holder->dispatchInfo = initData.dispatchInfo;
@@ -303,7 +303,7 @@ namespace JinEngine::Graphic
 
 		JDx12ComputePsoBulder<1> builder; 
 		builder.PushHolder(reverseY.get());
-		builder.PushCompileInfo(JCompileInfo(L"ConvertTextureComponent.hlsl", L"main"));
+		builder.PushCompileInfo(JCompileInfo(ShaderRelativePath::Image(L"ConvertTextureComponent.hlsl"), L"main"));
 		builder.PushMacroSet({REVERSE_Y, L"1"});
 		builder.PushThreadDim(JVector3<uint>(Convert::threadDimX, Convert::threadDimY, 1));
 		builder.PushRootSignature(reverseYRootSignature.Get());

@@ -317,7 +317,7 @@ namespace JinEngine
 							if (thread->info.notifyF != nullptr)
 								(*thread->info.notifyF)(thread->info.guid);
 							if (thread->info.callBindOnce)
-								thread->bind = nullptr;
+								thread->bind = nullptr; 
 						}
 					}
 				};

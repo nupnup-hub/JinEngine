@@ -47,9 +47,6 @@ namespace JinEngine
 			}
 			~JEditorPreviewImpl()
 			{ 
-				if (previewGroup != nullptr)
-					previewGroup->Clear();
-				previewGroup.reset();
 				previewGroup = nullptr;
 			}
 		public:
@@ -241,8 +238,9 @@ namespace JinEngine
 			impl = std::make_unique<JEditorPreviewImpl>();
 		}
 		JEditorPreviewInterface::~JEditorPreviewInterface()
-		{
-			impl.reset();
+		{ 
+			if (impl != nullptr)
+				impl->ClearPreviewGroup();
 			impl = nullptr; 
 		}
 	}

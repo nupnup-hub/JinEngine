@@ -382,15 +382,15 @@ namespace JinEngine::Graphic
 			aoMapShaderData.get(),
 		};
 		JCompileInfo compileInfoSet[shaderCount]
-		{
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeLinearMap"),
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeNonLinearMap"),
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeNonLinearMap"),
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeSpecularMap"),
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeNormalMap"),
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeTangentMap"),
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeVelocityMap"),
-			JCompileInfo(L"DebugVisualize.hlsl", L"VisualizeAoMap")
+		{ 
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeLinearMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeSpecularMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNormalMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeTangentMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeVelocityMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeAoMap")
 		};
 		std::vector<JMacroSet> macroSet[shaderCount]
 		{ 

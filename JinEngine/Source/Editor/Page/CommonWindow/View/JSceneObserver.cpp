@@ -64,7 +64,7 @@ SOFTWARE.
 #include"../../../../Graphic/Outline/JOutlineConstants.h"
 #include"../../../../Graphic/FrameResource/JFrameUpdate.h"
 #include"../../../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
-
+#include<random>
 //test
 //#include"../../../../Object/Directory/JDirectory.h"
 //#include"../../../../Object/Directory/JFile.h"
@@ -1731,6 +1731,11 @@ namespace JinEngine
 		{
 			JUserPtr<JGameObject> parent = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, J_DEFAULT_SHAPE::EMPTY);
 			parent->SetName(L"Test Light Set");
+	
+			std::random_device rd;	//use hardware
+			std::mt19937 gen(rd());
+			std::uniform_real_distribution<float> disUNorm(0.0f, 1.0f);
+
 			for (int i = 0; i < testData.xCount; ++i)
 			{
 				for (int j = 0; j < testData.yCount; ++j)
@@ -1740,8 +1745,8 @@ namespace JinEngine
 						JUserPtr<JGameObject> gObj = JGCI::CreateLight(parent, OBJECT_FLAG_NONE, testData.litType);
 						//gObj->GetTransform()->SetScale(testData.offsetScale);
 						auto lit = gObj->GetComponent<JLight>();
-						if (lit->GetLightType() == J_LIGHT_TYPE::RECT)
-							static_cast<JRectLight*>(lit.Get())->SetPower(6.0f);
+						lit->SetPower(2.5f); 
+						lit->SetColor(JVector3F(disUNorm(gen), disUNorm(gen), disUNorm(gen)));
 
 						gObj->GetTransform()->SetRotation(testData.offsetRot);
 						gObj->GetTransform()->SetPosition((testData.offsetPos + JVector3<float>(i * testData.distance.x, j * testData.distance.y, k * testData.distance.z)));

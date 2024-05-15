@@ -294,13 +294,13 @@ namespace JinEngine::Graphic
 			downSample4.get()
 		};
 		JCompileInfo compileInfoSet[6]
-		{
-			JCompileInfo(L"PostProcessBloomExtract.hlsl", L"main"), 
-			JCompileInfo(L"PostProcessBloomExtract.hlsl", L"main"),
-			JCompileInfo(L"PostProcessBloomBlur.hlsl", L"main"),
-			JCompileInfo(L"PostProcessBloomUpSample.hlsl", L"main"),
-			JCompileInfo(L"PostProcessBloomDownSample.hlsl", L"main"),
-			JCompileInfo(L"PostProcessBloomDownSample.hlsl", L"main")
+		{ 
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"BloomExtract.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"BloomExtract.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"BloomBlur.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"BloomUpSample.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"BloomDownSample.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"BloomDownSample.hlsl"), L"main")
 		};
 		std::vector<JMacroSet> macroSet[6]
 		{

@@ -1671,7 +1671,7 @@ namespace JinEngine
 	DirectX::XMMATRIX JCamera::GetInvView()const noexcept
 	{
 		return XMMatrixInverse(nullptr, impl->mView.LoadXM());
-	}
+	} 
 	XMMATRIX JCamera::GetProj()const noexcept
 	{
 		return impl->mProj.LoadXM();

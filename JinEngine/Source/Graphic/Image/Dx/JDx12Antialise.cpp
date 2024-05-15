@@ -267,12 +267,12 @@ namespace JinEngine::Graphic
 			fxaaResolveWork.get()
 		};
 		JCompileInfo compileInfoSet[shaderCount]
-		{
-			JCompileInfo(L"PostProcessFxaaPass1.hlsl", L"main"),
-			JCompileInfo(L"PostProcessFxaaPass1.hlsl", L"main"),
-			JCompileInfo(L"PostProcessFxaaPass2.hlsl", L"main"),
-			JCompileInfo(L"PostProcessFxaaPass2.hlsl", L"main"),
-			JCompileInfo(L"PostProcessFxaaResolveWork.hlsl", L"main")
+		{ 
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"FxaaPass1.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"FxaaPass1.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"FxaaPass2.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"FxaaPass2.hlsl"), L"main"),
+			JCompileInfo(ShaderRelativePath::Postprocessing(L"FxaaResolveWork.hlsl"), L"main")
 		};
 		std::vector<JMacroSet> macroSet[shaderCount]
 		{

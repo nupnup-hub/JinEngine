@@ -57,7 +57,7 @@ SOFTWARE.
 #include"../../../Core/Utility/JCommonUtility.h" 
 #include"../../../Graphic/Frameresource/JFrameUpdate.h" 
 #include<DirectXColors.h> 
- 
+  
 namespace JinEngine
 {
 	namespace
@@ -630,7 +630,7 @@ namespace JinEngine
 				accelerator->Activate(); 
 		}
 		void DeActivate()
-		{ 
+		{  
 			if (accelerator != nullptr)
 				accelerator->DeAcitvate();
 			JGameObjectPrivate::ActivateInterface::DeActivate(root);
@@ -1155,10 +1155,7 @@ namespace JinEngine
 
 		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		if (!scene->IsValid())
-			MessageBoxA(0, "Invalid", 0, 0);
-
+ 
 		JObjectFileIOHelper::StoreEnumData(tool, scene->GetUseCaseType(), "UseCaseType:");
 		JObjectFileIOHelper::StoreAtomicData(tool, scene->IsValid(), Core::JFileConstant::GetLastOpenSymbol(JScene::StaticTypeInfo()));
 		JObjectFileIOHelper::StoreAtomicData(tool, scene->IsMainScene(), "IsMainScene:");

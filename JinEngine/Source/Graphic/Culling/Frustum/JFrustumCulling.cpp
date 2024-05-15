@@ -32,6 +32,7 @@ SOFTWARE.
 #include"../../../Object/Resource/Scene/JScene.h"
 #include"../../../Object/Resource/Scene/JScenePrivate.h"
 
+//#include"../../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine
 {
 	namespace Graphic
@@ -56,6 +57,7 @@ namespace JinEngine
 				 
 				const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 				auto& alignedVec = helper.objVec.aligned[camFrustumIndex];
+	 
 				if (alignedVec.size() > 0)
 					alignedVec.clear();
 

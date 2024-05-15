@@ -71,7 +71,7 @@ namespace JinEngine
 		JUserPtr<JTransform> GetTransform()noexcept;
 		DirectX::XMMATRIX GetView()const noexcept;
 		JMatrix4x4 GetView4x4()const noexcept;
-		DirectX::XMMATRIX GetInvView()const noexcept; 
+		DirectX::XMMATRIX GetInvView()const noexcept;  
 		DirectX::XMMATRIX GetProj()const noexcept;  
 		JMatrix4x4 GetProj4x4()const noexcept; 
 		DirectX::XMMATRIX GetPreViewProj()const noexcept;

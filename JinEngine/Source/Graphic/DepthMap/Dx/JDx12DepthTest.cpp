@@ -261,8 +261,8 @@ namespace JinEngine::Graphic
 		builder.Create(device, L"DepthTest RootSignature", mRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	}
 	void JDx12DepthTest::BuildPso(ID3D12Device* device, const DXGI_FORMAT depthStencilFormat)
-	{
-		JCompileInfo compileInfo(L"DepthTest.hlsl", L"VS"); 
+	{ 
+		JCompileInfo compileInfo(ShaderRelativePath::Culling(L"DepthTest.hlsl"), L"VS");
 		for (uint i = 0; i < (uint)TEST_TYPE::COUNT; ++i)
 		{
 			TEST_TYPE type = (TEST_TYPE)i;

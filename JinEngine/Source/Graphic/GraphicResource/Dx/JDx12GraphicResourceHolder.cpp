@@ -156,8 +156,9 @@ namespace JinEngine::Graphic
 		resource->GetHeapProperties(&pHeapProperties, &pHeapFlags);
 		 
 		if (!Core::HasSQValueEnum(pHeapFlags, D3D12_HEAP_FLAGS::D3D12_HEAP_FLAG_SHARED))
-		{
+		{ 
 			resource = nullptr;
+			//resource = nullptr;
 			/*
 			D3D12_RESOURCE_DESC desc = resource->GetDesc();
 			if (pHeapProperties.Type == D3D12_HEAP_TYPE_UPLOAD)

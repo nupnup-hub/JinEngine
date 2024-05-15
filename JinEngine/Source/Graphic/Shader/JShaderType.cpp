@@ -50,8 +50,8 @@ namespace JinEngine
 		return (groupDim.x * groupDim.y * groupDim.z) * (threadDim.x * threadDim.y * threadDim.z);
 	}
 
-	JCompileInfo::JCompileInfo(const std::wstring& fileName, const std::wstring& functionName)
-		:filePath(JApplicationEngine::ShaderPath() + L"\\" + fileName), functionName(functionName) {}
+	JCompileInfo::JCompileInfo(const std::wstring& relativePath, const std::wstring& functionName)
+		:filePath(JApplicationEngine::ShaderPath() + L"\\" + relativePath), functionName(functionName) {}
 	bool JCompileInfo::IsValid()const noexcept
 	{
 		return !functionName.empty() && JFileIOHelper::HasFile(filePath);

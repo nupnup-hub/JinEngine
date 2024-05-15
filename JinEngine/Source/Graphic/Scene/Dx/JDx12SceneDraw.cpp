@@ -213,10 +213,10 @@ namespace JinEngine::Graphic
 				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_wstring(info.resource.bindingShadowTextureArrayCapacity) });
 				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_wstring(info.resource.bindingShadowTextureCubeCapacity) });
 
-				initHelper.macro[i].push_back({ G_BUFFER_ALBEDO_COLOR, std::to_wstring(Constants::gBufferAlbedoLayer) }); 
+				initHelper.macro[i].push_back({ G_BUFFER_ALBEDO_COLOR, std::to_wstring(Constants::gBufferAlbedoLayer) });
 				initHelper.macro[i].push_back({ G_BUFFER_NORMAL_AND_TANGENT,std::to_wstring(Constants::gBufferNormalAndTangentLayer) });
 				initHelper.macro[i].push_back({ G_BUFFER_LIGHT_PROP,std::to_wstring(Constants::gBufferLightPropertyLayer) });
-				
+
 				//initHelper.macro[i].push_back({ G_BUFFER_VELOCITY, std::to_wstring(Constants::gBufferVelocityLayer) });
 				//initHelper.macro[i].push_back({ G_BUFFER_VELOCITY,std::to_wstring(Constants::gBufferVelocityLayer) });
 				initHelper.macro[i].push_back({ G_BUFFER_LAYER_COUNT,std::to_wstring(Constants::gBufferLayerCount) });
@@ -267,10 +267,10 @@ namespace JinEngine::Graphic
 					initHelper.macro[i].push_back({ USE_BRDF_LAMBERTIAN_DIFFUSE, std::to_wstring(1) });
 
 				//Rendering
-				if (option.culling.allowLightCluster && initHelper.shaderType != J_GRAPHIC_SHADER_TYPE::PREVIEW && 
+				if (option.culling.allowLightCluster && initHelper.shaderType != J_GRAPHIC_SHADER_TYPE::PREVIEW &&
 					Core::HasSQValueEnum(initHelper.privateFlag, SHADER_FUNCTION_PRIVATE_LIGHT_CULLING))
 					initHelper.macro[i].push_back({ USE_LIGHT_CLUSTER, std::to_wstring(1) });
-  
+
 				if (option.rendering.allowRaytracing && initHelper.shaderType != J_GRAPHIC_SHADER_TYPE::PREVIEW &&
 					Core::HasSQValueEnum(initHelper.privateFlag, SHADER_FUNCTION_PRIVATE_GLOBAL_ILLUMINATION))
 					initHelper.macro[i].push_back({ USE_GLOBAL_ILLUMINATION, std::to_wstring(1) });
@@ -528,11 +528,11 @@ namespace JinEngine::Graphic
 			static constexpr int gBufferIndex = ambientOcclusionMapIndex + 1;
 			static constexpr int depthMapBufferIndex = gBufferIndex + 1;
 
-			static constexpr int cluserOffsetBufferIndex = depthMapBufferIndex + 1;  
+			static constexpr int cluserOffsetBufferIndex = depthMapBufferIndex + 1;
 			static constexpr int clusterLinkBufferIndex = cluserOffsetBufferIndex + 1;
 
-			static constexpr int giBufferIndex = clusterLinkBufferIndex + 1; 
-			 
+			static constexpr int giBufferIndex = clusterLinkBufferIndex + 1;
+
 			static constexpr int rootSlotCount = giBufferIndex + 1;
 
 			//static constexpr int exceptAllRootSlotCount = depthMapBufferIndex + 1;
@@ -583,7 +583,7 @@ namespace JinEngine::Graphic
 			gBufferSet[Constants::gBufferNormalAndTangentLayer] = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 			//gBufferSet[Constants::gBufferVelocityLayer] = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 		}
-		 
+
 		if (helper.allowTemporalProcess)
 		{
 			velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
@@ -594,14 +594,14 @@ namespace JinEngine::Graphic
 		}
 
 		aoSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
-		 
+
 		canUseAo = aoSet.IsValid();
 		canUseLightCulling = helper.cam->AllowLightCulling() && helper.option.culling.allowLightCluster;
 		canUseLightCluster = canUseLightCulling && helper.option.culling.allowLightCluster;
 		canUseGi = helper.option.rendering.allowRaytracing && helper.cam->AllowRaytracingGI();
 	}
 	void JDx12SceneDraw::ResourceDataSet::SettingCluster(JDx12CommandContext* context, const JDrawHelper& helper)
-	{ 
+	{
 		clusterOffsetSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
 		clusterListSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
 	}
@@ -750,8 +750,8 @@ namespace JinEngine::Graphic
 		context->ClearDepthStencilView(rSet.dsSet);
 		context->ClearRenderTargetView(rSet.rtSet, Constants::GetBackBufferClearColor());
 		if (helper.option.rendering.allowDeferred)
-		{ 
-			context->ClearRenderTargetView(rSet.gBufferSet[Constants::gBufferAlbedoLayer], Constants::GetBackBufferClearColor()); 
+		{
+			context->ClearRenderTargetView(rSet.gBufferSet[Constants::gBufferAlbedoLayer], Constants::GetBackBufferClearColor());
 			context->Apply(&rSet.gBufferSet[Constants::gBufferAlbedoLayer + 1], &JDx12CommandContext::ClearRenderTargetView, std::make_index_sequence<Constants::gBufferLayerCount - 1>(), Constants::GetBlackClearColor());
 		}
 	}
@@ -835,7 +835,7 @@ namespace JinEngine::Graphic
 	{
 		if (helper.option.rendering.allowDeferred)
 		{
-			using namespace Deferred;  
+			using namespace Deferred;
 			context->SetGraphicsRootDescriptorTable(Shading::giBufferIndex, rSet.giColorSet.GetGpuSrvHandle());
 		}
 	}
@@ -877,7 +877,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12SceneDraw::CopyPreTemporalResource(JDx12CommandContext* context, ResourceDataSet& rSet, const JDrawHelper& helper)
 	{
-		if(helper.allowTemporalProcess)
+		if (helper.allowTemporalProcess)
 		{
 			JDx12GraphicResourceComputeSet* fromSet[3]
 			{
@@ -895,7 +895,7 @@ namespace JinEngine::Graphic
 		}
 	}
 	void JDx12SceneDraw::ComputeVelocity(JDx12CommandContext* context, const ResourceDataSet& set, const JDrawHelper& helper)
-	{  
+	{
 		context->Transition(set.dsSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		context->Transition(set.velocitySet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		context->FlushResourceBarriers();
@@ -906,8 +906,8 @@ namespace JinEngine::Graphic
 		context->SetComputeRootConstantBufferView(Velocity::passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, set.camFrameIndex);
 		context->SetComputeRootDescriptorTable(Velocity::depthMapIndex, set.dsSet.GetGpuSrvHandle());
 		context->SetComputeRootDescriptorTable(Velocity::velocityMapIndex, set.velocitySet.GetGpuUavHandle());
-		 
-		context->Dispatch2D(set.rtSet.info->GetResourceSize(), velocityShader->dispatchInfo.threadDim.XY()); 
+
+		context->Dispatch2D(set.rtSet.info->GetResourceSize(), velocityShader->dispatchInfo.threadDim.XY());
 	}
 	void JDx12SceneDraw::BeginDraw(const JGraphicBindSet* bindSet, const JDrawHelper& helper)
 	{
@@ -918,7 +918,7 @@ namespace JinEngine::Graphic
 		ResourceDataSet rSet(context, helper);
 		if (!rSet.IsValid())
 			return;
- 
+
 		CopyPreTemporalResource(context, rSet, helper);
 		SwitchResourceStateForDrawing(context, rSet, helper);
 		ClearResource(context, rSet, helper);
@@ -933,7 +933,7 @@ namespace JinEngine::Graphic
 		ResourceDataSet rSet(context, helper);
 		if (!rSet.IsValid())
 			return;
- 
+
 		ReturnResourceState(context, rSet, helper);
 	}
 	void JDx12SceneDraw::DrawSceneRenderTarget(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)
@@ -946,7 +946,7 @@ namespace JinEngine::Graphic
 		ResourceDataSet rSet(context, helper);
 		if (!rSet.IsValid())
 			return;
-		  
+
 		rSet.canUseAo &= !helper.option.rendering.allowDeferred;
 		rSet.canUseLightCluster &= !helper.option.rendering.allowDeferred;
 		if (rSet.canUseLightCluster)
@@ -973,7 +973,7 @@ namespace JinEngine::Graphic
 			ReturnResourceState(context, rSet, helper);
 	}
 	void JDx12SceneDraw::DrawSceneRenderTargetMultiThread(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)
-	{ 
+	{
 		if (!IsSameDevice(drawSet))
 			return;
 
@@ -1076,14 +1076,14 @@ namespace JinEngine::Graphic
 		BindGBufferResource(context, rSet, helper);
 		if (rSet.canUseLightCluster)
 			BindLightListResource(context, rSet, helper);
-		if(rSet.canUseGi)
+		if (rSet.canUseGi)
 			BindGiResource(context, rSet, helper);
 		BindViewPortAndRect(context, rSet);
 		DrawFullScreenGeometry(context, rSet, helper);
 		ReturnResourceState(context, rSet, helper);
 	}
 	void JDx12SceneDraw::DrawSceneShadeMultiThread(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)
-	{ 
+	{
 		if (!IsSameDevice(drawSet))
 			return;
 
@@ -1110,9 +1110,9 @@ namespace JinEngine::Graphic
 			BindGiResource(context, rSet, helper);
 		BindViewPortAndRect(context, rSet);
 		DrawFullScreenGeometry(context, rSet, helper);
-	} 
+	}
 	void JDx12SceneDraw::ComputeSceneDependencyTemporalResource(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)
-	{ 
+	{
 		if (!IsSameDevice(drawSet) || !helper.allowTemporalProcess)
 			return;
 
@@ -1121,7 +1121,7 @@ namespace JinEngine::Graphic
 		ResourceDataSet rSet(context, helper);
 		if (!rSet.IsValid() || !rSet.velocitySet.IsValid())
 			return;
-		 
+
 		ComputeVelocity(context, rSet, helper);
 	}
 	void JDx12SceneDraw::DrawGameObject(JDx12CommandContext* context,
@@ -1129,7 +1129,7 @@ namespace JinEngine::Graphic
 		const JDrawHelper& helper,
 		const JDrawCondition& condition,
 		const bool isDeferred)
-	{ 
+	{
 		using GetShaderDataPtr = JShaderDataHolder * (*)(const JShader*, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT);
 		auto getForwardShaderDataLam = [](const JShader* shader, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT layout) {return shader->GetGraphicForwardData(type, layout).Get(); };
 		auto getDeferredShaderDataLam = [](const JShader* shader, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT layout) {return shader->GetGraphicDeferredData(type, layout).Get(); };
@@ -1199,7 +1199,7 @@ namespace JinEngine::Graphic
 			return;
 
 		ReBuildRootSignature(static_cast<JDx12GraphicDevice*>(dataSet.device)->GetDevice(), GetGraphicInfo(), GetGraphicOption());
-		BuildDeferredShader(dataSet); 
+		BuildDeferredShader(dataSet);
 		BuildVelocityShader(static_cast<JDx12GraphicDevice*>(dataSet.device)->GetDevice(), GetGraphicInfo(), GetGraphicOption());
 
 		auto shaderVec = JShader::StaticTypeInfo().GetInstanceRawPtrVec();
@@ -1247,14 +1247,14 @@ namespace JinEngine::Graphic
 	}
 	void JDx12SceneDraw::CompileShader(JDx12GraphicShaderDataHolder* holder, const JGraphicShaderInitData& initData)
 	{
-		std::wstring vertexShaderPath = JApplicationEngine::ShaderPath() + L"\\VertexShader.hlsl";
-		std::wstring pixelShaderPath = JApplicationEngine::ShaderPath();
+		std::wstring vertexShaderPath = JApplicationEngine::ShaderPath() + L"\\" + ShaderRelativePath::SceneRasterize(L"VertexShader.hlsl");
+		std::wstring pixelShaderPath = JApplicationEngine::ShaderPath() + L"\\";
 		if (initData.processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY)
-			pixelShaderPath += L"\\PixelStuffGBuffer.hlsl";
+			pixelShaderPath += ShaderRelativePath::SceneRasterize(L"PixelStuffGBuffer.hlsl");
 		else if (initData.processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_SHADING)
-			pixelShaderPath += L"\\PixelDeferredShader.hlsl";
+			pixelShaderPath += ShaderRelativePath::SceneRasterize(L"PixelDeferredShader.hlsl");
 		else
-			pixelShaderPath += L"\\PixelForwardShader.hlsl";
+			pixelShaderPath += ShaderRelativePath::SceneRasterize(L"PixelForwardShader.hlsl");
 
 		holder->vs = JDxShaderDataUtil::CompileShader(vertexShaderPath, initData.macro[(uint)initData.layoutType], L"VS", L"vs_6_0");
 		holder->ps = JDxShaderDataUtil::CompileShader(pixelShaderPath, initData.macro[(uint)initData.layoutType], L"PS", L"ps_6_0");
@@ -1402,7 +1402,7 @@ namespace JinEngine::Graphic
 		else if (data.processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY)
 		{
 			newShaderPso.NumRenderTargets = Deferred::layerCount;
-			newShaderPso.RTVFormats[0] = Constants::GetGBufferFormat(Constants::gBufferAlbedoLayer); 
+			newShaderPso.RTVFormats[0] = Constants::GetGBufferFormat(Constants::gBufferAlbedoLayer);
 			newShaderPso.RTVFormats[1] = Constants::GetGBufferFormat(Constants::gBufferLightPropertyLayer);
 			newShaderPso.RTVFormats[2] = Constants::GetGBufferFormat(Constants::gBufferNormalAndTangentLayer);
 			//newShaderPso.RTVFormats[3] = Constants::GetGBufferFormat(Constants::gBufferVelocityLayer);
@@ -1415,7 +1415,7 @@ namespace JinEngine::Graphic
 			newShaderPso.DepthStencilState.DepthFunc = Private::ConvertD3d12Comparesion(data.condition.depthCompareFunc);
 		if (data.condition.cullModeCondition == J_SHADER_APPLIY_CONDITION::APPLY)
 			newShaderPso.RasterizerState.CullMode = Private::ConvertD3d12CullMode(data.condition.isCullModeNone);
-		 
+
 		if (option.rendering.useMSAA)
 			newShaderPso.RasterizerState.MultisampleEnable = true;
 
@@ -1530,10 +1530,10 @@ namespace JinEngine::Graphic
 	}
 	void JDx12SceneDraw::BuildVelocityRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
-		JDx12RootSignatureBuilder<Velocity::rootSlotCount> builder; 
-		builder.PushConstantsBuffer(Velocity::passCBIndex);		 
+		JDx12RootSignatureBuilder<Velocity::rootSlotCount> builder;
+		builder.PushConstantsBuffer(Velocity::passCBIndex);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); 		 
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 		builder.Create(device, L"Velocity RootSignature", velocityRootsignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);
 	}
 	void JDx12SceneDraw::ReBuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
@@ -1576,7 +1576,7 @@ namespace JinEngine::Graphic
 
 		auto holder = CreateShader(dataSet, initData);
 		deferredShadingHolder[INNER_DEFERRED_SHADER_EXCEPT_ALL] = (static_cast<JDx12GraphicShaderDataHolder*>(holder.Release()));
-		 
+
 		initData.privateFlag = SHADER_FUNCTION_PRIVATE_LIGHT_CULLING;
 		holder = CreateShader(dataSet, initData);
 		deferredShadingHolder[INNER_DEFERRED_SHADER_LIGHT_CULLING] = (static_cast<JDx12GraphicShaderDataHolder*>(holder.Release()));
@@ -1596,9 +1596,9 @@ namespace JinEngine::Graphic
 
 		constexpr uint shaderCount = 1;
 		JDx12ComputePsoBulder<shaderCount> psoBuilder("JDx12SceneDraw");
- 
+
 		psoBuilder.PushHolder(velocityShader.get());
-		psoBuilder.PushCompileInfo(JCompileInfo(L"VelocityBuffer.hlsl", L"main"));
+		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::SceneRasterize(L"VelocityBuffer.hlsl"), L"main"));
 		psoBuilder.PushThreadDim(Velocity::GetThreadDim());
 		psoBuilder.PushRootSignature(velocityRootsignature.Get());
 		psoBuilder.Create(device);

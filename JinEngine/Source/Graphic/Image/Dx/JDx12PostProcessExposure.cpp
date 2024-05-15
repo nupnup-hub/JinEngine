@@ -204,7 +204,7 @@ namespace JinEngine::Graphic
 		initData.dispatchInfo.threadDim = JVector3F(Extract::threadDimX, Extract::threadDimY, 1); 	
 		initData.PushThreadDimensionMacro();
 
-		auto compileInfo = JCompileInfo(L"PostProcessExtractLuma.hlsl", L"ExtractLuma");
+		auto compileInfo = JCompileInfo(ShaderRelativePath::Postprocessing(L"ExtractLuma.hlsl"), L"ExtractLuma");
 
 		holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 		holder->dispatchInfo = initData.dispatchInfo;
@@ -228,7 +228,7 @@ namespace JinEngine::Graphic
 		initData.dispatchInfo.threadDim = JVector3F(Update::threadDimX, Update::threadDimY, 1); 
 		initData.PushThreadDimensionMacro();
 
-		auto compileInfo = JCompileInfo(L"PostProcessAdaptExposure.hlsl", L"AdaptExposure");
+		auto compileInfo = JCompileInfo(ShaderRelativePath::Postprocessing(L"AdaptExposure.hlsl"), L"AdaptExposure");
 		holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 		holder->dispatchInfo = initData.dispatchInfo;
 
