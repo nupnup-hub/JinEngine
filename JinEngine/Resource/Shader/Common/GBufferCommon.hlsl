@@ -27,11 +27,11 @@ SOFTWARE.
 #include"Packing.hlsl"
 
 #ifndef G_BUFFER_ALBEDO_COLOR
-#define G_BUFFER_ALBEDO_COLOR 0
+#define G_BUFFER_ALBEDO_COLOR 0             //xyz = albedoColor, w = Specular color luminance
 #endif
  
 #ifndef G_BUFFER_LIGHT_PROP
-#define G_BUFFER_LIGHT_PROP 1	            //x = specular color, y = metallic, z = roughness, w = ambientFactor
+#define G_BUFFER_LIGHT_PROP 1	            //x = metallic, y = roughness, z = ambientFactor, w = material id
 #endif
 
 #ifndef G_BUFFER_NORMAL_AND_TANGENT
@@ -41,6 +41,8 @@ SOFTWARE.
 #ifndef G_BUFFER_LAYER_COUNT
 #define G_BUFFER_LAYER_COUNT 3
 #endif
+
+#define MATERIAL_ID_RANGE 0xff
 
 float4 InitialLightPropLayer()
 {
@@ -59,45 +61,91 @@ bool IsInvalidNormalLayer(float4 v)
     return all(v == 0);
 }
 
-float4 PackLightPropLayer(in float specularFactor, in float metalic, in float roughness, in float aoFactor)
-{ 
-    return float4(specularFactor, metalic, roughness, aoFactor);
-}
-void UnpackLightPropLayer(in float4 pack, out float specularFactor, out float metalic, out float roughness, out float aoFactor)
+float4 PackAlbedoColorLayer(float4 albedoColor, float specularLuminance)
 {
-    specularFactor = pack.x;
-    metalic = pack.y;
-    roughness = pack.z;
-    aoFactor = pack.w;
+    return float4(albedoColor.xyz, specularLuminance);
 }
-void UnpackLightPropLayer(in float4 pack, out float4 specularColor, out float metalic, out float roughness, out float aoFactor)
-{ 
-    float specularFactor = 0;
-    UnpackLightPropLayer(pack, specularFactor, metalic, roughness, aoFactor);
-    specularColor = float4(specularFactor, specularFactor, specularFactor, 1.0f);
-}
-void UnpackLightPropLayer(in float4 pack, out float4 specularColor, out float metalic, out float roughness)
+float4 PackAlbedoColorLayer(float4 albedoColor)
 {
-    float specularFactor = 0;
+    return albedoColor; 
+}
+void UnPackAlbedoColorLayer(float4 pack, out float3 albedoColor, out float specularLuminance)
+{
+    albedoColor = pack.xyz;
+    specularLuminance = pack.w;
+}
+void UnPackAlbedoColorLayer(float4 pack, out float3 albedoColor, out float3 specularColor)
+{
+    albedoColor = pack.xyz;
+    specularColor = float3(pack.w, pack.w, pack.w);
+} 
+float3 UnpackAlbedoColor(float4 pack)
+{
+    float3 albedoColor;
+    float specularFactor;
+    UnPackAlbedoColorLayer(pack, albedoColor, specularFactor);
+    return albedoColor; 
+}
+float UnpackSpecularFactor(float4 pack)
+{
+    float3 albedoColor;
+    float specularFactor;
+    UnPackAlbedoColorLayer(pack, albedoColor, specularFactor);
+    return specularFactor;
+}
+
+float4 PackLightPropLayer(in float metalic, in float roughness, in float aoFactor, in uint materialID)
+{ 
+    return float4(metalic, roughness, aoFactor, materialID / float(MATERIAL_ID_RANGE));
+}
+void UnpackLightPropLayer(in float4 pack, out float metalic, out float roughness, out float aoFactor, out uint materialID)
+{ 
+    metalic = pack.x;
+    roughness = pack.y;
+    aoFactor = pack.z;
+    materialID = pack.w * MATERIAL_ID_RANGE;
+} 
+void UnpackLightPropLayer(in float4 pack, out float metalic, out float roughness)
+{
     float aoFactor = 0;
-    UnpackLightPropLayer(pack, specularFactor, metalic, roughness, aoFactor);
-    specularColor = float4(specularFactor, specularFactor, specularFactor, 1.0f);
+    uint materialID = 0;
+    UnpackLightPropLayer(pack, metalic, roughness, aoFactor, materialID); 
 }
 float UnpackMetalic(in float4 pack)
-{
-    float4 specularColor;
+{ 
     float metalic;
     float roughness;
-    UnpackLightPropLayer(pack, specularColor, metalic, roughness);
+    float aoFactor;
+    uint materialID;
+    UnpackLightPropLayer(pack, metalic, roughness, aoFactor, materialID);
     return metalic;
 }
 float UnpackRoughness(in float4 pack)
-{
-    float4 specularColor;
+{ 
     float metalic;
     float roughness;
-    UnpackLightPropLayer(pack, specularColor, metalic, roughness);
+    float aoFactor;
+    uint materialID;
+    UnpackLightPropLayer(pack, metalic, roughness, aoFactor, materialID);
     return roughness;
+}
+float UnpackAO(in float4 pack)
+{
+    float metalic;
+    float roughness;
+    float aoFactor;
+    uint materialID;
+    UnpackLightPropLayer(pack, metalic, roughness, aoFactor, materialID);
+    return aoFactor;
+}
+float UnpackMaterialID(in float4 pack)
+{
+    float metalic;
+    float roughness;
+    float aoFactor;
+    uint materialID;
+    UnpackLightPropLayer(pack, metalic, roughness, aoFactor, materialID);
+    return materialID;
 }
 
 float4 PackNormalAndTangentLayer(in float3 normal, in float3 tangent)

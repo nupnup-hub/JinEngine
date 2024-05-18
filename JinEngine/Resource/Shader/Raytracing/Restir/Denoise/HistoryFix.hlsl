@@ -35,21 +35,19 @@ SOFTWARE.
 #define DIMY 16
 #endif 
    
-#define BLUR_RADIUS 3
+#define BLUR_RADIUS 2
 #define TAB_DISTANCE 4
 
 Texture2D srcColorHistory : register(t0);
 Texture2D scrFastColorHistory : register(t1);
-Texture2D<float> historyLength : register(t2);
+Texture2D<uint> historyLength : register(t2);
 Texture2D<float> viewZMap : register(t3);
 Texture2D normalMap : register(t4);
 Texture2D<float2> depthDerivative : register(t5);
 RWTexture2D<float4> destColorHistory : register(u0);
 RWTexture2D<float4> destFastColorHistory : register(u1);
 SamplerState samLinearClmap : register(s0);
-  
-#define EPSILON 1e-06
-
+   
 [numthreads(DIMX, DIMY, 1)]
 void main(int3 dispatchThreadID : SV_DispatchThreadID)
 {
@@ -58,7 +56,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     
     int2 pixelCoord = dispatchThreadID.xy; 
     float2 centerUv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
-    float currHistoryLength = historyLength[pixelCoord];
+    uint currHistoryLength = historyLength[pixelCoord];
  
     if (currHistoryLength < FIXED_FRAME_COUNT) // not enough temporal history available
     {
@@ -76,7 +74,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
         //float momentSum = centerHistory.w;
         float3 colorSum = float3(0, 0, 0);
         //float momentSum = 0;
-        float weightSum = 1.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
+        float weightSum = 0.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
  
         [unroll]
         for (int i = -BLUR_RADIUS; i <= BLUR_RADIUS; ++i)
@@ -110,13 +108,17 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
         } 
         weightSum = max(weightSum, EPSILON);
         colorSum /= weightSum; 
+        //colorSum = float3(0, 0, 1);
         float variance = ComputeColorVariance(colorSum);
         destColorHistory[pixelCoord] = float4(colorSum, variance);
         destFastColorHistory[pixelCoord] = float4(colorSum, variance);
     }
     else
-    {
+    { 
         destColorHistory[pixelCoord] = srcColorHistory[pixelCoord];
         destFastColorHistory[pixelCoord] = scrFastColorHistory[pixelCoord];
+        
+       // destColorHistory[pixelCoord].xyz = float3(1, 0, 0);
+       // destFastColorHistory[pixelCoord].xyz = float3(1, 0, 0);
     }
 }

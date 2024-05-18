@@ -33,8 +33,8 @@ SOFTWARE.
 
 struct Material
 {
-    float4 albedoColor;
-    float4 specularColor;
+    float3 albedoColor;
+    float specularFactor;
     float metallic;
     float roughness;
     float ansio;
@@ -86,8 +86,8 @@ struct RectLight
     SamplerState samLTCSample;
 };
 #define LCT_SIZE 32.0f 
-
-float3 CalBxDF(const float3 normal, float3 tangent, const float3 lightVec, const float3 viewVec, const Material mat)
+ 
+float3 ComputeBxDF(const float3 normal, float3 tangent, const float3 lightVec, const float3 viewVec, const Material mat)
 { 
     const float3 halfVec = normalize(viewVec + lightVec);
     const float dotNL = max(dot(normal, lightVec), 0.0001f);
@@ -95,22 +95,23 @@ float3 CalBxDF(const float3 normal, float3 tangent, const float3 lightVec, const
     const float dotNH = dot(normal, halfVec);
     const float dotHL = dot(halfVec, lightVec);     
      
-    const float3 f = SchlickFresnel(mat.specularColor.xyz, dotHL);
+    const float3 f0 = ComputeF0(mat.specularFactor, mat.albedoColor, mat.metallic);
+    const float3 f = SchlickFresnel(f0, dotHL);
 #ifdef USE_BRDF_DISNEY_DIFFUSE
     const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = DisneyDiffuse(mat.albedoColor.xyz, dotNL, dotNV, dotHV, mat.roughness);
+	const float3 diffColor = DisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
 #elif USE_FROST_BITE_DISNEY_DIFFUSE
-    const float3 diffColor = FrostbiteDisneyDiffuse(mat.albedoColor.xyz, dotNL, dotNV, dotHL, mat.roughness);
+    const float3 diffColor = FrostbiteDisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHL, mat.roughness);
 #elif USE_BRDF_HAMMON_DIFFUSE
     const float dotVL = dot(viewVec, lightVec);
-	const float3 diffColor = HammonDiffuse(mat.albedoColor.xyz, mat.specularColor.xyz, dotNL, dotNV, dotNH, dotVL, mat.roughness);
+	const float3 diffColor = HammonDiffuse(mat.albedoColor, f0, dotNL, dotNV, dotNH, dotVL, mat.roughness);
 #elif USE_OREN_NAYAR_DIFFUSE
     const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = OrenNayarDiffuse(mat.albedoColor.xyz, dotNL, dotNV, dotHV, mat.roughness);
+	const float3 diffColor = OrenNayarDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
 #elif USE_BRDF_SHIRELY_DIFFUSE
-	const float3 diffColor = ShirelyDiffuse(mat.albedoColor.xyz, mat.specularColor.xyz, dotNL, dotNV);
+	const float3 diffColor = ShirelyDiffuse(mat.albedoColor, f0, dotNL, dotNV);
 #elif USE_BRDF_LAMBERTIAN_DIFFUSE
-	const float3 diffColor = LambertianIDiffuse(mat.albedoColor.xyz);
+	const float3 diffColor = LambertianIDiffuse(mat.albedoColor);
 #else 
     const float3 diffColor = float3(0, 0, 0);
 #endif
@@ -154,7 +155,7 @@ float3 CalBxDF(const float3 normal, float3 tangent, const float3 lightVec, const
 #endif
     
 }
-float3 CalBxDF(const float3 normal, const float3 lightVec, const float3 viewVec, const Material mat)
+float3 ComputeBxDF(const float3 normal, const float3 lightVec, const float3 viewVec, const Material mat)
 {
     const float3 halfVec = normalize(viewVec + lightVec);
     const float dotNL = dot(normal, lightVec);
@@ -162,22 +163,23 @@ float3 CalBxDF(const float3 normal, const float3 lightVec, const float3 viewVec,
     const float dotNH = dot(normal, halfVec);
     const float dotHL = dot(halfVec, lightVec);
      
-    const float3 f = SchlickFresnel(mat.specularColor.xyz, dotHL);
+    const float3 f0 = ComputeF0(mat.specularFactor, mat.albedoColor, mat.metallic);
+    const float3 f = SchlickFresnel(f0, dotHL);
 #ifdef USE_BRDF_DISNEY_DIFFUSE
     const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = DisneyDiffuse(mat.albedoColor.xyz, dotNL, dotNV, dotHV, mat.roughness);
+	const float3 diffColor = DisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
 #elif USE_FROST_BITE_DISNEY_DIFFUSE
-    const float3 diffColor = FrostbiteDisneyDiffuse(mat.albedoColor.xyz, dotNL, dotNV, dotHL, mat.roughness);
+    const float3 diffColor = FrostbiteDisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHL, mat.roughness);
 #elif USE_BRDF_HAMMON_DIFFUSE
     const float dotVL = dot(viewVec, lightVec);
-	const float3 diffColor = HammonDiffuse(mat.albedoColor.xyz, mat.specularColor.xyz, dotNL, dotNV, dotNH, dotVL, mat.roughness);
+	const float3 diffColor = HammonDiffuse(mat.albedoColor, f0, dotNL, dotNV, dotNH, dotVL, mat.roughness);
 #elif USE_OREN_NAYAR_DIFFUSE
     const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = OrenNayarDiffuse(mat.albedoColor.xyz, dotNL, dotNV, dotHV, mat.roughness);
+	const float3 diffColor = OrenNayarDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
 #elif USE_BRDF_SHIRELY_DIFFUSE
-	const float3 diffColor = ShirelyDiffuse(mat.albedoColor.xyz, mat.specularColor.xyz, dotNL, dotNV);
+	const float3 diffColor = ShirelyDiffuse(mat.albedoColor, f0, dotNL, dotNV);
 #elif USE_BRDF_LAMBERTIAN_DIFFUSE
-	const float3 diffColor = LambertianIDiffuse(mat.albedoColor.xyz);
+	const float3 diffColor = LambertianIDiffuse(mat.albedoColor);
 #else 
     const float3 diffColor = float3(0, 0, 0);
 #endif
@@ -518,7 +520,7 @@ float3 ComputeDirectionalLight(DirectionalLight light, Material mat, float3 norm
 
     // Scale light down by Lambert's cosine law.
     float dotNL = max(dot(lightVec, normalW), 0.0f);
-    return light.color * light.power * dotNL * CalBxDF(normalW, tangent, lightVec, toEye, mat);
+    return light.color * light.power * dotNL * ComputeBxDF(normalW, tangent, lightVec, toEye, mat);
 }
 //apply brdf
 float3 ComputePointLight(PointLight light, Material mat, float3 posW, float3 normalW, float3 tangent, float3 toEye)
@@ -532,7 +534,7 @@ float3 ComputePointLight(PointLight light, Material mat, float3 posW, float3 nor
     float dotNL = max(dot(lightVec, normalW), 0.0f);
     float attFactor = CalInverseAttenuation(d, light.range);
 
-    return light.color * light.power * attFactor * dotNL * CalBxDF(normalW, tangent, lightVec, toEye, mat);
+    return light.color * light.power * attFactor * dotNL * ComputeBxDF(normalW, tangent, lightVec, toEye, mat);
 }
 float3 ComputeSpotLight(SpotLight light, Material mat, float3 posW, float3 normalW, float3 tangent, float3 toEye)
 {
@@ -549,7 +551,7 @@ float3 ComputeSpotLight(SpotLight light, Material mat, float3 posW, float3 norma
     float epsilon = light.innerConeCosAngle - light.outerConeCosAngle;
     float smoothFactor = clamp((dotDL - light.outerConeCosAngle) / epsilon, 0.0f, 1.0f);
      
-    return light.color * light.power * attFactor * smoothFactor * smoothFactor * dotNL * CalBxDF(normalW, tangent, lightVec, toEye, mat);
+    return light.color * light.power * attFactor * smoothFactor * smoothFactor * dotNL * ComputeBxDF(normalW, tangent, lightVec, toEye, mat);
 }
 float2 LtcCoord(float cosTheta, float roughness)
 {
@@ -661,7 +663,7 @@ float3 ComputeRectLight(RectLight light, Material mat, float3 posW, float3 norma
         diffuseLightColor = FetchDiffuseFilteredTexture(rPoints, light.source, light.samLTCSample);
         diffuseLightColor = pow(diffuseLightColor, float3(2.2f, 2.2f, 2.2f));
     }
-    diffuseLightColor *= mat.albedoColor.xyz;
+    diffuseLightColor *= mat.albedoColor;
 	
 	[unroll]
     for (int i = 0; i < 4; ++i)
@@ -676,13 +678,13 @@ float3 ComputeRectLight(RectLight light, Material mat, float3 posW, float3 norma
     }
     lightColor *= light.color;
  
-	//DisneyDiffuse(mat.albedoColor.xyz, normalW, lightVec, toEye, halfVec, mat.roughness, 0.75f);
+	//DisneyDiffuse(mat.albedoColor, normalW, lightVec, toEye, halfVec, mat.roughness, 0.75f);
 	// GGX BRDF shadowing and Fresnel
     // t2.x: shadowedF90 (F90 normally it should be 1.0)
     // t2.y: Smith function for Geometric Attenuation Term, it is dot(V or L, H).
 	 
 	// specular *= mSpecular*t2.x + (1.0f - mSpecular) * t2.y; 	
-    float3 specular = mat.albedoColor.xyz * ltcAmp.x + (1.0f - mat.albedoColor.xyz) * ltcAmp.y;   
+    float3 specular = mat.albedoColor * ltcAmp.x + (1.0f - mat.albedoColor) * ltcAmp.y;   
     return lightColor * light.power * att * irradiance * (specular + (diffuse * diffuseLightColor));
 }
 RectLight ComputeRect(RectLightData data, float3 posW)
@@ -876,7 +878,7 @@ float3 EvaluateRectLight(RectLight light, float3 posW, float3 normalW, float3 to
     }
     lightColor *= light.color;
     
-	//DisneyDiffuse(mat.albedoColor.xyz, normalW, lightVec, toEye, halfVec, mat.roughness, 0.75f);
+	//DisneyDiffuse(mat.albedoColor, normalW, lightVec, toEye, halfVec, mat.roughness, 0.75f);
 	// GGX BRDF shadowing and Fresnel
     // t2.x: shadowedF90 (F90 normally it should be 1.0)
     // t2.y: Smith function for Geometric Attenuation Term, it is dot(V or L, H).

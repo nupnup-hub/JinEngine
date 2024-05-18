@@ -32,7 +32,7 @@ SOFTWARE.
 #include"../../GameObject/JGameObject.h"
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/JResourceObjectUserInterface.h" 
-#include"../../Resource/Mesh/JMeshGeometry.h"
+#include"../../Resource/Mesh/JMeshGeometry.h" 
 #include"../../Resource/Material/JMaterial.h" 
 #include"../../Resource/Material/JMaterialPrivate.h"  
 #include"../../../Core/File/JFileConstant.h"
@@ -83,9 +83,9 @@ namespace JinEngine
 		JWeakPtr<JRenderItem> thisPointer = nullptr;
 	public:
 		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JMeshGeometry> mesh;
+		JUserPtr<JMeshGeometry> mesh;
 		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			std::vector<JUserPtr<JMaterial>> material;
+		std::vector<JUserPtr<JMaterial>> material;
 	public:
 		JMatrix4x4 textureTransform = JMatrix4x4::Identity();
 		J_RENDER_PRIMITIVE primitiveType = J_RENDER_PRIMITIVE::TRIANGLE;
@@ -95,9 +95,9 @@ namespace JinEngine
 	public:
 		bool isActivated = false;
 		REGISTER_PROPERTY_EX(isOccluder, IsOccluder, SetOccluder, GUI_CHECKBOX())
-			bool isOccluder = false;
+		bool isOccluder = false;
 		REGISTER_PROPERTY_EX(isIgnoreCullingResult, IsIgnoreCullingResult, SetIgnoreCullingResult, GUI_CHECKBOX())
-			bool isIgnoreCullingResult = false;
+		bool isIgnoreCullingResult = false;
 	public:
 		JRenderItemImpl(const InitData& initData, JRenderItem* thisRitemRaw)
 			:renderLayer(initData.layer), acceleratorMask(initData.acceleratorMask)
@@ -130,14 +130,14 @@ namespace JinEngine
 			return validMaterialVec;
 		}
 		REGISTER_METHOD(GetTotalVertexCount)
-			REGISTER_METHOD_READONLY_GUI_WIDGET(VertexCount, GetTotalVertexCount, GUI_READONLY_TEXT())
-			uint GetTotalVertexCount()const noexcept
+		REGISTER_METHOD_READONLY_GUI_WIDGET(VertexCount, GetTotalVertexCount, GUI_READONLY_TEXT())
+		uint GetTotalVertexCount()const noexcept
 		{
 			return mesh.IsValid() ? mesh->GetTotalVertexCount() : 0;
 		}
 		REGISTER_METHOD(GetTotalIndexCount)
-			REGISTER_METHOD_READONLY_GUI_WIDGET(IndexCount, GetTotalIndexCount, GUI_READONLY_TEXT())
-			uint GetTotalIndexCount()const noexcept
+		REGISTER_METHOD_READONLY_GUI_WIDGET(IndexCount, GetTotalIndexCount, GUI_READONLY_TEXT())
+		uint GetTotalIndexCount()const noexcept
 		{
 			return mesh.IsValid() ? mesh->GetTotalIndexCount() : 0;
 		}
@@ -369,6 +369,7 @@ namespace JinEngine
 			JTransform* transform = thisPointer->GetOwner()->GetTransform().Get();
 			constant.world.StoreXM(XMMatrixTranspose(transform->GetWorldMatrix().LoadXM()));
 			constant.texTransform.StoreXM(XMMatrixTranspose(textureTransform.LoadXM()));
+			constant.objectIndex = ObjectFrame::GetFrameIndex();
 			constant.materialIndex = JMaterialPrivate::FrameIndexInterface::GetMaterialFrameIndex(GetValidMaterial(submeshIndex).Get());
 			ObjectFrame::MinusMovedDirty();
 		}
@@ -413,6 +414,7 @@ namespace JinEngine
 		void UpdateFrame(Graphic::JObjectRefereneceInfoConstants& constant, const uint submeshIndex)noexcept final
 		{
 			auto meshUser = mesh->GraphicResourceUserInterface();
+			constant.uniqueIndex = RefInfoFrame::GetFrameIndex();
 			constant.materialIndex = JMaterialPrivate::FrameIndexInterface::GetMaterialFrameIndex(GetValidMaterial(submeshIndex).Get());
 			constant.verticesIndex = meshUser.GetHeapIndexStart(Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
 			constant.indicesIndex = meshUser.GetHeapIndexStart(Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);

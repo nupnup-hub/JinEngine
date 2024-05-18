@@ -86,13 +86,25 @@ struct ObjectData
 {
     float4x4 world;
     float4x4 texTransform;
+    uint objectIndex;
     uint materialIndex;
     uint pad00;
-    uint pad01;
-    uint pad02;
+    uint pad01; 
 };
 
 struct SkinnedData 
 {
     float4x4 boneTransforms[256];
+};
+
+struct InstanceData
+{
+    uint uniqueIndex;
+    uint materialIndex;
+    uint verticesIndex; //access srv view
+    uint indicesIndex; //access srv view
+    uint verticesOffset; //sub mesh vertices start
+    uint indicesOffset; //sub mesh indices start
+    uint verticesType;
+    uint indicesType; 
 };

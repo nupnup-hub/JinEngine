@@ -44,16 +44,18 @@ SOFTWARE.
 Texture2D colorHistory : register(t0);
 Texture2D<float> viewZMap : register(t1);
 Texture2D normalMap : register(t2);
-Texture2D historyLength : register(t3);
+Texture2D<uint> historyLength : register(t3);
 Texture2D<float2> depthDerivative : register(t4);
 RWTexture2D<float4> resultColor : register(u0);
 SamplerState samLinearClmap : register(s0);
   
 float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3 centerNormal, float centerViewZ, float2 ddxy, float radius)
 {
-    CrossBilateral::NormalDepth::Parameters param;
+    float centerLuminance = RGBToLuminance(diffuse);
+    CrossBilateral::NormalDepthLuminance::Parameters param;
     param.normal.Initialize(centerNormal);
     param.depth.Initialize(centerViewZ, ddxy);
+    param.luminance.Initialize(centerLuminance, centerUv, cb.invRtSize, colorHistory, samLinearClmap);
  
     float3 result = diffuse;
     float weightSum = 1.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
@@ -75,14 +77,16 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
         //uv = max(uv, float2(0, 0));
         
         float3 sampleDiffuse = colorHistory.SampleLevel(samLinearClmap, uv, 0).xyz;
+        float sampleLuminance = RGBToLuminance(sampleDiffuse);
         float sampleViewZ = viewZMap.SampleLevel(samLinearClmap, uv, 0);
         float3 sampleNormalW = UnpackNormal(normalMap.SampleLevel(samLinearClmap, uv, 0));
          
         param.normal.Update(sampleNormalW);
         param.depth.Update(sampleViewZ, -offset);
+        param.luminance.Update(sampleLuminance);
    
         float weight = IsValidUv(uv);
-        weight *= CrossBilateral::NormalDepth::ComputeWeight(param);
+        weight *= CrossBilateral::NormalDepthLuminance::ComputeWeight(param);
         result += sampleDiffuse * weight;
         weightSum += weight;
     }
@@ -90,11 +94,7 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
 }
 [numthreads(DIMX, DIMY, 1)]
 void main(int3 dispatchThreadID : SV_DispatchThreadID)
-{
-    //Process
-    //1. calculate radius
-    //2. blur history map color
-    //A. geometry, normal, distance, roughness, depth등 다양한 weight가 사용될수있으나 현재는 normal과 viewZ값만 사용
+{ 
     if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
         return;
     
@@ -120,9 +120,9 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float2 ddxy = depthDerivative.SampleLevel(samLinearClmap, uv, 0);
  
     //float radius = cb.baseRadius + (1.0f / float(currHistoryLength)) * cb.radiusRange * (1.0f - centerLinearDepth);
-    float radius = cb.baseRadius + cb.radiusRange * (1.0f - ((centerViewZ - cb.camNearFar.x) / viewRange));
-    //radius *= 1.0f / (1.0f + currHistoryLength);
-    
+    //float radius = cb.baseRadius + cb.radiusRange * (1.0f - ((centerViewZ - cb.camNearFar.x) / viewRange));
+    float radius = cb.baseRadius + cb.radiusRange * (1.0f / float(1.0f + currHistoryLength));
+   
     float3 denoiseColor = DiffuseFiltering(pixelCoord, uv, diffuse, centerNormal, centerViewZ, ddxy, radius);
     resultColor[pixelCoord].xyz = denoiseColor;
     

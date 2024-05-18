@@ -36,7 +36,8 @@ Texture2D depthMap : register(t0);
 Texture2D normal : register(t1);
 Texture2D randomMap : register(t2); 
  
-SamplerState samPointClamp : register(s0);
+//SamplerState samPointClamp : register(s0);
+SamplerState samLinearClamp : register(s0);
 SamplerState samPointWrap : register(s1);
 //SamplerState samDepth : register(s2);
  
@@ -49,11 +50,11 @@ typedef float Result;		//depth
 #endif
  
 float3 GetViewPos(float2 uv)
-{
+{ 
 #if defined(USE_SSAO_INTERLEAVE) && defined(USE_HBAO)
-	return UVToViewSpace(uv, depthMap.SampleLevel(samPointClamp, float3(uv, 0), 0), cbPass.uvToViewA, cbPass.uvToViewB);
+	return UVToViewSpace(uv, depthMap.SampleLevel(samLinearClamp, float3(uv, 0), 0).x, cbPass.uvToViewA, cbPass.uvToViewB);
 #else
-    return UVToViewSpace(uv, NdcToViewPZ(depthMap.SampleLevel(samPointClamp, uv, 0).r, cbPass.camNearMulFar, cbPass.camNearFar), cbPass.uvToViewA, cbPass.uvToViewB);
+    return UVToViewSpace(uv, NdcToViewPZ(depthMap.SampleLevel(samLinearClamp, uv, 0).x, cbPass.camNearMulFar, cbPass.camNearFar), cbPass.uvToViewA, cbPass.uvToViewB);
 #endif
 }
 float InvLength(float2 v)
@@ -68,6 +69,7 @@ float3 MinDiff(float3 p, float3 pR, float3 pL)
 } 
 float Falloff(float d2)
 {
+	//Fall off far distance
 	return d2 * cbPass.negInvR2 + 1.0f;
 }
 float2 RotateDirections(float2 dir, float2 cosSin)
@@ -78,10 +80,10 @@ float2 RotateDirections(float2 dir, float2 cosSin)
 #ifdef USE_SSAO
 Result SsaoPs(VertexOut pin) : SV_Target
 { 
-	float pz = NdcToViewPZ(depthMap.SampleLevel(samPointClamp, pin.texC, 0).r, cbPass.camNearMulFar, cbPass.camNearFar);
+	float pz = NdcToViewPZ(depthMap.SampleLevel(samLinearClamp, pin.texC, 0).r, cbPass.camNearMulFar, cbPass.camNearFar);
 	float3 posV = GetViewPos(pin.texC); //RestructionPosition(pin.dir, pz);
  
-	float3 normalW = UnpackNormal(normal.SampleLevel(samPointClamp, pin.texC, 0));
+	float3 normalW = UnpackNormal(normal.SampleLevel(samLinearClamp, pin.texC, 0));
 	float3 normalV = normalize(mul(normalW, (float3x3)cbPass.camView));
 	  
 	float2 noiseScale = cbPass.aoRtSize / SSAO_RANDOM_MAP_SIZE;
@@ -100,7 +102,7 @@ Result SsaoPs(VertexOut pin) : SV_Target
 		projQ.x = projQ.x * 0.5f + 0.5f;
 		projQ.y = projQ.y * -0.5f + 0.5f;
 
-		float rz = NdcToViewPZ(depthMap.SampleLevel(samPointClamp, projQ.xy, 0.0f).r, cbPass.camNearMulFar, cbPass.camNearFar);
+		float rz = NdcToViewPZ(depthMap.SampleLevel(samLinearClamp, projQ.xy, 0.0f).r, cbPass.camNearMulFar, cbPass.camNearFar);
 		float rangeCheck = smoothstep(0.0f, 1.0f, cbPass.radius / abs(posV.z - rz));
 		occlusionSum += (rz < (q.z + cbPass.bias) ? 1.0 : 0.0) * rangeCheck;
 	}
@@ -114,12 +116,14 @@ Result SsaoPs(VertexOut pin) : SV_Target
 #endif
 }
 #else
-float ComputeAO(float3 p, float3 n, float3 s)
+float ComputeAO(float3 centerPos, float3 n, float3 samplePos)
 {
-	float3 v = s - p;
-	float vDotv = dot(v, v);
-	float nDotv = dot(n, v) * rsqrt(vDotv);
-	return saturate(nDotv - cbPass.tanBias) * saturate(Falloff(vDotv));
+    float3 v = samplePos - centerPos;
+	float dotVV = dot(v, v); 
+    float distance = dot(n, v) * rsqrt(dotVV);
+	//Angle bias * aoFactor 
+	//Normal and v are similar, and the probability of occlusion increases as the position of the center gets closer to the sample. 
+    return saturate(distance - cbPass.tanBias) * saturate(Falloff(dotVV));
 } 
  
 Result HbaoPs(VertexOut pin) : SV_Target
@@ -145,9 +149,9 @@ Result HbaoPs(VertexOut pin) : SV_Target
 #ifdef USE_SSAO_INTERLEAVE
 	VertexOut pinC = pin;
 	AddViewportOrigin(pinC, cbPass.viewPortTopLeft, cbPass.camInvRtSize); 
-	float3 normalW = UnpackNormal(normal.SampleLevel(samPointClamp, pinC.texC, 0));
+	float3 normalW = UnpackNormal(normal.SampleLevel(samLinearClamp, pinC.texC, 0));
 #else
-    float3 normalW = UnpackNormal(normal.SampleLevel(samPointClamp, pin.texC, 0));
+    float3 normalW = UnpackNormal(normal.SampleLevel(samLinearClamp, pin.texC, 0));
 #endif 
     float3 normal = normalize(mul(normalW, (float3x3)cbPass.camView));
 	
@@ -155,29 +159,31 @@ Result HbaoPs(VertexOut pin) : SV_Target
 	float smallScaleAO = 0;
 	float largeScaleAO = 0;
 #ifdef USE_SSAO_INTERLEAVE
-	float stepSizePixels = (radiusPixel / 4.0f) / (SSAO_SAMPLE_COUNT + 1);
+	float stepSizePixels = radiusPixel / (SSAO_SAMPLE_COUNT + 1);
 #else
 	float stepSizePixels = radiusPixel / (SSAO_SAMPLE_COUNT + 1);
 #endif
     [unroll]
-	for (float directionIndex = 0; directionIndex < SSAO_DIR_COUNT; ++directionIndex)
+	for (int directionIndex = 0; directionIndex < SSAO_DIR_COUNT; ++directionIndex)
 	{
 		float angle = alpha * directionIndex;
         // Compute normalized 2D direction
 		float2 dir = RotateDirections(float2(cos(angle), sin(angle)), random.xy);
         // Jitter starting point within the first step
-		float rayPixels = (random.z * stepSizePixels + 1.0);
+		float rayPixels = (random.z * stepSizePixels + 1.0f);
 		 
 #ifdef USE_SSAO_INTERLEAVE	
 		float2 snappedUV = round(rayPixels * dir) * cbPass.aoInvQuaterRtSize + pin.texC;
 #else
 		float2 snappedUV = round(rayPixels * dir) * cbPass.aoInvRtSize + pin.texC; 
 #endif
+        rayPixels += stepSizePixels;
+		
 		float3 samplePos = GetViewPos(snappedUV);	
 		smallScaleAO += ComputeAO(centerPos, normal, samplePos);
 		
         [unroll]
-		for (float stepIndex = 1; stepIndex < SSAO_SAMPLE_COUNT; ++stepIndex)
+        for (int stepIndex = 1; stepIndex < SSAO_SAMPLE_COUNT; ++stepIndex)
 		{
 #ifdef USE_SSAO_INTERLEAVE	
 			snappedUV = round(rayPixels * dir) * cbPass.aoInvQuaterRtSize + pin.texC;
@@ -192,9 +198,9 @@ Result HbaoPs(VertexOut pin) : SV_Target
 	}
 
 	float ao = (smallScaleAO * cbPass.smallScaleAOAmount) + (largeScaleAO * cbPass.largeScaleAOAmount);
-	ao /= (SSAO_DIR_COUNT * SSAO_SAMPLE_COUNT);
+	ao /= (SSAO_DIR_COUNT * SSAO_SAMPLE_COUNT); 
 	ao = saturate(1.0 - ao * 2.0);
-
+ 
 #ifdef USE_SSAO_INTERLEAVE	
 	return ao;
 #elif USE_BLUR

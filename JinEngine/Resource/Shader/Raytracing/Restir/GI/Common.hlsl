@@ -25,8 +25,7 @@ SOFTWARE.
 
 #pragma once  
 #include"../../../Common/DepthFunc.hlsl"
-#include"../../../Common/Sampling.hlsl"
-#include"../../../Common/Packing.hlsl"
+#include"../../../Common/Sampling.hlsl" 
 #include"../../../Common/RandomNumberGenerator.hlsl"
 #include"../../../Common/GBufferCommon.hlsl"
 

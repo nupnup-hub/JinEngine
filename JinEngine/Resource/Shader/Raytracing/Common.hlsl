@@ -24,6 +24,8 @@ SOFTWARE.
 
 
 #pragma once
+#include"../Common/CommonConstantsStructureDefine.hlsl"
+
 #ifdef USE_DEBUG
 
 #ifndef CB_RAYTRACING_DEBUG_REGISTER
@@ -101,20 +103,9 @@ struct SkinnedVertex
     uint4 boneIndices : BONEINDICES;
 }; 
 
-struct InstanceInfo
-{
-    uint materialIndex;
-    uint verticesIndex;             //access srv view
-    uint indicesIndex;              //access srv view
-    uint verticesOffset;            //sub mesh vertices start
-    uint indicesOffset;             //sub mesh indices start
-    uint verticesType;
-    uint indicesType;
-    uint pad00; 
-};
- 
+
 RaytracingAccelerationStructure sceneAs : register(t0);
-StructuredBuffer<InstanceInfo> instanceInfo : register(t1);
+StructuredBuffer<InstanceData> instanceInfo : register(t1);
 
 //return isVisible
 bool VisibilityRayQuery(RayDesc desc)

@@ -124,8 +124,8 @@ namespace JinEngine::Graphic
 
 		struct MeshMaterial
 		{
-			JVector4F albedoColor;
-			JVector4F specularColor;
+			JVector3F albedoColor;
+			float specularColor;
 			float metallic;
 			float roughness; 
 		};
@@ -138,7 +138,7 @@ namespace JinEngine::Graphic
 		};
 		struct RayPayload
 		{
-			MeshVertex vertex;					//f9
+			MeshVertex vertex;					 //f9
 			MeshMaterial material;				 //f6    
 			uint hitObjType;					//out 
 		};
@@ -368,7 +368,7 @@ namespace JinEngine::Graphic
 		preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 		preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 		preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
-		preTangentSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
+		//preTangentSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 
 		initialSampleSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 		temporalReserviorSet[0] = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, reserviorIndex);
@@ -1007,6 +1007,6 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingGI::ClearUserPrivateData()
 	{
 		userPrivate.clear();
-		computeCount = 0;
+		computeCount = 0; 
 	}
 }

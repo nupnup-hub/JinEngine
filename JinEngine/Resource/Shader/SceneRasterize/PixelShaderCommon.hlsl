@@ -57,6 +57,7 @@ SOFTWARE.
 Texture2D textureMaps[TEXTURE_2D_COUNT] : register(t2, space0);
 TextureCube cubeMap[CUBE_MAP_COUNT] : register(t2, space1);
 #else
+
 StructuredBuffer<DirectionalLightData> directionalLight : register(t0, space0);
 StructuredBuffer<PointLightData> pointLight : register(t0, space1);
 StructuredBuffer<SpotLightData> spotLight : register(t0, space2);

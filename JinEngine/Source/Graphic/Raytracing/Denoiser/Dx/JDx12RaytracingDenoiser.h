@@ -83,7 +83,7 @@ namespace JinEngine
 			public:
 				JUserPtr<JGraphicResourceInfo> colorHistory[historyCount];
 				JUserPtr<JGraphicResourceInfo> fastColorHistory[historyCount];
-				JUserPtr<JGraphicResourceInfo> historyLength[historyCount];
+				JUserPtr<JGraphicResourceInfo> historyLength[historyCount];  
 			public:
 				JDx12GraphicBufferT<GIDenoiserPassConstants> frameBuffer;
 			private:
@@ -122,9 +122,11 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet dsSet;
 				JDx12GraphicResourceComputeSet viewZSet;
 			public:
+				JDx12GraphicResourceComputeSet lightPropSet;
 				JDx12GraphicResourceComputeSet normalSet;
 				//JDx12GraphicResourceComputeSet velocitySet;
 			public:
+				JDx12GraphicResourceComputeSet preLightPropSet;
 				JDx12GraphicResourceComputeSet preNormalSet;
 				JDx12GraphicResourceComputeSet preDepthSet;
 				JDx12GraphicResourceComputeSet preViewZSet;
@@ -219,7 +221,7 @@ namespace JinEngine
 				//void GiBlurHotHistory(const DenoiseDataSet& set, const JDrawHelper& helper);
 				//void GiDownSampling(DenoiseDataSet& set, const JDrawHelper& helper); 
 				//void GiReconstructHistory(DenoiseDataSet& set, const JDrawHelper& helper);
-				void Atorus(DenoiseDataSet& set, const JDrawHelper& helper);
+				void Atorus(DenoiseDataSet& set, const JDrawHelper& helper, const uint stepCount);
 				void HistoryStabilization(const DenoiseDataSet& set, const JDrawHelper& helper);
 				void ClearDenoiseResource(const DenoiseDataSet& set, const JDrawHelper& helper);
 			public:

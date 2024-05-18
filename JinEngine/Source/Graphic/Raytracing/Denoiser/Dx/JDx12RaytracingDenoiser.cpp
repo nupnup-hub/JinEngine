@@ -87,7 +87,7 @@ namespace JinEngine::Graphic
 
 
 	ROOT_INDEX_CREATOR(Prepare, passCBIndex, depthMapIndex, preDepthMapIndex, viewZMapIndex, preViewZMapIndex, depthDerivativeMapIndex)
-	ROOT_INDEX_CREATOR(TA, passCBIndex, colorMapIndex, viewZMapIndex, normalMapIndex, preViewZMapIndex, preNormalMapIndex, depthDerivativeMapIndex, preColorHistoryIndex, preFastColorHistoryIndex, preHistroyLengthIndex, colorHistoryIndex, fastColorHistoryIndex, histroyLengthIndex)
+	ROOT_INDEX_CREATOR(TA, passCBIndex, colorMapIndex, viewZMapIndex, normalMapIndex, preViewZMapIndex, preNormalMapIndex, depthDerivativeMapIndex, preColorHistoryIndex, preFastColorHistoryIndex, preHistroyLengthIndex, lightPropIndex, preLightPropIndex, colorHistoryIndex, fastColorHistoryIndex, histroyLengthIndex)
 	ROOT_INDEX_CREATOR(Fix, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex, destFastColorHistoryIndex)
 	ROOT_INDEX_CREATOR(Clamp, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, destColorHistoryIndex, destFastColorHistoryIndex)
 	ROOT_INDEX_CREATOR(AntiFirefly, passCBIndex, srcColorHistoryIndex, destColorHistoryIndex)
@@ -102,8 +102,8 @@ namespace JinEngine::Graphic
 	namespace Common
 	{
 		static constexpr uint denoiseRange = 16;
-		static constexpr float baseRadius = 2.0f;
-		static constexpr float radiusRange = 8.0f;
+		static constexpr float baseRadius = 4.0f;
+		static constexpr float radiusRange = 12.0f;
 		static constexpr uint clearUserDataFrequency = 7680;
 		static constexpr uint sampleNumberMax = 64;
 
@@ -197,11 +197,14 @@ namespace JinEngine::Graphic
 
 		const size_t sceneGuid = helper.scene->GetGuid();
 
+		lightPropSet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 		normalSet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 		//velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 
 		auto preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 		preDepthSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		
+		preLightPropSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 		preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 
 		colorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
@@ -287,6 +290,8 @@ namespace JinEngine::Graphic
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8);
+		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 9);
+		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 10);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);
@@ -499,6 +504,9 @@ namespace JinEngine::Graphic
 		set.context->SetComputeRootDescriptorTable(TA::preFastColorHistoryIndex, set.preFastColorHistory->GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(TA::preHistroyLengthIndex, set.preHistoryLengthSet.GetGpuSrvHandle());
 
+		set.context->SetComputeRootDescriptorTable(TA::lightPropIndex, set.lightPropSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(TA::preLightPropIndex, set.preLightPropSet.GetGpuSrvHandle());
+
 		set.context->SetComputeRootDescriptorTable(TA::colorHistoryIndex, set.colorHistory->GetGpuUavHandle());
 		set.context->SetComputeRootDescriptorTable(TA::fastColorHistoryIndex, set.fastColorHistory->GetGpuUavHandle());
 		set.context->SetComputeRootDescriptorTable(TA::histroyLengthIndex, set.historyLengthSet.GetGpuUavHandle());
@@ -568,12 +576,12 @@ namespace JinEngine::Graphic
 		set.context->SetPipelineState(antiFireflyShader.get());
 		set.context->Dispatch2D(set.resolution, antiFireflyShader->dispatchInfo.threadDim.XY());
 	}
-	void JDx12RaytracingDenoiser::RestirDenoiser::Atorus(DenoiseDataSet& set, const JDrawHelper& helper)
+	void JDx12RaytracingDenoiser::RestirDenoiser::Atorus(DenoiseDataSet& set, const JDrawHelper& helper, const uint stepCount)
 	{
 		set.context->Transition(set.intermediate00->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.historyLengthSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.intermediate01->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		//set.context->InsertUAVBarrier(set.colorHistoryIntermediateSet.holder);
+		set.context->InsertUAVBarrier(set.intermediate00->holder);
 		set.context->FlushResourceBarriers();
 
 		set.context->SetComputeRootSignature(atorusRootSignature.Get());
@@ -586,8 +594,7 @@ namespace JinEngine::Graphic
 
 		JDx12GraphicResourceComputeSet* srcSet = set.intermediate00;
 		JDx12GraphicResourceComputeSet* destSet = set.intermediate01;
-
-		static constexpr uint stepCount = 4;
+		 
 		for (uint i = 0; i < stepCount; ++i)
 		{
 			uint stepSize = 1 << i;
@@ -597,7 +604,11 @@ namespace JinEngine::Graphic
 			set.context->Dispatch2D(set.resolution, atorusShader->dispatchInfo.threadDim.XY());
 			if (i == 1)
 				set.context->CopyResource(destSet->holder, set.colorHistory->holder);
-			std::swap(srcSet, destSet);
+			
+			JDx12GraphicResourceComputeSet* temp = srcSet;
+			srcSet = destSet;
+			destSet = temp;
+			//std::swap(srcSet, destSet);
 		}
 	}
 	void JDx12RaytracingDenoiser::RestirDenoiser::HistoryStabilization(const DenoiseDataSet& set, const JDrawHelper& helper)
@@ -802,13 +813,14 @@ namespace JinEngine::Graphic
 					restirDenoiser.HistoryFix(set, helper);
 					restirDenoiser.HistoryClamping(set, helper);
 					restirDenoiser.AnitiFirefly(set, helper);
+					restirDenoiser.Atorus(set, helper, 2);
 
 					restirDenoiser.SettingThirdLoop(set, helper);
 					restirDenoiser.TemporalAccumulation(set, helper);
 					restirDenoiser.HistoryFix(set, helper);
 					restirDenoiser.HistoryClamping(set, helper);
 					restirDenoiser.AnitiFirefly(set, helper);
-					restirDenoiser.Atorus(set, helper);
+					restirDenoiser.Atorus(set, helper, 4);
 					restirDenoiser.HistoryStabilization(set, helper);
 				}
 				else
@@ -818,7 +830,7 @@ namespace JinEngine::Graphic
 					restirDenoiser.HistoryFix(set, helper);
 					restirDenoiser.HistoryClamping(set, helper);
 					restirDenoiser.AnitiFirefly(set, helper);
-					restirDenoiser.Atorus(set, helper);
+					restirDenoiser.Atorus(set, helper, 4);
 					restirDenoiser.HistoryStabilization(set, helper);
 				}
 			}
@@ -934,7 +946,7 @@ namespace JinEngine::Graphic
 		for (uint i = 0; i < userPrivate->historyCount; ++i)
 			userPrivate->fastColorHistory[i] = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
 
-		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
+		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_UINT;
 		for (uint i = 0; i < userPrivate->historyCount; ++i)
 			userPrivate->historyLength[i] = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
 	}

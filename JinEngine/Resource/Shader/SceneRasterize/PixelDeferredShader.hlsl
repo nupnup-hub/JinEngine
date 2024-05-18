@@ -29,19 +29,24 @@ SOFTWARE.
 typedef float4 PixelOut;
 PixelOut PS(PixelIn pin) : SV_Target
 {
+    //opaque pass
     int2 samplePos = int2(pin.posH.xy);
     int3 mapLocation = int3(samplePos, 0);
-    float4 albedoColor = gBuffer[G_BUFFER_ALBEDO_COLOR].Load(mapLocation);
+    
+    float3 albedoColor;
+    float specularFactor;
+    UnPackAlbedoColorLayer(gBuffer[G_BUFFER_ALBEDO_COLOR].Load(mapLocation), albedoColor, specularFactor);
+    
     float4 lightProp = gBuffer[G_BUFFER_LIGHT_PROP].Load(mapLocation);
     float4 normalAndTangent = gBuffer[G_BUFFER_NORMAL_AND_TANGENT].Load(mapLocation);
      
     if (IsInvalidLightPropLayer(lightProp) && IsInvalidNormalLayer(normalAndTangent))
-        return albedoColor;
+        return float4(albedoColor, 1.0f);
 	
     float depth = depthMap.Load(mapLocation).r;
 	//early return albedo only case
     if (length(normalAndTangent) == 0)
-        return albedoColor;
+        return float4(albedoColor, 1.0f);
 	   
     float3 normalW;
     float3 tangentW;
@@ -54,14 +59,14 @@ PixelOut PS(PixelIn pin) : SV_Target
     float3 posV = UVToViewSpace(pin.texC, viewZ, cbCam.uvToViewA, cbCam.uvToViewB);
     float3 posW = mul(float4(posV, 1.0f), cbCam.invView).xyz;
     float3 toEyeW = normalize(cbCam.eyePosW - posW);
-       
-    float4 specularColor;
+        
     float metalic;
     float roughness;
     float aoFactor;   
-    UnpackLightPropLayer(lightProp, specularColor, metalic, roughness, aoFactor);
-     
-    Material mat = { albedoColor, specularColor, metalic, roughness, 0.0f };
+    uint materialID;
+    UnpackLightPropLayer(lightProp, metalic, roughness, aoFactor, materialID);
+    
+    Material mat = { albedoColor, specularFactor, metalic, roughness, 0.0f };
 #ifdef LIGHT_CLUSTER
 	float3 directLight = ComputeLight(mat, posW, normalW, tangentW, toEyeW, samplePos, depth);
 #else
@@ -69,13 +74,13 @@ PixelOut PS(PixelIn pin) : SV_Target
 #endif  
     if (cbCam.hasAoTexture)
         aoFactor = ambientOcclusionMap.Sample(samLinearWrap, pin.texC);
-     
+ 
 #ifdef GLOBAL_ILLUMINATION
      directLight = CombineGlobalLight(directLight, mat.albedoColor.xyz, giMap.Load(mapLocation).xyz, aoFactor);
 #else 
-     directLight = CombineApproxGlobalLight(directLight, mat.albedoColor.xyz, aoFactor);
+    directLight = CombineApproxGlobalLight(directLight, mat.albedoColor, aoFactor);
 #endif
 		
-    return float4(directLight, albedoColor.a);
+    return float4(directLight, 1.0f);
 	//return float4(normalW, 1.0f);
 }

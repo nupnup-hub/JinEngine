@@ -39,7 +39,7 @@ SOFTWARE.
 
 Texture2D scrColorHistory : register(t0);
 Texture2D scrFastColorHistory : register(t1);
-Texture2D<float> historyLength : register(t2);
+Texture2D<uint> historyLength : register(t2);
 RWTexture2D<float4> destColorHistory : register(u0);
 RWTexture2D<float4> destFastColorHistory : register(u1);
 SamplerState samLinearClmap : register(s0);

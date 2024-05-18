@@ -36,12 +36,11 @@ SOFTWARE.
 
 RWStructuredBuffer<float4> colorHistory : register(u0);
 RWStructuredBuffer<float4> fastColorHistory : register(u1);
-RWStructuredBuffer<float> historyLength : register(u2);
-
+RWStructuredBuffer<uint> historyLength : register(u2); 
 RWStructuredBuffer<float4> preColorHistory : register(u3);
 RWStructuredBuffer<float4> preFastColorHistory : register(u4);
-RWStructuredBuffer<float> preHistoryLength : register(u5);
- 
+RWStructuredBuffer<uint> preHistoryLength : register(u5); 
+
 [numthreads(DIMX, DIMY, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
@@ -55,6 +54,6 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     
     preColorHistory[index] = float4(0, 0, 0, 0);
     preFastColorHistory[index] = float4(0, 0, 0, 0);
-    preHistoryLength[index] = 0;
+    preHistoryLength[index] = 0; 
 }
   

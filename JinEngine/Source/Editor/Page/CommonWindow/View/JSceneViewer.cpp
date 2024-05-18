@@ -31,9 +31,13 @@ SOFTWARE.
 #include"../../../EditTool/JEditorIdentifierList.h" 
 #include"../../../EditTool/JEditorCameraControl.h" 
 #include"../../../../Object/Component/Camera/JCamera.h" 
+#include"../../../../Object/Component/Light/JDirectionalLight.h" 
+#include"../../../../Object/Component/Transform/JTransform.h" 
+
 #include"../../../../Object/Resource/Scene/JScene.h" 
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Core/File/JFileIOHelper.h" 
+#include"../../../../Graphic/JGraphic.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceType.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
@@ -68,16 +72,16 @@ namespace JinEngine
 			scene = newScene;
 		}
 		void JSceneViewer::UpdateWindow()
-		{ 
+		{
 			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR |
 				J_GUI_WINDOW_FLAG_NO_SCROLL_WITH_MOUSE |
 				J_GUI_WINDOW_FLAG_NO_COLLAPSE);
 			UpdateDocking();
 			if (IsActivated() && scene.IsValid())
-			{ 
-				UpdateMouseClick(); 
-				UpdateMouseWheel();		  
- 
+			{
+				UpdateMouseClick();
+				UpdateMouseWheel();
+
 				auto preCursor = JGui::GetCursorPos();
 				if (selectedCam.IsValid() && selectedCam->IsActivated())
 				{
@@ -89,7 +93,7 @@ namespace JinEngine
 						info.dataIndex = gInterface.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
 					}
 					JGui::Image(info, JGui::GetWindowSize());
-				}	  
+				}
 				JGui::SetCursorPos(preCursor);
 
 				auto canDispalyLam = [](JEditorIdentifierList::TypeConditionDataSet set, Core::JIdentifier* iden)
@@ -105,9 +109,12 @@ namespace JinEngine
 				dataSet.listWidth = JGui::GetClientWindowSize().x * 0.25f;
 				dataSet.customComboFlag = J_GUI_COMBO_FLAG_HEIGHT_SMALL;
 				camList->Display(dataSet);
-				selectedCam = camList->GetSelectedUser<JCamera>(); 
+				selectedCam = camList->GetSelectedUser<JCamera>();
+#if DEVELOP
+				TestLight();
+#endif
 			}
-			CloseWindow(); 
+			CloseWindow();
 		}
 		void JSceneViewer::UpdateMouseWheel()
 		{
@@ -115,12 +122,12 @@ namespace JinEngine
 		}
 		void JSceneViewer::DoActivate()noexcept
 		{
-			JEditorWindow::DoActivate();  
+			JEditorWindow::DoActivate();
 			editorCamCtrl->SetMousePos(JGui::GetMousePos());
 		}
 		void JSceneViewer::DoDeActivate()noexcept
 		{
-			JEditorWindow::DoDeActivate();   
+			JEditorWindow::DoDeActivate();
 		}
 		void JSceneViewer::LoadEditorWindow(JFileIOTool& tool)
 		{
@@ -129,14 +136,55 @@ namespace JinEngine
 			JEditorWindow::LoadEditorWindow(tool);
 			JFileIOHelper::LoadAtomicData(tool, lastSelecetdCamGuid, "LastSelectedCamGuid:");
 			JFileIOHelper::LoadAtomicData(tool, movementFactor, "MovemnetFactor:");
-			camList->SetSelecetdGuid(lastSelecetdCamGuid); 
+			camList->SetSelecetdGuid(lastSelecetdCamGuid);
 			editorCamCtrl->SetMovemnetFactor(movementFactor);
-		}  
+		}
 		void JSceneViewer::StoreEditorWindow(JFileIOTool& tool)
 		{
 			JEditorWindow::StoreEditorWindow(tool);
 			JFileIOHelper::StoreAtomicData(tool, camList->GetSelectedGuid(), "LastSelectedCamGuid:");
 			JFileIOHelper::StoreAtomicData(tool, editorCamCtrl->GetMovemnetFactor(), "MovemnetFactor:");
+		}
+		void JSceneViewer::TestLight()
+		{
+			if (JGraphic::Instance().GetGraphicOptionRef().debugging.testTrigger02)
+			{
+				//static float xDeltaFloat = 0.025f;
+				static float zDeltaFloat = 0.075f;
+				//static int xDir = 1;
+				static int zDir = 1;
+
+				auto dLight = scene->GetFirstDirectionalLight();
+				if (dLight == nullptr)
+					return;
+
+				auto t = dLight->GetOwner()->GetTransform();
+				auto curRot = t->GetRotation();
+
+				//if (curRot.x > 90)
+				//	xDir = -1;
+				//else if (curRot.x < -90)
+				//	xDir = 1;
+				if (curRot.z > 90)
+					zDir = -1;
+				else if (curRot.z <= 0)
+					zDir = 1;
+
+				t->SetRotation(curRot + JVector3F(0, 0, zDeltaFloat * zDir));
+
+				curRot = t->GetRotation();
+				//JVector3F xp90 = JVector3F(100, 120, 255);
+				//JVector3F xn90 = JVector3F(233, 240, 250);
+				JVector3F zp90 = JVector3F(20, 125, 255);
+				JVector3F zp0 = JVector3F(255, 125, 20);
+
+				//JVector3F xFactor = JVector3F(0, 0, 0);
+				JVector3F zFactor = JVector3F(0, 0, 0);
+				//xFactor = JVector3F::EWMA(xn90, xp90, (curRot.x + 90) / 180.0f);
+				zFactor = JVector3F::EWMA(zp90, zp0, max(curRot.z, 1e-06) / 90.0f);
+
+				dLight->SetColor(zFactor / 255.0f);
+			}
 		}
 	}
 }

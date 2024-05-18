@@ -60,10 +60,20 @@ float ComputeGaussian(const float x, const float sharpness)
 {
     return exp(-(x * x) / (2.0f * sharpness * sharpness)) / sqrt((2.0f * PI * sharpness * sharpness));
 }
+float ComputeGaussian(const float x, const float y, const float sharpness)
+{
+    return exp(-(x * x + y * y) / (2.0f * sharpness * sharpness)) / sqrt((2.0f * PI * sharpness * sharpness));
+}
+//return std::exp(-(x * x + y * y) / (2.0f * sig * sig)) / (2.0f * PI * sig * sig);
 float ComputeGaussianCheap(const float x)
 {
    //return exp(-x * x);
     return exp(-0.66f * x * x);
+}
+float ComputeGaussianCheap(const float x, const float y)
+{
+   //return exp(-x * x);
+    return exp(-0.66f * (x * x + y * y));
 }
 
 //Edge stopping
@@ -177,7 +187,7 @@ namespace CrossBilateral
                     { 1.0f / 4.0f, 1.0f / 8.0f },
                     { 1.0f / 8.0f, 1.0f / 16.0f },
                 };
-                  
+                    
                 [unroll]
                 for (int yy = -1; yy <= 1; yy++)
                 {
@@ -185,17 +195,16 @@ namespace CrossBilateral
                     for (int xx = -1; xx <= 1; xx++)
                     {
                         const float2 sampleUv = uv + float2(xx, yy) * invTextureSize;
-                        const float k = kernel[abs(xx)][abs(yy)];
+                        const float k = kernel[abs(xx)][abs(yy)];   
                         variance += colorMap.SampleLevel(samLinear, sampleUv, 0).w * k;
                     }
-                }
-                
+                }  
                 float _sqrtGausLuminanceVariance = ComputeSqrtVariance(variance, sigma);
                 Initialize(_targetLuminance, _sqrtGausLuminanceVariance);
             }
             void Initialize(float _targetLuminance, float2 uv, float2 invTextureSize, Texture2D colorMap, SamplerState samLinear)
             {
-                Initialize(_targetLuminance, uv, invTextureSize, colorMap, samLinear, 4.0f);
+                Initialize(_targetLuminance, uv, invTextureSize, colorMap, samLinear, 128.0f);
             }
             void Update(float _sampleLuminance)
             {

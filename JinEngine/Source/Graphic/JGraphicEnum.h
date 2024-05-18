@@ -45,6 +45,7 @@ namespace JinEngine
 			OUT_LINE_DRAW,
 			DEPTH_MAP_DRAW,
 			DEPTH_MAP_VISUALIZE,		//convert non linear to linear depth map (debug)
+			ALBEDO_MAP_VISUALIZE,
 			SPECULAR_MAP_VISUALIZE,
 			NORMAL_MAP_VISUALIZE,
 			TANGENT_MAP_VISUALIZE,

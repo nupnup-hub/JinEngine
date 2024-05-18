@@ -40,6 +40,7 @@ SOFTWARE.
 #include"../../../../Core/File/JFileIOHelper.h"
 #include"../../../../Core/Identity/JIdenCreator.h"
 #include"../../../../Core/Math/JVectorExtend.h"
+#include"../../../../Core/Math/JMathHelper.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Object/Component/Camera/JCamera.h"  
 #include"../../../../Object/Component/Camera/JCameraPrivate.h"  
@@ -1043,9 +1044,7 @@ namespace JinEngine
 					CreateShapeGroup();
 				else if (testData.objType == TestData::OBJ_TYPE::LIGHT)
 					CreateLightGroup();
-			}
-
-
+			} 
 			JGui::EndWindow();
 		}
 		void JSceneObserver::OctreeOptionOnScreen()
@@ -1212,32 +1211,24 @@ namespace JinEngine
 					JGui::Text(JCUtil::WstrToU8Str(cam->GetOwner()->GetName()));
 					if (!cam->AllowDisplayRenderResult())
 						continue;
-
-					if (gInterface.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, rtDataIndex))
-					{
-						auto handle = gInterface.GetOptionGpuHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
-							Graphic::J_GRAPHIC_BIND_TYPE::SRV,
-							Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP,
-							0,
-							rtDataIndex);
-
-						JGui::Text("Albedo Map");
-						JGuiImageInfo info(handle); 
-						JGui::Image(info, RenderResultImageSize());
-					}
  
 					//depth, normal, ssao		... except tangent
 					using GI = Graphic::JGraphicResourceUserInterface; 
 					using condFunc = bool(*)(const GI&);
-					constexpr uint deubgMapCount = 6; 
+					constexpr uint deubgMapCount = 6; //7; 
 					condFunc cond[deubgMapCount]
 					{
+						[](const GI& g) {return true; },
 						[](const GI& g)
 						{
 							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY, index);
+							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
 						},
-						[](const GI& g) {return true; },
+						[](const GI& g)
+						{
+							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
+						},
 						[](const GI& g) 
 						{
 							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
@@ -1248,36 +1239,37 @@ namespace JinEngine
 							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
 						},
+						/*
 						[](const GI& g)
 						{
 							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, index);
 						},
+						*/
 						[](const GI& g){return g.HasHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP); }
 					};
 					std::string name[deubgMapCount]
 					{
 						"Depth Map",
+						"AlbedoMap",
 						"Specular Map",
 						"Normal Map",
 						"Tangent Map",
-						"Velocity Map",
+						//"Velocity Map",
 						"SSAO Map"
 					};
 
 					const uint debugMapCount = gInterface.GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+					const uint sequence[deubgMapCount]
+					{
+						1, 2, 0, 3, 4, 5
+					};
 					for (uint i = 0; i < debugMapCount; ++i)
 					{
-						if (!cond[i](gInterface))
+						const uint dataIndex = sequence[i];
+						if (!cond[dataIndex](gInterface))
 							continue;
-
-						int dataIndex = i;
-						//swap display order depth & specular
-						if (dataIndex == 0)
-							dataIndex = 1;
-						else if (dataIndex == 1)
-							dataIndex = 0;
-
+						 
 						JGui::Text(name[dataIndex]);
 						auto handle = gInterface.GetGpuHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0, dataIndex);
 						JGuiImageInfo info(handle);

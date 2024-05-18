@@ -112,24 +112,24 @@ float FloatPrecision(in float x, in uint numMantissaBits)
     return exponentRange / MaxMantissaValue;
 }
 
-float AccumSpeed(const float currHistoryLength)
+float AccumSpeed(const uint currHistoryLength)
 {
 #if 1
-    return 1.0f / min(currHistoryLength, MAX_FRAME_ACCMURATION);
+    return 1.0f / float(min(currHistoryLength, MAX_FRAME_ACCMURATION));
 #else 
-    return 1.0f / min(currHistoryLength + 1.0f, MAX_FRAME_ACCMURATION);
+    return 1.0f / float(min(currHistoryLength + 1.0f, MAX_FRAME_ACCMURATION));
 #endif
 }
-float4 AccumSpeed4(const float4 currHistoryLength)
+float4 AccumSpeed4(const uint4 currHistoryLength)
 {
     return float4(AccumSpeed(currHistoryLength.x), AccumSpeed(currHistoryLength.y), AccumSpeed(currHistoryLength.z), AccumSpeed(currHistoryLength.w));
 }
-float FastAccumSpeed(const float currHistoryLength)
+float FastAccumSpeed(const uint currHistoryLength)
 {
 #if 1
-    return 1.0f / min(currHistoryLength, MAX_FAST_FRAME_ACCMURATION);
+    return 1.0f / float(min(currHistoryLength, MAX_FAST_FRAME_ACCMURATION));
 #else 
-    return 1.0f / min(currHistoryLength + 1.0f, MAX_FAST_FRAME_ACCMURATION);
+    return 1.0f / float(min(currHistoryLength + 1.0f, MAX_FAST_FRAME_ACCMURATION));
 #endif
 }
  
@@ -147,56 +147,90 @@ namespace TA
     class Actor
     {
         float2 preUv;
-        float3 preCenterPosW;
+        float3 centerPosW; 
         float3 centerNormal;
-        float3 preCenterNormal;
-        float preCenterViewZ;
+        uint centerMaterialID;
         
         float2 rtSize;
         float2 invRtSize;
-        
-        float invDistToPoint;      
+            
+        float invCenterDistToPoint;
         float disocclusionThreshold;
         float normalThresHold;
          
+        float3x3 camPreInvView;
+        float2 preUvToViewA;
+        float2 preUvToViewB;
+        
         Texture2D<float> preViewZMap;
+        Texture2D preLightPropMap;
         Texture2D preNormalMap;
         SamplerState samPointClamp;
         SamplerState samLinearClmap;
-         
+          
+        float4 ComputeDisocclusion2x2(float2 sampleCenterUv, float4 prevViewZ)
+        {
+            float3 sampleCenterNormal = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, sampleCenterUv, 0));
+            if (dot(centerNormal, sampleCenterNormal) <= 0)
+                return float4(0, 0, 0, 0); 
+            
+            float sampleCenterViewZ = preViewZMap.SampleLevel(samLinearClmap, sampleCenterUv, 0).x;
+            float3 preSampleCenterPosV = GetViewPos(sampleCenterUv, sampleCenterViewZ, preUvToViewA, preUvToViewB);
+            float3 preSampleCenterPosW = mul(preSampleCenterPosV, camPreInvView);
+
+            float sampleDistance00 = abs(dot(preSampleCenterPosW, centerNormal));
+            float sampleDistance01 = abs(dot(preSampleCenterPosW, sampleCenterNormal));
+            
+            //Ratio of distance between sample and center
+            float centerDistanceRate = max(sampleDistance00, sampleDistance01) * invCenterDistToPoint;
+            
+            //Ratio of distance between sample center and sample tabs center
+            float4 sampleViewZRate = (1.0f / abs(preSampleCenterPosV.z)) * abs(prevViewZ);
+            
+            float4 relativePlaneDist = centerDistanceRate * sampleViewZRate - centerDistanceRate;
+            //float4 relativePlaneDist = (centerDistanceRate / abs(preSampleCenterPosV.z)) * abs(prevViewZ) - centerDistanceRate;
+            return step(relativePlaneDist, disocclusionThreshold);
+        }
         bool IsValidNormal(const float3 normal, const float3 preNormal)
         {
             return dot(normal, preNormal) > normalThresHold;
         }
         
         void Initialze(float2 _preUv,
-            float3 _preCenterPosW,
-            float3 _centerNormal,
-            float3 _preCenterNormal,
-            float _preCenterViewZ,
+            float3 _centerPosW, 
+            float3 _centerNormal, 
+            uint _centerMaterialID,
             float2 _rtSize,
-            float2 _invRtSize,
-            float _invDistToPoint,
+            float2 _invRtSize, 
+            float _invCenterDistToPoint,
             float _disocclusionThreshold,
             float _normalThresHold,
+            float3x3 _camPreInvView,
+            float2 _preUvToViewA,
+            float2 _preUvToViewB,
             Texture2D<float> _preViewZMap,
+            Texture2D _preLightPropMap,
             Texture2D _preNormalMap,
             SamplerState _samPointClamp,
             SamplerState _samLinearClmap)
         {
             preUv = _preUv;
-            preCenterPosW = _preCenterPosW;
-            preCenterNormal = _preCenterNormal;
-            centerNormal = _centerNormal;
-            preCenterViewZ = _preCenterViewZ;
+            centerPosW = _centerPosW; 
+            centerNormal = _centerNormal; 
+            centerMaterialID = _centerMaterialID;
             
             rtSize = _rtSize;
-            invRtSize = _invRtSize;
-            invDistToPoint = _invDistToPoint;
+            invRtSize = _invRtSize; 
+            invCenterDistToPoint = _invCenterDistToPoint;
             disocclusionThreshold = _disocclusionThreshold;
             normalThresHold = _normalThresHold;
+                   
+            camPreInvView = _camPreInvView;
+            preUvToViewA = _preUvToViewA;
+            preUvToViewB = _preUvToViewB;
             
             preViewZMap = _preViewZMap;
+            preLightPropMap = _preLightPropMap;
             preNormalMap = _preNormalMap;
             samPointClamp = _samPointClamp;
             samLinearClmap = _samLinearClmap;          
@@ -220,63 +254,54 @@ namespace TA
             
             Catmul::Parameter catmulParam;
             catmulParam.Initialize(preUv, rtSize, invRtSize);
- 
+                    
+            //float preCenterViewZ = preViewZMap.SampleLevel(samLinearClmap, preUv, 0);
+            //float3 preCenterPosV = GetViewPos(preUv, preCenterViewZ, preUvToViewA, preUvToViewB);
+            //float3 preCenterPosW = mul(preCenterPosV, camPreInvView);
+            float3 preCenterNormal = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, preUv, 0));
+        
             /*
                 Since the catmulParam origin is located at the center,
                 it is necessary to subtract 0.5f in order to perform the GatherRed operation in Cubic 
             */
-            float2 origin = catmulParam.origin - 0.5f;
-            float4 preViewZ00 = preViewZMap.GatherRed(samPointClamp, origin, float2(0.0f, 0.0f)).wzxy;
-            float4 preViewZ10 = preViewZMap.GatherRed(samPointClamp, origin, float2(2.0f, 0.0f)).wzxy;
-            float4 preViewZ01 = preViewZMap.GatherRed(samPointClamp, origin, float2(0.0f, 2.0f)).wzxy;
-            float4 preViewZ11 = preViewZMap.GatherRed(samPointClamp, origin, float2(2.0f, 2.0f)).wzxy;
-     
-            float distanceA = abs(dot(preCenterPosW, centerNormal));
-            float distanceB = abs(dot(preCenterPosW, preCenterNormal));
-            float distanceRate = max(distanceA, distanceB) * invDistToPoint;
-            
-            float centerDistanceRate = distanceRate / preCenterViewZ;
-             
-            float3 relativePlaneDist00 = abs(centerDistanceRate * preViewZ00.yzw - distanceRate);
-            float3 relativePlaneDist10 = abs(centerDistanceRate * preViewZ10.xzw - distanceRate);
-            float3 relativePlaneDist01 = abs(centerDistanceRate * preViewZ01.xyw - distanceRate);
-            float3 relativePlaneDist11 = abs(centerDistanceRate * preViewZ11.xyz - distanceRate);
-              
+            float2 sampleCenterUv = (catmulParam.originSampleCoord - 0.5f) * invRtSize;
+            float4 preViewZ00 = preViewZMap.GatherRed(samLinearClmap, sampleCenterUv).wzxy;
+            float4 preViewZ10 = preViewZMap.GatherRed(samLinearClmap, sampleCenterUv + float2(2.0f, 0.0f) * invRtSize).wzxy;
+            float4 preViewZ01 = preViewZMap.GatherRed(samLinearClmap, sampleCenterUv + float2(0.0f, 2.0f) * invRtSize).wzxy;
+            float4 preViewZ11 = preViewZMap.GatherRed(samLinearClmap, sampleCenterUv + float2(2.0f, 2.0f) * invRtSize).wzxy;
             //float disocclusionThreshold = 1.0f / (camFar - camNear);
-            float3 disocclusion00 = step(relativePlaneDist00, disocclusionThreshold);
-            float3 disocclusion10 = step(relativePlaneDist10, disocclusionThreshold);
-            float3 disocclusion01 = step(relativePlaneDist01, disocclusionThreshold);
-            float3 disocclusion11 = step(relativePlaneDist11, disocclusionThreshold);
+            
+            float3 disocclusion00 = ComputeDisocclusion2x2(sampleCenterUv + float2(-1.0f, -1.0f) * invRtSize, preViewZ00).yzw;
+            float3 disocclusion10 = ComputeDisocclusion2x2(sampleCenterUv + float2(1.0f, -1.0f) * invRtSize, preViewZ10).xzw;
+            float3 disocclusion01 = ComputeDisocclusion2x2(sampleCenterUv + float2(-1.0f, 1.0f) * invRtSize, preViewZ01).xyw;
+            float3 disocclusion11 = ComputeDisocclusion2x2(sampleCenterUv + float2(1.0f, 1.0f) * invRtSize, preViewZ11).xyz;
             float4 bilinearOcclusion = float4(disocclusion00.z, disocclusion10.y, disocclusion01.y, disocclusion11.x);
             
-            uint viewTestPassCount = dot(disocclusion00, disocclusion10) * dot(disocclusion01, disocclusion11);
+            float4 lightProp00 = preLightPropMap.GatherAlpha(samPointClamp, sampleCenterUv).wzxy;
+            float4 lightProp10 = preLightPropMap.GatherAlpha(samPointClamp, sampleCenterUv + float2(2.0f, 0.0f) * invRtSize).wzxy;
+            float4 lightProp01 = preLightPropMap.GatherAlpha(samPointClamp, sampleCenterUv + float2(0.0f, 2.0f) * invRtSize).wzxy;
+            float4 lightProp11 = preLightPropMap.GatherAlpha(samPointClamp, sampleCenterUv + float2(2.0f, 2.0f) * invRtSize).wzxy;
+      
+            uint3 materialID00 = float3(lightProp00.y, lightProp00.z, lightProp00.w) * MATERIAL_ID_RANGE;
+            uint3 materialID10 = float3(lightProp10.x, lightProp10.z, lightProp10.w) * MATERIAL_ID_RANGE;
+            uint3 materialID01 = float3(lightProp01.x, lightProp01.y, lightProp01.w) * MATERIAL_ID_RANGE;
+            uint3 materialID11 = float3(lightProp11.x, lightProp11.y, lightProp11.z) * MATERIAL_ID_RANGE;
+            
+            disocclusion00 *= all(materialID00 == centerMaterialID);
+            disocclusion10 *= all(materialID10 == centerMaterialID);
+            disocclusion01 *= all(materialID01 == centerMaterialID);
+            disocclusion11 *= all(materialID11 == centerMaterialID);
+       
+            uint viewTestPassCount = dot(disocclusion00 + disocclusion10 + disocclusion01 + disocclusion11, 1.0f);
             result.passCount += viewTestPassCount;
-            result.canUseCubic = viewTestPassCount == 9;
-            result.canUseBilinear = any(bilinearOcclusion > 0);
-    
-            /*
-             float2 offset = float2(1, 1) * invRtSize;
-            float3 preNormalCenter = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, preUv, 0));
-            float3 preNormalLeftUp = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, preUv + float2(-offset.x, -offset.y), 0));
-            float3 preNormalLeftDown = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, preUv + float2(-offset.x, offset.y), 0));
-            float3 preNormalRightUp = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, preUv + float2(offset.x, -offset.y), 0));
-            float3 preNormalRightDown = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, preUv + float2(offset.x, offset.y), 0));
-    
-            uint normalTestPassCount = 0;
-            normalTestPassCount += IsValidNormal(centerNormal, preNormalCenter);
-            normalTestPassCount += IsValidNormal(centerNormal, preNormalLeftUp);
-            normalTestPassCount += IsValidNormal(centerNormal, preNormalLeftDown);
-            normalTestPassCount += IsValidNormal(centerNormal, preNormalRightUp);
-            normalTestPassCount += IsValidNormal(centerNormal, preNormalRightDown);
+            result.canUseCubic = viewTestPassCount > 11.0f; 
             
-            result.passCount += normalTestPassCount;
-            result.canUseCubic &= normalTestPassCount == 5;
-            result.canUseBilinear |= normalTestPassCount > 0;
-            */
-            
-            result.bilinearParameter = CustomSampling::GetBilinearFilter(preUv, rtSize);
+            result.bilinearParameter = CustomSampling::GetBilinearFilter(sampleCenterUv, rtSize);
             result.customWeight = CustomSampling::GetBilinearCustomWeights(result.bilinearParameter, bilinearOcclusion);
-            result.customWeight *= result.customWeight;
+            result.canUseBilinear = any(result.customWeight > 0.0f);
+            //any(result.customWeight > 0.0f);
+            //any(result.customWeight > 0.0f);
+            //result.customWeight *= result.customWeight;
         }
     };
   

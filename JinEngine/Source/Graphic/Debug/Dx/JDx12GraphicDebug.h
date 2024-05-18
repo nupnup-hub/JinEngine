@@ -53,10 +53,11 @@ namespace JinEngine
 			enum DEBUG_TYPE
 			{
 				DEBUG_TYPE_DEPTH,
+				DEBUG_TYPE_ALBEDO,
 				DEBUG_TYPE_SPECULAR,
 				DEBUG_TYPE_NORMAL,
 				DEBUG_TYPE_TANGENT, 
-				DEBUG_TYPE_VELOCITY,
+				//DEBUG_TYPE_VELOCITY,
 				DEBUG_TYPE_AO,
 				DEBUG_TYPE_COUNT
 			};
@@ -93,6 +94,7 @@ namespace JinEngine
 		private:
 			//graphic
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> cRootSignature;
+			std::unique_ptr<JDx12ComputeShaderDataHolder> albedoMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> specularMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> linearDepthMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::COUNT];

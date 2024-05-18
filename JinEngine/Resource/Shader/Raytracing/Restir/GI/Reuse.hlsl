@@ -84,6 +84,9 @@ SOFTWARE.
 #ifndef SPATIAL_WEIGHT_CLAMP_THRESHOLD
 #define SPATIAL_WEIGHT_CLAMP_THRESHOLD 10.0f
 #endif
+#ifndef VIRE_Z_THRESHOLD_RATE
+#define VIRE_Z_THRESHOLD_RATE 0.015f
+#endif
 #ifndef NEIGHBOR_LOOP_COUNT
 #define NEIGHBOR_LOOP_COUNT 10
 #endif
@@ -124,7 +127,7 @@ float EvaluateTargetFunction(float3 radiance, float3 posW, float3 normalW, float
 #if 1
     float3 lightVec = normalize(lightPosW - posW);
     float3 viewVec = normalize(cb.camPosW - posW);
-    float3 fCos = max(float3(0.1f, 0.1f, 0.1f), CalBxDF(normalW, lightVec, viewVec, material) * saturate(dot(normalW, lightVec)));
+    float3 fCos = max(float3(0.1f, 0.1f, 0.1f), ComputeBxDF(normalW, lightVec, viewVec, material) * saturate(dot(normalW, lightVec)));
     float pdf = RGBToLuminance(radiance * fCos);
     //float pdf = length(radiance * fCos);
     return max(pdf, 0.0f);
@@ -404,11 +407,12 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     set.normalW = initialSample[set.pixelIndex].UnpackVisibleNormal();
     set.posW = ComputeRayOrigin(initialSample[set.pixelIndex].visiblePos, set.normalW);
     //set.posW = initialSample[set.pixelIndex].visiblePos;
-    set.material.albedoColor = albedoMap.Load(set.gBufferLocation);
-    set.viewZThresHold = cb.camNearFar.y - cb.camNearFar.x * 0.02f;
+    set.viewZThresHold = cb.camNearFar.y - cb.camNearFar.x * VIRE_Z_THRESHOLD_RATE;
+    
+    UnPackAlbedoColorLayer(albedoMap.Load(set.gBufferLocation), set.material.albedoColor, set.material.specularFactor);
     
     float4 lightProp = lightPropMap.Load(set.gBufferLocation);
-    UnpackLightPropLayer(lightProp, set.material.specularColor, set.material.metallic, set.material.roughness);
+    UnpackLightPropLayer(lightProp, set.material.metallic, set.material.roughness);
  
     float4 prePosH = mul(float4(set.posW, 1.0f), cb.camPreViewProj);
     float3 prePosNdc = prePosH.xyz / prePosH.w;

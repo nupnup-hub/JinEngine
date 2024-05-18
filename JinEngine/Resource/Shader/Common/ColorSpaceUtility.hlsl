@@ -192,16 +192,17 @@ float RGBToLogLuminance(float3 x, float gamma = 4.0)
 float3 RGBToYCoCg(float3 rgb)
 {
     float y = dot(float3(0.25f, 0.5f, 0.25f), rgb);
-    float cg = dot(float3(-0.25f, 0.5f, -0.25f), rgb);
     float co = dot(float3(0.5f, 0, -0.5f), rgb);
-    return float3(y, cg, co);
+    float cg = dot(float3(-0.25f, 0.5f, -0.25f), rgb);
+    return float3(y, co, cg);
 }
-float3 YCoCgToRGB(float3 yCgCo)
+float3 YCoCgToRGB(float3 yCoCg)
 { 
-    float tmp = yCgCo.x - yCgCo.y;
-    float r = tmp + yCgCo.z;
-    float g = yCgCo.x + yCgCo.y;
-    float b = tmp - yCgCo.z; 
+    float tmp = yCoCg.x - yCoCg.z;
+    float r = tmp + yCoCg.y;
+    float g = yCoCg.x + yCoCg.z;
+    float b = tmp - yCoCg.y;
+	
     //float r = dot(float3(1, -1, 1), yCgCo);
     //float g = dot(float3(1, 1, 0), yCgCo);
     //float b = dot(float3(1, -1, -1), yCgCo);
