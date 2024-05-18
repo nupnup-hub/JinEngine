@@ -11,7 +11,7 @@ Game engine for studying graphics and software architecture
 
 ## Features
 ### Graphis
-- Dynamic global illumination
+- [Dynamic global illumination](https://www.youtube.com/watch?v=5uA5FW-PtGM)
   - Restir gi
   - SVGF denoiser
 - Physical based local illumination
