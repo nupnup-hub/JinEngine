@@ -45,10 +45,10 @@ namespace JinEngine
 		{
 			JMatrix4x4 world = JMatrix4x4::Identity();
 			JMatrix4x4 texTransform = JMatrix4x4::Identity();
+			uint objectIndex = 0;
 			uint materialIndex = 0;
 			uint objPad0 = 0;
-			uint objPad1 = 0;
-			uint objPad2 = 0;
+			uint objPad1 = 0; 
 		};
 
 		/**
@@ -63,6 +63,7 @@ namespace JinEngine
 		{
 			JMatrix4x4 world = JMatrix4x4::Identity();
 			JMatrix4x4 texTransform = JMatrix4x4::Identity();
+			uint objectIndex = 0;
 			uint materialIndex = 0;
 			uint objPad00 = 0;
 			uint objPad01 = 0;
@@ -90,8 +91,7 @@ namespace JinEngine
 			uint objPad23 = 0;
 			uint objPad24 = 0;
 			uint objPad25 = 0;
-			uint objPad26 = 0;
-			uint objPad27 = 0; 
+			uint objPad26 = 0; 
 		};
 
 		struct JBoundingObjectConstants
@@ -101,15 +101,14 @@ namespace JinEngine
 
 		struct JObjectRefereneceInfoConstants
 		{
+			uint uniqueIndex = 0;
 			uint materialIndex = 0;
 			uint verticesIndex = 0;					//heap srv index
 			uint indicesIndex = 0;					//heap srv index
 			uint verticesOffset = 0;				//submesh vertex start
 			uint indicesOffset = 0;					//submesh index start
 			uint verticesType = 0;					//static = 0, skinned = 1
-			uint indicesType = 0;					//uint16 = 0, uint32 = 1
-
-			uint pad00 = 0;
+			uint indicesType = 0;					//uint16 = 0, uint32 = 1 
 		};
  
 		struct JObjectConstantsSet : public JFrameConstantsSet<ObjectFrameLayer::setCount>

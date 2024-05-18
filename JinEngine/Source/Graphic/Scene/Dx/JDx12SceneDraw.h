@@ -94,6 +94,7 @@ namespace JinEngine
 				//for rt spatial-temporal process
 				JDx12GraphicResourceComputeSet preRsSet;
 				JDx12GraphicResourceComputeSet preDsSet;
+				JDx12GraphicResourceComputeSet preLightPropSet;
 				JDx12GraphicResourceComputeSet preNormalSet;
 				JDx12GraphicResourceComputeSet preVelocitySet;
 			public:

@@ -29,7 +29,8 @@ namespace JinEngine::Graphic
 {
 	bool JGraphicDebug::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 	{
-		return taskType == J_GRAPHIC_TASK_TYPE::SPECULAR_MAP_VISUALIZE ||
+		return taskType == J_GRAPHIC_TASK_TYPE::ALBEDO_MAP_VISUALIZE || 
+			taskType == J_GRAPHIC_TASK_TYPE::SPECULAR_MAP_VISUALIZE ||
 			taskType == J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE ||
 			taskType == J_GRAPHIC_TASK_TYPE::NORMAL_MAP_VISUALIZE ||
 			taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE ||

@@ -141,7 +141,7 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet preRsSet;
 				JDx12GraphicResourceComputeSet preDsSet;
 				JDx12GraphicResourceComputeSet preNormalSet;
-				JDx12GraphicResourceComputeSet preTangentSet;
+				//JDx12GraphicResourceComputeSet preTangentSet;
 			public:
 				JDx12GraphicResourceComputeSet initialSampleSet;
 				JDx12GraphicResourceComputeSet temporalReserviorSet[2];
@@ -242,6 +242,6 @@ namespace JinEngine
 			void ClearPso(); 
 			void ClearBuffer();
 			void ClearUserPrivateData();
-		};
+		}; 
 	}
 }

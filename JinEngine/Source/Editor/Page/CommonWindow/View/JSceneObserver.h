@@ -105,7 +105,7 @@ namespace JinEngine
 			public:
 				std::vector<JUserPtr<JMaterial>> matVec;
 			public:
-				std::vector<JUserPtr<JGameObject>> objParentVec;
+				std::vector<JUserPtr<JGameObject>> objParentVec; 
 			public:
 				void Initialize();
 				void Clear();

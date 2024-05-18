@@ -65,6 +65,8 @@ namespace JinEngine
 		private:
 			void LoadEditorWindow(JFileIOTool& tool)final;
 			void StoreEditorWindow(JFileIOTool& tool)final;
+		private:
+			void TestLight();
 		};
 	}
 }

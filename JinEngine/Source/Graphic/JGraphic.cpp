@@ -1970,6 +1970,7 @@ namespace JinEngine
 						drawing.scene->DrawSceneRenderTarget(dataSet.sceneDraw.get(),
 							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
 					}
+					/*Restir이외에 Velocity buffer 사용시 use
 					for (const auto& data : drawTarget->sceneRequestor)
 					{
 						if (!data->canDrawThisFrame)
@@ -1977,7 +1978,7 @@ namespace JinEngine
 
 						drawing.scene->ComputeSceneDependencyTemporalResource(dataSet.sceneDraw.get(),
 							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
-					}
+					}*/
 					if (option.rendering.allowDeferred)
 					{
 						drawing.scene->BindResource(J_GRAPHIC_RENDERING_PROCESS::DEFERRED_SHADING, dataSet.bind.get());
@@ -2405,10 +2406,11 @@ namespace JinEngine
 
 							JDrawHelper copiedHelper = helper;
 							copiedHelper.SettingDrawScene(data->jCamera);
-							drawing.scene->ComputeSceneDependencyTemporalResource(dataSet.sceneDraw.get(), copiedHelper);
+							//	Restir이외에 Velocity buffer 사용시 use
+							//drawing.scene->ComputeSceneDependencyTemporalResource(dataSet.sceneDraw.get(), copiedHelper);
 							raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
 							raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
-						}
+						} 
 					}
 					if (option.CanUseSSAO())
 					{

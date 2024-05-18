@@ -70,16 +70,22 @@ namespace JinEngine::Graphic
 			auto rtSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 			
 			//DEBUG_TYPE_DEPTH	-depth
+			//DEBUG_TYPE_ALBEDO
 			//DEBUG_TYPE_SPECULAR
 			//DEBUG_TYPE_NORMAL	-normal 
 			//DEBUG_TYPE_TANGENT	-normal 
-			//DEBUG_TYPE_VELOCITY	-tangent
+			//DEBUG_TYPE_VELOCITY	-restir이외에 velocity 사용시 다시 활성화
 			//DEBUG_TYPE_AO	-ao
 			srcBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW));
-			if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY))
-				srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY));
+			if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP))
+				srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP));
 			else
 				srcBase.Push(JDx12GraphicResourceComputeSet());
+			if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP))
+				srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP));
+			else
+				srcBase.Push(JDx12GraphicResourceComputeSet());
+
 			if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP))
 				srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP));
 			else
@@ -90,10 +96,10 @@ namespace JinEngine::Graphic
 			else
 				srcBase.Push(JDx12GraphicResourceComputeSet());
 
-			if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY))
-				srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY));
-			else
-				srcBase.Push(JDx12GraphicResourceComputeSet());
+			//if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY))
+			//	srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY));
+			//else
+			//	srcBase.Push(JDx12GraphicResourceComputeSet());
 			srcBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO));
 
 			for (uint i = 0; i < DEBUG_TYPE_COUNT; ++i)
@@ -102,10 +108,11 @@ namespace JinEngine::Graphic
 			J_GRAPHIC_TASK_TYPE taskType[DEBUG_TYPE_COUNT]
 			{
 				J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE,
+				J_GRAPHIC_TASK_TYPE::ALBEDO_MAP_VISUALIZE,
 				J_GRAPHIC_TASK_TYPE::SPECULAR_MAP_VISUALIZE,
 				J_GRAPHIC_TASK_TYPE::NORMAL_MAP_VISUALIZE,
 				J_GRAPHIC_TASK_TYPE::TANGENT_MAP_VISUALIZE,
-				J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE,
+				//J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE,
 				J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE
 			};
 			 
@@ -206,10 +213,11 @@ namespace JinEngine::Graphic
 		JDx12ComputeShaderDataHolder* shader[DEBUG_TYPE_COUNT]
 		{
 			(set.isNonLinearDepthMap ? nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE].get() : linearDepthMapShaderData.get()),
+			albedoMapShaderData.get(),
 			specularMapShaderData.get(),
 			normalMapShaderData.get(),
 			tangentMapShaderData.get(),
-			velocityMapShaderData.get(),
+			//velocityMapShaderData.get(),
 			aoMapShaderData.get()
 		};
 
@@ -362,19 +370,21 @@ namespace JinEngine::Graphic
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE] = std::make_unique<JDx12ComputeShaderDataHolder>();
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC] = std::make_unique<JDx12ComputeShaderDataHolder>();
 		
+		albedoMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		specularMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		normalMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		tangentMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		velocityMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		aoMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 
-		constexpr uint shaderCount = SIZE_OF_ARRAY(nonLinearDepthMapShaderData) + 6;
+		constexpr uint shaderCount = SIZE_OF_ARRAY(nonLinearDepthMapShaderData) + 7;
 
 		JDx12ComputeShaderDataHolder* holderSet[shaderCount]
 		{
 			linearDepthMapShaderData.get(),
 			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE].get(),
 			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC].get(),
+			albedoMapShaderData.get(),
 			specularMapShaderData.get(),
 			normalMapShaderData.get(),
 			tangentMapShaderData.get(),
@@ -386,6 +396,7 @@ namespace JinEngine::Graphic
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeLinearMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeAlbedoMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeSpecularMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNormalMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeTangentMap"),
@@ -397,6 +408,7 @@ namespace JinEngine::Graphic
 			std::vector<JMacroSet>{ { L"DEPTH_LINEAR_MAP", std::to_wstring(1) }, {L"USE_PERSPECTIVE", std::to_wstring(1)}},
 			std::vector<JMacroSet>{ { L"DEPTH_NON_LINEAR_MAP", std::to_wstring(1) },{ L"USE_PERSPECTIVE", std::to_wstring(1)}},
 			std::vector<JMacroSet>{ { L"DEPTH_NON_LINEAR_MAP", std::to_wstring(1) }},
+			std::vector<JMacroSet>{ { L"ALBEDO_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"SPECULAR_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"NORMAL_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"TANGENT_MAP", std::to_wstring(1) }},
@@ -412,10 +424,12 @@ namespace JinEngine::Graphic
 			Private::GetThreadDim(),
 			Private::GetThreadDim(),
 			Private::GetThreadDim(),
+			Private::GetThreadDim(),
 			Private::GetThreadDim()
 		};
 		ID3D12RootSignature* rootSignature[shaderCount]
 		{
+			cRootSignature.Get(),
 			cRootSignature.Get(),
 			cRootSignature.Get(),
 			cRootSignature.Get(),

@@ -328,6 +328,10 @@ namespace JinEngine
 			newV.y = std::clamp(value.y, minV.y, maxV.y);
 			return newV;
 		}
+		static JVector2 EWMA(const JVector2& x, const JVector2& y, const float alpha)noexcept
+		{
+			return x * alpha + y * (1 - alpha);
+		}
 	public:
 		float Length()const noexcept
 		{
@@ -651,6 +655,10 @@ namespace JinEngine
 			newV.y = std::clamp(value.y, minV.y, maxV.y);
 			newV.z = std::clamp(value.z, minV.z, maxV.z);
 			return newV;
+		} 
+		static JVector3 EWMA(const JVector3& x, const JVector3& y, const float alpha)noexcept
+		{
+			return x * alpha + y * (1 - alpha);
 		}
 	public:
 		float Length()const noexcept
@@ -1067,6 +1075,10 @@ namespace JinEngine
 			newV.z = std::clamp(value.z, minV.z, maxV.z);
 			newV.w = std::clamp(value.w, minV.w, maxV.w);
 			return newV;
+		}
+		static JVector4 EWMA(const JVector4& x, const JVector4& y, const float alpha)noexcept
+		{
+			return x * alpha + y * (1 - alpha);
 		}
 	public:
 		float Length()const noexcept

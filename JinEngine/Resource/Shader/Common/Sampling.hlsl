@@ -342,7 +342,7 @@ namespace Catmul
 { 
     struct Parameter
     {
-        float2 origin;
+        float2 originSampleCoord;
         float2 weight[4]; 
         float2 weight12;
         float2 offset12;
@@ -357,12 +357,12 @@ namespace Catmul
             // down the sample location to get the exact center of our "starting" texel. The starting texel will be at
             // location [1, 1] in the grid, where [0, 0] is the top left corner.
             float2 samplePos = uv * texSize;
-            origin = floor(samplePos - 0.5f) + 0.5f;
+            originSampleCoord = floor(samplePos - 0.5f) + 0.5f;
             //float2 texPos1 = samplePos;
         
             // Compute the fractional offset from our starting texel to our original sample location, which we'll
             // feed into the Catmull-Rom spline function to get our filter weights.
-            float2 f = samplePos - origin;
+            float2 f = samplePos - originSampleCoord;
             float2 f2 = f * f;
             float2 f3 = f2 * f;
             
@@ -380,9 +380,9 @@ namespace Catmul
             offset12 = weight[2] / (weight[1] + weight[2]);
 
             // Compute the final UV coordinates we'll use for sampling the texture
-            samplePos0 = (origin - 1) * invTexSize;
-            samplePos3 = (origin + 2) * invTexSize;
-            samplePos12 = (origin + offset12) * invTexSize;
+            samplePos0 = (originSampleCoord - 1) * invTexSize;
+            samplePos3 = (originSampleCoord + 2) * invTexSize;
+            samplePos12 = (originSampleCoord + offset12) * invTexSize;
         }
     };
     float2 Compute(in Texture2D<float2> tex, in SamplerState linearSampler, Parameter param)
@@ -483,23 +483,24 @@ namespace CustomSampling
     BilinearParameter GetBilinearFilter(float2 uv, float2 texSize)
     {
         BilinearParameter result;
-        result.origin = floor(uv * texSize - 0.5);
-        result.weights = frac(uv * texSize - 0.5);
+        result.origin = floor(uv * texSize - 0.5f);
+        result.weights = frac(uv * texSize - 0.5f);
         return result;
     }
     
     float4 GetBilinearCustomWeights(BilinearParameter param, float4 customWeights)
     {
+        float2 oneMinuseWeight = 1.0 - param.weights;
         float4 weights;
-        weights.x = (1.0 - param.weights.x) * (1.0 - param.weights.y);
-        weights.y = param.weights.x * (1.0 - param.weights.y);
-        weights.z = (1.0 - param.weights.x) * param.weights.y;
+        weights.x = oneMinuseWeight.x * oneMinuseWeight.y;
+        weights.y = param.weights.x * oneMinuseWeight.y;
+        weights.z = oneMinuseWeight.x * param.weights.y;
         weights.w = param.weights.x * param.weights.y;
         return weights * customWeights;
     }
      
     float4 ApplyBilinearCustomWeights(float4 s00, float4 s10, float4 s01, float4 s11, float4 w, bool normalize = true)
-    {
+    { 
         float4 r = s00 * w.x + s10 * w.y + s01 * w.z + s11 * w.w;
         return r * (normalize ? rcp(dot(w, 1.0)) : 1.0);
     }

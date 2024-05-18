@@ -160,6 +160,16 @@ float GGXSmithG2HeightCorrelatedA2(float dotNL, float dotNV, float roughness2)
 }
 
 //Fresnel 
+
+float3 ComputeF0(float3 specularColor, float3 albedoColor, float metalic)
+{
+    return lerp(specularColor, albedoColor, metalic);
+}
+float3 ComputeF0(float specularFactor, float3 albedoColor, float metalic)
+{
+    return ComputeF0(specularFactor.xxx, albedoColor, metalic);
+}
+
 float3 SchlickFresnel(const float3 f0, const float dotND)
 { 
     const float rFactor = 1.0f - saturate(dotND);

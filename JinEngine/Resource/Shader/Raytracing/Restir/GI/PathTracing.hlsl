@@ -43,8 +43,8 @@ struct MeshVertex
 };
 struct MeshMaterial
 {
-    float4 albedoColor;
-    float4 specularColor;
+    float3 albedoColor;
+    float specularFactor;
     float metallic;
     float roughness;
 };
@@ -128,8 +128,7 @@ struct EstimateDataSet
 #define OBJECT_HIT 0
 #define LIGHT_HIT 1
 #define MISS 2
-
-#define EPSILON 1e-06
+ 
 //directionalLight[0] is current scene directionalLightData
 StructuredBuffer<DirectionalLightData> directionalLight : register(t2, space0);
 StructuredBuffer<PointLightData> pointLight : register(t2, space1);
@@ -170,7 +169,7 @@ void SampleBxdf(float3 normal, float3 tangent, MeshMaterial material, float3 toR
         // The PDF of sampling a cosine hemisphere is NdotL / Pi, which cancels out those terms
         // from the diffuse BRDF and the irradiance integral
         //throughput = lerp(material.albedoColor.xyz, float3(0, 0, 0), material.metallic) * dotNL * (1 / PI);
-        bsdf = LambertianIDiffuse(material.albedoColor.xyz);
+        bsdf = LambertianIDiffuse(material.albedoColor);
         //bsdf = DisneyDiffuse(material.albedoColor.xyz, dotNL, dotNV, dotHV, material.roughness);
         //bsdf = FrostbiteDisneyDiffuse(material.albedoColor.xyz, dotNL, dotNV, dotHL, material.roughness);
         bsdfPdf = 1.0f;
@@ -187,7 +186,8 @@ void SampleBxdf(float3 normal, float3 tangent, MeshMaterial material, float3 toR
         const float dotHL = dot(halfVec, toLight);
  
         const float r2 = material.roughness * material.roughness;
-        float3 f = SchlickFresnel(material.specularColor.xyz, dotHL);
+        float3 f0 = ComputeF0(material.specularFactor.xxx, material.albedoColor, material.metallic);
+        float3 f = SchlickFresnel(f0, dotHL);
         float d = GGXINDF(dotNH, r2);
         float g1 = GGXSmithG1A(r2, dotNV);
         float g2 = GGXSmithG2HeightCorrelatedA(dotNL, dotNV, r2);
@@ -227,7 +227,8 @@ void EvaluateBxdf(float3 normal, MeshMaterial material, float3 toRayOrigin, floa
         const float dotHL = dot(halfVec, toLight);
  
         const float r2 = material.roughness * material.roughness;
-        float3 f = SchlickFresnel(material.specularColor.xyz, dotHL);
+        float3 f0 = ComputeF0(material.specularFactor.xxx, material.albedoColor, material.metallic);
+        float3 f = SchlickFresnel(f0, dotHL);
         float d = GGXINDF(dotNH, r2);
         float g1 = GGXSmithG1A(r2, dotNV);
         float g2 = GGXSmithG2HeightCorrelatedA(dotNL, dotNV, r2);
@@ -313,7 +314,7 @@ float3 SampleBxdfImportance(inout MeshVertex hitSurface, inout MeshMaterial mate
         if (set.hitType == OBJECT_HIT)
         {
             //float dotNL = max(dot(rayPayload.vertex.normal, normalize(hitSurface.pos - rayPayload.vertex.pos)), 0.0001f);
-            irradiance = material.albedoColor.xyz;
+            irradiance = material.albedoColor;
             lightPdf = SampleDirectionHemisphere_PDF();
             //SampleDirectionHemisphere_PDF
         }
@@ -473,17 +474,18 @@ void RayGenShader()
     if (depth == 1.0f)
         return;
     
-    float4 albedo = screenAlbedoMap.Load(int3(pixelCoord, 0));
-    float4 lightProp = screenLightProp.Load(int3(pixelCoord, 0));        
-    float4 normalAndTangentG = screenNormalMap.Load(int3(pixelCoord, 0));
-      
+    float3 albedo;
+    float specularFactor; 
+    UnPackAlbedoColorLayer(screenAlbedoMap.Load(int3(pixelCoord, 0)), albedo, specularFactor);
+ 
     MeshVertex visibleVertex;
     visibleVertex.pos = GetWorldPos(uv, depth); 
-    UnpackNormalAndTangentLayer(normalAndTangentG, visibleVertex.normal, visibleVertex.tangent);
+    UnpackNormalAndTangentLayer(screenNormalMap.Load(int3(pixelCoord, 0)), visibleVertex.normal, visibleVertex.tangent);
      
     MeshMaterial material; 
     material.albedoColor = albedo;
-    UnpackLightPropLayer(lightProp, material.specularColor, material.metallic, material.roughness);
+    material.specularFactor = specularFactor;  
+    UnpackLightPropLayer(screenLightProp.Load(int3(pixelCoord, 0)), material.metallic, material.roughness);
  
     float3 radiance = float3(0, 0, 0);
 	//[unroll]
@@ -509,8 +511,7 @@ void HemisphereHitShader(inout RayPayload rayPayload, in BuiltInTriangleIntersec
 {
     //opaque object and instance ID = instanceInfo index
     //instanceInfo[instanceID]      
-    uint instanceID = InstanceID();
-    
+    uint instanceID = InstanceID();   
     MaterialData meshMatData = materialData[instanceInfo[instanceID].materialIndex];
  
     StaticVertex vertex = GetStaticMeshVertex(instanceID, PrimitiveIndex(), attr);
@@ -532,12 +533,12 @@ void HemisphereHitShader(inout RayPayload rayPayload, in BuiltInTriangleIntersec
     if (meshMatData.roughnessMapIndex != MISSING_TEXTURE_INDEX)
         rayPayload.material.roughness = textureMaps[meshMatData.roughnessMapIndex].SampleLevel(samPointWrap, texC, 0).x;
         
-    rayPayload.material.albedoColor = meshMatData.albedoColor;
+    rayPayload.material.albedoColor = meshMatData.albedoColor.xyz;
     //if (meshMatData.albedoMapIndex != MISSING_TEXTURE_INDEX)
     //  rayPayload.material.albedoColor *= textureMaps[meshMatData.albedoMapIndex].SampleLevel(samPointWrap, texC, 0);
  
-    float specularFactor = ComputeDefaultSpecularFactor(rayPayload.material.albedoColor.xyz, rayPayload.material.metallic);
-    rayPayload.material.specularColor = float4(specularFactor, specularFactor, specularFactor, 1.0f);
+    float specularFactor = ComputeDefaultSpecularFactor(rayPayload.material.albedoColor, rayPayload.material.metallic);
+    rayPayload.material.specularFactor = specularFactor;
    // if (meshMatData.specularMapIndex != MISSING_TEXTURE_INDEX)
    //     rayPayload.material.specularColor *= textureMaps[meshMatData.specularMapIndex].SampleLevel(samPointWrap, texC, 0);
     

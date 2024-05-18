@@ -41,10 +41,12 @@ Texture2D preNormalMap : register(t4);
 Texture2D<float2> depthDerivative : register(t5);
 Texture2D<float4> preColorHistory : register(t6);
 Texture2D<float4> preFastColorHistory : register(t7);
-Texture2D<float> preHistoryLength : register(t8);
+Texture2D<uint> preHistoryLength : register(t8);
+Texture2D lightProp : register(t9);
+Texture2D preLightProp : register(t10);
 RWTexture2D<float4> colorHistory : register(u0);
 RWTexture2D<float4> fastColorHistory : register(u1);
-RWTexture2D<float> historyLength : register(u2);
+RWTexture2D<uint> historyLength : register(u2);
 SamplerState samPointClmap : register(s0);
 SamplerState samLinearClmap : register(s1);
 
@@ -52,19 +54,21 @@ SamplerState samLinearClmap : register(s1);
 //우선은 Svgf에 사용된 구현을 참조 결과를 관찰하며
 //추후에 수정하도록한다.
   
-bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 normal, const float2 velocity, out float4 preColor, out float4 preFastColor, out float currentHistory)
+bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 posW, const float3 normal, const float viewZ, const float2 velocity, out float4 preColor, out float4 preFastColor, out uint currentHistory)
 {
     preColor = float4(0, 0, 0, 0);
     preFastColor = float4(0, 0, 0, 0);
     currentHistory = 0;
     
-    float2 preUv = uv + velocity.xy;  
+    float2 preUv = uv + velocity.xy;
     float2 prePixelCenterCoord = preUv * cb.rtSize; //pixelCoord + float2(0.5f, 0.5f);
  
+    uint materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, uv, 0));
     TA::Result result;
-    TA::Actor actor = RestirTA::CreateActor(preUv, normal, preViewZMap, preNormalMap, samPointClmap, samLinearClmap);
+    TA::Actor actor = RestirTA::CreateActor(preUv, posW, normal, viewZ, materialID, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
     TA::ComputeCubicWeight(actor, result);
     
+    result.canUseBilinear &= all(abs(velocity) <= 0.001f);
     if (result.canUseCubic)
     {
         Catmul::Parameter param;
@@ -72,16 +76,18 @@ bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 
         
         preColor = Catmul::Compute(preColorHistory, samLinearClmap, param);
         preFastColor = Catmul::Compute(preFastColorHistory, samLinearClmap, param);
-        currentHistory = preHistoryLength.SampleLevel(samLinearClmap, preUv, 0);
+        currentHistory = preHistoryLength[prePixelCenterCoord].x;
         //preColor = float4(0, 0, 1, 1);
+        //preFastColor = float4(0, 0, 1, 1);
         return true;
     }
     else if (result.canUseBilinear)
-    { 
+    {
         preColor = CustomSampling::ComputeBilinear(preColorHistory, samLinearClmap, result.bilinearParameter, actor.invRtSize, result.customWeight);
         preFastColor = CustomSampling::ComputeBilinear(preFastColorHistory, samLinearClmap, result.bilinearParameter, actor.invRtSize, result.customWeight);
-        currentHistory = preHistoryLength.SampleLevel(samLinearClmap, preUv, 0);
+        currentHistory = preHistoryLength[prePixelCenterCoord].x;
         //preColor = float4(1, 0, 0, 1);
+        //preFastColor = float4(1, 0, 0, 1);
         return true;
     }
     else
@@ -107,15 +113,15 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float3 posV = UVToViewSpace(uv, viewZ, cb.uvToViewA, cb.uvToViewB);
     float3 posW = mul(float4(posV, 1.0f), cb.camInvView).xyz;
     float4 prePosH = mul(float4(posW, 1.0f), cb.camPreViewProj);
-    float2 preUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f); 
+    float2 preUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
     float2 velocity = preUv - uv;
     
     //if (length(velocity) < 0.001f)
     //    velocity = float2(0, 0);
     float4 preColor;
     float4 preFastColor;
-    float currHistoryLength;
-    bool isValid = DetermineDisOcclusion(pixelCoord, uv, normal, velocity, preColor, preFastColor, currHistoryLength);
+    uint currHistoryLength;
+    bool isValid = DetermineDisOcclusion(pixelCoord, uv, posW, normal, viewZ, velocity, preColor, preFastColor, currHistoryLength);
     
     currHistoryLength = min(MAX_FRAME_ACCMURATION, currHistoryLength + 1.0f);
     // this adjusts the alpha for the case where insufficient history is available.

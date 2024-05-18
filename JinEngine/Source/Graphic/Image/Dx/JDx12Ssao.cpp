@@ -763,7 +763,7 @@ namespace JinEngine::Graphic
 		for (uint i = 0; i < Ssao::sliceCount; ++i)
 		{
 			constants.jitter = hbaoRandomVec[i];
-			constants.posOffset = JVector2F(i % 4, i / 4) + 0.5f;
+			constants.posOffset = JVector2F(i % 4, uint(i / 4)) + 0.5f;
 			constants.sliceIndex = i;
 			constants.uSliceIndex = (uint)i;
 
@@ -781,7 +781,7 @@ namespace JinEngine::Graphic
 		std::vector< CD3DX12_STATIC_SAMPLER_DESC> sam
 		{
 			CD3DX12_STATIC_SAMPLER_DESC(0, // shaderRegister
-			D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+			D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, // filter
 			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
 			D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
 			D3D12_TEXTURE_ADDRESS_MODE_CLAMP), // addressW
@@ -815,13 +815,10 @@ namespace JinEngine::Graphic
 		hbaoBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);		//depthMapTable
 		hbaoBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);		//normalMapTable
 		if (!option.postProcess.useSsaoInterleave)
-		{
 			hbaoBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);		//randomMapTable 
-			for (const auto& data : sam)
-				hbaoBuilder.PushSampler(data);
-		}
-		else
-			hbaoBuilder.PushSampler(sam[0]);
+
+		for (const auto& data : sam)
+			hbaoBuilder.PushSampler(data);
 		hbaoBuilder.Create(device, L"HbaoRootSignature", hbaoRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);
 	}
 	void JDx12Ssao::BuildSsaoPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)

@@ -86,6 +86,16 @@ void VisualizeNonLinearMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatc
 #endif
 	result[dispatchThreadID.xy] = float4(z, z, z, z);
 }
+#elif ALBEDO_MAP 
+[numthreads(DIMX, DIMY, DIMZ)]
+void VisualizeAlbedoMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+    if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
+        return;
+	
+    float3 albedoColor = UnpackAlbedoColor(srcMap.Load(int3(dispatchThreadID.xy, 0)));
+    result[dispatchThreadID.xy] = float4(albedoColor, 1.0f);
+}
 #elif SPECULAR_MAP 
 [numthreads(DIMX, DIMY, DIMZ)]
 void VisualizeSpecularMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
@@ -93,7 +103,7 @@ void VisualizeSpecularMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatch
     if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
         return;
 	
-    float specularIntensity = srcMap.Load(int3(dispatchThreadID.xy, 0)).x; 
+    float specularIntensity = UnpackSpecularFactor(srcMap.Load(int3(dispatchThreadID.xy, 0)));
     result[dispatchThreadID.xy] = float4(specularIntensity, specularIntensity, specularIntensity, 1.0f);
 }
 #elif  NORMAL_MAP

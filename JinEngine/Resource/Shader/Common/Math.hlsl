@@ -30,6 +30,7 @@ SOFTWARE.
 #define UINT_MAX 0xffffffff
 
 #define JINENGINE_MATH 1
+#define EPSILON 1e-06
 
 float DegToRad(float deg)
 {

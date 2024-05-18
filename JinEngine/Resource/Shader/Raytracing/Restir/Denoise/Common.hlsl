@@ -63,30 +63,32 @@ ConstantBuffer<ReserviorDenoiseConstants> cb : register(b0);
 namespace RestirTA
 { 
     TA::Actor CreateActor(float2 preUv,
+        float3 centerPos,
         float3 centerNormal, 
+        float centerViewZ,
+        uint centerMaterialID,
         Texture2D<float> preViewZMap,
+        Texture2D preLightPropMap,
         Texture2D preNormalMap,
         SamplerState samPointClamp,
         SamplerState samLinearClmap)
     {
-        float preCenterViewZ = preViewZMap.SampleLevel(samLinearClmap, preUv, 0);
-        float3 preCenterPosV = GetViewPos(preUv, preCenterViewZ, cb.preUvToViewA, cb.preUvToViewB);
-        float3 preCenterPosW = mul(preCenterPosV, (float3x3) cb.camPreInvView);    
-        float3 preCenterNormal = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, preUv, 0));
-        float invDistToPoint = 1.0f / preCenterViewZ;
-        
+        float centerPlaneDist = dot(centerPos, centerNormal);
         TA::Actor actor;
-        actor.Initialze(preUv, 
-            preCenterPosW, 
-            centerNormal, 
-            preCenterNormal,
-            preCenterViewZ,
+        actor.Initialze(preUv,
+            centerPos,
+            centerNormal,
+            centerMaterialID,
             cb.rtSize,
-            cb.invRtSize, 
-            invDistToPoint,
+            cb.invRtSize,
+            1.0f / centerPlaneDist,
             DISOCCLUSION_THRES_HOLD * (cb.camNearFar.y - cb.camNearFar.x),
-            NORMAL_THRESHOLD, 
+            NORMAL_THRESHOLD,
+            (float3x3)cb.camPreInvView,
+            cb.preUvToViewA,
+            cb.preUvToViewB,
             preViewZMap, 
+            preLightPropMap,
             preNormalMap, 
             samPointClamp,
             samLinearClmap);

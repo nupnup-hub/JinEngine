@@ -589,6 +589,7 @@ namespace JinEngine::Graphic
 			velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 			preRsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 			preDsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+			preLightPropSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 			preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 			preVelocitySet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 		}
@@ -879,19 +880,24 @@ namespace JinEngine::Graphic
 	{
 		if (helper.allowTemporalProcess)
 		{
-			JDx12GraphicResourceComputeSet* fromSet[3]
+			//Velocity는 Restir이외에 pass에서 추가적으로 사용시 Scene에서 Compute
+			//지금은 Restir pass에서 픽셀별로 계산
+			static constexpr uint copyTarget = 3;
+			JDx12GraphicResourceComputeSet* fromSet[copyTarget]
 			{
+				&rSet.gBufferSet[Constants::gBufferLightPropertyLayer],
 				&rSet.gBufferSet[Constants::gBufferNormalAndTangentLayer],
-				&rSet.velocitySet,
+				//&rSet.velocitySet,
 				&rSet.dsSet
 			};
-			JDx12GraphicResourceComputeSet* toSet[3]
+			JDx12GraphicResourceComputeSet* toSet[copyTarget]
 			{
+				&rSet.preLightPropSet,
 				&rSet.preNormalSet,
-				&rSet.preVelocitySet,
+				//&rSet.preVelocitySet,
 				&rSet.preDsSet
 			};
-			context->CopyResource(fromSet, toSet, std::make_index_sequence<3>());
+			context->CopyResource(fromSet, toSet, std::make_index_sequence<copyTarget>());
 		}
 	}
 	void JDx12SceneDraw::ComputeVelocity(JDx12CommandContext* context, const ResourceDataSet& set, const JDrawHelper& helper)

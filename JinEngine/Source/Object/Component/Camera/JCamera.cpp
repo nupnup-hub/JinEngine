@@ -92,11 +92,12 @@ namespace JinEngine
 		static constexpr uint previousDsNumber = 1;
 
 		static constexpr uint depthDebuggingNumber = 0;
-		static constexpr uint specularDebuggingNumber = 1;
-		static constexpr uint normalDebuggingNumber = 2;
-		static constexpr uint tangentDebuggingNumber = 3;
-		static constexpr uint velocityDebuggingNumber = 4;
-		static constexpr uint ssaoDebuggingNumber = 5;
+		static constexpr uint albedoDebuggingNumber = depthDebuggingNumber + 1;
+		static constexpr uint specularDebuggingNumber = albedoDebuggingNumber + 1;
+		static constexpr uint normalDebuggingNumber = specularDebuggingNumber + 1;
+		static constexpr uint tangentDebuggingNumber = normalDebuggingNumber + 1;
+		//static constexpr uint velocityDebuggingNumber = 4;
+		static constexpr uint ssaoDebuggingNumber = tangentDebuggingNumber + 1;
 		static constexpr uint debuggingMapCount = ssaoDebuggingNumber + 1;
 
 		static constexpr float minSsaoRadius = 0.01f;
@@ -403,14 +404,16 @@ namespace JinEngine
 			{ 
 				if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE)
 					return Private::depthDebuggingNumber;
+				else if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::ALBEDO_MAP_VISUALIZE)
+					return Private::albedoDebuggingNumber;
 				else if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::SPECULAR_MAP_VISUALIZE)
 					return Private::specularDebuggingNumber;
 				else if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::NORMAL_MAP_VISUALIZE)
 					return Private::normalDebuggingNumber;
 				else if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::TANGENT_MAP_VISUALIZE)
 					return Private::tangentDebuggingNumber;
-				else if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
-					return Private::velocityDebuggingNumber;
+				//else if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
+				//	return Private::velocityDebuggingNumber;
 				else if (taskType == Graphic::J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE)
 					return Private::ssaoDebuggingNumber;
 				else
@@ -1575,12 +1578,14 @@ namespace JinEngine
 					{
 						impl->CreateResource(impl->GetRtSize(), Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL);
 						impl->CreateOption(rtRsUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
+						impl->CreateOption(rtRsUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 						impl->CreateOption(rtRsUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 					}
 				}
 				else
 				{
 					impl->DestroyGraphicOption(rtRsUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
+					impl->DestroyGraphicOption(rtRsUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 					impl->DestroyGraphicOption(rtRsUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 					impl->DestroyMultiTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, Private::previousDsNumber);
 
