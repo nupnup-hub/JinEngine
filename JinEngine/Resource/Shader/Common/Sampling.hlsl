@@ -294,7 +294,6 @@ uint CMJPermute(uint i, uint l, uint p)
     while (i >= l);
     return (i + p) % l;
 }
-
 float CMJRandFloat(uint i, uint p)
 {
     i ^= p;
@@ -385,23 +384,6 @@ namespace Catmul
             samplePos12 = (originSampleCoord + offset12) * invTexSize;
         }
     };
-    float2 Compute(in Texture2D<float2> tex, in SamplerState linearSampler, Parameter param)
-    {
-        float2 result = 0.0f;
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos0.x, param.samplePos0.y), 0.0f) * param.weight[0].x * param.weight[0].y;
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos12.x, param.samplePos0.y), 0.0f) * param.weight12.x * param.weight[0].y;
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos3.x, param.samplePos0.y), 0.0f) * param.weight[3].x * param.weight[0].y;
-
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos0.x, param.samplePos12.y), 0.0f) * param.weight[0].x * param.weight12.y;
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos12.x, param.samplePos12.y), 0.0f) * param.weight12.x * param.weight12.y;
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos3.x, param.samplePos12.y), 0.0f) * param.weight[3].x * param.weight12.y;
-
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos0.x, param.samplePos3.y), 0.0f) * param.weight[0].x * param.weight[3].y;
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos12.x, param.samplePos3.y), 0.0f) * param.weight12.x * param.weight[3].y;
-        result += tex.SampleLevel(linearSampler, float2(param.samplePos3.x, param.samplePos3.y), 0.0f) * param.weight[3].x * param.weight[3].y;
-
-        return result;
-    }
     float4 Compute(in Texture2D<float4> tex, in SamplerState linearSampler, Parameter param)
     {
         float4 result = 0.0f;

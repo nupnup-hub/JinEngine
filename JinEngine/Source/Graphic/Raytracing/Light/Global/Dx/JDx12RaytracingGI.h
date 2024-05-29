@@ -27,6 +27,7 @@ SOFTWARE.
 #include"../JRaytracingGI.h"
 #include"../../../../Accelerator/Dx/JDx12GpuAcceleratorManager.h"
 #include"../../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
+#include"../../../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
 #include"../../../../Buffer/Dx/JDx12GraphicBuffer.h"  
 #include"../../../../Shader/Dx/JDx12ShaderDataHolder.h"  
 #include"../../../../../Core/Storage/JStorageInterface.h"
@@ -39,6 +40,8 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		using RestirTemporalAccumulationData = JDx12GraphicResourceShareData::RestirTemporalAccumulationData;
+
 		struct JStateObjectBuildData;
 		class JDx12CommandContext;
 		class JDx12RaytracingGI : public JRaytracingGI
@@ -67,6 +70,8 @@ namespace JinEngine
 				JVector2F uvToViewB = JVector2F::Zero();
 				JVector2F rtSize = JVector2F::One();
 				JVector2F invRtSize = JVector2F::One();
+				JVector2F origianlRtSize = JVector2F::One();
+				JVector2F invOrigianlRtSize = JVector2F::One();
 				float tMax = 0;
 				uint totalNumPixels = 0;
 
@@ -90,7 +95,7 @@ namespace JinEngine
 
 				uint totalLightCount = 0;
 				float invTotalLightCount = 0; 
-				uint forceClearReservoirs = 0;
+				uint forceClearReservoirs = 0; 
 				uint pad00 = 0;
 				uint pad01 = 0;
 				//uint rectLightVerticesIndex = 0;
@@ -127,6 +132,8 @@ namespace JinEngine
 				JDx12GraphicDevice* device;
 				UserPrivateData* userPrivate;
 			public:
+				RestirTemporalAccumulationData* sharedata;
+			public:
 				JUserPtr<JCamera> cam;
 			public:
 				JDx12GraphicResourceComputeSet rtSet;
@@ -146,7 +153,8 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet initialSampleSet;
 				JDx12GraphicResourceComputeSet temporalReserviorSet[2];
 				JDx12GraphicResourceComputeSet spatialReserviorSet[2];
-				JDx12GraphicResourceComputeSet finalColorSet;
+				JDx12GraphicResourceComputeSet colorIntermediate;
+				JDx12GraphicResourceComputeSet destSet;
 			public:
 				JDx12GraphicResourceComputeSet* preTemporalReserviorSet;
 				JDx12GraphicResourceComputeSet* currTemporalReserviorSet;
@@ -155,7 +163,8 @@ namespace JinEngine
 			public:
 				JDx12AcceleratorResourceComputeSet accelSet;
 			public:
-				JVector2<uint> resolution;
+				JVector2<uint> halfResolution;
+				JVector2<uint> oriResolution;
 				JVector2<uint> threadDim;
 			public:
 				uint currFrameIndex = 0;
@@ -179,8 +188,10 @@ namespace JinEngine
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> reuseRootSignature;
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> finalRootSignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> upsampleRootSignature;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> reuseSamplingShader; 
 			std::unique_ptr<JDx12ComputeShaderDataHolder> finalShader; 
+			std::unique_ptr<JDx12ComputeShaderDataHolder> upsampleShader;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> clearRootSignature;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> clearShader;
@@ -209,6 +220,7 @@ namespace JinEngine
 			void InitializeSampling(const GIDataSet& set, const JDrawHelper& helper);
 			void ReuseSampling(const GIDataSet& set, const JDrawHelper& helper); 
 			void FinalColor(const GIDataSet& set, const JDrawHelper& helper);
+			void Upsample(const GIDataSet& set, const JDrawHelper& helper);
 			void ClearRestirResource(const GIDataSet& set, const JDrawHelper& helper);
 			void InitializeSamplingTest(const GIDataSet& set, const JDrawHelper& helper);		//for debugging
 			void End(const GIDataSet& set, const JDrawHelper& helper);

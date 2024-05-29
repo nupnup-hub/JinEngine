@@ -26,10 +26,8 @@ SOFTWARE.
 #include"JDx12RaytracingDenoiser.h"
 #include"../../Dx/JDx12RaytracingUtility.h"
 #include"../../Dx/JDx12RaytracingConstants.h"
-#include"../../../Device/Dx/JDx12GraphicDevice.h"
-#include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
-#include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"   
-#include"../../../GraphicResource/Dx/JDx12GraphicResourceShareData.h" 
+#include"../../../Device/Dx/JDx12GraphicDevice.h" 
+#include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"    
 #include"../../../DataSet/Dx/JDx12GraphicDataSet.h"
 #include"../../../Command/Dx/JDx12CommandContext.h"
 #include"../../../Utility/Dx/JDx12ObjectCreation.h"  
@@ -87,6 +85,7 @@ namespace JinEngine::Graphic
 
 
 	ROOT_INDEX_CREATOR(Prepare, passCBIndex, depthMapIndex, preDepthMapIndex, viewZMapIndex, preViewZMapIndex, depthDerivativeMapIndex)
+	ROOT_INDEX_CREATOR(PreBlur, passCBIndex, srcColorMapIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, destColorMapIndex)
 	ROOT_INDEX_CREATOR(TA, passCBIndex, colorMapIndex, viewZMapIndex, normalMapIndex, preViewZMapIndex, preNormalMapIndex, depthDerivativeMapIndex, preColorHistoryIndex, preFastColorHistoryIndex, preHistroyLengthIndex, lightPropIndex, preLightPropIndex, colorHistoryIndex, fastColorHistoryIndex, histroyLengthIndex)
 	ROOT_INDEX_CREATOR(Fix, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex, destFastColorHistoryIndex)
 	ROOT_INDEX_CREATOR(Clamp, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, destColorHistoryIndex, destFastColorHistoryIndex)
@@ -107,7 +106,7 @@ namespace JinEngine::Graphic
 		static constexpr uint clearUserDataFrequency = 7680;
 		static constexpr uint sampleNumberMax = 64;
 
-		static constexpr uint shdaderCount = 8;
+		static constexpr uint shdaderCount = 9;
 		static JVector3<uint> GetThreadDim8()noexcept
 		{
 			return JVector3<uint>(8, 8, 1);
@@ -279,6 +278,17 @@ namespace JinEngine::Graphic
 		pBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);
 		pBuilder.Create(device->GetDevice(), L"PrepareRootSignature", prepareRootSignature.GetAddressOf());
 
+		JDx12RootSignatureBuilder2<PreBlur::rootSlotCount, 1> preBlurBuilder;
+		preBlurBuilder.PushConstantsBuffer(0);
+		preBlurBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+		preBlurBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+		preBlurBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
+		preBlurBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
+		preBlurBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
+		preBlurBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+		preBlurBuilder.PushSampler(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		preBlurBuilder.Create(device->GetDevice(), L"PreBlurRootSignature", preBlurRootSignature.GetAddressOf());
+
 		JDx12RootSignatureBuilder2<TA::rootSlotCount, 2> tBuilder;
 		tBuilder.PushConstantsBuffer(0);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -365,6 +375,7 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingDenoiser::RestirDenoiser::BuildPso(JDx12GraphicDevice* device)
 	{
 		prepareShader = std::make_unique<JDx12ComputeShaderDataHolder>();
+		preBlurShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 		taShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 		historyFixShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 		historyClampingShader = std::make_unique<JDx12ComputeShaderDataHolder>();
@@ -379,6 +390,12 @@ namespace JinEngine::Graphic
 		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirDenoise(L"Prepare.hlsl"), L"main"));
 		psoBuilder.PushThreadDim(Common::GetThreadDim16());
 		psoBuilder.PushRootSignature(prepareRootSignature.Get());
+		psoBuilder.Next();
+
+		psoBuilder.PushHolder(preBlurShader.get());
+		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirDenoise(L"PreBlur.hlsl"), L"main"));
+		psoBuilder.PushThreadDim(Common::GetThreadDim16());
+		psoBuilder.PushRootSignature(preBlurRootSignature.Get());
 		psoBuilder.Next();
 
 		psoBuilder.PushHolder(taShader.get());
@@ -428,6 +445,7 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingDenoiser::RestirDenoiser::ClearRootSignature()
 	{
 		prepareRootSignature = nullptr;
+		preBlurRootSignature = nullptr;
 		taRootSignature = nullptr;
 		historyFixRootSignature = nullptr;
 		historyClampingRootSignature = nullptr;
@@ -442,6 +460,7 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingDenoiser::RestirDenoiser::ClearPso()
 	{
 		prepareShader = nullptr;
+		preBlurShader = nullptr;
 		taShader = nullptr;
 		historyFixShader = nullptr;
 		historyClampingShader = nullptr;
@@ -474,9 +493,27 @@ namespace JinEngine::Graphic
 		set.context->SetPipelineState(prepareShader.get());
 		set.context->Dispatch2D(set.resolution, prepareShader->dispatchInfo.threadDim.XY());
 	}
-	void JDx12RaytracingDenoiser::RestirDenoiser::TemporalAccumulation(const DenoiseDataSet& set, const JDrawHelper& helper)
+	void JDx12RaytracingDenoiser::RestirDenoiser::PreBlur(const DenoiseDataSet& set, const JDrawHelper& helper)
 	{
 		set.context->Transition(set.srcColor->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		set.context->Transition(set.intermediate01->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		set.context->FlushResourceBarriers();
+
+		set.context->SetComputeRootSignature(preBlurRootSignature.Get());
+		set.context->SetComputeRootConstantBufferView(PreBlur::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
+		set.context->SetComputeRootDescriptorTable(PreBlur::srcColorMapIndex, set.srcColor->GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(PreBlur::viewZMapIndex, set.viewZSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(PreBlur::normalMapIndex, set.normalSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(PreBlur::histroyLengthIndex, set.historyLengthSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(PreBlur::depthDerivativeMapIndex, set.depthDerivative.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(PreBlur::destColorMapIndex, set.intermediate01->GetGpuUavHandle());
+
+		set.context->SetPipelineState(preBlurShader.get());
+		set.context->Dispatch2D(set.resolution, preBlurShader->dispatchInfo.threadDim.XY());
+	}
+	void JDx12RaytracingDenoiser::RestirDenoiser::TemporalAccumulation(const DenoiseDataSet& set, const JDrawHelper& helper)
+	{
+		set.context->Transition(set.intermediate01->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.viewZSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.normalSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE); 
 		set.context->Transition(set.preViewZSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -493,7 +530,7 @@ namespace JinEngine::Graphic
 
 		set.context->SetComputeRootSignature(taRootSignature.Get());
 		set.context->SetComputeRootConstantBufferView(TA::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
-		set.context->SetComputeRootDescriptorTable(TA::colorMapIndex, set.srcColor->GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(TA::colorMapIndex, set.intermediate01->GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(TA::viewZMapIndex, set.viewZSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(TA::normalMapIndex, set.normalSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(TA::preViewZMapIndex, set.preViewZSet.GetGpuSrvHandle());
@@ -801,38 +838,16 @@ namespace JinEngine::Graphic
 				if (set.userPrivate->HasClearRequest())
 					restirDenoiser.ClearDenoiseResource(set, helper);
 
+				restirDenoiser.SettingFirstLoop(set, helper);
 				restirDenoiser.Prepare(set, helper);
-				if (helper.option.debugging.testTrigger00)
-				{
-					restirDenoiser.SettingFirstLoop(set, helper);
-					restirDenoiser.TemporalAccumulation(set, helper);
-					restirDenoiser.HistoryFix(set, helper);
-
-					restirDenoiser.SettingSecondLoop(set, helper);
-					restirDenoiser.TemporalAccumulation(set, helper);
-					restirDenoiser.HistoryFix(set, helper);
-					restirDenoiser.HistoryClamping(set, helper);
-					restirDenoiser.AnitiFirefly(set, helper);
-					restirDenoiser.Atorus(set, helper, 2);
-
-					restirDenoiser.SettingThirdLoop(set, helper);
-					restirDenoiser.TemporalAccumulation(set, helper);
-					restirDenoiser.HistoryFix(set, helper);
-					restirDenoiser.HistoryClamping(set, helper);
-					restirDenoiser.AnitiFirefly(set, helper);
-					restirDenoiser.Atorus(set, helper, 4);
-					restirDenoiser.HistoryStabilization(set, helper);
-				}
-				else
-				{
-					restirDenoiser.SettingFirstLoop(set, helper);
-					restirDenoiser.TemporalAccumulation(set, helper);
-					restirDenoiser.HistoryFix(set, helper);
-					restirDenoiser.HistoryClamping(set, helper);
-					restirDenoiser.AnitiFirefly(set, helper);
-					restirDenoiser.Atorus(set, helper, 4);
-					restirDenoiser.HistoryStabilization(set, helper);
-				}
+				restirDenoiser.PreBlur(set, helper);
+				restirDenoiser.SettingFirstLoop(set, helper);
+				restirDenoiser.TemporalAccumulation(set, helper);
+				restirDenoiser.HistoryFix(set, helper);
+				restirDenoiser.HistoryClamping(set, helper);
+				restirDenoiser.AnitiFirefly(set, helper);
+				restirDenoiser.Atorus(set, helper, 4);
+				restirDenoiser.HistoryStabilization(set, helper);
 			}
 		}
 		End(set, helper);

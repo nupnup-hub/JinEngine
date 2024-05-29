@@ -76,11 +76,12 @@ PixelOut PS(PixelIn pin) : SV_Target
         aoFactor = ambientOcclusionMap.Sample(samLinearWrap, pin.texC);
  
 #ifdef GLOBAL_ILLUMINATION
-     directLight = CombineGlobalLight(directLight, mat.albedoColor.xyz, giMap.Load(mapLocation).xyz, aoFactor);
+     directLight = CombineGlobalLight(directLight, mat.albedoColor.xyz, giMap.Sample(samLinearWrap, pin.texC), aoFactor);
 #else 
-    directLight = CombineApproxGlobalLight(directLight, mat.albedoColor, aoFactor);
+     directLight = CombineApproxGlobalLight(directLight, mat.albedoColor, aoFactor);
 #endif
 		
     return float4(directLight, 1.0f);
 	//return float4(normalW, 1.0f);
 }
+   

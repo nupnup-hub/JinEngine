@@ -145,7 +145,7 @@ Texture2D screenNormalMap : register(t4, space10); //gbuffer layer
 
 RWStructuredBuffer<RestirSamplePack> initialSample : register(u0);
   
-SamplerState samPointWrap : register(s0);
+SamplerState samLinearClamp : register(s0);
 //SamplerState samAnisotropicWrap : register(s0);
 SamplerState samLTC : register(s1);
 SamplerState samLTCSample : register(s2);
@@ -469,23 +469,23 @@ void RayGenShader()
     
     initialSample[pixelIndex].Initialize();
     
-    float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
-    float depth = depthMap.Load(int3(pixelCoord, 0)).x;
+    float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.halfInvRtSize;
+    float depth = depthMap.SampleLevel(samLinearClamp, uv, 0);
     if (depth == 1.0f)
         return;
     
     float3 albedo;
     float specularFactor; 
-    UnPackAlbedoColorLayer(screenAlbedoMap.Load(int3(pixelCoord, 0)), albedo, specularFactor);
+    UnPackAlbedoColorLayer(screenAlbedoMap.SampleLevel(samLinearClamp, uv, 0), albedo, specularFactor);
  
     MeshVertex visibleVertex;
     visibleVertex.pos = GetWorldPos(uv, depth); 
-    UnpackNormalAndTangentLayer(screenNormalMap.Load(int3(pixelCoord, 0)), visibleVertex.normal, visibleVertex.tangent);
+    UnpackNormalAndTangentLayer(screenNormalMap.SampleLevel(samLinearClamp, uv, 0), visibleVertex.normal, visibleVertex.tangent);
      
     MeshMaterial material; 
     material.albedoColor = albedo;
     material.specularFactor = specularFactor;  
-    UnpackLightPropLayer(screenLightProp.Load(int3(pixelCoord, 0)), material.metallic, material.roughness);
+    UnpackLightPropLayer(screenLightProp.SampleLevel(samLinearClamp, uv, 0), material.metallic, material.roughness);
  
     float3 radiance = float3(0, 0, 0);
 	//[unroll]
@@ -528,23 +528,23 @@ void HemisphereHitShader(inout RayPayload rayPayload, in BuiltInTriangleIntersec
     rayPayload.material.roughness = meshMatData.roughness;
     
     if (meshMatData.metallicMapIndex != MISSING_TEXTURE_INDEX)
-        rayPayload.material.metallic = textureMaps[meshMatData.metallicMapIndex].SampleLevel(samPointWrap, texC, 0).x;
+        rayPayload.material.metallic = textureMaps[meshMatData.metallicMapIndex].SampleLevel(samLinearClamp, texC, 0).x;
  
     if (meshMatData.roughnessMapIndex != MISSING_TEXTURE_INDEX)
-        rayPayload.material.roughness = textureMaps[meshMatData.roughnessMapIndex].SampleLevel(samPointWrap, texC, 0).x;
+        rayPayload.material.roughness = textureMaps[meshMatData.roughnessMapIndex].SampleLevel(samLinearClamp, texC, 0).x;
         
     rayPayload.material.albedoColor = meshMatData.albedoColor.xyz;
     //if (meshMatData.albedoMapIndex != MISSING_TEXTURE_INDEX)
-    //  rayPayload.material.albedoColor *= textureMaps[meshMatData.albedoMapIndex].SampleLevel(samPointWrap, texC, 0);
+    //  rayPayload.material.albedoColor *= textureMaps[meshMatData.albedoMapIndex].SampleLevel(samLinearClamp, texC, 0);
  
     float specularFactor = ComputeDefaultSpecularFactor(rayPayload.material.albedoColor, rayPayload.material.metallic);
     rayPayload.material.specularFactor = specularFactor;
    // if (meshMatData.specularMapIndex != MISSING_TEXTURE_INDEX)
-   //     rayPayload.material.specularColor *= textureMaps[meshMatData.specularMapIndex].SampleLevel(samPointWrap, texC, 0);
+   //     rayPayload.material.specularColor *= textureMaps[meshMatData.specularMapIndex].SampleLevel(samLinearClamp, texC, 0);
     
     if (meshMatData.normalMapIndex != MISSING_TEXTURE_INDEX)
     {
-        float4 normalMapSample = textureMaps[meshMatData.normalMapIndex].SampleLevel(samPointWrap, texC, 0);
+        float4 normalMapSample = textureMaps[meshMatData.normalMapIndex].SampleLevel(samLinearClamp, texC, 0);
         float3 normalT = 2.0f * normalMapSample.rgb - 1.0f;
         rayPayload.vertex.normal = normalize(mul(normalT, CalTBN(rayPayload.vertex.normal, rayPayload.vertex.tangent)));
     }  
@@ -606,3 +606,5 @@ void HemispherAnyHitShader(inout RayPayload rayPayload, in BuiltInTriangleInters
     }
 }
 */
+
+ 

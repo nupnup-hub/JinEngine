@@ -347,7 +347,7 @@ namespace JinEngine
 			rtSize.x = JMathHelper::AlignT(rtSize.x, 8);
 			rtSize.y = JMathHelper::AlignT(rtSize.y, 8);
 			return rtSize;
-		}
+		} 
 		float GetSsaoRadius()const noexcept
 		{
 			return ssaoDesc.radius;
@@ -1523,7 +1523,7 @@ namespace JinEngine
 					impl->CreateResource(rtDesc, rtType);
 
 					Graphic::JGraphicResourceCreationDesc reserviorDesc;
-					reserviorDesc.width = rtDesc.width * rtDesc.height;
+					reserviorDesc.width = rtDesc.width * rtDesc.height * 0.25f;
 					impl->CreateResource(reserviorDesc, Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE);
 					impl->CreateResource(reserviorDesc, Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR);
 					impl->CreateResource(reserviorDesc, Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR);
@@ -1761,7 +1761,7 @@ namespace JinEngine
 	JVector2F JCamera::GetRenderTargetSize()const noexcept
 	{
 		return impl->GetRtSize();
-	}
+	} 
 	JVector2F JCamera::GetRenderTargetRate()const noexcept
 	{
 		return impl->rtSizeRate;

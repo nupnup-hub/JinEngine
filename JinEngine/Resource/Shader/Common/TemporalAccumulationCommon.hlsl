@@ -137,8 +137,8 @@ namespace TA
 {
     struct Result
     {
-        //bilinear weight
-        CustomSampling::BilinearParameter bilinearParameter;
+        Catmul::Parameter bicubicParameter;
+        CustomSampling::BilinearParameter bilinearParameter;      
         float4 customWeight;
         int passCount;
         bool canUseCubic;
@@ -251,9 +251,8 @@ namespace TA
             // 2x 2y 3x 3y       2y 3x
             //    2w 3z
             // Gather sample ordering: (-,+),(+,+),(+,-),(-,-),
-            
-            Catmul::Parameter catmulParam;
-            catmulParam.Initialize(preUv, rtSize, invRtSize);
+             
+            result.bicubicParameter.Initialize(preUv, rtSize, invRtSize);
                     
             //float preCenterViewZ = preViewZMap.SampleLevel(samLinearClmap, preUv, 0);
             //float3 preCenterPosV = GetViewPos(preUv, preCenterViewZ, preUvToViewA, preUvToViewB);
@@ -264,7 +263,7 @@ namespace TA
                 Since the catmulParam origin is located at the center,
                 it is necessary to subtract 0.5f in order to perform the GatherRed operation in Cubic 
             */
-            float2 sampleCenterUv = (catmulParam.originSampleCoord - 0.5f) * invRtSize;
+            float2 sampleCenterUv = (result.bicubicParameter.originSampleCoord - 0.5f) * invRtSize;
             float4 preViewZ00 = preViewZMap.GatherRed(samLinearClmap, sampleCenterUv).wzxy;
             float4 preViewZ10 = preViewZMap.GatherRed(samLinearClmap, sampleCenterUv + float2(2.0f, 0.0f) * invRtSize).wzxy;
             float4 preViewZ01 = preViewZMap.GatherRed(samLinearClmap, sampleCenterUv + float2(0.0f, 2.0f) * invRtSize).wzxy;

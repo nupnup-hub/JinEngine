@@ -187,6 +187,7 @@ namespace JinEngine
 				//for restir gi
 			private:
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> prepareRootSignature;
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> preBlurRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> taRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyFixRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyClampingRootSignature;
@@ -195,6 +196,7 @@ namespace JinEngine
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyStabilizationRootSignature;
 			private:
 				std::unique_ptr<JDx12ComputeShaderDataHolder> prepareShader;
+				std::unique_ptr<JDx12ComputeShaderDataHolder> preBlurShader;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> taShader;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> historyFixShader;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> historyClampingShader;
@@ -214,6 +216,7 @@ namespace JinEngine
 				void ClearPso() final;
 			public:
 				void Prepare(const DenoiseDataSet& set, const JDrawHelper& helper);
+				void PreBlur(const DenoiseDataSet& set, const JDrawHelper& helper);
 				void TemporalAccumulation(const DenoiseDataSet& set, const JDrawHelper& helper);
 				void HistoryFix(const DenoiseDataSet& set, const JDrawHelper& helper);
 				void HistoryClamping(const DenoiseDataSet& set, const JDrawHelper& helper);

@@ -213,8 +213,9 @@ namespace JinEngine
 		{
 		public:
 			JGraphicDevice* device;
+			JGraphicResourceShareData* shareData;
 		public:
-			JDx12GraphicRtGiComputeSet(JCommandContext* context, JGraphicDevice* device);
+			JDx12GraphicRtGiComputeSet(JCommandContext* context, JGraphicDevice* device, JGraphicResourceShareData* shareData);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};

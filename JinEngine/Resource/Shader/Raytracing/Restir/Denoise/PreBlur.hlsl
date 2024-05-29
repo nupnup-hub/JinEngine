@@ -39,23 +39,27 @@ SOFTWARE.
 #define POISSON_16
 #endif
   
+#ifndef CONSTANTS_RADIUS
+#define CONSTANTS_RADIUS 8
+#endif
+
 #include"../../../Common/PoissonSelect.hlsl"
 
-Texture2D colorHistory : register(t0);
+Texture2D srcColorMap : register(t0);
 Texture2D<float> viewZMap : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D<uint> historyLength : register(t3);
 Texture2D<float2> depthDerivative : register(t4);
-RWTexture2D<float4> resultColor : register(u0);
+RWTexture2D<float4> destColorMap : register(u0);
 SamplerState samLinearClmap : register(s0);
   
-float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3 centerNormal, float centerViewZ, float2 ddxy, float radius)
+float3 PreBlur(int2 pixelCoord, float2 centerUv, float3 diffuse, float3 centerNormal, float centerViewZ, float2 ddxy, float radius)
 {
     float centerLuminance = RGBToLuminance(diffuse);
     CrossBilateral::NormalDepthLuminance::Parameters param;
     param.normal.Initialize(centerNormal);
     param.depth.Initialize(centerViewZ, ddxy);
-    param.luminance.Initialize(centerLuminance, centerUv, cb.invRtSize, colorHistory, samLinearClmap);
+    param.luminance.Initialize(centerLuminance, centerUv, cb.invRtSize, srcColorMap, samLinearClmap);
  
     float3 result = diffuse;
     float weightSum = 1.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
@@ -76,7 +80,7 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
         float2 uv = centerUv + offset * cb.invRtSize;
         //uv = max(uv, float2(0, 0));
         
-        float3 sampleDiffuse = colorHistory.SampleLevel(samLinearClmap, uv, 0).xyz;
+        float3 sampleDiffuse = srcColorMap.SampleLevel(samLinearClmap, uv, 0).xyz;
         float sampleLuminance = RGBToLuminance(sampleDiffuse);
         float sampleViewZ = viewZMap.SampleLevel(samLinearClmap, uv, 0);
         float3 sampleNormalW = UnpackNormal(normalMap.SampleLevel(samLinearClmap, uv, 0));
@@ -94,7 +98,7 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
 }
 [numthreads(DIMX, DIMY, 1)]
 void main(int3 dispatchThreadID : SV_DispatchThreadID)
-{ 
+{
     if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
         return;
     
@@ -102,20 +106,17 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
     float currHistoryLength = historyLength[pixelCoord].x;
     
-    float4 pixelColorHistory = colorHistory.SampleLevel(samLinearClmap, uv, 0);
-    float3 diffuse = pixelColorHistory.xyz;
-    
+    float3 color = srcColorMap.SampleLevel(samLinearClmap, uv, 0).xyz;
+ 
     float3 centerNormal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, uv, 0));
     float centerViewZ = viewZMap.SampleLevel(samLinearClmap, uv, 0);
     float viewRange = cb.camNearFar.y - cb.camNearFar.x;
     float2 ddxy = depthDerivative.SampleLevel(samLinearClmap, uv, 0);
  
     //float radius = cb.baseRadius + (1.0f / float(currHistoryLength)) * cb.radiusRange * (1.0f - centerLinearDepth);
-    //float radius = cb.baseRadius + cb.radiusRange * (1.0f - ((centerViewZ - cb.camNearFar.x) / viewRange));
-    float radius = cb.baseRadius + cb.radiusRange * (1.0f / float(1.0f + currHistoryLength));
-   
-    float3 denoiseColor = DiffuseFiltering(pixelCoord, uv, diffuse, centerNormal, centerViewZ, ddxy, radius);
-    resultColor[pixelCoord].xyz = denoiseColor;
+    //float radius = cb.baseRadius + cb.radiusRange * (1.0f - ((centerViewZ - cb.camNearFar.x) / viewRange)); 
+    destColorMap[pixelCoord].xyz = PreBlur(pixelCoord, uv, color, centerNormal, centerViewZ, ddxy, CONSTANTS_RADIUS);
+    //destColorMap[pixelCoord].xyz = color;
     
     //resultColor[pixelCoord].xyz = diffuse;
 }

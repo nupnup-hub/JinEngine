@@ -43,10 +43,10 @@ RWStructuredBuffer<RestirReserviorPack> spatial01 : register(u4);
 [numthreads(DIMX, DIMY, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.halfRtSize.x || dispatchThreadID.y >= cb.halfRtSize.y)
         return;
       
-    uint index = dispatchThreadID.x + dispatchThreadID.y * cb.rtSize.x;
+    uint index = dispatchThreadID.x + dispatchThreadID.y * cb.halfRtSize.x;
     initialSample[index].Initialize();
     temporal00[index].Initialize();
     temporal01[index].Initialize();

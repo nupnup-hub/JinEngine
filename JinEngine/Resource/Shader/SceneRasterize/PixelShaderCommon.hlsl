@@ -161,11 +161,11 @@ float ViewToNdcOZ(const float v)
     return ViewToNdcOZ(v, cbCam.nearZ, cbCam.FarZ);
 }
 
- #define GI_APP_DIRECT_LIGHT_COLOR_FACTOR 0.9f
-#define GI_APP_MATERIAL_COLOR_FACTOR 0.3f
+ #define GI_APP_DIRECT_LIGHT_COLOR_FACTOR 1.0f
+#define GI_APP_MATERIAL_COLOR_FACTOR 0.4f
 #define GI_APP_LIGHT_COLOR_FACTOR 0.25f
 
-#define GI_DIRECT_LIGHT_COLOR_FACTOR 0.9f
+#define GI_DIRECT_LIGHT_COLOR_FACTOR 1.0f
 #define GI_MATERIAL_COLOR_FACTOR 0.4f
 #define GI_LIGHT_COLOR_FACTOR 0.25f
 
@@ -175,10 +175,10 @@ float3 CombineGlobalLight(float3 directLight, float3 albedoColor, float3 giColor
         return directLight;
   
     float3 ambientLight = giColor * aoFactor;
-    return directLight * GI_DIRECT_LIGHT_COLOR_FACTOR + directLight * ambientLight * GI_LIGHT_COLOR_FACTOR + albedoColor * ambientLight * GI_MATERIAL_COLOR_FACTOR;
+    return directLight * GI_DIRECT_LIGHT_COLOR_FACTOR + albedoColor * ambientLight * GI_MATERIAL_COLOR_FACTOR;
 }
 float3 CombineApproxGlobalLight(float3 directLight, float3 albedoColor, float aoFactor)
 { 
-    return directLight * GI_APP_DIRECT_LIGHT_COLOR_FACTOR + directLight * aoFactor * GI_APP_LIGHT_COLOR_FACTOR + albedoColor * aoFactor * GI_APP_MATERIAL_COLOR_FACTOR;
+    return directLight * GI_APP_DIRECT_LIGHT_COLOR_FACTOR + albedoColor * aoFactor * GI_APP_MATERIAL_COLOR_FACTOR;
 }
  
