@@ -88,3 +88,6 @@ Game engine for studying graphics and software architecture
 ### Need to fix
   - Reduce ghosting
 
+### Docs
+  - Describe graphis algorithm
+
