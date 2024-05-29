@@ -98,7 +98,7 @@ namespace JinEngine
 		float GetFarViewWidth()const noexcept;
 		float GetFarViewHeight()const noexcept;
 		J_CAMERA_STATE GetCameraState()const noexcept; 
-		JVector2F GetRenderTargetSize()const noexcept;
+		JVector2F GetRenderTargetSize()const noexcept; 
 		JVector2F GetRenderTargetRate()const noexcept;
 		Graphic::JSsaoDesc GetSsaoDesc()const noexcept; 
 	public:

@@ -70,12 +70,9 @@ bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 
     
     result.canUseBilinear &= all(abs(velocity) <= 0.001f);
     if (result.canUseCubic)
-    {
-        Catmul::Parameter param;
-        param.Initialize(preUv, cb.rtSize, cb.invRtSize);
-        
-        preColor = Catmul::Compute(preColorHistory, samLinearClmap, param);
-        preFastColor = Catmul::Compute(preFastColorHistory, samLinearClmap, param);
+    { 
+        preColor = Catmul::Compute(preColorHistory, samLinearClmap, result.bicubicParameter);
+        preFastColor = Catmul::Compute(preFastColorHistory, samLinearClmap, result.bicubicParameter);
         currentHistory = preHistoryLength[prePixelCenterCoord].x;
         //preColor = float4(0, 0, 1, 1);
         //preFastColor = float4(0, 0, 1, 1);

@@ -107,7 +107,7 @@ Texture2D preNormalMap : register(t7);
 Texture2D preDepthMap : register(t8);
 RWStructuredBuffer<RestirReserviorPack> temporal : register(u0);
 RWStructuredBuffer<RestirReserviorPack> spatial : register(u1);
-SamplerState samLinearBorder : register(s0);
+SamplerState samLinearBorder: register(s0);
 
 RestirReserviorData LoadReservior(uint baseIndex, uint sampleIndex, uint elementCount)
 {
@@ -218,7 +218,7 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
     float weightSum = max(0.0f, reservior.W) * reservior.M * EvaluateTargetFunction(reservior.radiance, reservior.visiblePos, reservior.visibleNormal, reservior.samplePos, set.material);
 
     const float searchRadiusRatio = 0.1f;
-    float searchRadius = cb.rtSize.x * searchRadiusRatio;
+    float searchRadius = cb.halfRtSize.x * searchRadiusRatio;
         
     // Initialize reuse history.
 #if RESTIR_UNBIASED 
@@ -254,25 +254,25 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
         float2 randOffset = float2(set.rng.Random01(), set.rng.Random01());
         int2 neighborID = set.prePixelCoord + searchRadius * (randOffset * 2.0f - 1.0f);
         
-        uint2 boundary = cb.rtSize - 1;
+        uint2 boundary = cb.halfRtSize - 1;
         neighborID.x = neighborID.x < 0 ? 0 : (neighborID.x > boundary.x ? 2 * boundary.x - neighborID.x : neighborID.x);
         neighborID.y = neighborID.y < 0 ? 0 : (neighborID.y > boundary.y ? 2 * boundary.y - neighborID.y : neighborID.y);
 
         //float2 minCoord = max(set.pixelCoord - float2(searchRadius, searchRadius), float2(0, 0));
-        //float2 maxCoord = min(set.pixelCoord + float2(searchRadius, searchRadius), cb.rtSize - float2(1, 1));
+        //float2 maxCoord = min(set.pixelCoord + float2(searchRadius, searchRadius), cb.halfRtSize - float2(1, 1));
        
         // Randomly sample a neighbor. 
         //float2 randOffset = Sample2DPoint(set.pixelIndex, currSampleSetIndex);   
-    
-        float3 neighborNormal = SignedOctDecode(preNormalMap.Load(int3(neighborID, 0)).xyw);
-        float neighborDepth = NdcToViewPZ(preDepthMap.Load(int3(neighborID, 0)).x, cb.camNearMulFar, cb.camNearFar);
+        float2 neighborUv = neighborID * cb.halfInvRtSize;
+        float3 neighborNormal = SignedOctDecode(preNormalMap.SampleLevel(samLinearBorder, neighborUv, 0).xyw);
+        float neighborDepth = NdcToViewPZ(preDepthMap.SampleLevel(samLinearBorder, neighborUv, 0).x, cb.camNearMulFar, cb.camNearFar);
              
         // Check geometric similarity. 
         if (!IsValidNeighbor(set.normalW, neighborNormal, set.depth, neighborDepth, NEIBOR_NORMAL_THRESHOLD, set.viewZThresHold))
             continue;
 
         // Read neighbor's spatial reservoir.
-        uint neighborIndex = neighborID.x + neighborID.y * cb.rtSize.x;
+        uint neighborIndex = neighborID.x + neighborID.y * cb.halfRtSize.x;
 #if RESTIR_UNBIASED                       
         bool bReuseSpatialSample = (j % 2);
         if (bReuseSpatialSample)
@@ -387,46 +387,46 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
 [numthreads(DIMX, DIMY, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.halfRtSize.x || dispatchThreadID.y >= cb.halfRtSize.y)
         return;
      
     ReuseDataSet set;
     set.pixelCoord = dispatchThreadID.xy;
-    set.pixelIndex = set.pixelCoord.y * cb.rtSize.x + set.pixelCoord.x;
+    set.pixelIndex = set.pixelCoord.y * cb.halfRtSize.x + set.pixelCoord.x;
     set.gBufferLocation = int3(set.pixelCoord, 0);
  
-    float2 currUv = set.pixelCoord * cb.invRtSize;
+    float2 currUv = float2(set.pixelCoord + 0.5f) * cb.halfInvRtSize;
     //set.prePixelCoord = set.pixelCoord;
     //set.prePixelIndex = set.pixelIndex;
     
     //float2 preUv = uv + velocity;
-    //uint2 prevID = clamp(preUv * cb.rtSize, 0, cb.rtSize - 1);
-    //uint preReserviorIndex = prevID.y * cb.rtSize.x + prevID.x;
+    //uint2 prevID = clamp(preUv * cb.halfRtSize, 0, cb.halfRtSize - 1);
+    //uint preReserviorIndex = prevID.y * cb.halfRtSize.x + prevID.x;
  
-    set.depth = NdcToViewPZ(depthMap.Load(set.gBufferLocation).x, cb.camNearMulFar, cb.camNearFar);
+    set.depth = NdcToViewPZ(depthMap.SampleLevel(samLinearBorder, currUv, 0).x, cb.camNearMulFar, cb.camNearFar);
     set.normalW = initialSample[set.pixelIndex].UnpackVisibleNormal();
     set.posW = ComputeRayOrigin(initialSample[set.pixelIndex].visiblePos, set.normalW);
     //set.posW = initialSample[set.pixelIndex].visiblePos;
     set.viewZThresHold = cb.camNearFar.y - cb.camNearFar.x * VIRE_Z_THRESHOLD_RATE;
     
-    UnPackAlbedoColorLayer(albedoMap.Load(set.gBufferLocation), set.material.albedoColor, set.material.specularFactor);
+    UnPackAlbedoColorLayer(albedoMap.SampleLevel(samLinearBorder, currUv, 0), set.material.albedoColor, set.material.specularFactor);
     
-    float4 lightProp = lightPropMap.Load(set.gBufferLocation);
+    float4 lightProp = lightPropMap.SampleLevel(samLinearBorder, currUv, 0);
     UnpackLightPropLayer(lightProp, set.material.metallic, set.material.roughness);
  
     float4 prePosH = mul(float4(set.posW, 1.0f), cb.camPreViewProj);
     float3 prePosNdc = prePosH.xyz / prePosH.w;
     float2 preUv = prePosNdc.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
  
-    set.prePixelCoord = clamp(preUv * cb.rtSize, 0, cb.rtSize - 1); 
-    set.prePixelIndex = set.prePixelCoord.y * cb.rtSize.x + set.prePixelCoord.x;
+    set.prePixelCoord = clamp(preUv * cb.halfRtSize, 0, cb.halfRtSize - 1); 
+    set.prePixelIndex = set.prePixelCoord.y * cb.halfRtSize.x + set.prePixelCoord.x;
     
     set.rng.Initialize(set.pixelCoord, cb.currSampleSetIndex);
     bool isPreValid = cb.updateCount > 0 && !cb.forceClearReservoirs && all(preUv > 0.0f) && all(preUv < 1.0f);
     if (isPreValid)
     {
         float3 curNormal = set.normalW;
-        float3 preNormal = SignedOctDecode(preNormalMap.Load(int3(set.prePixelCoord, 0)).xyw); 
+        float3 preNormal = SignedOctDecode(preNormalMap.SampleLevel(samLinearBorder, preUv, 0).xyw);
         isPreValid &= length(preUv - currUv) < VELOCITY_THRESHOLD && dot(curNormal, preNormal) > NORMAL_THRESHOLD;
         
         float rand = set.rng.Random01();

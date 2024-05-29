@@ -36,10 +36,12 @@ struct RestirGiConstants
     float2 camNearFar;
     float2 uvToViewA;
     float2 uvToViewB;
-    float2 rtSize;
-    float2 invRtSize;
+    float2 halfRtSize;
+    float2 halfInvRtSize;
+    float2 originalRtSize;
+    float2 originalInvRtSize;
     float tMax;
-    uint totalNumPixels; //mul rtSize.x * rtSize.y
+    uint totalNumPixels;    //mul rtSize.x * rtSize.y
     
     float3 camPosW;
     float camNearMulFar;
@@ -61,7 +63,7 @@ struct RestirGiConstants
     
     uint totalLightCount;
     float invTotalLightCount;
-    uint forceClearReservoirs; ///< Clear temporal and spatial reservoirs.
+    uint forceClearReservoirs; ///< Clear temporal and spatial reservoirs. 
     uint pad00;
     uint pad01;
 }; 

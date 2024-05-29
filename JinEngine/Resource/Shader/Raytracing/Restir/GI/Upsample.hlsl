@@ -34,21 +34,24 @@ SOFTWARE.
 #define DIMY 16
 #endif
   
-StructuredBuffer<RestirReserviorPack> src : register(t0);
-//StructuredBuffer<RestirSamplePack> intial : register(t1);         //for debugging
+Texture2D src : register(t0); 
 RWTexture2D<float4> dst : register(u0);
+SamplerState samLinearClamp : register(s0);
 
 //upsample
 [numthreads(DIMX, DIMY, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.halfRtSize.x || dispatchThreadID.y >= cb.halfRtSize.y)
+    if (dispatchThreadID.x >= cb.originalRtSize.x || dispatchThreadID.y >= cb.originalRtSize.y)
         return;
-     
-    RestirReserviorPack data = src[dispatchThreadID.x + dispatchThreadID.y * cb.halfRtSize.x];
-    dst[dispatchThreadID.xy] = float4(data.sample.UnpackRadiance() * data.W, 1.0f); 
+       
+    float2 uv = (dispatchThreadID.xy + 0.5f) * cb.originalInvRtSize;
+    Catmul::Parameter param; 
+    param.Initialize(uv, cb.halfRtSize, cb.halfInvRtSize);
+    float3 color = Catmul::Compute(src, samLinearClamp, param).xyz;
+    dst[dispatchThreadID.xy] = float4(color, 1.0f);
     
     //for debugging
     //RestirSamplePack init = intial[dispatchThreadID.x + dispatchThreadID.y * cb.rtSize.x];
    // dst[dispatchThreadID.xy] = float4(init.UnpackRadiance(), 1.0f);
-}  
+}

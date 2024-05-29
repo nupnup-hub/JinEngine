@@ -334,7 +334,7 @@ namespace JinEngine::Graphic
 		dataSet.litCulling = std::make_unique<JDx12GraphicLightCullingTaskSet>(context);
 		dataSet.litCullingDebug = std::make_unique<JDx12GraphicLightCullingDebugDrawSet>(context);
 		dataSet.rtao = std::make_unique<JDx12GraphicRtAoComputeSet>(context);
-		dataSet.rtgi = std::make_unique<JDx12GraphicRtGiComputeSet>(context, dx12Device); 
+		dataSet.rtgi = std::make_unique<JDx12GraphicRtGiComputeSet>(context, dx12Device, dx12Share);
 		dataSet.rtDenoiser = std::make_unique<JDx12GraphicRtDenoiseComputeSet>(context, dx12Device, dx12Gm, dx12Share);
 		return true;
 	}
@@ -422,7 +422,7 @@ namespace JinEngine::Graphic
 		dataSet.postPrcess = std::make_unique<JDx12PostProcessComputeSet>(drawRefSet.postSet, context, dx12Gm, dx12Share);
 		dataSet.litCullingDebug = std::make_unique<JDx12GraphicLightCullingDebugDrawSet>(context);
 		dataSet.rtao = std::make_unique<JDx12GraphicRtAoComputeSet>(context);
-		dataSet.rtgi = std::make_unique<JDx12GraphicRtGiComputeSet>(context, dx12Device); 
+		dataSet.rtgi = std::make_unique<JDx12GraphicRtGiComputeSet>(context, dx12Device, dx12Share);
 		dataSet.rtDenoiser = std::make_unique<JDx12GraphicRtDenoiseComputeSet>(context, dx12Device, dx12Gm, dx12Share);
 		return true;
 	}

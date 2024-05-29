@@ -59,7 +59,7 @@ namespace JinEngine
 			static constexpr Core::JRangeVarSetting<uint, 128, 1, 4096> restirSpatialSampleRange;
 			static constexpr Core::JRangeVarSetting<uint, 128, 1, 1024> restirSampleAgeRange;
 			static constexpr Core::JRangeVarSetting<uint, 10, 1, 1024> neighborWeightSumThresholdRange;
-			static constexpr Core::JRangeVarSetting<uint, 10, 1, 32> spatialWeightAverageThresholdRange;
+			static constexpr Core::JRangeVarSetting<uint, 10, 1, 1024> spatialWeightAverageThresholdRange;
  
 			static JVector4F BackBufferClearColor()noexcept
 			{

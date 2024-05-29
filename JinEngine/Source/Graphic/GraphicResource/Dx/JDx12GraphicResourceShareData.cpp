@@ -268,10 +268,8 @@ namespace JinEngine::Graphic
 	}
 
 	JDx12GraphicResourceShareData::RestirTemporalAccumulationData::RestirTemporalAccumulationData(JGraphicDevice* device, JGraphicResourceManager* gM, const uint width, const uint height)
-	{ 
+	{  
 		JGraphicResourceCreationDesc desc;
-		desc.width = width;
-		desc.height = height;
 		desc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
 		desc.bindDesc.useEngineDefinedBindType = false;
 		desc.textureDesc = std::make_unique< JTextureCreationDesc>();
@@ -279,25 +277,40 @@ namespace JinEngine::Graphic
 
 		desc.formatHint = std::make_unique<JGraphicFormatHint>();
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
+
+		desc.width = width * 0.5f;
+		desc.height = height * 0.5f;
+		restirColorIntermediate00 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+
+		desc.width = width;
+		desc.height = height;
 		restirColorHistoryIntermediate00 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
 		restirColorHistoryIntermediate01 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON); 
 
+		desc.width = width;
+		desc.height = 1;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
 		viewZ = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
 
+		desc.width = width;
+		desc.height = 1;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
 		preViewZ = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
 
+		desc.width = width;
+		desc.height = 1;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16_UNORM;
 		restirDepthDerivative = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
 
+		desc.width = width;
+		desc.height = height;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
-		for (uint i = 0; i < SIZE_OF_ARRAY(restirDenoiseMipmap); ++i)
-		{
-			restirDenoiseMipmap[i] = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
-			desc.width *= 0.5f;
-			desc.height *= 0.5f;
-		}
+		//for (uint i = 0; i < SIZE_OF_ARRAY(restirDenoiseMipmap); ++i)
+		//{
+			//restirDenoiseMipmap[i] = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		//	desc.width *= 0.5f;
+		//	desc.height *= 0.5f;
+		//}
 	}
 	JDx12GraphicResourceShareData::RestirTemporalAccumulationData::~RestirTemporalAccumulationData()
 	{
@@ -306,8 +319,8 @@ namespace JinEngine::Graphic
 		JGraphicResourceInfo::Destroy(viewZ.Release());
 		JGraphicResourceInfo::Destroy(preViewZ.Release());
 		JGraphicResourceInfo::Destroy(restirDepthDerivative.Release()); 
-		for (uint i = 0; i < SIZE_OF_ARRAY(restirDenoiseMipmap); ++i)
-			JGraphicResourceInfo::Destroy(restirDenoiseMipmap[i].Release());
+		//for (uint i = 0; i < SIZE_OF_ARRAY(restirDenoiseMipmap); ++i)
+		//	JGraphicResourceInfo::Destroy(restirDenoiseMipmap[i].Release());
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::RestirTemporalAccumulationData::GetDeviceType()const noexcept
 	{

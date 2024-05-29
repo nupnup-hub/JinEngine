@@ -115,6 +115,8 @@ namespace JinEngine
 			};
 			class RestirTemporalAccumulationData : public JShareDataHolderInterface, public UserCounting
 			{
+			public:
+				JUserPtr<JGraphicResourceInfo> restirColorIntermediate00;
 			public: 
 				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate00;
 				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate01; 
