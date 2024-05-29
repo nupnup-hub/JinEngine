@@ -78,6 +78,13 @@ Game engine for studying graphics and software architecture
 - [TinyXML-2](https://github.com/leethomason/tinyxml2/tree/master?tab=readme-ov-file)
 - [NVIDIA GPU Computing Toolkit](https://developer.nvidia.com/cuda-downloads)
 - [WinPixEventRuntime ](https://devblogs.microsoft.com/pix/winpixeventruntime/)
-  
 
+## Next update
+###  Feature
+  - Radiance caching  
+  - Raytracing shadow 
+  - Ratracing ao
+
+### Need to fix
+  - Reduce ghosting
 
