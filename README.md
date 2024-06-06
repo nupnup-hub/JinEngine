@@ -62,7 +62,7 @@ Game engine for studying graphics and software architecture
 - [Overview](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Architecture/Overview.md)
 - [Documentation](https://github.com/nupnup-hub/JinEngine/tree/Main/docs)
 - [Sample](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/SampleGuide.md)
-
+- [Graphics & Engine record(Update in progress)][https://nupnup.tistory.com/]
 
 ## Third party
 - [DirectX TK](https://github.com/microsoft/DirectXTK)
