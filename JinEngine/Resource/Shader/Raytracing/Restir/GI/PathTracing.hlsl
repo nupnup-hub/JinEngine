@@ -25,8 +25,7 @@ SOFTWARE.
 
 #pragma once  
 #include"Common.hlsl"  
-#include"../../Common.hlsl"
-#include"../../../Common/LightCompute.hlsl" 
+#include"../../Common.hlsl" 
 #include"../../../Common/RandomNumberGenerator.hlsl" 
 #include"../../../Common/MaterialData.hlsl" 
 
@@ -109,13 +108,13 @@ struct EstimateDataSet
 #define MIN_DEPTH 1
 #endif
 #ifndef MAX_DEPTH
-#define MAX_DEPTH 3
+#define MAX_DEPTH 4
 #endif 
 #ifndef SAMPLE_COUNT
 #define SAMPLE_COUNT 1
 #endif 
 #ifndef RRP_MIN
-#define RRP_MIN 0.75f
+#define RRP_MIN 0.6f
 #endif  
  
 #define INAVALID_INSTANCE_ID 1 << 25        //instance id is 24bit
@@ -152,90 +151,35 @@ SamplerState samLTCSample : register(s2);
  
 void SampleBxdf(float3 normal, float3 tangent, MeshMaterial material, float3 toRayOrigin, out float3 toLight, inout float2 u, inout float3 bsdf, inout float bsdfPdf)
 {
-    const bool enableDiffuse = material.metallic < 1.0f;
+    BxDF bxdf; 
     if (u.x < 0.5f)
-    {
+    { 
         //SampleDirectionHemisphere
-        //variance Hemisphere < Coshine weighted Hemisphere
-        toLight = normalize(mul(SampleDirectionHemisphere(u.x, u.y), CalTBN(normal, tangent)));
-        /*      
-        const float3 halfVec = normalize(toRayOrigin + toLight);
-        const float dotNL = max(dot(normal, toLight), 0.0001f);
-        const float dotNV = max(dot(normal, toRayOrigin), 0.0001f);
-        const float dotHV = dot(halfVec, toRayOrigin);
-        const float dotHL = dot(halfVec, toLight);
-        
-        */
-        // The PDF of sampling a cosine hemisphere is NdotL / Pi, which cancels out those terms
-        // from the diffuse BRDF and the irradiance integral
-        //throughput = lerp(material.albedoColor.xyz, float3(0, 0, 0), material.metallic) * dotNL * (1 / PI);
-        bsdf = LambertianIDiffuse(material.albedoColor);
-        //bsdf = DisneyDiffuse(material.albedoColor.xyz, dotNL, dotNV, dotHV, material.roughness);
-        //bsdf = FrostbiteDisneyDiffuse(material.albedoColor.xyz, dotNL, dotNV, dotHL, material.roughness);
-        bsdfPdf = 1.0f;
+        //variance Hemisphere < Coshine weighted Hemisphere 
+        bxdf.DiffuseSamplingInitialize(material.albedoColor, material.specularFactor, normal, tangent, toRayOrigin, material.roughness, material.metallic, u);
+        bxdf.SampleDiffuse(bsdf, bsdfPdf);     
     }
     else
-    {
-        float3 microfaceNormal = SampleGGXVisibleNormal(toRayOrigin, material.roughness, material.roughness, u.x, u.y);
-        toLight = reflect(-toRayOrigin, microfaceNormal);
-        
-        const float3 halfVec = normalize(toRayOrigin + toLight);
-        const float dotNL = max(dot(normal, toLight), EPSILON);
-        const float dotNV = max(dot(normal, toRayOrigin), EPSILON);
-        const float dotNH = dot(normal, halfVec);
-        const float dotHL = dot(halfVec, toLight);
- 
-        const float r2 = material.roughness * material.roughness;
-        float3 f0 = ComputeF0(material.specularFactor.xxx, material.albedoColor, material.metallic);
-        float3 f = SchlickFresnel(f0, dotHL);
-        float d = GGXINDF(dotNH, r2);
-        float g1 = GGXSmithG1A(r2, dotNV);
-        float g2 = GGXSmithG2HeightCorrelatedA(dotNL, dotNV, r2);
-        
-        bsdf = f * (d * g2);
-        bsdfPdf = d * g1;
+    { 
+        bxdf.SpecularSamplingInitialize(material.albedoColor, material.specularFactor, normal, toRayOrigin, material.roughness, material.metallic, u);
+        bxdf.SampleSpecular(bsdf, bsdfPdf);
     }
+    toLight = bxdf.lightVec;
+    
+    const bool enableDiffuse = material.metallic < 1.0f;
     if (enableDiffuse)
-        bsdfPdf *= 0.5f;
+        bsdfPdf *= 0.5f;    
 }
 void EvaluateBxdf(float3 normal, MeshMaterial material, float3 toRayOrigin, float3 toLight, inout float2 u, inout float3 bsdf, inout float bsdfPdf)
 {
-    const bool enableDiffuse = material.metallic < 1.0f;
+    BxDF bxdf;
+    bxdf.Initialize(material.albedoColor, material.specularFactor, normal, toLight, toRayOrigin, material.roughness, material.metallic);
     if (u.x < 0.5f)
-    {
-        /*        
-        const float3 halfVec = normalize(toRayOrigin + toLight);
-        const float dotNL = max(dot(normal, toLight), 0.0001f);
-        const float dotNV = max(dot(normal, toRayOrigin), 0.0001f);
-        const float dotHV = dot(halfVec, toRayOrigin);
-        const float dotHL = dot(halfVec, toLight);       
-        */
-        // The PDF of sampling a cosine hemisphere is NdotL / Pi, which cancels out those terms
-        // from the diffuse BRDF and the irradiance integral
-        //throughput = lerp(material.albedoColor.xyz, float3(0, 0, 0), material.metallic) * dotNL * (1 / PI);
-        bsdf = LambertianIDiffuse(material.albedoColor.xyz);
-        //bsdf =  DisneyDiffuse(material.albedoColor.xyz, dotNL, dotNV, dotHV, material.roughness);
-        //bsdf = FrostbiteDisneyDiffuse(material.albedoColor.xyz, dotNL, dotNV, dotHL, material.roughness);
-        bsdfPdf = 1;
-    }
+        bxdf.SampleDiffuse(bsdf, bsdfPdf);
     else
-    {
-        const float3 halfVec = normalize(toRayOrigin + toLight);
-        const float dotNL = max(dot(normal, toLight), EPSILON);
-        const float dotNV = max(dot(normal, toRayOrigin), EPSILON);
-        const float dotNH = dot(normal, halfVec);
-        const float dotHL = dot(halfVec, toLight);
- 
-        const float r2 = material.roughness * material.roughness;
-        float3 f0 = ComputeF0(material.specularFactor.xxx, material.albedoColor, material.metallic);
-        float3 f = SchlickFresnel(f0, dotHL);
-        float d = GGXINDF(dotNH, r2);
-        float g1 = GGXSmithG1A(r2, dotNV);
-        float g2 = GGXSmithG2HeightCorrelatedA(dotNL, dotNV, r2);
-        //float g2 = GGXSmithG2HeightCorrelatedA2(dotNL, dotNV, r2);
-        bsdf = f * (d * g2);
-        bsdfPdf = d * g1;
-    }
+        bxdf.SampleSpecular(bsdf, bsdfPdf); 
+    
+    const bool enableDiffuse = material.metallic < 1.0f;
     if (enableDiffuse)
         bsdfPdf *= 0.5f;
 }
@@ -429,7 +373,7 @@ float3 PathTracing(in MeshVertex hitSurface, in MeshMaterial material, in Estima
 {
     float rrProb = 1.0f;
     float3 radiance = float3(0, 0, 0);
-        
+    
     for (uint i = 0; i < MAX_DEPTH; ++i)
     {
         SelectLightInfo lightInfo;
@@ -448,7 +392,8 @@ float3 PathTracing(in MeshVertex hitSurface, in MeshMaterial material, in Estima
             float rrSample = Sample1DPoint(pixelIndex, sampleSetIndex);
             if (rrProb > rrSample)
                 break;
-            set.throughput /= (1 - rrProb);
+            
+            set.throughput /= (1.0f - rrProb);
         }
         set.lightUniformSample = Sample2DPoint(pixelIndex, sampleSetIndex);
         set.bxdfUniformSample = Sample2DPoint(pixelIndex, sampleSetIndex);
@@ -470,7 +415,7 @@ void RayGenShader()
     initialSample[pixelIndex].Initialize();
     
     float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.halfInvRtSize;
-    float depth = depthMap.SampleLevel(samLinearClamp, uv, 0);
+    float depth = depthMap.SampleLevel(samLinearClamp, uv, 0).x;
     if (depth == 1.0f)
         return;
     

@@ -27,12 +27,7 @@ SOFTWARE.
 #include"Common.hlsl"   
 #include"../../Common.hlsl"
 #include"../../../Common/ColorSpaceUtility.hlsl"
-
-#define USE_BRDF_LAMBERTIAN_DIFFUSE 1
-#define USE_BRDF_GGX_MICROFACET 1
-#define USE_BRDF_ISOTROPY_NDF 1
-#include"../../../Common/LightCompute.hlsl"
-
+ 
 #define LARGE_FLOAT 1e20f
 
 #ifndef DIMX
@@ -67,7 +62,7 @@ SOFTWARE.
 #define NORMAL_THRESHOLD 0.8f
 #endif  
 #ifndef RAND_THRESHOLD
-#define RAND_THRESHOLD 0.15f
+#define RAND_THRESHOLD 0.2f
 #endif
 #ifndef POS_THRESHOLD
 #define POS_THRESHOLD 2.0f
@@ -95,7 +90,8 @@ SOFTWARE.
 #endif
 #define RESTIR_TEMPORAL_JCOB 1
 #define RESTIR_UNBIASED 1
-#define RESTIR_ZERO_WEIGHT 1
+#define RESTIR_ZERO_WEIGHT 1 
+
 
 StructuredBuffer<RestirSamplePack> initialSample : register(t1);
 StructuredBuffer<RestirReserviorPack> preTemporal : register(t2);
@@ -105,6 +101,7 @@ Texture2D lightPropMap : register(t5);
 Texture2D depthMap : register(t6);
 Texture2D preNormalMap : register(t7);
 Texture2D preDepthMap : register(t8);
+Texture2D aoMap : register(t9);
 RWStructuredBuffer<RestirReserviorPack> temporal : register(u0);
 RWStructuredBuffer<RestirReserviorPack> spatial : register(u1);
 SamplerState samLinearBorder: register(s0);
@@ -150,9 +147,32 @@ struct ReuseDataSet
     int3 gBufferLocation;
     int indexOffset;
     
+    float aoFactor;         
     float viewZThresHold;
     RandomNumberGenerator rng;
 };
+float2 GetSpatialRadius(const uint preRadius, const uint iterNumber, const uint M, const uint age, const float aoFactor, const float reserviorAccuracy)
+{
+#if 1
+    const float baseRadiusRate = 0.01f * reserviorAccuracy + 0.005f * (1.0f - reserviorAccuracy);         //4.8, 9.6, 19.2
+    const float extendRadiusRate = 0.05f * reserviorAccuracy + 0.025f * (1.0f - reserviorAccuracy);       //24, 48, 96 
+    
+    const uint2 baseRadius = (cb.halfRtSize * baseRadiusRate);                           
+    const uint2 extendRadius = (cb.halfRtSize * extendRadiusRate) * (iterNumber + 1);  
+    float2 searchRadius = baseRadius + extendRadius * aoFactor;
+    return searchRadius;
+#else 
+    const float radiusShrinkRatio = 0.5f;
+    const float minSearchRadius = 10.0f; 
+    const float extendFactor = 3.0f;
+    const float searchRadiusRatio = 0.1f;
+    const float baseRadius = iterNumber == 0 ? cb.halfRtSize.x * searchRadiusRatio : preRadius * extendFactor;
+        
+    float searchRadius = max(baseRadius * radiusShrinkRatio, minSearchRadius);
+    return float2(searchRadius, searchRadius);
+#endif
+}
+
 void TemporalReuse(in ReuseDataSet set, inout bool isPreValid)
 {
     RestirReserviorData initialReservior = LoadReservior(set.pixelIndex, set.indexOffset, cb.totalNumPixels);
@@ -165,7 +185,10 @@ void TemporalReuse(in ReuseDataSet set, inout bool isPreValid)
     
     reservior.M = clamp(reservior.M, 0, TEMPORAL_SAMPLE_MAX);
     if (!isPreValid || reservior.age > SAMPLE_MAX_AGE)
+    {
         reservior.M = 0;
+        reservior.age = 0;
+    }
     
     float reusePdf = EvaluateTargetFunction(reservior.radiance, set.posW, set.normalW, reservior.samplePos, set.material);
 #ifdef RESTIR_TEMPORAL_JCOB
@@ -213,13 +236,12 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
     RestirReserviorData reservior = LoadReservior(preSpatial, set.prePixelIndex, set.indexOffset, cb.totalNumPixels);
     reservior.M = clamp(reservior.M, 0, SPATIAL_SAMPLE_MAX);
     if (!isPreValid || reservior.age > SAMPLE_MAX_AGE)
+    {
         reservior.M = 0;
-     
+        reservior.age = 0;
+    }
     float weightSum = max(0.0f, reservior.W) * reservior.M * EvaluateTargetFunction(reservior.radiance, reservior.visiblePos, reservior.visibleNormal, reservior.samplePos, set.material);
-
-    const float searchRadiusRatio = 0.1f;
-    float searchRadius = cb.halfRtSize.x * searchRadiusRatio;
-        
+ 
     // Initialize reuse history.
 #if RESTIR_UNBIASED 
     float3 positionList[NEIGHBOR_LOOP_COUNT + 1];
@@ -240,17 +262,18 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
     const int normalIteration = 3;
     const int fastReuseIteration = NEIGHBOR_LOOP_COUNT;
 
-    int maxIteration = reservior.M > fastReuseThreshold ? normalIteration : fastReuseIteration;
-    
+    int maxIteration = reservior.M > fastReuseThreshold ? normalIteration : fastReuseIteration;  
     RestirReserviorData neighborReservoir;
+     
+    float searchRadius = 1;
+    float searchRadiusExtendFactor = min(((SPATIAL_SAMPLE_MAX - reservior.M) / SPATIAL_SAMPLE_MAX), 0.01f);
+    searchRadiusExtendFactor *= min(((SAMPLE_MAX_AGE - reservior.age) / SAMPLE_MAX_AGE), 0.01f);
+    
     //[unroll]
     for (int j = 0; j < maxIteration; j++)
     {
-        // Get search radius.
-        const float radiusShrinkRatio = 0.5f;
-        const float minSearchRadius = 10.0f;
-        searchRadius = max(searchRadius * radiusShrinkRatio, minSearchRadius);
-             
+        searchRadius = GetSpatialRadius(searchRadius, j, reservior.M, reservior.age, set.aoFactor, searchRadiusExtendFactor);
+        
         float2 randOffset = float2(set.rng.Random01(), set.rng.Random01());
         int2 neighborID = set.prePixelCoord + searchRadius * (randOffset * 2.0f - 1.0f);
         
@@ -322,10 +345,7 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
         normalList[nReuse] = neighborReservoir.visibleNormal;
         MList[nReuse] = neighborReservoir.M;
         ++nReuse;
-#endif
-        // Expand search radius.
-        const float radiusExpandRatio = 3.0f;
-        searchRadius *= radiusExpandRatio;
+#endif 
     }
         
     // Calculate tWeight of spatial reuse.
@@ -407,6 +427,11 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     set.normalW = initialSample[set.pixelIndex].UnpackVisibleNormal();
     set.posW = ComputeRayOrigin(initialSample[set.pixelIndex].visiblePos, set.normalW);
     //set.posW = initialSample[set.pixelIndex].visiblePos;
+#ifdef USE_AO_MAP
+    set.aoFactor = aoMap.SampleLevel(samLinearBorder, currUv, 0).x;
+#else
+    set.aoFactor = 1.0f;
+#endif
     set.viewZThresHold = cb.camNearFar.y - cb.camNearFar.x * VIRE_Z_THRESHOLD_RATE;
     
     UnPackAlbedoColorLayer(albedoMap.SampleLevel(samLinearBorder, currUv, 0), set.material.albedoColor, set.material.specularFactor);
@@ -422,15 +447,15 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     set.prePixelIndex = set.prePixelCoord.y * cb.halfRtSize.x + set.prePixelCoord.x;
     
     set.rng.Initialize(set.pixelCoord, cb.currSampleSetIndex);
-    bool isPreValid = cb.updateCount > 0 && !cb.forceClearReservoirs && all(preUv > 0.0f) && all(preUv < 1.0f);
+    bool isPreValid = cb.updateCount > 0 && !cb.forceClearPrevalue && all(preUv > 0.0f) && all(preUv < 1.0f);
     if (isPreValid)
-    {
+    {   
         float3 curNormal = set.normalW;
         float3 preNormal = SignedOctDecode(preNormalMap.SampleLevel(samLinearBorder, preUv, 0).xyw);
         isPreValid &= length(preUv - currUv) < VELOCITY_THRESHOLD && dot(curNormal, preNormal) > NORMAL_THRESHOLD;
         
         float rand = set.rng.Random01();
-        if ((length(set.posW - cb.camPosW) / length(set.posW - cb.camPrePosW)) < DEPTH_THRESHOLD && rand < RAND_THRESHOLD)
+        if (((length(set.posW - cb.camPosW) / length(set.posW - cb.camPrePosW)) < DEPTH_THRESHOLD) || rand < RAND_THRESHOLD)
             isPreValid = false;
     }
 

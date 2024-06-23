@@ -39,7 +39,7 @@ SOFTWARE.
 #endif 
 
 #ifndef FIXED_FRAME_COUNT
-#define FIXED_FRAME_COUNT 4
+#define FIXED_FRAME_COUNT 3
 #endif 
  
 uint GetIndexOfValueClosestToTheReference(const float refValue, const float2 vValues)

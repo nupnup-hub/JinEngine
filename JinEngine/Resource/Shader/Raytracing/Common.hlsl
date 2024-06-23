@@ -80,9 +80,7 @@ RWStructuredBuffer<RaytracingDebug> debugInfo : register(CB_RAYTRACING_DEBUG_REG
 
 #define INDEX_UINT_16 0
 #define INDEX_UINT_32 1
-
-typedef uint HitObjectType;
-
+ 
 #define HIT_OPAQUE_OBJECT 0
 #define HIT_LIGHT_OBJECT 1
 

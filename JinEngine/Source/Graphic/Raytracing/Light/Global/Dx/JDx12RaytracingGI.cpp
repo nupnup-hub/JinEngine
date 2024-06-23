@@ -69,6 +69,7 @@ SOFTWARE.
 #define SAMPLE_MAX_AGE L"SAMPLE_MAX_AGE"
 #define NEIGHBOR_WEIGHT_CLAMP_THRESHOLD L"NEIGHBOR_WEIGHT_CLAMP_THRESHOLD"
 #define SPATIAL_WEIGHT_CLAMP_THRESHOLD L"SPATIAL_WEIGHT_CLAMP_THRESHOLD"
+#define AO_MAP L"USE_AO_MAP"
 
 namespace JinEngine::Graphic
 {	
@@ -230,8 +231,9 @@ namespace JinEngine::Graphic
 		static constexpr int depthMapIndex = lightPropMapIndex + 1;
 		static constexpr int preNormalMapIndex = depthMapIndex + 1;
 		static constexpr int preDepthMapIndex = preNormalMapIndex + 1;
+		static constexpr int aoMapIndex = preDepthMapIndex + 1;
 
-		static constexpr int temporalIndex = preDepthMapIndex + 1;				//srv
+		static constexpr int temporalIndex = aoMapIndex + 1;				//srv
 		static constexpr int spatialIndex = temporalIndex + 1;					//uav
 		static constexpr int rootSlotCount = spatialIndex + 1;
 		static constexpr int samplerCount = 1;	  
@@ -362,6 +364,7 @@ namespace JinEngine::Graphic
 		auto gInterface = helper.cam->GraphicResourceUserInterface();
 		auto aInterface = helper.scene->GpuAcceleratorUserInterface();
 		auto reserviorIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		auto ssaoIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 
 		rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		dsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
@@ -380,7 +383,7 @@ namespace JinEngine::Graphic
 		lightPropSet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 		normalSet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 		//velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
-		//velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
+		aoMapSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, ssaoIndex);
 
 		preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 		preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
@@ -424,7 +427,7 @@ namespace JinEngine::Graphic
 
 	JDx12RaytracingGI::~JDx12RaytracingGI()
 	{
-		Clear();
+		ClearResource();
 	}
 	void JDx12RaytracingGI::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)
 	{
@@ -556,6 +559,8 @@ namespace JinEngine::Graphic
 		set.context->Transition(set.initialSampleSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.preTemporalReserviorSet->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.preSpatialReserviorSet->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		set.context->Transition(set.preSpatialReserviorSet->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		set.context->Transition(set.aoMapSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.currTemporalReserviorSet->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->Transition(set.currSpatialReserviorSet->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->FlushResourceBarriers();
@@ -571,11 +576,16 @@ namespace JinEngine::Graphic
 		set.context->SetComputeRootDescriptorTable(Reuse::depthMapIndex, set.dsSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::preNormalMapIndex, set.preNormalSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::preDepthMapIndex, set.preDsSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(Reuse::aoMapIndex, set.aoMapSet.GetGpuSrvHandle());
 
 		set.context->SetComputeRootDescriptorTable(Reuse::temporalIndex, set.currTemporalReserviorSet->GetGpuUavHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::spatialIndex, set.currSpatialReserviorSet->GetGpuUavHandle());
 
-		set.context->SetPipelineState(reuseSamplingShader.get());
+		if(helper.option.debugging.testTrigger01)
+			set.context->SetPipelineState(reuseSamplingShader[1].get());
+		else
+			set.context->SetPipelineState(reuseSamplingShader[0].get());
+
 		set.context->Dispatch2D(set.halfResolution, set.threadDim);
 	}
 	void JDx12RaytracingGI::FinalColor(const GIDataSet& set, const JDrawHelper& helper)
@@ -686,7 +696,7 @@ namespace JinEngine::Graphic
 		context->DispatchRays(&dispatchDesc);
 	}
 	void JDx12RaytracingGI::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM)
-	{
+	{  
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 
@@ -923,6 +933,7 @@ namespace JinEngine::Graphic
 		rBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6, 0);
 		rBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7, 0);
 		rBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8, 0); 
+		rBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 9, 0);
 		rBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0);
 		rBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0);
 		rBuilder.PushBorderSampler(D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
@@ -953,25 +964,32 @@ namespace JinEngine::Graphic
 		cBuilder.Create(device, L"ClearRootSignature", clearRootSignature.GetAddressOf());
 	}
 	void JDx12RaytracingGI::BuildComputePso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
-	{
-		reuseSamplingShader = std::make_unique<JDx12ComputeShaderDataHolder>(); 
+	{ 
 		finalShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 		upsampleShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 		clearShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 
-		constexpr uint shaderCount = 4;
+		constexpr uint shaderCount = 3 + REUSE_OPTION::COUNT;
 		JDx12ComputePsoBulder<shaderCount> psoBuilder("JDx12RaytracingGI");
-		psoBuilder.PushHolder(reuseSamplingShader.get());
-		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirGi(L"Reuse.hlsl"), L"main"));
-		 
-		psoBuilder.PushMacroSet({ TEMPORAL_SAMPLE_MAX , std::to_wstring(option.rendering.restir.temporalSampleCount.Get())});
-		psoBuilder.PushMacroSet({ SPATIAL_SAMPLE_MAX , std::to_wstring(option.rendering.restir.spatialSampleCount.Get()) });
-		psoBuilder.PushMacroSet({ SAMPLE_MAX_AGE , std::to_wstring(option.rendering.restir.sampleMaxAge.Get()) });
-		psoBuilder.PushMacroSet({ NEIGHBOR_WEIGHT_CLAMP_THRESHOLD , std::to_wstring(option.rendering.restir.neighborWeightSumThreshold.Get()) });
-		psoBuilder.PushMacroSet({ SPATIAL_WEIGHT_CLAMP_THRESHOLD , std::to_wstring(option.rendering.restir.spatialWeightAverageThreshold.Get()) });
-		psoBuilder.PushThreadDim(Common::ThreadDim());
-		psoBuilder.PushRootSignature(reuseRootSignature.Get());
-		psoBuilder.Next();
+		for (uint i = 0; i < REUSE_OPTION::COUNT; ++i)
+		{
+			const REUSE_OPTION reuseOption = (REUSE_OPTION)i;
+			reuseSamplingShader[i] = std::make_unique<JDx12ComputeShaderDataHolder>();
+			psoBuilder.PushHolder(reuseSamplingShader[i].get());
+			psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirGi(L"Reuse.hlsl"), L"main"));
+
+			psoBuilder.PushMacroSet({ TEMPORAL_SAMPLE_MAX , std::to_wstring(option.rendering.restir.temporalSampleCount.Get()) });
+			psoBuilder.PushMacroSet({ SPATIAL_SAMPLE_MAX , std::to_wstring(option.rendering.restir.spatialSampleCount.Get()) });
+			psoBuilder.PushMacroSet({ SAMPLE_MAX_AGE , std::to_wstring(option.rendering.restir.sampleMaxAge.Get()) });
+			psoBuilder.PushMacroSet({ NEIGHBOR_WEIGHT_CLAMP_THRESHOLD , std::to_wstring(option.rendering.restir.neighborWeightSumThreshold.Get()) });
+			psoBuilder.PushMacroSet({ SPATIAL_WEIGHT_CLAMP_THRESHOLD , std::to_wstring(option.rendering.restir.spatialWeightAverageThreshold.Get()) });
+			if (Core::HasSQValueEnum(reuseOption, REUSE_OPTION::USE_AO_MAP))
+				psoBuilder.PushMacroSet({ AO_MAP , std::to_wstring(1) });
+
+			psoBuilder.PushThreadDim(Common::ThreadDim());
+			psoBuilder.PushRootSignature(reuseRootSignature.Get());
+			psoBuilder.Next();
+		} 
 
 		psoBuilder.PushHolder(finalShader.get());
 		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirGi(L"Final.hlsl"), L"main"));
@@ -1012,7 +1030,7 @@ namespace JinEngine::Graphic
 		hemiSample->CopyData(0, sampleCount, sampleVec.data());
 	}
 	void JDx12RaytracingGI::ClearResource()
-	{
+	{ 
 		//ClearBuffer();
 		ClearUserPrivateData();
 		ClearPso();
@@ -1021,10 +1039,11 @@ namespace JinEngine::Graphic
 		ClearRootSignature();
 	}
 	void JDx12RaytracingGI::ClearRootSignature()
-	{
+	{ 
 		raytracingRootSignature = nullptr;
 		reuseRootSignature = nullptr;
 		finalRootSignature = nullptr; 
+		upsampleRootSignature = nullptr;
 		clearRootSignature = nullptr;
 	}
 	void JDx12RaytracingGI::ClearStateObject()
@@ -1040,8 +1059,10 @@ namespace JinEngine::Graphic
 	}
 	void JDx12RaytracingGI::ClearPso()
 	{
-		reuseSamplingShader = nullptr; 
+		for (uint i = 0; i < SIZE_OF_ARRAY(reuseSamplingShader); ++i)
+			reuseSamplingShader[i] = nullptr; 
 		finalShader = nullptr;
+		upsampleShader = nullptr;
 		clearShader = nullptr;
 	}
 	void JDx12RaytracingGI::ClearBuffer()

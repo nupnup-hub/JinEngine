@@ -351,6 +351,17 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
+		template<typename BaseType, typename ChildType, typename ...Param>
+		static int GetIndex(const std::vector<ChildType*>& vec, bool(*condFunc)(BaseType*, Param...), Param... var)
+		{
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (condFunc(vec[i], std::forward<Param>(var)...))
+					return i;
+			}
+			return searchFail;
+		}
 		template<typename Type, typename ...Param>
 		static int GetIndex(const std::vector<Type>& vec, bool(*condFunc)(const Type&, Param...), Param... var)
 		{
@@ -384,6 +395,21 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
+		template<typename BaseType, typename ChildType, typename ...Param>
+		static int GetIndex(const std::vector<std::unique_ptr<ChildType>>& vec, bool(*condFunc)(BaseType*, Param...), Param... var)
+		{
+			if constexpr (!std::is_base_of_v<BaseType, ChildType>)
+				return invalidIndex;
+
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (condFunc(vec[i].get(), std::forward<Param>(var)...))
+					return i;
+			}
+			return searchFail;
+		}
+
 
 		template<typename Type, typename VecType, typename ...Param>
 		static std::vector<VecType> GetPassConditionElement(const std::vector<Type>& vec, bool(*condPtr)(const Type&, Param...), Param... var)

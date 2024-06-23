@@ -513,18 +513,19 @@ namespace JinEngine
 			DestroyAllTexture();
 
 			DestroyCullingData(Graphic::J_CULLING_TYPE::FRUSTUM);
-			PopDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			PopDrawShadowRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 		};
 		void CreateShadowMapDebugResource(const bool canAllocCsm)
 		{
-			uint count = 1;
+			uint targetCount = 1; 
 			if (canAllocCsm)
-				count = GetCsmTargetCount();
+				targetCount = GetCsmTargetCount();
 
 			if (GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP) != 0)
 				return;
-
-			for (uint i = 0; i < count; ++i)
+			 
+			const uint debugResourceCount = GetCsmOption().GetSplitCount() * targetCount;
+			for (uint i = 0; i < debugResourceCount; ++i)
 				CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 		void DestroyShadowMapDebugResource()

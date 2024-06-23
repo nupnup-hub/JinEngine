@@ -23,22 +23,20 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-
+#pragma once    
+#include"../DataSet/JGraphicDataSet.h"
+#include"../JGraphicSubClassInterface.h"
 namespace JinEngine
 {
-	namespace Core
+	namespace Graphic
 	{
-		enum class J_THREAD_USE_CASE_TYPE
-		{
-			ENGINE_TASK_SYNC,	//stuff command list 
-			COMMON
-		};
+		class JDrawHelper;
+		class JGraphicResourceInfo;
 
-		enum class J_THREAD_STATE_TYPE
+		class JRaytracingPipeline : public JGraphicSubClassInterface
 		{
-			WAIT,
-			WORK
+		public:
+			void ApplyPostProcess(JPostProcessComputeSet* computeSet, const JDrawHelper& helper, const bool isUpdatedThisFrame);
 		};
 	}
 }

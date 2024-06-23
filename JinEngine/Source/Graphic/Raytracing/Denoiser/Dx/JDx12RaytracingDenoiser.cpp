@@ -774,7 +774,7 @@ namespace JinEngine::Graphic
 	}
 	JDx12RaytracingDenoiser::~JDx12RaytracingDenoiser()
 	{
-		Clear();
+		ClearResource();
 	}
 	void JDx12RaytracingDenoiser::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)
 	{

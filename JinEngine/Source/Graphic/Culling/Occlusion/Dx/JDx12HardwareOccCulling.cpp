@@ -228,8 +228,9 @@ namespace JinEngine::Graphic
 
 		auto gRInterface = helper.GetOccGResourceInterface(); 
 		auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		
-		context->Transition(dsSet.holder, D3D12_RESOURCE_STATE_DEPTH_READ);		//±íÀÌ°ª write(x)
+		 
+		//D3D12_DEPTH_WRITE_MASK_ZERO
+		context->Transition(dsSet.holder, D3D12_RESOURCE_STATE_DEPTH_WRITE);		 
 		context->FlushResourceBarriers();
 
 		auto cInterface = helper.GetCullInterface();

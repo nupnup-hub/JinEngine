@@ -81,6 +81,7 @@ SOFTWARE.
 #define USE_BRDF_BECKMANN_MICROFACET L"USE_BRDF_BECKMANN_MICROFACET"  
 #define USE_BRDF_BLINN_PHONG_MICROFACET L"USE_BRDF_BLINN_PHONG_MICROFACET"  
 #define USE_BRDF_ISOTROPY_NDF L"USE_BRDF_ISOTROPY_NDF"  
+#define USE_BRDF_ANISOTROPY_NDF L"USE_BRDF_ANISOTROPY_NDF"  
 
 #define USE_BRDF_DISNEY_DIFFUSE L"USE_BRDF_DISNEY_DIFFUSE"  
 #define USE_FROST_BITE_DISNEY_DIFFUSE L"USE_FROST_BITE_DISNEY_DIFFUSE"  
@@ -253,6 +254,8 @@ namespace JinEngine::Graphic
 					initHelper.macro[i].push_back({ USE_BRDF_BLINN_PHONG_MICROFACET, std::to_wstring(1) });
 				if (option.rendering.useIsotropy)
 					initHelper.macro[i].push_back({ USE_BRDF_ISOTROPY_NDF, std::to_wstring(1) });
+				else
+					initHelper.macro[i].push_back({ USE_BRDF_ANISOTROPY_NDF, std::to_wstring(1) });
 				if (option.rendering.useDisneyDiffuse)
 					initHelper.macro[i].push_back({ USE_BRDF_DISNEY_DIFFUSE, std::to_wstring(1) });
 				if (option.rendering.useFrostBiteDiffuse)
@@ -1536,6 +1539,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12SceneDraw::BuildVelocityRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
+		velocityRootsignature = nullptr;
 		JDx12RootSignatureBuilder<Velocity::rootSlotCount> builder;
 		builder.PushConstantsBuffer(Velocity::passCBIndex);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -1562,8 +1566,7 @@ namespace JinEngine::Graphic
 
 			forwardRootSignature = nullptr;
 			BuildForwardRootSignature(device, info, option);
-		}
-		velocityRootsignature = nullptr;
+		} 
 		BuildVelocityRootSignature(device, info, option);
 	}
 	void JDx12SceneDraw::BuildDeferredShader(const JGraphicShaderCompileSet& dataSet)
@@ -1596,8 +1599,7 @@ namespace JinEngine::Graphic
 		deferredShadingHolder[INNER_DEFERRED_SHADER_INCLUDE_ALL] = (static_cast<JDx12GraphicShaderDataHolder*>(holder.Release()));
 	}
 	void JDx12SceneDraw::BuildVelocityShader(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
-	{
-		velocityShader = nullptr;
+	{ 
 		velocityShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 
 		constexpr uint shaderCount = 1;
@@ -1610,13 +1612,14 @@ namespace JinEngine::Graphic
 		psoBuilder.Create(device);
 	}
 	void JDx12SceneDraw::ClearResource()
-	{
-		forwardRootSignature = deferredGeometryRootSignature = nullptr;
-		deferredShadingRootSignature = nullptr;
-		velocityRootsignature = nullptr;
-
+	{ 
 		for (uint i = 0; i < SIZE_OF_ARRAY(deferredShadingHolder); ++i)
 			deferredShadingHolder[i] = nullptr;
 		velocityShader = nullptr;
+
+		forwardRootSignature = nullptr;
+		deferredGeometryRootSignature = nullptr;
+		deferredShadingRootSignature = nullptr;
+		velocityRootsignature = nullptr;
 	}
 }

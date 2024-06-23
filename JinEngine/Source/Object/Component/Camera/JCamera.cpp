@@ -864,7 +864,7 @@ namespace JinEngine
 			DeRegisterEvent();
 			DeRegisterFrame<CamFrame>();
 			DeRegisterCsmTargetInterface();
-			PopDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			PopDrawSceneRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 			SetFuncList().InvokeAllReverse(this, true, SetParam(false, true));
 			//if (allowDisplayOccCullingDepthMap)
 			//	SetAllowDisplayOccCullingDepthMapEx(false, true);
@@ -1133,8 +1133,10 @@ namespace JinEngine
 			tanHalfFovX = 1.0f / fabs(mProj(0, 0));
 			tanHalfFovY = 1.0f / fabs(mProj(1, 1));
 
-			//uv -> view = z * (2.0f * -1.0f) * (inv proj) * screen coord
-			//mul z는 shader에서 수행
+			//uv -> view = (screen coord * (2.0f, -2.0f) + (- 1.0f,  1.0f)) * z * (inv proj)
+			//z와 screen corrd는 shader에서 수행하므로
+			//uvToView =  ((2.0f, -2.0f) +  (- 1.0f,  1.0f)) * inv proj
+
 			uvToViewA.x = 2.0f * tanHalfFovX;
 			uvToViewA.y = -2.0f * tanHalfFovY;
 			uvToViewB.x = -1.0f * tanHalfFovX;

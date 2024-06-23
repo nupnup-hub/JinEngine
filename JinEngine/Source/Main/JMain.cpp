@@ -43,6 +43,7 @@ SOFTWARE.
 #include"../Core/Time/JStopWatch.h"  
 #include"../Core/Func/Functor/JFunctor.h"  
 #include"../Core/Event/JEventListener.h"
+#include"../Core/Threading/JThreadManager.h"
 #include"../Core/Threading/JThreadManagerPrivate.h"
 #include"../Core/Module/JModuleManager.h"
 #include"../Core/Module/JModuleManagerPrivate.h"
@@ -137,6 +138,7 @@ namespace JinEngine
 			JEngineTimer::Data().Start();
 			JEngineTimer::Data().Reset();
 			JApplicationEnginePrivate::MainAccess::EnterUpdateLoop();
+
 			while (true)
 			{ 
 				std::optional<int> encode = WindowMainAccess::ProcessMessages();

@@ -120,6 +120,7 @@ void BlurVertically(uint2 pixelCoord, uint topMostIndex)
 	result[pixelCoord] = BlurPixels(s0, s1, s2, s3, s4, s5, s6, s7, s8);
 }
  
+
 [numthreads(DIMX, DIMY, 1)]
 void main(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
 {

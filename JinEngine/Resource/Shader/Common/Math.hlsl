@@ -24,8 +24,10 @@ SOFTWARE.
 
 
 #pragma once
-#define PI 3.1415926 
-#define PI2 6.2831852 
+#define PI 3.1415926f 
+#define PI2 6.2831852f 
+#define ONE_OVER_PI (1.0f / PI)
+
 #define FLT_MAX 3.402823466e+38F 
 #define UINT_MAX 0xffffffff
 

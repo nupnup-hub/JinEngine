@@ -23,22 +23,7 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-
-namespace JinEngine
+[numthreads(1, 1, 1)]
+void main( uint3 DTid : SV_DispatchThreadID )
 {
-	namespace Core
-	{
-		enum class J_THREAD_USE_CASE_TYPE
-		{
-			ENGINE_TASK_SYNC,	//stuff command list 
-			COMMON
-		};
-
-		enum class J_THREAD_STATE_TYPE
-		{
-			WAIT,
-			WORK
-		};
-	}
 }

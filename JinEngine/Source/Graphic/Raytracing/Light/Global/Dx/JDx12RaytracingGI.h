@@ -144,6 +144,8 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet normalSet;
 				//JDx12GraphicResourceComputeSet velocitySet; 
 			public:
+				JDx12GraphicResourceComputeSet aoMapSet;
+			public:
 				//for rt spatial-temporal process
 				JDx12GraphicResourceComputeSet preRsSet;
 				JDx12GraphicResourceComputeSet preDsSet;
@@ -179,6 +181,13 @@ namespace JinEngine
 				bool IsValid()const noexcept;
 			};
 		private:
+			enum REUSE_OPTION
+			{
+				NONE = 0,
+				USE_AO_MAP = 1 << 0,
+				COUNT = USE_AO_MAP + 1
+			};
+		private:
 			//step 1 resource
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> raytracingRootSignature; 
 			Microsoft::WRL::ComPtr<ID3D12StateObject> stateObject[STATE_OBJECT_TYPE_COUNT];
@@ -189,7 +198,7 @@ namespace JinEngine
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> reuseRootSignature;
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> finalRootSignature;
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> upsampleRootSignature;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> reuseSamplingShader; 
+			std::unique_ptr<JDx12ComputeShaderDataHolder> reuseSamplingShader[REUSE_OPTION::COUNT];
 			std::unique_ptr<JDx12ComputeShaderDataHolder> finalShader; 
 			std::unique_ptr<JDx12ComputeShaderDataHolder> upsampleShader;
 		private:

@@ -359,7 +359,7 @@ namespace JinEngine
 			DestroyAllTexture();
 
 			DestroyCullingData(Graphic::J_CULLING_TYPE::FRUSTUM);
-			PopDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			PopDrawShadowRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 			PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 		};
 		void CreateShadowMapDebugResource()

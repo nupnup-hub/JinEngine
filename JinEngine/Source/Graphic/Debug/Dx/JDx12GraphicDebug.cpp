@@ -37,6 +37,7 @@ SOFTWARE.
 #include"../../../Core/Platform/JHardwareInfo.h"  
 #include"../../../Object/Component/Camera/JCamera.h"
 #include"../../../Object/Component/Light/JLight.h"
+#include"../../../Object/Component/Light/JDirectionalLight.h"
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
 #include<DirectXColors.h>
  
@@ -141,6 +142,15 @@ namespace JinEngine::Graphic
 			const J_LIGHT_TYPE litType = helper.lit->GetLightType();
 			if (litType == J_LIGHT_TYPE::SPOT || litType == J_LIGHT_TYPE::POINT)
 				isNonLinearDepthMap = true;	//spot is perspective
+			else if (litType == J_LIGHT_TYPE::DIRECTIONAL)
+			{
+				auto dLit = Core::ConnectChildUserPtr<JDirectionalLight>(helper.lit);
+				if (dLit->IsCsmActivated())
+				{
+					arrayCount = dLit->GetCsmSplitCount();
+					isArrayTexture = true;
+				}
+			}
 
 			nearFar.x = helper.lit->GetFrustumNear();
 			nearFar.y = helper.lit->GetFrustumFar();
@@ -154,11 +164,20 @@ namespace JinEngine::Graphic
 			const uint debugDataIndex = gRInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
 			const uint debugCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 			const uint macCount = srcBase.GetMaxCount();
-
-			for (uint i = 0; i < debugCount && i < macCount; ++i)
+			 
+			//array texture가 항상 먼저 할당된다.
+			for (uint i = 0; i < arrayCount; ++i)
 			{
-				srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataIndex + i));
+				if(i == 0)
+					srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataIndex));
 				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataIndex + i));
+			}
+			int srcBaseIndexOffset = isArrayTexture ? 1 : 0;
+			for (uint i = arrayCount; i < debugCount && i < macCount; ++i)
+			{
+				srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataIndex + srcBaseIndexOffset));
+				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataIndex + i));
+				++srcBaseIndexOffset;
 			}
 		}
 		allowOccDepth = helper.allowDrawOccDepthMap;
@@ -246,23 +265,38 @@ namespace JinEngine::Graphic
 			return;
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(debugSet->context);
 
-		constexpr uint maxDebugPerLight = 2;
+		constexpr uint maxDebugPerLight = 8;
 		JDx12GraphicResourceComputeSetBuffer<maxDebugPerLight> srcBuff;
 		JDx12GraphicResourceComputeSetBuffer<maxDebugPerLight> destBuff;
 		DebugDataSet set(context, debugSet, helper, srcBuff, destBuff);
+		if (srcBuff.validCount == 0)
+			return;
 
 		context->Transition(&srcBuff, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		context->Transition(&destBuff, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
-		for (uint i = 0; i < srcBuff.validCount; ++i)
+		//array texture가 항상 먼저 할당된다.
+		for (uint i = 0; i < set.arrayCount; ++i)
 		{
-			set.srcHandle = srcBuff(i).GetGpuSrvHandle();
+			set.srcHandle = srcBuff(0).GetGpuSrvHandle();
 			set.destHandle = destBuff(i).GetGpuUavHandle();
-			set.size = srcBuff(i).info->GetResourceSize();
+			set.size = srcBuff(0).info->GetResourceSize();
+			set.arrayIndex = i;
+			Execute(context, set, csmShaderData.get());
+		}
+		set.arrayIndex = invalidIndex; 
+		uint srcIndex = set.isArrayTexture ? 1 : 0;
+		for (uint i = set.arrayCount; i < destBuff.validCount; ++i)
+		{   
+			set.srcHandle = srcBuff(srcIndex).GetGpuSrvHandle();
+			set.destHandle = destBuff(i).GetGpuUavHandle();
+			set.size = srcBuff(srcIndex).info->GetResourceSize();
+
 			if (set.isNonLinearDepthMap)
 				Execute(context, set, nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE].get());
 			else
 				Execute(context, set, linearDepthMapShaderData.get());
+			++srcIndex;
 		}
 		context->Transition(&destBuff, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		if (set.allowOccDepth)
@@ -341,6 +375,8 @@ namespace JinEngine::Graphic
 		context->SetComputeRootDescriptorTable(Private::destTextureHandleIndex, set.destHandle);
 		context->SetComputeRoot32BitConstants(Private::settingCbIndex, 0, set.size); 
 		context->SetComputeRoot32BitConstants(Private::settingCbIndex, 2, set.nearFar); 
+		if (set.arrayIndex != invalidIndex)
+			context->SetComputeRoot32BitConstants(Private::settingCbIndex, 4, set.arrayIndex);
 		context->Dispatch2D(set.size, holder->dispatchInfo.threadDim.XY());
 	}
 	void JDx12GraphicDebug::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
@@ -354,7 +390,7 @@ namespace JinEngine::Graphic
 		JDx12RootSignatureBuilder2<Private::slotCount, 1> builder;
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);		//srcTextureHandleIndex 
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);		//destTextureHandleIndex
-		builder.PushConstants(4, 0);	//settingCbIndex
+		builder.PushConstants(5, 0);	//settingCbIndex
 		builder.PushSampler(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
 			D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressUVW
 			0.0f,                               // mipLODBias
@@ -370,6 +406,7 @@ namespace JinEngine::Graphic
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE] = std::make_unique<JDx12ComputeShaderDataHolder>();
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC] = std::make_unique<JDx12ComputeShaderDataHolder>();
 		
+		csmShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		albedoMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		specularMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		normalMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
@@ -377,13 +414,14 @@ namespace JinEngine::Graphic
 		velocityMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		aoMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 
-		constexpr uint shaderCount = SIZE_OF_ARRAY(nonLinearDepthMapShaderData) + 7;
+		constexpr uint shaderCount = SIZE_OF_ARRAY(nonLinearDepthMapShaderData) + 8;
 
 		JDx12ComputeShaderDataHolder* holderSet[shaderCount]
 		{
 			linearDepthMapShaderData.get(),
 			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE].get(),
 			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC].get(),
+			csmShaderData.get(),
 			albedoMapShaderData.get(),
 			specularMapShaderData.get(),
 			normalMapShaderData.get(),
@@ -396,6 +434,7 @@ namespace JinEngine::Graphic
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeLinearMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeCSM"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeAlbedoMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeSpecularMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNormalMap"),
@@ -408,6 +447,7 @@ namespace JinEngine::Graphic
 			std::vector<JMacroSet>{ { L"DEPTH_LINEAR_MAP", std::to_wstring(1) }, {L"USE_PERSPECTIVE", std::to_wstring(1)}},
 			std::vector<JMacroSet>{ { L"DEPTH_NON_LINEAR_MAP", std::to_wstring(1) },{ L"USE_PERSPECTIVE", std::to_wstring(1)}},
 			std::vector<JMacroSet>{ { L"DEPTH_NON_LINEAR_MAP", std::to_wstring(1) }},
+			std::vector<JMacroSet>{ { L"CSM", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"ALBEDO_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"SPECULAR_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"NORMAL_MAP", std::to_wstring(1) }},
@@ -425,10 +465,12 @@ namespace JinEngine::Graphic
 			Private::GetThreadDim(),
 			Private::GetThreadDim(),
 			Private::GetThreadDim(),
+			Private::GetThreadDim(),
 			Private::GetThreadDim()
 		};
 		ID3D12RootSignature* rootSignature[shaderCount]
 		{
+			cRootSignature.Get(),
 			cRootSignature.Get(),
 			cRootSignature.Get(),
 			cRootSignature.Get(),
