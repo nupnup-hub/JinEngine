@@ -25,7 +25,7 @@ Game engine for studying graphics and software architecture
   - Tone mapping
 - Anti alising
   - Fxaa
-- Culling
+- [Culling](https://www.youtube.com/watch?v=UdY2Fav2N7M)
   - Hardware culling using graphics API
   - HZB
   - Frustum culling with scene accelerator Structure(cpu)
