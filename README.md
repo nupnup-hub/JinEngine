@@ -30,6 +30,7 @@ Game engine for studying graphics and software architecture
   - HZB
   - Frustum culling with scene accelerator Structure(cpu)
   - Clustered light culling
+- [Animation](https://www.youtube.com/watch?v=BIuXPuigpN0)
 
 
 ### Engine
