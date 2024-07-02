@@ -34,7 +34,7 @@ Game engine for studying graphics and software architecture
 
 
 ### Engine
-- Manage engine resource(Load, store, import)
+- Manage engine resource(load, store, import)
 - Manage program memory
 - Edit scene object
 
