@@ -15,7 +15,7 @@ Game engine for studying graphics and software architecture
   - Restir gi
   - SVGF denoiser
 - Physical based local illumination
-- Ambient occlusion
+- [Ambient occlusion](https://www.youtube.com/watch?v=JFHhDsfrn8E)
   - SSAO
   - HBAO+
 - Shadow
