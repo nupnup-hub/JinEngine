@@ -73,7 +73,7 @@ namespace JinEngine
 		XMVECTOR s;
 		XMVECTOR q;
 		XMVECTOR t; 
-		DirectX::XMMatrixDecompose(&s, &q, &t, joint[index].inbindPose.LoadXM());
+		DirectX::XMMatrixDecompose(&s, &q, &t, GetInBindPose(index));
 		return DirectX::XMQuaternionNormalize(q);
 	}
 	JVector4<float> JSkeleton::GetBindQuaternion(int index)const noexcept
@@ -81,7 +81,7 @@ namespace JinEngine
 		XMVECTOR s;
 		XMVECTOR q;
 		XMVECTOR t; 
-		DirectX::XMMatrixDecompose(&s, &q, &t, DirectX::XMMatrixInverse(nullptr, joint[index].inbindPose.LoadXM()));
+		DirectX::XMMatrixDecompose(&s, &q, &t, GetBindPose(index));
 		return DirectX::XMQuaternionNormalize(q);
 	}
 	void JSkeleton::GetBindTQS(int index, JVector3<float>& outT, JVector4<float>& outQ, JVector3<float>& outS)const noexcept
@@ -90,7 +90,7 @@ namespace JinEngine
 		XMVECTOR q;
 		XMVECTOR t;
 		 
-		DirectX::XMMatrixDecompose(&s, &q, &t, DirectX::XMMatrixInverse(nullptr, joint[index].inbindPose.LoadXM()));
+		DirectX::XMMatrixDecompose(&s, &q, &t, GetBindPose(index));
 		outT = t;
 		outQ = q;
 		outS = s; 
@@ -101,7 +101,7 @@ namespace JinEngine
 		XMVECTOR q;
 		XMVECTOR t;
 		 
-		DirectX::XMMatrixDecompose(&s, &q, &t, DirectX::XMMatrixInverse(nullptr, joint[index].inbindPose.LoadXM()));
+		DirectX::XMMatrixDecompose(&s, &q, &t, GetBindPose(index));
 		return t;
 	}
 	float JSkeleton::GetJointLength(int index)const noexcept

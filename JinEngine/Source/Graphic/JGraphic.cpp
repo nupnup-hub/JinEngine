@@ -445,7 +445,7 @@ namespace JinEngine
 				info.resource.occlusionMinSize = Constants::minOcclusionSize;
 				info.resource.occlusionMapCapacity = occMipmapViewCapa;
 				info.resource.occlusionMapCount = JMathHelper::Log2Int(info.resource.occlusionWidth) - JMathHelper::Log2Int(Constants::minOcclusionSize) + 1;
-				info.frame.threadCount = _JThreadManager::Instance().GetReservedSpaceCount(Core::J_THREAD_USE_CASE_TYPE::GRAPHIC_DRAW);
+				info.frame.threadCount = _JThreadManager::Instance().GetReservedSpaceCount(Core::J_THREAD_USE_CASE_TYPE::ENGINE_TASK_SYNC);
 			}
 			//CallOnece
 			void InitializeGameObjectBuffer()
@@ -1330,8 +1330,8 @@ namespace JinEngine
 				//resourceManage.culling->TryStreamOutCullingBuffer(resourceManage.culling->GetCullingInfo(J_CULLING_TYPE::HD_OCCLUSION, 
 				//	drawTarget->scene->FindFirstSelectedCamera(false)->CullingUserInterface().GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)).Get(),"LightCullignResult");
 				//culling.lit->StreamOutDebugInfo(JApplicationProject::LogPath());
-				if (option.rendering.allowRaytracing)
-					raytracing.ao->StreamOutDebugInfo();
+				//if (option.rendering.allowRaytracing)
+				//	raytracing.ao->StreamOutDebugInfo();
 #endif
 			}
 			void UpdateReAllocCondition(JUpdateHelper::UpdateDataBase& uBase)const noexcept
@@ -1991,19 +1991,6 @@ namespace JinEngine
 								JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
 						}
 					}
-					if (option.CanUseRtGi())
-					{
-						for (const auto& data : drawTarget->sceneRequestor)
-						{
-							if (!data->jCamera->AllowRaytracingGI())
-								continue;
-
-							JDrawHelper copiedHelper = helper;
-							copiedHelper.SettingDrawScene(data->jCamera);
-							raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
-							raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
-						}
-					}
 					if (option.CanUseSSAO())
 					{
 						for (const auto& data : drawTarget->sceneRequestor)
@@ -2015,6 +2002,19 @@ namespace JinEngine
 							copiedHelper.SettingDrawScene(data->jCamera);
 
 							imageProcessing.ssao->ApplySsao(dataSet.ssao.get(), copiedHelper);
+						}
+					}
+					if (option.CanUseRtGi())
+					{
+						for (const auto& data : drawTarget->sceneRequestor)
+						{
+							if (!data->jCamera->AllowRaytracingGI())
+								continue;
+
+							JDrawHelper copiedHelper = helper;
+							copiedHelper.SettingDrawScene(data->jCamera);
+							raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
+							raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
 						}
 					}
 					if (option.IsOcclusionActivated())
@@ -2219,68 +2219,67 @@ namespace JinEngine
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				JDrawHelper helper(info, option, alignedObject);
 
+				auto& registeredSceneRequestor = JGraphicDrawList::GetRegisteredSceneDrawRequestor();
+				auto& registeredShadowMapRequestor = JGraphicDrawList::GetRegisteredShadowMapDrawRequestor();
+				auto& registeredFrustumCullingRequestor = JGraphicDrawList::GetRegisteredFrustumCullingRequestor();
+				auto& registeredHzbOccCullingRequestor = JGraphicDrawList::GetRegisteredHzbOccCullingRequestor();
+				auto& registeredHdOccCullingRequestor = JGraphicDrawList::GetRegisteredHdOccCullingRequestor();
+
 				culling.lit->BindDrawResource(dataSet.bind.get());
-				for (uint i = 0; i < drawListCount; ++i)
+				for (const auto& data : registeredSceneRequestor)
 				{
-					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.SetDrawTarget(drawTarget);
+					if (!data->canDrawThisFrame)
+						continue;
 
+					helper.SetDrawTarget(data->GetOwnerTarget());
 					if (helper.scene->AllowLightCulling())
-					{
-						for (const auto& data : drawTarget->sceneRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
-
-							culling.lit->ExecuteLightClusterTask(dataSet.litCulling.get(),
-								JDrawHelper::CreateLitCullingHelper(helper, data->jCamera));
-						}
-					}
+						culling.lit->ExecuteLightClusterTask(dataSet.litCulling.get(), JDrawHelper::CreateLitCullingHelper(helper, data->jCamera));
 				}
-				for (uint i = 0; i < drawListCount; ++i)
+				if (drawing.scene->HasPreprocessing())
 				{
-					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.SetDrawTarget(drawTarget);
-
-					if (option.IsOcclusionActivated() && culling.hzb->HasPreprocessing())
+					for (const auto& data : registeredSceneRequestor)
 					{
-						for (const auto& data : drawTarget->hzbOccCullingRequestor)
+						if (!data->canDrawThisFrame)
+							continue;
+
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						drawing.scene->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
+					}			 
+				} 
+				if (drawing.shadowMap->HasPreprocessing())
+				{
+					for (const auto& data : registeredShadowMapRequestor)
+					{
+						if (!data->canDrawThisFrame)
+							continue;
+
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						drawing.shadowMap->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
+					}
+				} 
+				if (option.IsOcclusionActivated())
+				{
+					if (culling.hzb->HasPreprocessing())
+					{
+						for (const auto& data : registeredHzbOccCullingRequestor)
 						{
 							if (!data->canDrawThisFrame)
 								continue;
 
+							helper.SetDrawTarget(data->GetOwnerTarget());
 							culling.hzb->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateOccCullingHelper(helper, data->comp));
 						}
 					}
-					if (option.IsOcclusionActivated() && culling.hd->HasPreprocessing())
+					if (culling.hd->HasPreprocessing())
 					{
-						for (const auto& data : drawTarget->hdOccCullingRequestor)
+						for (const auto& data : registeredHdOccCullingRequestor)
 						{
 							if (!data->canDrawThisFrame)
 								continue;
 
+							helper.SetDrawTarget(data->GetOwnerTarget());
 							culling.hd->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateOccCullingHelper(helper, data->comp));
-						}
-					}
-					if (drawing.shadowMap->HasPreprocessing())
-					{
-						for (const auto& data : drawTarget->shadowRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
-
-							drawing.shadowMap->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
-						}
-					}
-					if (drawing.scene->HasPreprocessing())
-					{ 
-						for (const auto& data : drawTarget->sceneRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
-
-							drawing.scene->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
-						}
+						} 
 					}
 				}
 				adapter->ExecuteBeginFrame(option.deviceType, *drawRefSet);
@@ -2294,181 +2293,149 @@ namespace JinEngine
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				JDrawHelper helper(info, option, alignedObject);
 
+				auto& registeredSceneRequestor = JGraphicDrawList::GetRegisteredSceneDrawRequestor();
+				auto& registeredShadowMapRequestor = JGraphicDrawList::GetRegisteredShadowMapDrawRequestor();
+				auto& registeredFrustumCullingRequestor = JGraphicDrawList::GetRegisteredFrustumCullingRequestor();
+				auto& registeredHzbOccCullingRequestor = JGraphicDrawList::GetRegisteredHzbOccCullingRequestor();
+				auto& registeredHdOccCullingRequestor = JGraphicDrawList::GetRegisteredHdOccCullingRequestor();
+				
+				if (option.CanUseSSAO() || option.CanUseRtGi())
+				{
+					for (const auto& data : registeredSceneRequestor)
+					{
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						if (!data->canDrawThisFrame)
+							continue;
+
+						JDrawHelper copiedHelper = helper;
+						copiedHelper.SettingDrawScene(data->jCamera);
+						imageProcessing.ssao->ApplySsao(dataSet.ssao.get(), copiedHelper);
+
+						if (!data->jCamera->AllowRaytracingGI())
+							continue;
+
+						raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
+						raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
+					}
+				} 
 				if (option.rendering.allowDeferred)
 				{
 					drawing.scene->BindResource(J_GRAPHIC_RENDERING_PROCESS::DEFERRED_SHADING, dataSet.bind.get());
-					for (uint i = 0; i < drawListCount; ++i)
+					for (const auto& data : registeredSceneRequestor)
 					{
-						JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-						helper.SetDrawTarget(drawTarget);
-						for (const auto& data : drawTarget->sceneRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						if (!data->canDrawThisFrame)
+							continue;
 
-							drawing.scene->DrawSceneShadeMultiThread(dataSet.sceneDraw.get(),
-								JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
-						}
+						drawing.scene->DrawSceneShadeMultiThread(dataSet.sceneDraw.get(), JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
 					}
-				}
-				drawing.scene->BindResource(J_GRAPHIC_RENDERING_PROCESS::FORWARD, dataSet.bind.get());
-				//EndDraw Process
-				for (uint i = 0; i < drawListCount; ++i)
-				{
-					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.SetDrawTarget(drawTarget);
+				} 
 
-					if (option.IsOcclusionActivated() && culling.hzb->HasPostprocessing())
+				drawing.scene->BindResource(J_GRAPHIC_RENDERING_PROCESS::FORWARD, dataSet.bind.get());
+				if (option.IsOcclusionActivated())
+				{ 
+					if (culling.hzb->HasPostprocessing())
 					{
-						for (const auto& data : drawTarget->hzbOccCullingRequestor)
+						for (const auto& data : registeredHzbOccCullingRequestor)
 						{
 							if (!data->canDrawThisFrame)
 								continue;
 
+							helper.SetDrawTarget(data->GetOwnerTarget());
 							culling.hzb->EndDraw(dataSet.bind.get(), JDrawHelper::CreateOccCullingHelper(helper, data->comp));
 						}
 					}
-					if (option.IsOcclusionActivated() && culling.hd->HasPostprocessing())
+					if (culling.hd->HasPostprocessing())
 					{
-						for (const auto& data : drawTarget->hdOccCullingRequestor)
+						for (const auto& data : registeredHdOccCullingRequestor)
 						{
 							if (!data->canDrawThisFrame)
 								continue;
 
+							helper.SetDrawTarget(data->GetOwnerTarget());
 							culling.hd->EndDraw(dataSet.bind.get(), JDrawHelper::CreateOccCullingHelper(helper, data->comp));
 						}
 					}
-					if (drawing.shadowMap->HasPostprocessing())
-					{
-						for (const auto& data : drawTarget->shadowRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
-
-							drawing.shadowMap->EndDraw(dataSet.bind.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
-						}
-					}
-					for (const auto& data : drawTarget->sceneRequestor)
-					{
-						if (!data->canDrawThisFrame)
-							continue;
-
-						JDrawHelper copiedHelper = helper;
-						copiedHelper.SettingDrawScene(data->jCamera);
-						if (copiedHelper.allowDrawDebugObject)
-							drawing.scene->DrawSceneDebugUIMultiThread(dataSet.sceneDraw.get(), copiedHelper);
-						drawing.scene->EndDraw(dataSet.bind.get(), copiedHelper);
-					}
 				}
-
-				//after Scene EndDraw
-				for (uint i = 0; i < drawListCount; ++i)
+				if (drawing.shadowMap->HasPostprocessing())
 				{
-					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.SetDrawTarget(drawTarget);
-
-					if (option.IsOcclusionActivated())
-					{
-						for (const auto& data : drawTarget->hzbOccCullingRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
-
-							culling.hzb->ComputeOcclusionCulling(dataSet.hzbCompute.get(),
-								JDrawHelper::CreateOccCullingHelper(helper, data->comp));
-						}
-					}
-					if (option.IsOcclusionActivated())
-					{
-						for (const auto& data : drawTarget->hdOccCullingRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
-
-							culling.hd->ExtractHDOcclusionCullingData(dataSet.hdExtract.get(),
-								JDrawHelper::CreateOccCullingHelper(helper, data->comp));
-						}
-					}
-					for (const auto& data : drawTarget->shadowRequestor)
+					for (const auto& data : registeredShadowMapRequestor)
 					{
 						if (!data->canDrawThisFrame)
 							continue;
 
-						imageProcessing.debug->ComputeLitDebug(dataSet.debugCompute.get(),
-							JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
-					}
-					if (option.CanUseRtGi())
-					{ 
-						for (const auto& data : drawTarget->sceneRequestor)
-						{
-							if (!data->jCamera->AllowRaytracingGI())
-								continue;
-
-							JDrawHelper copiedHelper = helper;
-							copiedHelper.SettingDrawScene(data->jCamera);
-							//	Restir이외에 Velocity buffer 사용시 use
-							//drawing.scene->ComputeSceneDependencyTemporalResource(dataSet.sceneDraw.get(), copiedHelper);
-							raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
-							raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
-						} 
-					}
-					if (option.CanUseSSAO())
-					{
-						for (const auto& data : drawTarget->sceneRequestor)
-						{
-							if (!data->canDrawThisFrame)
-								continue;
-
-							JDrawHelper copiedHelper = helper;
-							copiedHelper.SettingDrawScene(data->jCamera);
-							imageProcessing.ssao->ApplySsao(dataSet.ssao.get(), copiedHelper);
-						}
-					}
-					for (const auto& data : drawTarget->sceneRequestor)
-					{
-						if (!data->jCamera->AllowPostProcess())
-							continue;
-
-						JDrawHelper copiedHelper = helper;
-						copiedHelper.SettingDrawScene(data->jCamera);
-						imageProcessing.ppPipeline->ApplyPostProcess(dataSet.postPrcess.get(), copiedHelper, data->canDrawThisFrame);
-					}
-					for (const auto& data : drawTarget->sceneRequestor)
-					{
-						if (!data->canDrawThisFrame)
-							continue;
-
-						imageProcessing.debug->ComputeCamDebug(dataSet.debugCompute.get(),
-							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
-					}
-					for (const auto& data : drawTarget->sceneRequestor)
-					{
-						if (!data->canDrawThisFrame)
-							continue;
-
-						imageProcessing.outline->DrawCamOutline(dataSet.outline.get(),
-							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						drawing.shadowMap->EndDraw(dataSet.bind.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
 					}
 				}
+				for (const auto& data : registeredSceneRequestor)
+				{
+					if (!data->canDrawThisFrame)
+						continue;
+
+					helper.SetDrawTarget(data->GetOwnerTarget());
+
+					JDrawHelper copiedHelper = helper;
+					copiedHelper.SettingDrawScene(data->jCamera);
+					if (copiedHelper.allowDrawDebugObject)
+						drawing.scene->DrawSceneDebugUIMultiThread(dataSet.sceneDraw.get(), copiedHelper);
+					drawing.scene->EndDraw(dataSet.bind.get(), copiedHelper);
+				}
+				
+				//after Scene EndDraw
+				if (option.IsOcclusionActivated())
+				{
+					for (const auto& data : registeredHzbOccCullingRequestor)
+					{
+						if (!data->canDrawThisFrame)
+							continue;
+
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						culling.hzb->ComputeOcclusionCulling(dataSet.hzbCompute.get(), JDrawHelper::CreateOccCullingHelper(helper, data->comp));
+					}
+					for (const auto& data : registeredHdOccCullingRequestor)
+					{
+						if (!data->canDrawThisFrame)
+							continue;
+
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						culling.hd->ExtractHDOcclusionCullingData(dataSet.hdExtract.get(), JDrawHelper::CreateOccCullingHelper(helper, data->comp));
+					}
+				}
+				for (const auto& data : registeredShadowMapRequestor)
+				{
+					if (!data->canDrawThisFrame)
+						continue;
+
+					helper.SetDrawTarget(data->GetOwnerTarget());
+					imageProcessing.debug->ComputeLitDebug(dataSet.debugCompute.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
+				}
+				for (const auto& data : registeredSceneRequestor)
+				{
+					if (!data->canDrawThisFrame)
+						continue;
+
+					helper.SetDrawTarget(data->GetOwnerTarget());
+
+					JDrawHelper copiedHelper = helper;
+					copiedHelper.SettingDrawScene(data->jCamera);
+					if (data->jCamera->AllowPostProcess())
+						imageProcessing.ppPipeline->ApplyPostProcess(dataSet.postPrcess.get(), copiedHelper, data->canDrawThisFrame);
+
+					imageProcessing.debug->ComputeCamDebug(dataSet.debugCompute.get(), copiedHelper);
+					imageProcessing.outline->DrawCamOutline(dataSet.outline.get(), copiedHelper);
+				}
+			
 				if (option.debugging.allowDisplayLightCullingResult)
 				{
 					culling.lit->BindDebugResource(dataSet.bind.get());
-					for (uint i = 0; i < drawListCount; ++i)
+					for (const auto& data : registeredSceneRequestor)
 					{
-						JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-						helper.SetDrawTarget(drawTarget);
-						if (helper.scene->AllowLightCulling())
-						{
-							for (const auto& data : drawTarget->sceneRequestor)
-							{
-								if (!data->canDrawThisFrame)
-									continue;
+						if (!data->canDrawThisFrame)
+							continue;
 
-								culling.lit->ExecuteLightClusterDebug(dataSet.litCullingDebug.get(),
-									JDrawHelper::CreateLitCullingHelper(helper, data->jCamera));
-							}
-						}
-					}
+						culling.lit->ExecuteLightClusterDebug(dataSet.litCullingDebug.get(), JDrawHelper::CreateLitCullingHelper(helper, data->jCamera));
+					} 
 				}
 				adapter->ExecuteMidFrame(option.deviceType, *drawRefSet);
 			}
@@ -2560,7 +2527,7 @@ namespace JinEngine
 
 				drawRefSet = nullptr;
 				updateHelper.Clear();
-				device->FlushCommandQueue();
+				device->FlushCommandQueue(); 
 				device->StartPublicCommand();
 
 				for (uint i = 0; i < SIZE_OF_ARRAY(infoChangedListener); ++i)

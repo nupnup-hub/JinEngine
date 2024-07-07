@@ -89,125 +89,15 @@ struct RectLight
  
 float3 ComputeBxDF(const float3 normal, float3 tangent, const float3 lightVec, const float3 viewVec, const Material mat)
 { 
-    const float3 halfVec = normalize(viewVec + lightVec);
-    const float dotNL = max(dot(normal, lightVec), 0.0001f);
-    const float dotNV = max(dot(normal, viewVec), 0.0001f);
-    const float dotNH = dot(normal, halfVec);
-    const float dotHL = dot(halfVec, lightVec);     
-     
-    const float3 f0 = ComputeF0(mat.specularFactor, mat.albedoColor, mat.metallic);
-    const float3 f = SchlickFresnel(f0, dotHL);
-#ifdef USE_BRDF_DISNEY_DIFFUSE
-    const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = DisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
-#elif USE_FROST_BITE_DISNEY_DIFFUSE
-    const float3 diffColor = FrostbiteDisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHL, mat.roughness);
-#elif USE_BRDF_HAMMON_DIFFUSE
-    const float dotVL = dot(viewVec, lightVec);
-	const float3 diffColor = HammonDiffuse(mat.albedoColor, f0, dotNL, dotNV, dotNH, dotVL, mat.roughness);
-#elif USE_OREN_NAYAR_DIFFUSE
-    const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = OrenNayarDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
-#elif USE_BRDF_SHIRELY_DIFFUSE
-	const float3 diffColor = ShirelyDiffuse(mat.albedoColor, f0, dotNL, dotNV);
-#elif USE_BRDF_LAMBERTIAN_DIFFUSE
-	const float3 diffColor = LambertianIDiffuse(mat.albedoColor);
-#else 
-    const float3 diffColor = float3(0, 0, 0);
-#endif
-	 
-    const float r2 = max(mat.roughness * mat.roughness, 0.00001f);
-#ifndef USE_BRDF_ISOTROPY_NDF  
-    const float rx = r2 * (1.0f + mat.ansio);
-    const float ry = r2 * (1.0f - mat.ansio);
-#endif
-      
-#if USE_BRDF_GGX_MICROFACET
-    
-#ifdef USE_BRDF_ISOTROPY_NDF
-    const float ndf = GGXINDF(dotNH, r2);
-#else
-    const float ndf = GGXANDF(dotNH, dot(tangent, halfVec), dot(CalBinormal(normal, tangent), halfVec), rx, ry);
-#endif   
-    return diffColor + f * (ndf * GGXSmithG2HeightCorrelatedA(dotNL, dotNV, mat.roughness));  
-    
-#elif USE_BRDF_BECKMANN_MICROFACET   
-#ifdef USE_BRDF_ISOTROPY_NDF
-    const float ndf = BeckmannINDF(dotNH, r2);
-#else
-    const float ndf = BeckmannANDF(dotNH, dot(tangent, halfVec), dot(CalBinormal(normal, tangent), halfVec), rx, ry);
-#endif   
-    float aL = BeckmannLambda(dotNL, mat.roughness);
-    float aV = BeckmannLambda(dotNV, mat.roughness); 
-    return diffColor + ((f * ndf * BeckmannSmithG2HeightCorrelated(aL, aV)) / (4.0f * dotNL * dotNV));
-    
-#elif USE_BRDF_BLINN_PHONG_MICROFACET
-#ifdef USE_BRDF_ISOTROPY_NDF
-    const float ndf = BlinnPhongINDF(dotNH, r2);
-#else
-    const float ndf = BlinnPhongINDF(dotNH, r2);
-#endif   
-    float aL = BlinnPhongLambda(dotNL, mat.roughness);
-    float aV = BlinnPhongLambda(dotNV, mat.roughness); 
-    return diffColor + ((f * ndf * BeckmannSmithG2HeightCorrelated(aL, aV)) / (4.0f * dotNL * dotNV));
-#else
-    return diffColor + (f / (4.0f * dotNL * dotNV));
-#endif
-    
+    BxDF bxdf;
+    bxdf.Initialize(mat.albedoColor, mat.specularFactor, normal, tangent, lightVec, viewVec, mat.roughness, mat.metallic, mat.ansio);
+    return bxdf.Evaluate();
 }
 float3 ComputeBxDF(const float3 normal, const float3 lightVec, const float3 viewVec, const Material mat)
 {
-    const float3 halfVec = normalize(viewVec + lightVec);
-    const float dotNL = dot(normal, lightVec);
-    const float dotNV = dot(normal, viewVec);
-    const float dotNH = dot(normal, halfVec);
-    const float dotHL = dot(halfVec, lightVec);
-     
-    const float3 f0 = ComputeF0(mat.specularFactor, mat.albedoColor, mat.metallic);
-    const float3 f = SchlickFresnel(f0, dotHL);
-#ifdef USE_BRDF_DISNEY_DIFFUSE
-    const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = DisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
-#elif USE_FROST_BITE_DISNEY_DIFFUSE
-    const float3 diffColor = FrostbiteDisneyDiffuse(mat.albedoColor, dotNL, dotNV, dotHL, mat.roughness);
-#elif USE_BRDF_HAMMON_DIFFUSE
-    const float dotVL = dot(viewVec, lightVec);
-	const float3 diffColor = HammonDiffuse(mat.albedoColor, f0, dotNL, dotNV, dotNH, dotVL, mat.roughness);
-#elif USE_OREN_NAYAR_DIFFUSE
-    const float dotHV = dot(halfVec, viewVec);
-	const float3 diffColor = OrenNayarDiffuse(mat.albedoColor, dotNL, dotNV, dotHV, mat.roughness);
-#elif USE_BRDF_SHIRELY_DIFFUSE
-	const float3 diffColor = ShirelyDiffuse(mat.albedoColor, f0, dotNL, dotNV);
-#elif USE_BRDF_LAMBERTIAN_DIFFUSE
-	const float3 diffColor = LambertianIDiffuse(mat.albedoColor);
-#else 
-    const float3 diffColor = float3(0, 0, 0);
-#endif
-	 
-    const float r2 = max(mat.roughness * mat.roughness, 0.00001f);
-#ifndef USE_BRDF_ISOTROPY_NDF  
-    const float rx = r2 * (1.0f + mat.ansio);
-    const float ry = r2 * (1.0f - mat.ansio);
-#endif
-      
-#if USE_BRDF_GGX_MICROFACET   
-    const float ndf = GGXINDF(dotNH, r2);
-    return diffColor + f * (ndf * GGXSmithG2HeightCorrelatedA(dotNL, dotNV, mat.roughness));     
-#elif USE_BRDF_BECKMANN_MICROFACET   
-    const float ndf = BeckmannINDF(dotNH, r2);
-    float aL = BeckmannLambda(dotNL, mat.roughness);
-    float aV = BeckmannLambda(dotNV, mat.roughness); 
-    return diffColor + ((f * ndf * BeckmannSmithG2HeightCorrelated(aL, aV)) / (4.0f * dotNL * dotNV));
-    
-#elif USE_BRDF_BLINN_PHONG_MICROFACET
-    const float ndf = BlinnPhongINDF(dotNH, r2);
-    float aL = BlinnPhongLambda(dotNL, mat.roughness);
-    float aV = BlinnPhongLambda(dotNV, mat.roughness); 
-    return diffColor + ((f * ndf * BeckmannSmithG2HeightCorrelated(aL, aV)) / (4.0f * dotNL * dotNV));
-#else
-    return diffColor + (f / (4.0f * dotNL * dotNV));
-#endif
-    
+    BxDF bxdf;
+    bxdf.Initialize(mat.albedoColor, mat.specularFactor, normal, lightVec, viewVec, mat.roughness, mat.metallic);
+    return bxdf.Evaluate();
 }
 
 float CalLinearAttenuation(float d, float falloffStart, float falloffEnd)

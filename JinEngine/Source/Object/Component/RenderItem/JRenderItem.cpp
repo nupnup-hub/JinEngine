@@ -105,12 +105,14 @@ namespace JinEngine
 		~JRenderItemImpl() { }
 	public:
 		JUserPtr<JMeshGeometry> GetMesh()const noexcept
-		{
-			sizeof(JRenderItemImpl);
+		{ 
 			return mesh;
 		}
 		JUserPtr<JMaterial> GetValidMaterial(int index)const noexcept
 		{
+			if (mesh == nullptr)
+				return JUserPtr<JMaterial>{};
+
 			if (material.size() <= index)
 				return JUserPtr<JMaterial>{};
 			else

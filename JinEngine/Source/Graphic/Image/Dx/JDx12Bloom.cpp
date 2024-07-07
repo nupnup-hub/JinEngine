@@ -219,7 +219,7 @@ namespace JinEngine::Graphic
 		const JVector2F invSize = 1.0f / size;
 
 		set.context->SetComputeRoot32BitConstants(Bloom::cbPassIndex, 0, invSize);
-		set.context->SetComputeRoot32BitConstants(Bloom::cbPassIndex, 2, set.helper.option.postProcess.bloomThreadHold);
+		set.context->SetComputeRoot32BitConstants(Bloom::cbPassIndex, 2, upsampleBlendFactor);
 
 		set.context->Transition(set.bloomSet[index][1].holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
  

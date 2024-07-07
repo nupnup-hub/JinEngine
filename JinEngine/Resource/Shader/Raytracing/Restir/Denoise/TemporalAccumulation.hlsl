@@ -53,8 +53,8 @@ SamplerState samLinearClmap : register(s1);
 //temporal accumulation에 구현은 denoiser algorithm에 종속적이다.
 //우선은 Svgf에 사용된 구현을 참조 결과를 관찰하며
 //추후에 수정하도록한다.
-  
-bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 posW, const float3 normal, const float viewZ, const float2 velocity, out float4 preColor, out float4 preFastColor, out uint currentHistory)
+ 
+bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 posW, const float3 normal, const float viewZ, uint materialID, const float2 velocity, out float4 preColor, out float4 preFastColor, out uint currentHistory)
 {
     preColor = float4(0, 0, 0, 0);
     preFastColor = float4(0, 0, 0, 0);
@@ -62,13 +62,12 @@ bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 
     
     float2 preUv = uv + velocity.xy;
     float2 prePixelCenterCoord = preUv * cb.rtSize; //pixelCoord + float2(0.5f, 0.5f);
- 
-    uint materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, uv, 0));
+  
     TA::Result result;
     TA::Actor actor = RestirTA::CreateActor(preUv, posW, normal, viewZ, materialID, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
     TA::ComputeCubicWeight(actor, result);
     
-    result.canUseBilinear &= all(abs(velocity) <= 0.001f);
+    result.canUseBilinear &= all(abs(velocity) <= EPSILON);
     if (result.canUseCubic)
     { 
         preColor = Catmul::Compute(preColorHistory, samLinearClmap, result.bicubicParameter);
@@ -113,12 +112,13 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float2 preUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
     float2 velocity = preUv - uv;
     
+    uint materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, uv, 0));
     //if (length(velocity) < 0.001f)
     //    velocity = float2(0, 0);
     float4 preColor;
     float4 preFastColor;
     uint currHistoryLength;
-    bool isValid = DetermineDisOcclusion(pixelCoord, uv, posW, normal, viewZ, velocity, preColor, preFastColor, currHistoryLength);
+    bool isValid = DetermineDisOcclusion(pixelCoord, uv, posW, normal, viewZ, materialID, velocity, preColor, preFastColor, currHistoryLength);
     
     currHistoryLength = min(MAX_FRAME_ACCMURATION, currHistoryLength + 1.0f);
     // this adjusts the alpha for the case where insufficient history is available.

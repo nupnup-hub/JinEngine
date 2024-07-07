@@ -113,7 +113,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     //float radius = cb.baseRadius + (1.0f / float(currHistoryLength)) * cb.radiusRange * (1.0f - centerLinearDepth);
     //float radius = cb.baseRadius + cb.radiusRange * (1.0f - ((centerViewZ - cb.camNearFar.x) / viewRange));
     float radius = cb.baseRadius + cb.radiusRange * (1.0f / float(1.0f + currHistoryLength));
-   
+     
     float3 denoiseColor = DiffuseFiltering(pixelCoord, uv, diffuse, centerNormal, centerViewZ, ddxy, radius);
     resultColor[pixelCoord].xyz = denoiseColor;
     

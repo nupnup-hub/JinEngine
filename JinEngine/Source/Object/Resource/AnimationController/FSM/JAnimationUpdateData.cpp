@@ -24,6 +24,8 @@ SOFTWARE.
 
 
 #include"JAnimationUpdateData.h"
+#include"../../Skeleton/JSkeletonAsset.h"
+#include"../../Skeleton/JSkeleton.h"
 #include"../../../../Core/Time/JGameTimer.h"
 
 namespace JinEngine
@@ -114,6 +116,21 @@ namespace JinEngine
 		for (uint i = 0; i < JSkeletonFixedData::maxJointCount; ++i)
 			diagramData[layerNumber].worldTransform[updateNumber][i] = identity;
 	}
+	void JAnimationUpdateData::StuffBindPose(const uint layerNumber, const uint updateNumber)noexcept
+	{
+		if (modelSkeleton == nullptr)
+			StuffIdentity(layerNumber, updateNumber);
+		else
+		{
+			const JMatrix4x4 identity = JMatrix4x4::Identity();
+			const JUserPtr<JSkeleton> skeleton = modelSkeleton->GetSkeleton();
+			const uint jointCount = skeleton->GetJointCount();
+			for (uint i = 0; i < jointCount; ++i)
+				diagramData[layerNumber].worldTransform[updateNumber][i].StoreXM(skeleton->GetBindPose(i));
+			for (uint i = jointCount; i < JSkeletonFixedData::maxJointCount; ++i)
+				diagramData[layerNumber].worldTransform[updateNumber][i] = identity;
+		}
+	}
 	void JAnimationUpdateData::RegisterParameter(const size_t guid, const float value)noexcept
 	{
 		paramValueMap.emplace(guid, value);
@@ -132,4 +149,12 @@ namespace JinEngine
 		if (data != paramValueMap.end())
 			data->second = value;
 	}
+	void JAnimationUpdateData::SetTimer(Core::JGameTimer* newTimer)
+	{
+		timer = newTimer;
+	}
+	void JAnimationUpdateData::SetModelSkeleton(Core::JUserPtr<JSkeletonAsset> newModelSkeleton)
+	{
+		modelSkeleton = newModelSkeleton;
+	} 
 }

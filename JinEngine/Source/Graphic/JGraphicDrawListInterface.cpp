@@ -67,9 +67,13 @@ namespace JinEngine
 		{
 			Graphic::JGraphicDrawList::AddHdOccCullingRequest(scene, jComp, updateFrequency);
 		}
-		void JGraphicDrawListCompInterface::PopDrawRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		void JGraphicDrawListCompInterface::PopDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera)noexcept
 		{
-			Graphic::JGraphicDrawList::PopDrawRequest(scene, jComp);
+			Graphic::JGraphicDrawList::PopDrawSceneRequest(scene, jCamera);
+		}
+		void JGraphicDrawListCompInterface::PopDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
+		{
+			Graphic::JGraphicDrawList::PopDrawShadowRequest(scene, jLight);
 		}
 		void JGraphicDrawListCompInterface::PopFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
 		{

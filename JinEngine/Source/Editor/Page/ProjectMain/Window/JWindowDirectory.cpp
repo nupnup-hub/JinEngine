@@ -1029,12 +1029,13 @@ namespace JinEngine
 					if (desc->GetTypeInfo().IsChildOf<JMeshGeometryImportDesc>())
 					{
 						auto meshDesc = static_cast<JMeshGeometryImportDesc*>(desc);
-						JGui::CheckBox("UseSplit", meshDesc->useSplitMesh);
+						JGui::CheckBox("Use split", meshDesc->useSplitMesh);
+						JGui::CheckBox("Skip material creation If default param", meshDesc->skipMaterialCreationIfDefaultParam);
 					}
 					else if (desc->GetTypeInfo().IsChildOf<JTextureImportDesc>())
 					{
 						auto textureDesc = static_cast<JTextureImportDesc*>(desc);
-						JGui::CheckBox("UseMipmap", textureDesc->useMipmap);
+						JGui::CheckBox("Use mipmap", textureDesc->useMipmap);
 					}
 				}
 				int maxIndex = importData.importDesc.size() - 1;

@@ -23,19 +23,7 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-#include<d3d12.h> 
-#include<assert.h>
-#include<wrl.h> 
-#include"../../../Core/JCoreEssential.h"
-
-using Microsoft::WRL::ComPtr;
-namespace JinEngine
+[numthreads(1, 1, 1)]
+void main( uint3 DTid : SV_DispatchThreadID )
 {
-	bool LoadTextureFromFile(const std::wstring& path,
-		const std::wstring& format,
-		ID3D12Device* device, 
-		ComPtr<ID3D12Resource>& out_tex_resource,
-		ComPtr<ID3D12Resource>& uploadBuffer,
-		const size_t maxSize);
 }

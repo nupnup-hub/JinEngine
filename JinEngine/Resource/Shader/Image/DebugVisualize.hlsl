@@ -39,7 +39,9 @@ SOFTWARE.
  
 #ifdef VELOCITY_MAP
 Texture2D<uint> srcMap : register(t0); 
-#else
+#elif CSM
+Texture2DArray srcMap : register(t0);
+#else 
 Texture2D srcMap : register(t0);
 #endif
 RWTexture2D<float4> result : register(u0);
@@ -49,9 +51,12 @@ cbuffer cbSettings : register(b0)
 {
     uint2 resolution;
     float2 nearFar;
+    int arrayIndex;		
+    uint debugPad00;
+    uint debugPad01;
+    uint debugPad02;
 };
  
-
 /*
 dim default value 
 thread 16, 16, 1
@@ -85,6 +90,16 @@ void VisualizeNonLinearMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatc
 	const float z = 1 - srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
 #endif
 	result[dispatchThreadID.xy] = float4(z, z, z, z);
+}
+#elif CSM
+[numthreads(DIMX, DIMY, DIMZ)]
+void VisualizeCSM(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+    if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
+        return;
+
+    const float z = 1 - srcMap.Load(int4(dispatchThreadID.xy, arrayIndex, 0)).r;
+    result[dispatchThreadID.xy] = float4(z, z, z, z);
 }
 #elif ALBEDO_MAP 
 [numthreads(DIMX, DIMY, DIMZ)]

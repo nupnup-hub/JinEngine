@@ -67,6 +67,7 @@ namespace JinEngine
 		public:
 			uint jointCount = 0;
 			std::vector<JFbxJoint> joint; 
+			std::unordered_map<std::string, int> meshParentJointMap;
 		};
 		struct JFbxMaterial
 		{
@@ -99,7 +100,7 @@ namespace JinEngine
 		public:
 			JVector3<float> position;
 			std::vector<JBlendingIndexWeightPair> blendingInfo;
-			bool isSkin = false;
+			bool isSkin = false; 
 		};
 
 		struct JFbxAnimationData

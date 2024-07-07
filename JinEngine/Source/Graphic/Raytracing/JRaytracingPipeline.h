@@ -23,19 +23,20 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-#include<d3d12.h> 
-#include<assert.h>
-#include<wrl.h> 
-#include"../../../Core/JCoreEssential.h"
-
-using Microsoft::WRL::ComPtr;
+#pragma once    
+#include"../DataSet/JGraphicDataSet.h"
+#include"../JGraphicSubClassInterface.h"
 namespace JinEngine
 {
-	bool LoadTextureFromFile(const std::wstring& path,
-		const std::wstring& format,
-		ID3D12Device* device, 
-		ComPtr<ID3D12Resource>& out_tex_resource,
-		ComPtr<ID3D12Resource>& uploadBuffer,
-		const size_t maxSize);
+	namespace Graphic
+	{
+		class JDrawHelper;
+		class JGraphicResourceInfo;
+
+		class JRaytracingPipeline : public JGraphicSubClassInterface
+		{
+		public:
+			void ApplyPostProcess(JPostProcessComputeSet* computeSet, const JDrawHelper& helper, const bool isUpdatedThisFrame);
+		};
+	}
 }

@@ -68,12 +68,15 @@ namespace JinEngine
 		std::vector<std::vector<uint8>> GetSkeletonTreeIndexVec()noexcept
 		{
 			const uint jointCount = skeleton->GetJointCount();
-			std::vector<std::vector<uint8>> treeIndex(skeleton->GetJointCount());
+			std::vector<std::vector<uint8>> treeIndex(jointCount);
 
 			//0 is root node
 			//root node has invalid parentInedex
 			for (uint i = 1; i < jointCount; ++i)
+			{
+				//MessageBoxA(0, std::to_string(skeleton->GetJoint(i).parentIndex).c_str(), std::to_string(jointCount).c_str(), 0);
 				treeIndex[skeleton->GetJoint(i).parentIndex].push_back(i);
+			}
 			return treeIndex;
 		}
 	public:

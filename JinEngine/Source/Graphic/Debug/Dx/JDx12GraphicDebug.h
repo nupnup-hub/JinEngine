@@ -70,11 +70,15 @@ namespace JinEngine
 			public:
 				JVector2<uint> size = JVector2<uint>::Zero();
 				JVector2F nearFar = 0; 
+			public:
+				uint arrayCount = 0;
+				int arrayIndex = invalidIndex;
+			public:
 				bool isNonLinearDepthMap = true;
+				bool isArrayTexture = false;
 			public:
 				bool allowHzb = false;
-				bool allowOccDepth = false;  
-			public: 
+				bool allowOccDepth = false;
 				bool allowTrigger[DEBUG_TYPE_COUNT]; 
 			public:
 				DebugDataSet(JDx12CommandContext* context,
@@ -98,6 +102,7 @@ namespace JinEngine
 			std::unique_ptr<JDx12ComputeShaderDataHolder> specularMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> linearDepthMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::COUNT];
+			std::unique_ptr<JDx12ComputeShaderDataHolder> csmShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> normalMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> tangentMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> velocityMapShaderData;

@@ -47,6 +47,9 @@ namespace JinEngine
 		public:
 			uint GetReservedSpaceCount(const J_THREAD_USE_CASE_TYPE type);
 		public:
+			void ExtendCommonThreadCapacity(const uint count);
+			void ReduceCommonThreadCapacity(const uint count);
+		public:
 			template<typename Pointer, typename ...Param>
 			size_t CreateThread(const JThreadInitInfo& initInfo, Pointer pointer, Param&&... param)
 			{

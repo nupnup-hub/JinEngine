@@ -92,8 +92,8 @@ namespace JinEngine::Graphic
 	ROOT_INDEX_CREATOR(AntiFirefly, passCBIndex, srcColorHistoryIndex, destColorHistoryIndex)
 	ROOT_INDEX_CREATOR(HOT, passCBIndex, srcColorHistoryIndex, momentHistoryIndex, histroyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex)
 
-		//ROOT_INDEX_CREATOR(DownSampling, passCBIndex, srcMapIndex, mipmap00Index, mipmap01Index, mipmap02Index, mipmap03Index)
-		//ROOT_INDEX_CREATOR(Reconstruct, passCBIndex, mipmapIndex, viewZMapIndex, depthDerivativeMapIndex, targetIndex)
+	//ROOT_INDEX_CREATOR(DownSampling, passCBIndex, srcMapIndex, mipmap00Index, mipmap01Index, mipmap02Index, mipmap03Index)
+	//ROOT_INDEX_CREATOR(Reconstruct, passCBIndex, mipmapIndex, viewZMapIndex, depthDerivativeMapIndex, targetIndex)
 	ROOT_INDEX_CREATOR(Stabilization, passCBIndex, colorHistoryIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, colorMapIndex)
 
 	ROOT_INDEX_CREATOR(Atorus, passCBIndex, atrousCBIndex, srcColorHistoryIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, destColorHistoryIndex)
@@ -774,7 +774,7 @@ namespace JinEngine::Graphic
 	}
 	JDx12RaytracingDenoiser::~JDx12RaytracingDenoiser()
 	{
-		Clear();
+		ClearResource();
 	}
 	void JDx12RaytracingDenoiser::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)
 	{
@@ -840,8 +840,7 @@ namespace JinEngine::Graphic
 
 				restirDenoiser.SettingFirstLoop(set, helper);
 				restirDenoiser.Prepare(set, helper);
-				restirDenoiser.PreBlur(set, helper);
-				restirDenoiser.SettingFirstLoop(set, helper);
+				restirDenoiser.PreBlur(set, helper); 
 				restirDenoiser.TemporalAccumulation(set, helper);
 				restirDenoiser.HistoryFix(set, helper);
 				restirDenoiser.HistoryClamping(set, helper);

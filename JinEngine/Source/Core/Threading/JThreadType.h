@@ -31,8 +31,7 @@ namespace JinEngine
 	{
 		enum class J_THREAD_USE_CASE_TYPE
 		{
-			GRAPHIC_DRAW,	//stuff command list
-			GRAPHIC_UPDATE,
+			ENGINE_TASK_SYNC,	//stuff command list 
 			COMMON
 		};
 

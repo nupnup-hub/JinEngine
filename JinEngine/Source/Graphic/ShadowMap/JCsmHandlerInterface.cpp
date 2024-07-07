@@ -48,11 +48,11 @@ namespace JinEngine::Graphic
 		static constexpr bool isFitToScene = true;
 		static float CalFixedSplit(const float camNear, const float camFar, const uint splitCount, const uint n)noexcept
 		{
-			return camNear + (camFar - camNear) * ((float)n / (float)splitCount);
+			return camNear + (camFar - camNear) * (n / float(splitCount));
 		}
 		static float CalLogSplit(const float camNear, const float camFar, const uint splitCount, const uint n)noexcept
 		{
-			return camNear * pow(camFar / camNear, (float)n / (float)splitCount);
+			return camNear * pow(camFar / camNear, n / float(splitCount));
 		}
 		//n is 1 ~ splitCount
 		static float CalSplitLength(const float blendRate,
@@ -96,7 +96,10 @@ namespace JinEngine::Graphic
 		{
 			//compute use sceneBBox and lightBBox(min, max V)
 
-				// Initialize the near and far planes
+			// Initialize the near and far planes
+			//outFrustumNear = JVectorBase::PositiveInf<float>();
+			//outFrustumFar = JVectorBase::NegativeInf<float>();
+
 			outFrustumNear = JVectorBase::PositiveInf<float>();
 			outFrustumFar = JVectorBase::NegativeInf<float>();
 
@@ -451,13 +454,17 @@ namespace JinEngine::Graphic
 
 		float shadowDistance = option.GetShadowDistance();
 		const XMMATRIX ndcToTextureSpaceM = JMatrix4x4::NdcToTextureSpace().LoadXM();
+		//float preNear = camFrustumW.Near;
+
 		for (uint i = 0; i < result.subFrustumCount; ++i)
 		{
 			//3. split frustum
 			BoundingFrustum subFrustum = camFrustumW;
+			//subFrustum.Near = preNear;
 			subFrustum.Far = result.splitRate[i] * camFrustumW.Far;
 			if (subFrustum.Far > shadowDistance)
 				subFrustum.Far = shadowDistance;
+			//preNear = subFrustum.Far;
 
 			XMFLOAT3 wCorner[8];
 			subFrustum.GetCorners(wCorner);
@@ -519,18 +526,18 @@ namespace JinEngine::Graphic
 				lightCamOrthoMax[i] *= worldUnitsPerTexel;
 			}
 
-			float outFrustumNear = -100000.0f;
-			float outFrustumFar = 100000.0f;
+			float outFrustumNear = FLT_MAX;
+			float outFrustumFar = -FLT_MAX;
 			//if (i == 0)
-			//{
-			//	//5. calculate frustum near far	 
-			//	ComputeNearFar(sceneBBoxCornerLV, lightCamOrthoMin[i], lightCamOrthoMax[i], outFrustumNear, outFrustumFar);
-			//}
-			//else
 			{
-				outFrustumNear = sceneBBoxNear;
-				outFrustumFar = sceneBBoxFar;
+				//5. calculate frustum near far	 
+				ComputeNearFar(sceneBBoxCornerLV, lightCamOrthoMin[i], lightCamOrthoMax[i], outFrustumNear, outFrustumFar);
 			}
+			//else
+			//{
+			//	outFrustumNear = sceneBBoxNear;
+			//	outFrustumFar = sceneBBoxFar;
+			//}
 			const float minX = XMVectorGetX(lightCamOrthoMin[i]);
 			const float maxX = XMVectorGetX(lightCamOrthoMax[i]);
 			const float minY = XMVectorGetY(lightCamOrthoMin[i]);

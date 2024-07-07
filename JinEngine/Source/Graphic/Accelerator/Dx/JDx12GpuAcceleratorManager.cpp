@@ -41,6 +41,7 @@ SOFTWARE.
 #include"../../../Object/Component/RenderItem/JRenderItemPrivate.h"
 #include"../../../Object/Component/Transform/JTransform.h"
 #include"../../../Object/GameObject/JGameObject.h"
+#include"../../../Core/Geometry/Mesh/JMeshStruct.h"
 #include<set> 
  
 using namespace DirectX;
@@ -172,7 +173,10 @@ namespace JinEngine::Graphic
 	public:
 		bool IsValid()
 		{
-			return mesh != nullptr;
+			//Test
+			//Skinned buf fix후 수정필요
+			return mesh != nullptr && mesh->GetMeshGeometryType() != Core::J_MESHGEOMETRY_TYPE::SKINNED;
+			//return mesh != nullptr;
 		}
 	};
 	struct JDx12GpuAcceleratorManager::BuildData
@@ -226,13 +230,15 @@ namespace JinEngine::Graphic
 			if (allowBuildLightShape)
 				totalCount += litCount;
 
-			objectData.resize(totalCount);
+			//objectData.resize(totalCount);
 			for (uint i = 0; i < objCount; ++i)
-				PushObjectData(ObjectData(desc.obj[i]->GetRenderItem()), i);
+				PushObjectData(ObjectData(desc.obj[i]->GetRenderItem()));;
+				//PushObjectData(ObjectData(desc.obj[i]->GetRenderItem()), i);
 			if (allowBuildLightShape)
 			{
 				for (uint i = 0; i < litCount; ++i)
-					PushObjectData(ObjectData(desc.localLight[i]->GetComponent<JLight>()), i + objCount);
+					PushObjectData(ObjectData(desc.localLight[i]->GetComponent<JLight>()));
+					//PushObjectData(ObjectData(desc.localLight[i]->GetComponent<JLight>()), i + objCount);
 			}
 		} 
 		void PushObjectData(const JUserPtr<JComponent>& comp)
@@ -248,6 +254,9 @@ namespace JinEngine::Graphic
 	private:
 		void PushObjectData(ObjectData&& data)
 		{
+			if (!data.IsValid())
+				return;
+
 			const uint totalSubmesh = data.mesh->GetTotalSubmeshCount();
 			if (meshSet.find(data.mesh->GetGuid()) == meshSet.end())
 			{
@@ -260,6 +269,9 @@ namespace JinEngine::Graphic
 		}
 		void PushObjectData(ObjectData&& data, const uint index)
 		{
+			if (!data.IsValid())
+				return;
+
 			const uint totalSubmesh = data.mesh->GetTotalSubmeshCount();
 			if (meshSet.find(data.mesh->GetGuid()) == meshSet.end())
 			{
@@ -296,10 +308,13 @@ namespace JinEngine::Graphic
 		auto vertexHolder = buildData.gm->GetDxHolder(J_GRAPHIC_RESOURCE_TYPE::VERTEX, gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::VERTEX, 0));
 		auto indexHolder = buildData.gm->GetDxHolder(J_GRAPHIC_RESOURCE_TYPE::INDEX, gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::INDEX, 0));
 		 
+		const bool useStaticMeshByte = mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::STATIC || mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::SKINNED;
+		 
 		desc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 		desc.Flags = flag;
 		desc.Triangles.VertexBuffer.StartAddress = vertexHolder->GetResource()->GetGPUVirtualAddress() + mesh->GetVertexByteSize() * mesh->GetSubmeshBaseVertexLocation(submeshIndex);
-		desc.Triangles.VertexBuffer.StrideInBytes = mesh->GetVertexByteSize();
+		//desc.Triangles.VertexBuffer.StrideInBytes = mesh->GetVertexByteSize();
+		desc.Triangles.VertexBuffer.StrideInBytes = useStaticMeshByte ? sizeof(Core::JStaticMeshVertex) : mesh->GetVertexByteSize();
 		desc.Triangles.VertexCount = mesh->GetSubmeshVertexCount(submeshIndex);
 		desc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 		desc.Triangles.IndexBuffer = indexHolder->GetResource()->GetGPUVirtualAddress() + mesh->GetIndexByteSize() * mesh->GetSubmeshStartIndexLocation(submeshIndex);

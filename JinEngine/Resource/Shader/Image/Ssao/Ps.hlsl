@@ -123,7 +123,8 @@ float ComputeAO(float3 centerPos, float3 n, float3 samplePos)
     float distance = dot(n, v) * rsqrt(dotVV);
 	//Angle bias * aoFactor 
 	//Normal and v are similar, and the probability of occlusion increases as the position of the center gets closer to the sample. 
-    return saturate(distance - cbPass.tanBias) * saturate(Falloff(dotVV));
+	
+	return saturate(distance - cbPass.tanBias) * saturate(Falloff(dotVV));
 } 
  
 Result HbaoPs(VertexOut pin) : SV_Target

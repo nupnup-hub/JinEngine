@@ -23,19 +23,54 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-#include<d3d12.h> 
-#include<assert.h>
-#include<wrl.h> 
-#include"../../../Core/JCoreEssential.h"
+#pragma once
+#ifndef DIMX
+#define DIMX 16
+#endif
+#ifndef DIMY
+#define DIMY 16
+#endif
 
-using Microsoft::WRL::ComPtr;
-namespace JinEngine
+struct RaytracingShadowConstants
 {
-	bool LoadTextureFromFile(const std::wstring& path,
-		const std::wstring& format,
-		ID3D12Device* device, 
-		ComPtr<ID3D12Resource>& out_tex_resource,
-		ComPtr<ID3D12Resource>& uploadBuffer,
-		const size_t maxSize);
-}
+    float4x4 camInvView;
+    float4x4 camPreViewProj;
+    float2 camNearFar;
+    float2 uvToViewA;
+    float2 uvToViewB;
+    float2 halfRtSize;
+    float2 halfInvRtSize;
+    float2 originalRtSize;
+    float2 originalInvRtSize;
+    float tMax;
+    uint totalNumPixels; //mul rtSize.x * rtSize.y
+    
+    float3 camPosW;
+    float camNearMulFar;
+    float3 camPrePosW;
+    uint sampleSetSize;
+    uint sampleSetMax;
+    uint currSampleSetIndex;
+    uint updateCount;
+    
+    uint directionalLightRange;
+    uint pointLightRange;
+    uint spotLightRange;
+    uint rectLightRange;
+    
+    uint directionalLightOffset;
+    uint pointLightOffset;
+    uint spotLightOffset;
+    uint rectLightOffset;
+    
+    uint totalLightCount;
+    float invTotalLightCount;
+    uint forceClearPrevalue; ///< Clear temporal and spatial reservoirs. 
+    uint pad00;
+    uint pad01;
+}; 
+
+ConstantBuffer<RaytracingShadowConstants> cb : register(b0);
+
+
+

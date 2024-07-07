@@ -24,10 +24,17 @@ SOFTWARE.
 
 
 #pragma once  
+#define USE_BRDF_ISOTROPY_NDF  1
+#define USE_BRDF_GGX_MICROFACET 1
+#define USE_BRDF_DISNEY_DIFFUSE 1
+
+//#define USE_BRDF_LAMBERTIAN_DIFFUSE 1
+
 #include"../../../Common/DepthFunc.hlsl"
-#include"../../../Common/Sampling.hlsl" 
+#include"../../../Common/LightCompute.hlsl" 
 #include"../../../Common/RandomNumberGenerator.hlsl"
 #include"../../../Common/GBufferCommon.hlsl"
+
 
 struct RestirGiConstants
 {
@@ -63,7 +70,7 @@ struct RestirGiConstants
     
     uint totalLightCount;
     float invTotalLightCount;
-    uint forceClearReservoirs; ///< Clear temporal and spatial reservoirs. 
+    uint forceClearPrevalue; ///< Clear temporal and spatial reservoirs. 
     uint pad00;
     uint pad01;
 }; 

@@ -1170,14 +1170,22 @@ namespace JinEngine
 					if (data->selectedIndex >= shadowLitCount)
 						data->selectedIndex = 0;
 
-					auto selectedLit = shadowLitVec[data->selectedIndex];
+					auto selectedLit = shadowLitVec[data->selectedIndex]; 
 					JGui::ComboSet("Light##SceneObserve", data->selectedIndex, shadowLitVec);
 					if (shadowLitVec[data->selectedIndex]->AllowDisplayShadowMap())
 					{
-						JGuiImageInfo info(shadowLitVec[data->selectedIndex],
-							Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP,
-							Graphic::J_GRAPHIC_BIND_TYPE::SRV); 
-						JGui::Image(info, RenderResultImageSize());
+						auto gInterface = selectedLit->GraphicResourceUserInterface();
+						const uint debugMapCount = gInterface.GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+						for (uint i = 0; i < debugMapCount; ++i)
+						{
+							JGuiImageInfo info(shadowLitVec[data->selectedIndex],
+								Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP,
+								Graphic::J_GRAPHIC_BIND_TYPE::SRV);
+							info.dataIndex = i; 
+							JGui::Image(info, RenderResultImageSize());
+							if(i % 2 == 0)
+								JGui::SameLine();
+						}
 					}
 					else
 						JGui::Text("Can display shadow map... please on allowDisplayShadowMap trigger");
