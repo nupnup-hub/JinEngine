@@ -89,6 +89,8 @@ namespace JinEngine
 			setting->setAllJointRefByVecFunctor = std::make_unique<SetAllJointRefByVecF::Functor>(&JAvatarEditor::SetAllJointReferenceByVec, this);
 			setting->setAllJointRefByAutoFunctor = std::make_unique<SetAllJointRefByAutoF::Functor>(&JAvatarEditor::SetAllJointReferenceByAuto, this);
 			setting->clearJointRefFunctor = std::make_unique<ClearJointRefF::Functor>(&JAvatarEditor::ClearJointReference, this);
+		
+			treeStrcture = std::make_unique<JEditorTreeStructure>();
 		}
 		J_EDITOR_WINDOW_TYPE JAvatarEditor::GetWindowType()const noexcept
 		{
@@ -178,7 +180,7 @@ namespace JinEngine
 		 
 				const JVector2<float> innerSize[columnCount] =
 				{
-					JVector2<float>{contentsSize.x * 0.45f, contentsSize.y },
+					JVector2<float>{contentsSize.x * 0.45f, contentsSize.y }, 
 					JVector2<float>{contentsSize.x * 0.45f, contentsSize.y },
 					JVector2<float>{contentsSize.x * 0.1f, contentsSize.y },
 				};
@@ -218,7 +220,7 @@ namespace JinEngine
 					JVector2<float> nowSize = alignCal.GetInnerContentsSize();
 					alignCal.SetNextContentsPosition();
 					textCal.Update(nowRefJointName, alignCal.GetInnerContentsSize(), true);
-					if (JGui::Button((textCal.LeftAligned()), nowSize))
+					if (JGui::Button(nowRefJointName, nowSize))
 					{
 						int doJointRefIndex = jointRefIndex;
 						int undoJointRefIndex = jointRefIndex;
@@ -380,11 +382,11 @@ namespace JinEngine
 				for (uint32 j = 0; j < jointCount; ++j)
 				{
 					for (uint32 k = 0; k < maxJoint; ++k)
-					{
-						if (JCUtil::StrToWstr(JAvatar::jointGuide[i][j].defaultJointName) == skeleton->GetJointName(k))
+					{ 
+						if (JCUtil::Contain(skeleton->GetJointName(k), JCUtil::StrToWstr(JAvatar::jointGuide[i][j].defaultJointName), false))
 						{
 							int referenceIndex = JAvatar::jointGuide[i][j].index;
-							targetAvatar.jointReference[referenceIndex] = (uint8)k;
+							targetAvatar.jointReference[referenceIndex] = (uint8)k; 
 						}
 					}
 				}

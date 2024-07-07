@@ -101,7 +101,7 @@ namespace JinEngine
 			bool LoadNormal(const FbxMesh* mesh, int controlPointIndex, int vertexCounter, DirectX::XMFLOAT3& outNormal);
 			bool LoadBinormal(const FbxMesh* mesh, int controlPointIndex, int vertexCounter, DirectX::XMFLOAT3& outBiNormal);
 			bool LoadTangent(const FbxMesh* mesh, int controlPointIndex, int vertexCounter, DirectX::XMFLOAT4& outTangent);
-			void LoadSkinnedMeshInfo(FbxNode* node, JFbxSkeleton& skeleton);
+			bool LoadSkinnedMeshInfo(FbxNode* node, JFbxSkeleton& skeleton);
 			J_FBX_RESULT LoadAnimationClip(FbxScene* scene, FbxNode* node, JFbxSkeleton& skeleton, bool hasSkeleton, JFbxAnimationData& jfbxAniData);
 			void LoadMaterial(FbxScene* scene);
 			bool LoadTexture(FbxProperty& prop, std::string& path);	

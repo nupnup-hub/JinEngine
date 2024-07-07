@@ -104,6 +104,9 @@ namespace JinEngine
 			if (nowTransition->IsSatisfiedOption(animationTime.normalizedTime))
 			{
 				const uint conditionCount = nowTransition->GetConditioCount();
+				if (conditionCount == 0)
+					return nowTransition;
+
 				for (uint j = 0; j < conditionCount; ++j)
 				{
 					Core::JFSMcondition* cond = nowTransition->GetConditionByIndex(j).Get();

@@ -94,7 +94,6 @@ namespace JinEngine
 			{
 				//++num; 
 				FbxGlobalSettings& settings = scene->GetGlobalSettings();
-
 				dataSet = std::make_unique<FbxLoadDataSet>();
 				dataSet->resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
 				//settings.SetSystemUnit(FbxSystemUnit::cm);
@@ -150,7 +149,6 @@ namespace JinEngine
 			if (importer->Import(scene))
 			{ 
 				FbxGlobalSettings& settings = scene->GetGlobalSettings();
-
 				dataSet = std::make_unique<FbxLoadDataSet>();
 				dataSet->resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
 				//settings.SetSystemUnit(FbxSystemUnit::cm);
@@ -165,15 +163,13 @@ namespace JinEngine
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
 				J_FBX_RESULT result;
-				 
-				//hasRootJoint = true;
-				LoadMaterial(scene);
-
 				JFbxSkeleton fbxSkeleton;
 				LoadJoint(rootNode, -1, -1, -1, fbxSkeleton);
 
 				//ProcessSkeletonHierarchy(rootNode, fbxSkeleton);
 				//fbxSkeleton.joint[0].parentIndex == 0 add emptyNode in front
+				LoadMaterial(scene);
+
 				bool hasSkeleton = fbxSkeleton.jointCount > 0;			 
 				LoadNode(rootNode, meshGroup, fbxSkeleton, materialMap);
 
@@ -217,7 +213,9 @@ namespace JinEngine
 			//fbx file 내용을 scene으로 가져온다
 			if (importer->Import(scene))
 			{
+				FbxGlobalSettings& settings = scene->GetGlobalSettings();
 				dataSet = std::make_unique<FbxLoadDataSet>();
+				dataSet->resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
 
 				FbxNode* rootNode = scene->GetRootNode();
 				SetSceneAxis(scene, rootNode);
@@ -387,38 +385,43 @@ namespace JinEngine
 		{
 			//stream << JCUtil::StrToWstr(node->GetName()) << '\n';
 			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
-
-			if (nodeAttribute && nodeAttribute->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+			if (nodeAttribute)
 			{
-				if (parentIndex == 0 && skeleton.joint.size() == 0)
-				{ 
-					JFbxJoint rootjoint;
-					rootjoint.parentIndex = -1;
-					rootjoint.name = node->GetParent()->GetName();
-					rootjoint.node = node->GetParent();
-					rootjoint.max = JVector3<float>::NegativeInfV();
-					rootjoint.min = JVector3<float>::PositiveInfV();
-					skeleton.joint.push_back(rootjoint);
+				FbxNodeAttribute::EType type = nodeAttribute->GetAttributeType();
+				if (type == FbxNodeAttribute::eSkeleton)
+				{
+					if (parentIndex == 0 && skeleton.joint.size() == 0)
+					{
+						JFbxJoint rootjoint;
+						rootjoint.parentIndex = -1;
+						rootjoint.name = node->GetParent()->GetName();
+						rootjoint.node = node->GetParent();
+						rootjoint.max = JVector3<float>::NegativeInfV();
+						rootjoint.min = JVector3<float>::PositiveInfV();
+						skeleton.joint.push_back(rootjoint);
+						++skeleton.jointCount;
+						++index;
+						//hasRootJoint = false;
+					}
+					JFbxJoint joint;
+					joint.parentIndex = parentIndex;
+					joint.name = node->GetName();
+					joint.node = node;
+					joint.max = JVector3<float>::NegativeInfV();
+					joint.min = JVector3<float>::PositiveInfV();
+					joint.size = (float)node->GetSkeleton()->Size;
+
+					skeleton.joint.push_back(joint);
 					++skeleton.jointCount;
-					++index;
-					//hasRootJoint = false;
-				} 
-				JFbxJoint joint;
-				joint.parentIndex = parentIndex;
-				joint.name = node->GetName();
-				joint.node = node;
-				joint.max = JVector3<float>::NegativeInfV();
-				joint.min = JVector3<float>::PositiveInfV();
-				joint.size = (float)node->GetSkeleton()->Size;
-
-				skeleton.joint.push_back(joint);
-				++skeleton.jointCount;
-				//stream << L"Name: " << JCUtil::StrToWstr(joint.name) << '\n';
-				///stream << L"Index: " << index << '\n';
-				//stream << L"Parent: " << parentIndex << '\n';
-				//stream << '\n';
-			}
-
+					//stream << L"Name: " << JCUtil::StrToWstr(joint.name) << '\n';
+					///stream << L"Index: " << index << '\n';
+					//stream << L"Parent: " << parentIndex << '\n';
+					//stream << '\n';
+				}
+				else if (type == FbxNodeAttribute::eMesh)
+					skeleton.meshParentJointMap.emplace(node->GetName(), parentIndex);
+			}  
+			 
 			const uint childCount = node->GetChildCount();
 			for (uint i = 0; i < childCount; ++i)
 				LoadJoint(node->GetChild(i), depth + 1, (int)skeleton.joint.size(), index, skeleton);
@@ -509,6 +512,7 @@ namespace JinEngine
 			DirectX::XMFLOAT3 normalXm[3];
 			DirectX::XMFLOAT3 biNormalXm[3];
 			DirectX::XMFLOAT4 tangentXm[3];
+ 
 			for (uint i = 0; i < triangleCount; ++i)
 			{
 				bool hasNormal = false;
@@ -545,7 +549,7 @@ namespace JinEngine
 					if (data != dataSet->vertexIndexMap.end())
 						indices.push_back(data->second);
 					else
-					{   
+					{    
 						JSkinnedMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j], dataSet->controlPoint[controlPointIndex].blendingInfo);
 						uint32 vertexIndex = (uint32)vertices.size();
 						dataSet->vertexIndexMap.emplace(guid, vertexIndex);
@@ -848,7 +852,7 @@ namespace JinEngine
 		//Deformer: cluster를 포함
 		//Cluster: link 포함
 		//link
-		void JFbxFileLoader::LoadSkinnedMeshInfo(FbxNode* node, JFbxSkeleton& skeleton)
+		bool JFbxFileLoader::LoadSkinnedMeshInfo(FbxNode* node, JFbxSkeleton& skeleton)
 		{
 			FbxMesh* currMesh = node->GetMesh();
 			uint numOfDeformers = currMesh->GetDeformerCount();
@@ -857,7 +861,6 @@ namespace JinEngine
 			for (uint i = 0; i < numOfDeformers; ++i)
 			{
 				FbxSkin* currSkin = reinterpret_cast<FbxSkin*>(currMesh->GetDeformer(i, FbxDeformer::eSkin));
-
 				if (!currSkin)
 					continue;
 
@@ -874,11 +877,13 @@ namespace JinEngine
 
 					std::string jointName = cluster->GetLink()->GetName();
 					for (uint k = 0; k < skeleton.jointCount; ++k)
+					{
 						if (skeleton.joint[k].name == jointName)
 						{
 							jointIndex = (int)k;
 							break;
 						}
+					}
 					if (jointIndex == -1)
 						continue;
 
@@ -903,17 +908,33 @@ namespace JinEngine
 					}
 				}
 			}
-			JBlendingIndexWeightPair blendingIndexWeightPair;
-			blendingIndexWeightPair.blendingIndex = 0;
-			blendingIndexWeightPair.blendingWeight = 0;
+
+			//blendingInfo할당에 실패한 mesh들을 대상으로 부모 joint에 값을 대입
+			auto parentJointIndexData = skeleton.meshParentJointMap.find(node->GetName());
+			int parentJointIndex = parentJointIndexData != skeleton.meshParentJointMap.end() ? parentJointIndexData->second : invalidIndex;
+
+			JBlendingIndexWeightPair firstInfo;
+			firstInfo.blendingIndex = parentJointIndex;
+			firstInfo.blendingWeight = 1;
+
+			JBlendingIndexWeightPair othersInfo;
+			othersInfo.blendingIndex = 0;
+			othersInfo.blendingWeight = 0;
+			 
 			uint controlPointSize = (uint)dataSet->controlPoint.size();
+			//MessageBoxA(0, node->GetName(), (std::to_string(parentJointIndex) + " " + std::to_string(controlPointSize)).c_str(), 0);
 			for (uint i = 0; i < controlPointSize; ++i)
 			{
+				for (uint j = (uint)dataSet->controlPoint[i].blendingInfo.size(); j < 1; ++j)
+				{
+					dataSet->controlPoint[i].blendingInfo.push_back(firstInfo);
+				}
 				for (uint j = (uint)dataSet->controlPoint[i].blendingInfo.size(); j < 4; ++j)
 				{
-					dataSet->controlPoint[i].blendingInfo.push_back(blendingIndexWeightPair);
+					dataSet->controlPoint[i].blendingInfo.push_back(othersInfo);
 				}
 			}
+			return true;
 		}
 		J_FBX_RESULT JFbxFileLoader::LoadAnimationClip(FbxScene* scene, FbxNode* node, JFbxSkeleton& skeleton, bool hasSkeleton, JFbxAnimationData& fbxAniData)
 		{
@@ -1288,7 +1309,7 @@ namespace JinEngine
 			JVector3<float> childT{ chilFM._41, chilFM._42, chilFM._43 };
 			//child joint(주로 root 다음은 heap) - root joint = dirVec 
 			JVector3<float> gap = childT - rootT;
-
+			 
 			if (abs(gap.x) >= abs(gap.y) && abs(gap.x) >= abs(gap.z))
 			{
 				if (gap.x > 0)

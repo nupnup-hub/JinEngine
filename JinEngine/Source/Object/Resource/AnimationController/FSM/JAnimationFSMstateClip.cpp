@@ -107,7 +107,7 @@ namespace JinEngine
 				updateData->lastState[updateNumber] = thisPointer->GetStateType();
 			}
 			else
-				updateData->StuffIdentity(layerNumber, updateNumber);
+				updateData->StuffBindPose(layerNumber, updateNumber);
 		}
 		void Close(JAnimationUpdateData* updateData)noexcept
 		{

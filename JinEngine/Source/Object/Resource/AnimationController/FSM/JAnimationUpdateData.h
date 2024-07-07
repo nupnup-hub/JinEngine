@@ -90,7 +90,7 @@ namespace JinEngine
 		};
 	public:
 		Core::JGameTimer* timer = nullptr;
-		Core::JUserPtr<JSkeletonAsset> modelSkeleton = nullptr;
+		Core::JUserPtr<JSkeletonAsset> modelSkeleton = nullptr; 
 	public:
 		DiagramData diagramData[JAnimationFixedData::fsmDiagramMaxCount];
 	public:
@@ -117,9 +117,13 @@ namespace JinEngine
 		void EnterCalculateIK()noexcept;
 	public:
 		void StuffIdentity(const uint layerNumber, const uint updateNumber)noexcept;
+		void StuffBindPose(const uint layerNumber, const uint updateNumber)noexcept;
 	public:
 		void RegisterParameter(const size_t guid, const float value)noexcept;
 		float GetParameterValue(const size_t guid)const noexcept;
 		void SetParameterValue(const size_t guid, const float value)noexcept;
+	public:
+		void SetTimer(Core::JGameTimer* newTimer);
+		void SetModelSkeleton(Core::JUserPtr<JSkeletonAsset> newModelSkeleton); 
 	};
 }

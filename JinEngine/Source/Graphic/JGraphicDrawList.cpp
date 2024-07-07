@@ -401,6 +401,13 @@ namespace JinEngine
 				if (existIndex == invalidIndex)
 					return;
 				 
+				/*
+				for (uint i = 0; i < shadowMapDrawRequestorCacheVec.size(); ++i)
+				{
+					if (shadowMapDrawRequestorCacheVec[i]->jLight == nullptr)
+						MessageBox(0, shadowMapDrawRequestorCacheVec[i]->GetOwnerTarget()->scene->GetName().c_str(), L"NLL", 0);
+				}
+				*/
 				int cacheIndex = GetReqIndex(shadowMapDrawRequestorCacheVec, jLight);
 				shadowMapDrawRequestorCacheVec.erase(shadowMapDrawRequestorCacheVec.begin() + cacheIndex);
 
@@ -507,6 +514,11 @@ namespace JinEngine
 
 				return drawList[index]->sceneRequestor.size() + drawList[index]->shadowRequestor.size() > 0;
 			} 
+		private:
+			void RemoveSceneCache(const size_t guid)
+			{
+
+			}
 		};
 		using DrawListDataHolder = Core::JSingletonHolder<DrawListPrivateData>;
 		static DrawListPrivateData& GetPrivate()

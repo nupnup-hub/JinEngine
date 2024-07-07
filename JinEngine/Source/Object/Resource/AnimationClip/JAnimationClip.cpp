@@ -100,8 +100,8 @@ namespace JinEngine
 		}
 		uint GetAnimationSampleJointIndex(const uint sampleIndex, const float localTime)const noexcept
 		{
-			const uint jointCount = (uint)animationSample[sampleIndex].jointPose.size();
-			for (uint i = jointCount - 1; i >= 0; --i)
+			const int jointCount = (int)animationSample[sampleIndex].jointPose.size();
+			for (int i = jointCount - 1; i >= 0; --i)
 			{
 				if (animationSample[sampleIndex].jointPose[i].stTime <= localTime)
 					return i;
@@ -173,27 +173,30 @@ namespace JinEngine
 
 			if (!isMatchClipSkeleton)
 				return;
-
+			 
 			if (!thisPointer->IsSameSkeleton(updateData->modelSkeleton.Get()))
 			{
 				if (updateData->modelSkeleton->HasAvatar() && clipSkeletonAsset->HasAvatar())
 					UpdateUsingAvatar(updateData, layerNumber, updateNumber);
 				return;
-			}
+			} 
+
 			float localTime = animationTime.timePos - animationTime.startTime;
 			JSkeleton* tarSkeleton = clipSkeletonAsset->GetSkeleton().Get();
 			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 			JMatrix4x4* worldTransform = updateData->diagramData[layerNumber].worldTransform[updateNumber];
 			worldTransform[0] = JMatrix4x4::Identity();
 
-			uint sampleSize = (uint)animationSample.size();
+			const uint sampleSize = (uint)animationSample.size();
 			for (uint i = 0; i < sampleSize; ++i)
-			{
+			{ 
 				if (animationSample[i].jointPose.size() == 0)
 				{
-					worldTransform[i] = worldTransform[tarSkeleton->GetJointParentIndex(i)];
+					uint8 parentIndex = tarSkeleton->GetJointParentIndex(i);
+					worldTransform[i] = worldTransform[parentIndex];
 					continue;
 				}
+				  
 				if (localTime < animationSample[i].jointPose.front().stTime)
 				{
 					float lerpPercent = localTime / animationSample[i].jointPose[0].stTime;
@@ -241,10 +244,19 @@ namespace JinEngine
 
 					worldTransform[i].StoreXM(XMMatrixAffineTransformation(S, zero, Q, P));
 				}
+
+				 
 				//Debug
 				//XMMATRIX bind = srcSkeletonAsset->GetSkeleton()->GetBindPose(i);
 				//XMStoreFloat4x4(&worldTransform[i], bind);
 			}
+
+			//const uint jointCount = tarSkeleton->GetJointCount();
+			//if (sampleSize < jointCount)
+			//{
+				//for (uint i = sampleSize; i < JSkeletonFixedData::maxJointCount; ++i)
+				//	worldTransform[i] = worldTransform[1];
+			//}
 		}
 		void UpdateUsingAvatar(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{

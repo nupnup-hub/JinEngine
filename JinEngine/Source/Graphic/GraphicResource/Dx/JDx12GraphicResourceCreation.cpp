@@ -28,6 +28,7 @@ SOFTWARE.
 #include"JDx12GraphicResourceInfo.h"
 #include"JDx12GraphicResourceManager.h" 
 #include"JDx12GraphicResourceFormat.h"
+#include"JLoadTextureFromFile.h"
 #include"../../Utility/Dx/JDx12Utility.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../../Core/Math/JMathHelper.h"
@@ -2093,6 +2094,15 @@ namespace JinEngine::Graphic
 				nullptr,
 				flag,
 				creationDesc.textureDesc->UseMipmap());
+		}
+		else if (creationDesc.textureDesc->oriFormat == L".tga")
+		{
+			res = LoadTextureFromFile(creationDesc.textureDesc->path,
+				creationDesc.textureDesc->oriFormat,
+				data.device,
+				newResource,
+				uploadBuffer,
+				creationDesc.textureDesc->maxSize) ? S_OK : S_FALSE;
 		}
 		else if(allowWIC)
 		{

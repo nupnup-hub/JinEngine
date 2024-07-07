@@ -576,12 +576,13 @@ namespace JinEngine::Graphic
 		set.context->SetComputeRootDescriptorTable(Reuse::depthMapIndex, set.dsSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::preNormalMapIndex, set.preNormalSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::preDepthMapIndex, set.preDsSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Reuse::aoMapIndex, set.aoMapSet.GetGpuSrvHandle());
+		if(set.aoMapSet.IsValid())
+			set.context->SetComputeRootDescriptorTable(Reuse::aoMapIndex, set.aoMapSet.GetGpuSrvHandle());
 
 		set.context->SetComputeRootDescriptorTable(Reuse::temporalIndex, set.currTemporalReserviorSet->GetGpuUavHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::spatialIndex, set.currSpatialReserviorSet->GetGpuUavHandle());
 
-		if(helper.option.debugging.testTrigger01)
+		if (set.aoMapSet.IsValid())
 			set.context->SetPipelineState(reuseSamplingShader[1].get());
 		else
 			set.context->SetPipelineState(reuseSamplingShader[0].get());

@@ -1174,7 +1174,7 @@ namespace JinEngine::Graphic
 			JUserPtr<JMeshGeometry> mesh = renderItem->GetMesh();
 			JUserPtr<JAnimator> animator = gameObject[i]->GetComponentWithParent<JAnimator>();
 
-			const bool onSkinned = animator != nullptr && condition.allowAnimation;
+			const bool onSkinned = animator != nullptr && condition.allowAnimation && mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::SKINNED;
 			const Core::J_MESHGEOMETRY_TYPE meshType = onSkinned ? Core::J_MESHGEOMETRY_TYPE::SKINNED : Core::J_MESHGEOMETRY_TYPE::STATIC;
 			const J_GRAPHIC_SHADER_VERTEX_LAYOUT shaderLayout = JShaderType::ConvertToVertexLayout(meshType);
 

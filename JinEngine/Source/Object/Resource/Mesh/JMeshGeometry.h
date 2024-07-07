@@ -44,7 +44,8 @@ namespace JinEngine
 	{
 		REGISTER_CLASS_ONLY_USE_TYPEINFO(JMeshGeometryImportDesc)
 	public:
-		bool useSplitMesh = false;		//ignore split mesh if skinned geometry
+		bool useSplitMesh = false;					//ignore split mesh if skinned geometry
+		bool skipMaterialCreationIfDefaultParam = false;	//create material per mesh	
 	public:
 		JMeshGeometryImportDesc(const Core::JFileImportPathData& importPathData);
 	};

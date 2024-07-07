@@ -338,7 +338,8 @@ namespace JinEngine
 		static void ConvertJEMaterial(Core::JMeshGroup& group,
 			std::unordered_map<size_t, std::vector<T>> matData,
 			const J_OBJECT_FLAG flag,
-			const JUserPtr<JDirectory>& parentDir)
+			const JUserPtr<JDirectory>& parentDir,
+			const bool skipMaterialCreationIfDefaultParam)
 		{
 			if constexpr (!MaterialIntermediateData::CanConvert<T>())
 				return;
@@ -399,6 +400,9 @@ namespace JinEngine
 					if (textureDir == nullptr)
 						textureDir = JICI::Create<JDirectory>(L"Texture", Core::MakeGuid(), flag, parentDir);
 
+					if (nameRef[j].empty())
+						continue;
+
 					const JResourceObjectImportDesc importDesc(Core::JFileImportPathData{ nameRef[j] }, textureDir);
 					auto existData = newTextureMap.find(importDesc.importPathData.oriFileWPath);
 					if (existData != newTextureMap.end())
@@ -415,7 +419,7 @@ namespace JinEngine
 					hasValidTexture |= (texture[j] != nullptr);
 				} 
 				 
-				if (!hasValidTexture && defaultMaterial->IsSame(interMat.mParam))
+				if (skipMaterialCreationIfDefaultParam && !hasValidTexture && defaultMaterial->IsSame(interMat.mParam))
 				{
 					meshData->SetMaterial(defaultMaterial);
 					continue;
@@ -758,7 +762,7 @@ namespace JinEngine
 					if (fileDir == nullptr)
 						fileDir = JICI::Create<JDirectory>(importPathData.name, Core::MakeGuid(), flag, dir);
 					
-					ConvertJEMaterial(*skinnedGroup, materialMap, flag, fileDir);
+					ConvertJEMaterial(*skinnedGroup, materialMap, flag, fileDir, meshDesc->skipMaterialCreationIfDefaultParam);
 					
 					const size_t skeletonGuid = Core::MakeGuid();
 					const size_t skinnedMeshGuid = Core::MakeGuid();
@@ -805,7 +809,7 @@ namespace JinEngine
 					if (fileDir == nullptr)
 						fileDir = JICI::Create<JDirectory>(importPathData.name, Core::MakeGuid(), flag, dir);
 
-					ConvertJEMaterial(*staticMeshGroup, materialMap, flag, fileDir);
+					ConvertJEMaterial(*staticMeshGroup, materialMap, flag, fileDir, meshDesc->skipMaterialCreationIfDefaultParam);
 					JUserPtr<JDirectory> modelDir = JICI::Create<JDirectory>(L"Model", Core::MakeGuid(), flag, fileDir);
 					if (HasSQValueEnum(info.typeInfo, Core::J_FBX_RESULT_HAS_MESH))
 					{

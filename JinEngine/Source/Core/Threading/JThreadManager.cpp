@@ -32,6 +32,7 @@ SOFTWARE.
 
 #if defined(_WIN32) || defined(_WIN64)
 #include<windows.h>
+#define USE_WINDOW
 #endif
 
 namespace JinEngine
@@ -69,7 +70,7 @@ namespace JinEngine
 		}
 		namespace
 		{
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef USE_WINDOW
 			class JThreadHandle
 			{
 			public:
@@ -82,9 +83,8 @@ namespace JinEngine
 				};
 				static std::vector<Data> data;
 			public:
-				static void Initialize(const uint threadCount)
-				{
-					Add(0, threadCount); 
+				static void Initialize()
+				{ 
 				}
 				static void Clear()
 				{ 
@@ -146,23 +146,39 @@ namespace JinEngine
 					std::mutex m;
 					std::condition_variable cv;
 					bool isWait = false;
+					bool canLoop = true;
 					bool allowSetNewThread = false;
 				};
 			public:
 				static std::vector<std::unique_ptr<Data>> data;
 				static std::unique_ptr<JFunctor<bool, const int>> canWorkF;
 			public:
-				static void Initialize(const int threadCount)
-				{
-					data.resize(threadCount);
-					for (int i = 0; i < threadCount; ++i)
-						data[i] = std::make_unique<Data>();
+				static void Initialize()
+				{ 
 					canWorkF = std::make_unique<JFunctor<bool, const int>>(&CanWork);
 				}
 				static void Clear()
 				{
+					Pop(0, data.size());
 					data.clear();
 					canWorkF.reset();
+				}
+			public:
+				static void SetLoopTrigger(const uint index, const bool value)
+				{
+					data[index]->canLoop = value;
+				}
+			public:
+				static void Add(const uint stIndex, const uint threadCount)
+				{
+					data.reserve(data.size() + threadCount);
+					for (uint i = 0; i < threadCount; ++i)
+						data.insert(data.begin() + stIndex + i, std::make_unique< Data>());				 
+				}
+				static void Pop(const uint stIndex, const uint count)
+				{ 
+					data.erase(data.begin() + stIndex, data.begin() + stIndex + count);
+					data.shrink_to_fit();
 				}
 			public:
 				static void Wait(const int index)
@@ -186,6 +202,10 @@ namespace JinEngine
 				static bool CanWork(const int index)
 				{
 					return !data[index]->isWait;
+				}
+				static bool CanLoop(const uint index)
+				{
+					return data[index]->canLoop;
 				}
 			};
 			std::vector<std::unique_ptr<JThreadHandle::Data>> JThreadHandle::data;
@@ -240,7 +260,7 @@ namespace JinEngine
 						}
 					}
 				}
-				 
+				JThreadHandle::Initialize();
 				for (int i = 0; i < priorityRange; ++i)
 					ExtendCapacity(i, newReservedSpace[i]);
 			}

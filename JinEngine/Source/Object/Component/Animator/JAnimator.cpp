@@ -124,8 +124,8 @@ namespace JinEngine
 			{
 				animationUpdateData = std::make_unique<JAnimationUpdateData>();
 				animationUpdateData->Initialize();
-				animationUpdateData->timer = userTimer;
-				animationUpdateData->modelSkeleton = skeletonAsset;
+				animationUpdateData->SetTimer(userTimer);
+				animationUpdateData->SetModelSkeleton(skeletonAsset);
 
 				const uint paramCount = animationController->GetParameterCount();
 				for (uint i = 0; i < paramCount; ++i)
@@ -145,8 +145,8 @@ namespace JinEngine
 	public:
 		void UpdateFrame(Graphic::JAnimationConstants& constant)noexcept final
 		{
-			animationUpdateData->timer = userTimer;
-			animationUpdateData->modelSkeleton = skeletonAsset;
+			animationUpdateData->SetTimer(userTimer);
+			animationUpdateData->SetModelSkeleton(skeletonAsset);
 			ContFrameUpdateInteface::Update(animationController.Get(), animationUpdateData.get(), constant);
 			AniFrame::MinusMovedDirty();
 		}
