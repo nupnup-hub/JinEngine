@@ -52,7 +52,7 @@ namespace JinEngine::Editor
  
 		return std::make_unique<JDx12ImGuiInitData>(dx12Device->GetSwapChainOutputWindowHandle(),
 			dx12Device->GetDevice(),
-			dx12Gm->GetDescriptorHeap(Graphic::J_GRAPHIC_BIND_TYPE::SRV),
+			dx12Gm->GetDescriptorHeap(J_GRAPHIC_BIND_TYPE::SRV),
 			Graphic::Constants::GetBackBufferFormat(option.postProcess.useHdr),
 			Graphic::Constants::gNumFrameResources);
 	}

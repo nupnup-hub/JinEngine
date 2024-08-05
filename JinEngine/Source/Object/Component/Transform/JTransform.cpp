@@ -604,7 +604,7 @@ namespace JinEngine
 		transUser->SetScale(scale);
 		transUser->impl->SetFrameDirtyTrigger();
 		if (!isActivated)
-			transUser->DeActivate();
+			transUser->DoDeActivate();
 
 		return transUser;
 	}

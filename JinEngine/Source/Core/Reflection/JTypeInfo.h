@@ -121,7 +121,7 @@ namespace JinEngine
 		private: 
 			using CallOnecePtr = void(*)();
 		public:
-			//멤버 함수가 존재해도
+			//함수가 존재해도
 			//basic template 인수가 specialize template인수와 다르면 특수화 되지않음
 			//basic == template<typename T, typename = int> 일시 call<A> => call<A, int>가된다.
 			//그러므로 std::void_t에 타입인 void로 디폴트 설정

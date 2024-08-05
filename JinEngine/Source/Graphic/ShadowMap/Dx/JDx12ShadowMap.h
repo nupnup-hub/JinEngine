@@ -24,11 +24,11 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JShadowMap.h"
-#include"../JCsmOption.h"
+#include"../JShadowMap.h" 
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"
 #include"../../../Core/Geometry/Mesh/JMeshType.h"
 #include"../../../Object/Component/Light/JLightType.h"
+#include"../../../Object/GraphicRule/Csm/JGraphicModuleCsmOption.h"
 #include<d3d12.h>
 #include<wrl/client.h>
 

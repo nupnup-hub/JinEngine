@@ -34,7 +34,8 @@ SOFTWARE.
 #include"FSM/JAnimationUpdateData.h"  
 #include"../JResourceObjectHint.h"
 #include"../JClearableInterface.h"
-#include"../Skeleton/JSkeletonAsset.h"  
+#include"../Skeleton/JSkeletonAsset.h"
+#include"../Skeleton/JSkeletonMatrixSet.h"
 #include"../../Directory/JDirectory.h"
 #include"../../Directory/JFile.h"
 #include"../../JObjectFileIOHelper.h"
@@ -46,19 +47,17 @@ SOFTWARE.
 #include"../../../Core/FSM/JFSMownerInterface.h"  
 #include"../../../Core/Utility/JCommonUtility.h"
 
-#include"../../../Application/Project/JApplicationProject.h" 
-#include"../../../Graphic/Frameresource/JAnimationConstants.h" 
+#include"../../../Application/Project/JApplicationProject.h"   
 
 //수정필요  
 #include<fstream>
 
 namespace JinEngine
-{ 
-	using namespace Graphic;
+{  
 	namespace
 	{ 
 		using DiagramIOInterface = JAnimationFSMdiagramPrivate::AssetDataIOInterface;
-		using DiagramUpdateInterface = JAnimationFSMdiagramPrivate::UpdateInterface;
+		using DiagramAnimationInterface = JAnimationFSMdiagramPrivate::AnimationInterface;
 	}
 	namespace
 	{
@@ -99,27 +98,36 @@ namespace JinEngine
 	public:
 		void Initialize(JAnimationUpdateData* updateData)noexcept
 		{ 
-			uint layerSize = (uint)diagramVec.size();
+			const uint layerSize = (uint)diagramVec.size();
 			for (uint i = 0; i < layerSize; ++i)
 			{
-				DiagramUpdateInterface::Initialize(diagramVec[i], updateData, i);
-				DiagramUpdateInterface::Enter(diagramVec[i], updateData, i);
+				DiagramAnimationInterface::Initialize(diagramVec[i], updateData, i);
+				DiagramAnimationInterface::Enter(diagramVec[i], updateData, i);
 			}
 		}
-		void Update(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
+		void Update(JAnimationUpdateData* updateData)noexcept
+		{
+			const uint layerSize = (uint)diagramVec.size();
+			for (uint i = 0; i < layerSize; ++i)
+			{
+				if (diagramVec[i]->GetStateCount() > 0)
+					DiagramAnimationInterface::Update(diagramVec[i], updateData, i);
+			}
+		}
+		void Compute(JAnimationUpdateData* updateData, JSkeletonMatrixSet& set)noexcept
 		{
 			bool hasValidValue = false;
-			uint layerSize = (uint)diagramVec.size();
+			const uint layerSize = (uint)diagramVec.size();
 			for (uint i = 0; i < layerSize; ++i)
 			{
 				if (diagramVec[i]->GetStateCount() > 0)
 				{
-					DiagramUpdateInterface::Update(diagramVec[i], updateData, constant, i);
+					DiagramAnimationInterface::Compute(diagramVec[i], updateData, set, i);
 					hasValidValue = true;
 				}
 			}
 			if (!hasValidValue)
-				constant.StuffIdentity();
+				set.StuffIdentity();
 		}
 	public:
 		void StuffResource()
@@ -255,7 +263,7 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false, true, false };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JAnimationController::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JAnimationController::StaticTypeInfo(), aPrivate);
 
 			IMPL_REALLOC_BIND(JAnimationController::JAnimationControllerImpl, thisPointer)
@@ -418,7 +426,7 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JAnimationControllerPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JAnimationControllerPrivate::AssetDataIOInterface; 
-	using FrameUpdateInterface = JAnimationControllerPrivate::FrameUpdateInterface;
+	using AnimationInterface = JAnimationControllerPrivate::AnimationInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -447,7 +455,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = JAnimationController::JAnimationControllerImpl::CreateLoadAssetInitData(directory);
-		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JAnimationController> newCont; 
@@ -476,7 +484,7 @@ namespace JinEngine
 		cont.ConnnectChild(storeData->obj); 
 		return cont->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationController::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -485,14 +493,14 @@ namespace JinEngine
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JAnimationController::InitData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JAnimationController::InitData*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationController::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -505,20 +513,24 @@ namespace JinEngine
 		if (!tool.Begin(cont->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	void FrameUpdateInterface::Initialize(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept
+	void AnimationInterface::Initialize(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept
 	{
 		aniCont->impl->Initialize(updateData);
 	}
-	void FrameUpdateInterface::Update(JAnimationController* aniCont, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
+	void AnimationInterface::Update(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept
 	{
-		aniCont->impl->Update(updateData, constant);
+		aniCont->impl->Update(updateData);
+	}
+	void AnimationInterface::Compute(JAnimationController* aniCont, JAnimationUpdateData* updateData, JSkeletonMatrixSet& set)noexcept
+	{
+		aniCont->impl->Compute(updateData, set);
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JAnimationControllerPrivate::GetCreateInstanceInterface()const noexcept

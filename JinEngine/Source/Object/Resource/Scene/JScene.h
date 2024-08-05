@@ -72,9 +72,9 @@ namespace JinEngine
 				const J_SCENE_USE_CASE_TYPE useCaseType); 
 		};
 	protected: 
-		class LoadMetaData final : public JResourceObject::InitData
+		class LoadMetadata final : public JResourceObject::InitData
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			J_SCENE_USE_CASE_TYPE useCaseType;
 		public:
@@ -88,7 +88,7 @@ namespace JinEngine
 			JBvhOption bvhOption[(uint)J_ACCELERATOR_LAYER::COUNT];
 		JKdTreeOption kdTreeOption[(uint)J_ACCELERATOR_LAYER::COUNT];
 		public:
-			LoadMetaData(const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JScenePrivate;
@@ -119,6 +119,7 @@ namespace JinEngine
 		std::vector<JUserPtr<JGameObject>> GetGameObjectVec(const J_RENDER_LAYER layer, const Core::J_MESHGEOMETRY_TYPE mesh)const noexcept;
 		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept;
 		JUserPtr<JLight> GetFirstDirectionalLight()const noexcept;
+		JUserPtr<JComponent> GetFirstComponent(const J_COMPONENT_TYPE type)const noexcept;
 		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JBvhOption GetBvhOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JKdTreeOption GetKdTreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;		

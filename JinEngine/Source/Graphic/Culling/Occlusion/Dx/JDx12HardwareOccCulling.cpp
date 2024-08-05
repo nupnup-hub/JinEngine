@@ -28,7 +28,7 @@ SOFTWARE.
 #include"../../Dx/JDx12CullingResourceHolder.h"
 #include"../../../Command/Dx/JDx12CommandContext.h"
 #include"../../../DepthMap/Dx/JDx12DepthTest.h"
-#include"../../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"

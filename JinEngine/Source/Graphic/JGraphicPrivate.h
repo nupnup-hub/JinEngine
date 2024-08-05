@@ -24,12 +24,13 @@ SOFTWARE.
 
 
 #pragma once
-#include"JGraphicConstants.h" 
-#include"GraphicResource/JGraphicResourceType.h"  
-#include"FrameResource/JFrameResourceEnum.h"   
-#include"Culling/JCullingType.h"
-#include"Accelerator/JGpuAcceleratorType.h"  
+#include"JGraphicConstants.h"    
  
+#include"../Object/GraphicRule/FrameResource/JGraphicModuleFrameResourceType.h"
+#include"../Object/GraphicRule/Culling/JGraphicModuleCullingType.h"
+#include"../Object/GraphicRule/GraphicResource/JGraphicModuleTextureResourceType.h"
+#include"../Object/GraphicRule/GpuAccelerator/JGraphicModuleGpuAcceleratorType.h"
+
 namespace JinEngine
 { 
 	class JShader;  
@@ -52,9 +53,8 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicResourceManager;
-		class JGraphicResourceInfo;
-		class JGraphicResourceInterface;
-		class JGraphicResourceUserInterface; 
+		class JGraphicResourceInfo; 
+		class JGraphicResourceInterface; 
 		class JCullingInfo;
 		class JCullingInterface;
 		class JGpuAcceleratorInfo;
@@ -76,8 +76,7 @@ namespace JinEngine
 			{
 			private:
 				friend class JShader;
-				friend class JGraphicResourceInfo;
-				friend class JGraphicResourceInterface; 
+				friend class JGraphicResourceInfo; 
 				friend class JCullingInterface;			//for create occ resource
 			private:
 				//private name is for debug

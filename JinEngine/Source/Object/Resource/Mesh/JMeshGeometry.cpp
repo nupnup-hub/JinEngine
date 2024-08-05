@@ -298,9 +298,9 @@ namespace JinEngine
 		{
 			return submeshes.size() > index ? submeshes[index].GetMaterial() : JUserPtr<JMaterial>{};
 		}
-		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
-			return (rType == Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX || rType == Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX) ? 0 : invalidIndex;
+			return (rType == J_GRAPHIC_RESOURCE_TYPE::VERTEX || rType == J_GRAPHIC_RESOURCE_TYPE::INDEX) ? 0 : invalidIndex;
 		} 
 	public:
 		void UpdateMeshBound()noexcept
@@ -499,7 +499,7 @@ namespace JinEngine
 		}
 		bool ImportMesh(Core::JMeshGroup* meshGroup)
 		{
-			auto creationLam = [](JMeshGeometry::JMeshGeometryImpl* impl, void* data, uint elementCount, uint elementSize, Graphic::J_GRAPHIC_RESOURCE_TYPE type)
+			auto creationLam = [](JMeshGeometry::JMeshGeometryImpl* impl, void* data, uint elementCount, uint elementSize, J_GRAPHIC_RESOURCE_TYPE type)
 			{
 				Graphic::JGraphicResourceCreationDesc desc;
 				desc.width = elementCount;
@@ -557,7 +557,7 @@ namespace JinEngine
 					vertexOffset += subMeshVertexCount;
 				}
 
-				creationLam(this, vertex.data(), vertexCount, vertexByteSize, Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX);
+				creationLam(this, vertex.data(), vertexCount, vertexByteSize, J_GRAPHIC_RESOURCE_TYPE::VERTEX);
 			}
 			else
 			{
@@ -574,7 +574,7 @@ namespace JinEngine
 						vertex[vertexOffset + j] = meshdata->GetVertex(j);
 					vertexOffset += subMeshVertexCount;
 				} 				 
-				creationLam(this, vertex.data(), vertexCount, vertexByteSize, Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX);
+				creationLam(this, vertex.data(), vertexCount, vertexByteSize, J_GRAPHIC_RESOURCE_TYPE::VERTEX);
 			}
 
 			if (indexCount >= 1 << 16)
@@ -593,7 +593,7 @@ namespace JinEngine
 					indicesOffset += subMeshIndexCount;
 				}
 				 
-				creationLam(this, index32.data(), indexCount, indexByteSize, Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX);
+				creationLam(this, index32.data(), indexCount, indexByteSize, J_GRAPHIC_RESOURCE_TYPE::INDEX);
 			}
 			else
 			{
@@ -611,7 +611,7 @@ namespace JinEngine
 					indicesOffset += subMeshIndexCount;
 				} 
 
-				creationLam(this, index16.data(), indexCount, indexByteSize, Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX);
+				creationLam(this, index16.data(), indexCount, indexByteSize, J_GRAPHIC_RESOURCE_TYPE::INDEX);
 			}
 
 
@@ -719,7 +719,7 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::MATERIAL, J_RESOURCE_TYPE::SKELETON}, true, false, false, true };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JMeshGeometry::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
 			//JResourceObject*, const std::wstring, JDirectory*, const std::wstring>
 			auto fbxClassifyC = [](const Core::JFileImportPathData importPathData) -> std::vector<J_RESOURCE_TYPE>
@@ -931,7 +931,7 @@ namespace JinEngine
 		return JResourceObject::InitData::IsValidData() && meshGroup != nullptr;
 	}
 
-	JMeshGeometry::LoadMetaData::LoadMetaData(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory)
+	JMeshGeometry::LoadMetadata::LoadMetadata(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(type, GetDefaultFormatIndex(), J_RESOURCE_TYPE::MESH,  directory)
 	{}
 

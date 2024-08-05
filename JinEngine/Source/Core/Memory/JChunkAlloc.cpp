@@ -25,38 +25,46 @@ SOFTWARE.
 
 #include"JChunkAlloc.h"
 
-namespace JinEngine
+namespace JinEngine::Core
 {
-	namespace Core
+	bool JChunkAlloc::Initialize(BYTE* newData, BYTE blocks, const size_t blockSize)
 	{
-		bool JChunkAlloc::Init(size_t blockSize, unsigned char blocks)
-		{
-			blocksAvailable = blocks;
-			return true;
-		}
-		void* JChunkAlloc::Allocate(size_t blockSize)
-		{
-			return pData;
-		}
-		void JChunkAlloc::Deallocate(void* p, size_t blockSize)
-		{
+		pData = newData;
+		allocableBlockCount = blocks;
+		allocBlockSize = blockSize;
+		firstAvailableBlock = 0; 
+		return true;
+	}
+	void JChunkAlloc::Clear()
+	{
+		delete[] pData;
+		firstAvailableBlock = allocableBlockCount = firstAvailableBlock =0;
+		pData = nullptr;
+	}
+	void* JChunkAlloc::Allocate(size_t blockSize)
+	{
+		if (firstAvailableBlock == allocableBlockCount)
+			return nullptr;
+		 
+		BYTE* result = &pData[firstAvailableBlock];
+		++firstAvailableBlock; 
 
-		}
-		void JChunkAlloc::Reset(size_t blockSize, unsigned char blocks)
-		{
+		return result;
+	}
+	void JChunkAlloc::Deallocate(void* p, size_t blockSize)
+	{
+		uint blockIndex = GetBlockIndex(p);
+		firstAvailableBlock = blockIndex; 
 
-		}
-		void JChunkAlloc::Release()
-		{
-
-		}
-		bool JChunkAlloc::IsCorrupt(unsigned char numBlocks, size_t blockSize, bool checkIndexes) const
-		{
-			return true;
-		}
-		bool JChunkAlloc::IsBlockAvailable(void* p, unsigned char numBlocks, size_t blockSize) const
-		{
-			return true;
-		}
+		memset(p, 0, blockSize);
+	} 
+	uint JChunkAlloc::GetBlockIndex(void* p)const noexcept
+	{
+		return ((std::intptr_t)p - (std::intptr_t)pData) / allocBlockSize;
+	}
+	bool JChunkAlloc::CanAllocate(const uint blockCount)const noexcept
+	{
+		return allocableBlockCount;
 	}
 }
+

@@ -48,7 +48,7 @@ namespace JinEngine
 		private:
 			int waitFrame = 0;
 		public:
-			uint GetUpdateCount()const noexcept;
+			uint GetUpdateCount()const noexcept; 
 		public:  
 			void SetWaitFrame(const uint frameCount)noexcept;
 		public:
@@ -58,6 +58,9 @@ namespace JinEngine
 			bool HasWaitFrame()const noexcept;
 		};
 
+		/*
+		* Interface for Can delete storage data by trigger condition 
+		*/
 		class JVolatileStorageInterface : public JStorageInterface, public JStorageUpdateInterface
 		{
 		private:

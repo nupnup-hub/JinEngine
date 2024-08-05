@@ -23,15 +23,20 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once
-#include"../../Core/Func/Functor/JFunctor.h"
-#include<DirectXCollision.h>
+#pragma once 
+#include"../../Object/GraphicRule/Csm/JGraphicModuleCsmType.h"
+#include"../../Core/Utility/JMacroUtility.h"
 
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		class JCsmTargetInterface;
-		using GetCsmTargetBoundingFrustumF = Core::JMFunctorType<JCsmTargetInterface, DirectX::BoundingFrustum>; 
+	{ 
+		struct JCsmAreaInfo
+		{
+		private:
+			size_t guid;  
+		public:
+			J_SIMPLE_GET_SET(size_t, guid, Guid)
+		};
 	}
 }

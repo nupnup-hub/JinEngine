@@ -47,8 +47,7 @@ namespace JinEngine
 		std::unique_ptr<JDirectionalLightImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
-		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* GetModuleManagedData()const noexcept final;
 		J_LIGHT_TYPE GetLightType()const noexcept final;
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final; 
 		float GetMinPower()const noexcept;
@@ -71,15 +70,14 @@ namespace JinEngine
 		void SetCsmSplitBlendRate(const float value)noexcept;
 		void SetCsmShadowDistance(const float value)noexcept;
 		void SetCsmLevelBlendRate(const float value)noexcept;
-	public:
-		bool IsFrameDirted()const noexcept final;
+	public: 
 		bool IsCsmActivated()const noexcept; 
 		bool CanAllocateCsm()const noexcept;
 		bool PassDefectInspection()const noexcept final; 
-		bool AllowFrustumCulling()const noexcept final;
-		bool AllowHzbOcclusionCulling()const noexcept final;
-		bool AllowHdOcclusionCulling()const noexcept final;
-		bool AllowDisplayOccCullingDepthMap()const noexcept final; 
+		bool AllowFrustumCulling()const noexcept;
+		bool AllowHzbOcclusionCulling()const noexcept;
+		bool AllowHdOcclusionCulling()const noexcept;
+		bool AllowDisplayOccCullingDepthMap()const noexcept; 
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

@@ -74,6 +74,23 @@ namespace JinEngine
 			using Result = T;
 		};
 
+		template <bool, typename T1, typename T2>
+		struct JSelect2 
+		{
+		public:
+			using Result = T1;
+		};
+
+		template <typename T1, typename T2>
+		struct JSelect2<false, T1, T2>
+		{
+		public:
+			using Result = T2;
+		};
+		template <bool res, typename T1, typename T2>
+		using JSelect2_T = typename JSelect2<res, T1, T2>::Result;
+
+
 		template<typename T>
 		struct PointerCount
 		{
@@ -191,7 +208,7 @@ namespace JinEngine
 		public:
 			enum : size_t { value = Remove<ArrayDimension_V<T> >= 2, T>::value };
 		};
-
+		 
 		template<typename T, bool res>
 		struct TypeCondition;
 		template<typename T>
@@ -203,6 +220,10 @@ namespace JinEngine
 		template<typename T, bool res>
 		using TypeCondition_T = typename TypeCondition<T, res>::Type;
 
+		//std::void_t<...>내부의 식이 유효하여 정확히 평가되어 void를 반환해도.
+		//basic template 인수가 specialize template인수와 다르면 특수화 되지않음
+		//basic == template<typename T, typename = int> 일시 call<A> => call<A, int>가된다.
+		//그러므로 std::void_t에 타입인 void로 디폴트 설정
 		template<typename T, typename = void>
 		struct StdStructureDetermine : std::false_type {using ValueType = T;};
 		template<typename T>
@@ -395,8 +416,18 @@ namespace JinEngine
 				}
 			}
 		};
-
-
+   
+		template<typename T, typename U, T _T, U _U>
+		struct JStaticTuple
+		{
+		public:
+			using FirstType = T;
+			using SecondType = U;
+		public:
+			static constexpr FirstType first = _T;
+			static constexpr SecondType second = _U;
+		};
+ 
 #pragma endregion
 
 #pragma region Param
@@ -473,7 +504,20 @@ namespace JinEngine
 			uint value = (uint)((v | param)...);
 			return (Type)value;
 		}
-#pragma endregion
 
+		template<typename T>
+		static constexpr T InitValue()
+		{
+			if constexpr (IsNumber_V<T>)
+				return 0;
+			else if constexpr (IsEnum_V<T>)
+				return (T)0;
+			else if constexpr (IsPointer_V<T>)
+				return nullptr;
+			else
+				return (T)NULL;
+		}
+#pragma endregion
+		 
 	}
 }

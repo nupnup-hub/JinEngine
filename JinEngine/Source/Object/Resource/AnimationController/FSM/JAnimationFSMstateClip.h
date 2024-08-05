@@ -50,7 +50,7 @@ namespace JinEngine
 		std::unique_ptr<JAnimationFSMstateClipImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		J_ANIMATION_STATE_TYPE GetStateType()const noexcept final;
+		J_ANIMATION_STATE_TYPE GetStateType()const noexcept final; 
 		JUserPtr<JAnimationClip> GetClip()const noexcept;
 	public:
 		void SetClip(const JUserPtr<JAnimationClip>& newClip)noexcept;

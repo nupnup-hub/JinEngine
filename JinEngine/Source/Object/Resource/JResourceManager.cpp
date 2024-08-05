@@ -257,9 +257,9 @@ namespace JinEngine
 				{
 					const std::wstring oriPath = Core::JFileConstant::MakeFilePath(textureDir->GetPath(), JDefaultTexture::GetName(textureType[i]));
 					const size_t guid = Core::MakeGuid();
-					Graphic::J_GRAPHIC_RESOURCE_TYPE gTextureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+					J_GRAPHIC_RESOURCE_TYPE gTextureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 					if (textureType[i] == J_DEFAULT_TEXTURE::DEFAULT_SKY)
-						gTextureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
+						gTextureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
 					
 					JUserPtr<JTexture> newTexture = JICI::Create<JTexture>(name, guid, objFlag, JResourceObject::GetFormatIndex<JTexture>(format),textureDir, oriPath, gTextureType);
 					ThrowIfFailedN(newTexture != nullptr);
@@ -642,7 +642,7 @@ namespace JinEngine
 			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->PrivateInterface());
 
 			auto hint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
-			rPrivate.GetAssetDataIOInterface().StoreMetaData(storeData.get());
+			rPrivate.GetAssetDataIOInterface().StoreMetadata(storeData.get());
 			if (!hint.isFixedAssetFile)
 				rPrivate.GetAssetDataIOInterface().StoreAssetData(storeData.get());
 		}

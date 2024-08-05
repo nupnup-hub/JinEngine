@@ -64,8 +64,8 @@ namespace JinEngine
 			COUNT
 		};
 		using LitFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder2<
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, Graphic::JPointLightConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW, Graphic::JShadowMapCubeDrawConstants&>>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, Graphic::JPointLightConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW, Graphic::JShadowMapCubeDrawConstants&>>,
 			Graphic::JFrameDirty>;
 		using JCullingSingleHolder = Graphic::JCullingSingleHolder<Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM>;
 	}
@@ -260,13 +260,13 @@ namespace JinEngine
 		{
 			return thisPointer->GetOwner()->GetTransform();
 		}
-		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
 				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
 				return 0;
 			default:
 				return invalidIndex;
@@ -346,8 +346,8 @@ namespace JinEngine
 		}
 	public:
 		void CreateShadowMapResource()noexcept
-		{ 
-			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE);
+		{  
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE);
 			CreateFrustumCullingData();
 			if (thisPointer->AllowDisplayShadowMap())
 				CreateShadowMapDebugResource();
@@ -367,23 +367,23 @@ namespace JinEngine
 		};
 		void CreateShadowMapDebugResource()
 		{ 
-			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+			DestroyGraphicResource(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 	public:
 		void Activate()noexcept
-		{
+		{ 
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			SetFuncList().InvokeAll(this, true, true);
 		}
 		void DeActivate()noexcept
 		{  
 			//has order dependency
-			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType())); 
 			SetFuncList().InvokeAll(this, true, false);
+			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType())); 
 			DestroyAllCullingData();
 			DestroyAllTexture(); 
 		}
@@ -409,7 +409,7 @@ namespace JinEngine
 			constant.radius = radius;
 			constant.penumbraScale = thisPointer->GetPenumbraWidth();
 			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
-			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE, 0) : 0;
+			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE, 0) : 0;
 			constant.hasShadowMap = IsShadowActivated();
 			constant.shadowMapSize = thisPointer->GetShadowMapSize();
 			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
@@ -475,11 +475,11 @@ namespace JinEngine
 		{
 			JLightPrivate::ChildInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
 		}
-		void RegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
+		void RegisterLightFrameData(const Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE type)
 		{
-			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT)
+			if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT)
 				PointLitFrame::RegisterFrameData(type, (PointLitFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW)
+			else if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW)
 				ShadowMapCubeDrawFrame::RegisterFrameData(type, (ShadowMapCubeDrawFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
 		}
 		void DeRegisterPreDestruction()
@@ -487,11 +487,11 @@ namespace JinEngine
 			if (thisPointer != nullptr)
 				JLightPrivate::ChildInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
 		}
-		void DeRegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
+		void DeRegisterLightFrameData(const Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE type)
 		{
-			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT)
+			if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT)
 				PointLitFrame::DeRegisterFrameData(type, (PointLitFrame*)this);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW)
+			else if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW)
 				ShadowMapCubeDrawFrame::DeRegisterFrameData(type, (ShadowMapCubeDrawFrame*)this);
 		}
 		static void RegisterTypeData()
@@ -760,9 +760,9 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadAtomicData(tool, sRange, "Range:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sRadius, "Radius:"); 
 		litUser->SetRange(sRange);
-		litUser->SetRadius(sRadius);
+		litUser->SetRadius(sRadius); 
 		if (!isActivated)
-			litUser->DeActivate();
+			litUser->DoDeActivate();
 		return litUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)

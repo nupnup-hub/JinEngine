@@ -99,6 +99,8 @@ namespace JinEngine
 		std::vector<RTypeCommonFunc> cFuncStorage;
 		std::vector<RTypePrivateFunc> pFuncStorage;
 	public:
+		std::unordered_map<size_t, J_RESOURCE_TYPE> typeMap;	//key is typeInfo typeGuid
+	public:
 		RTypeInfoData()
 		{
 			hintStorage.resize((int)J_RESOURCE_TYPE::COUNT);
@@ -115,11 +117,15 @@ namespace JinEngine
 	using RTypeInfo = Core::JSingletonHolder<RTypeInfoData>;
 	//FuncStorage
 
-	void RTypeRegister::RegisterRTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc)noexcept
+	void RTypeRegister::RegisterRTypeInfo(const Core::JTypeInfo& info, 
+		const RTypeHint& rTypeHint,
+		const RTypeCommonFunc& rTypeCFunc, 
+		const RTypePrivateFunc& rTypePFunc)noexcept
 	{
 		RTypeInfo::Instance().hintStorage[(int)rTypeHint.thisType] = rTypeHint;
 		RTypeInfo::Instance().cFuncStorage[(int)rTypeHint.thisType] = rTypeCFunc;
 		RTypeInfo::Instance().pFuncStorage[(int)rTypeHint.thisType] = rTypePFunc;
+		RTypeInfo::Instance().typeMap.emplace(info.TypeGuid(), rTypeHint.thisType);
 	}
 
 	namespace
@@ -258,6 +264,23 @@ namespace JinEngine
 	bool RTypeCommonCall::CallIsValidFormat(const J_RESOURCE_TYPE type, const std::wstring& format)
 	{
 		return RTypeInfo::Instance().cFuncStorage[(int)type].CallFormatIndex(format) != JResourceObject::GetInvalidFormatIndex();
+	}
+	J_RESOURCE_TYPE RTypeCommonCall::ConvertCompType(const Core::JTypeInfo& info)
+	{
+		auto& typeMap = RTypeInfo::Instance().typeMap;
+		auto data = typeMap.find(info.TypeGuid());
+		if (data == typeMap.end())
+		{
+			auto nextInfo = info.GetParent();
+			while (nextInfo != nullptr && data == typeMap.end())
+			{
+				data = typeMap.find(nextInfo->TypeGuid());
+				nextInfo = nextInfo->GetParent();
+			}
+			return data != typeMap.end() ? data->second : (J_RESOURCE_TYPE)invalidIndex;
+		}
+		else
+			return data->second;
 	}
 
 	SetRFrameDirtyCallable RTypePrivateCall::GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type)

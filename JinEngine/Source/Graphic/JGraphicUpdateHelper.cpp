@@ -50,7 +50,7 @@ namespace JinEngine
 		{
 			static uint UDataCount()noexcept
 			{
-				return (uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT;
+				return (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT;
 			}
 			static uint BDataCount()noexcept
 			{
@@ -87,7 +87,7 @@ namespace JinEngine
 				//uData[i].setDirty = false;
 				if (uData[i].setDirty > 0)
 					--uData[i].setDirty;
-				uData[i].reAllocCondition = J_UPLOAD_CAPACITY_CONDITION::KEEP;
+				uData[i].reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::KEEP;
 			}
 
 			const uint bCount = BDataCount();
@@ -95,29 +95,10 @@ namespace JinEngine
 			{
 				bData[i].count = 0;
 				bData[i].capacity = 0;
-				bData[i].reAllocCondition = J_UPLOAD_CAPACITY_CONDITION::KEEP;
+				bData[i].reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::KEEP;
 			}
 			hasUploadDataDirty = hasBindingDataDirty = false; 
-		}
-		void JUpdateHelper::RegisterCallable(J_UPLOAD_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr getCountPtr)
-		{
-			if (getCountPtr == nullptr)
-				return;
-
-			uData[(int)type].getElement = std::make_unique<GetElementCountT::Callable>(getCountPtr);
-			uData[(int)type].useGetMultiCount = false;
-			//uData[(int)type].getElementCapacityCallable = std::make_unique<GetElementCapacityT::Callable>(*getCapaPtr);
-			//uData[(int)type].rebuildCallable = std::make_unique<RebuildT::Callable>(*rPtr);
-		}
-		void JUpdateHelper::RegisterCallable(J_GRAPHIC_RESOURCE_TYPE type, GetElementCountT::Ptr* getCountPtr, GetElementCapacityT::Ptr* getCapaPtr)
-		{
-			if (getCountPtr == nullptr || getCapaPtr == nullptr)
-				return;
-
-			bData[(int)type].getTextureCount = std::make_unique<GetElementCountT::Callable>(*getCountPtr); 
-			bData[(int)type].getTextureCapacity = std::make_unique<GetElementCapacityT::Callable>(*getCapaPtr);
-			bData[(int)type].hasCallable = true;
-		}
+		}  
 		/*
 		void JUpdateHelper::RegisterCallable(GetElementMultiCountT::Ptr getMultiCountPtr)
 		{
@@ -126,32 +107,32 @@ namespace JinEngine
 		*/ 
 		void JUpdateHelper::WriteGraphicInfo(JGraphicInfo& info)const noexcept
 		{
-			info.frame.upObjCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT].count;
-			info.frame.upBoundingObjCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT].count;
-			info.frame.upHzbObjCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].count;
-			info.frame.upScenePassCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].count;
-			info.frame.upAniCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].count;
-			info.frame.upCameraCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].count;
-			info.frame.upDLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].count;
-			info.frame.upPLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].count;
-			info.frame.upSLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].count;
-			info.frame.upRLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].count;
-			info.frame.upCsmCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO].count;
-			info.frame.upCubeShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW].count;
-			info.frame.upNormalShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW].count;
-			info.frame.upMaterialCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].count;
+			info.frame.upObjCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT].count;
+			info.frame.upBoundingObjCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT].count;
+			info.frame.upHzbObjCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].count;
+			info.frame.upScenePassCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS].count;
+			info.frame.upAniCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION].count;
+			info.frame.upCameraCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA].count;
+			info.frame.upDLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT].count;
+			info.frame.upPLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT].count;
+			info.frame.upSLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT].count;
+			info.frame.upRLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT].count;
+			info.frame.upCsmCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO].count;
+			info.frame.upCubeShadowMapCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW].count;
+			info.frame.upNormalShadowMapCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW].count;
+			info.frame.upMaterialCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL].count;
 
-			info.frame.upObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT].capacity;
-			info.frame.upBoundingObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT].capacity;
-			info.frame.upHzbObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].capacity;
-			info.frame.upScenePassCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].capacity;
-			info.frame.upAniCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].capacity;
-			info.frame.upCameraCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].capacity;
-			info.frame.upDLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].capacity;
-			info.frame.upPLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].capacity;
-			info.frame.upSLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].capacity;
-			info.frame.upRLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].capacity;
-			info.frame.upMaterialCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].capacity;
+			info.frame.upObjCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT].capacity;
+			info.frame.upBoundingObjCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT].capacity;
+			info.frame.upHzbObjCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].capacity;
+			info.frame.upScenePassCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS].capacity;
+			info.frame.upAniCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION].capacity;
+			info.frame.upCameraCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA].capacity;
+			info.frame.upDLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT].capacity;
+			info.frame.upPLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT].capacity;
+			info.frame.upSLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT].capacity;
+			info.frame.upRLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT].capacity;
+			info.frame.upMaterialCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL].capacity;
 
 			info.resource.binding2DTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].count;
 			info.resource.bindingCubeMapCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].count;

@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../JImageProcessingFilter.h"
 #include"../../Command/Dx/JDx12CommandContext.h" 
 #include"../../Device/Dx/JDx12GraphicDevice.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"  

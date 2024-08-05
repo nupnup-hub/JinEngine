@@ -251,16 +251,16 @@ namespace JinEngine
 					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return false;
-
+				 
 				drawList.erase(drawList.begin() + index);
 				return true;
 			}
 			bool AddObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<JFrameUpdateUserAccess>& observationFrame)noexcept
 			{
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return false;
 				drawList[index]->updateInfo->observationFrame = observationFrame;
 				return true;
@@ -271,7 +271,7 @@ namespace JinEngine
 					return;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->sceneRequestor, jCamera);
@@ -291,7 +291,7 @@ namespace JinEngine
 					return;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->shadowRequestor, jLight);
@@ -303,7 +303,7 @@ namespace JinEngine
 				rawPtr->isUpdated = true; 
 
 				drawList[index]->shadowRequestor.emplace_back(std::move(unqPtr));
-				shadowMapDrawRequestorCacheVec.push_back(rawPtr);
+				shadowMapDrawRequestorCacheVec.push_back(rawPtr); 
 			}
 			void AddFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
 			{
@@ -312,7 +312,7 @@ namespace JinEngine
 
 				const J_COMPONENT_TYPE compType = jComp->GetComponentType();
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->frustumCullingRequestor, jComp);
@@ -333,7 +333,7 @@ namespace JinEngine
 
 				const J_COMPONENT_TYPE compType = jComp->GetComponentType();
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->hzbOccCullingRequestor, jComp);
@@ -354,7 +354,7 @@ namespace JinEngine
 
 				const J_COMPONENT_TYPE compType = jComp->GetComponentType();
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->hdOccCullingRequestor, jComp);
@@ -374,7 +374,7 @@ namespace JinEngine
 					return;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->sceneRequestor, jCamera);
@@ -394,20 +394,13 @@ namespace JinEngine
 					return;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->shadowRequestor, jLight);
 				if (existIndex == invalidIndex)
 					return;
-				 
-				/*
-				for (uint i = 0; i < shadowMapDrawRequestorCacheVec.size(); ++i)
-				{
-					if (shadowMapDrawRequestorCacheVec[i]->jLight == nullptr)
-						MessageBox(0, shadowMapDrawRequestorCacheVec[i]->GetOwnerTarget()->scene->GetName().c_str(), L"NLL", 0);
-				}
-				*/
+				   
 				int cacheIndex = GetReqIndex(shadowMapDrawRequestorCacheVec, jLight);
 				shadowMapDrawRequestorCacheVec.erase(shadowMapDrawRequestorCacheVec.begin() + cacheIndex);
 
@@ -420,7 +413,7 @@ namespace JinEngine
 					return;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->frustumCullingRequestor, jComp);
@@ -438,7 +431,7 @@ namespace JinEngine
 					return;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->hzbOccCullingRequestor, jComp);
@@ -456,7 +449,7 @@ namespace JinEngine
 					return;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return;
 
 				int existIndex = GetReqIndex(drawList[index]->hdOccCullingRequestor, jComp);
@@ -509,7 +502,7 @@ namespace JinEngine
 					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return false;
 
 				return drawList[index]->sceneRequestor.size() + drawList[index]->shadowRequestor.size() > 0;
@@ -545,7 +538,7 @@ namespace JinEngine
 
 			DrawListPrivateData& p = GetPrivate();
 			int index = p.GetIndex(scene);
-			if (index == -1)
+			if (index == invalidIndex)
 				return;
 
 			const uint drawListCount = (uint)p.drawList.size();

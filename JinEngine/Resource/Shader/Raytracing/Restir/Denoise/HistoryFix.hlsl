@@ -76,6 +76,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
         //float momentSum = 0;
         float weightSum = 0.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
  
+        float distanceRate = (FIXED_FRAME_COUNT - currHistoryLength) * (1.0f / float(FIXED_FRAME_COUNT));
         [unroll]
         for (int i = -BLUR_RADIUS; i <= BLUR_RADIUS; ++i)
         {
@@ -87,7 +88,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
                 
                 //Per pixel kernel rotation
                 //Input signal is already noisy  
-                int2 offset = int2(i, j) * TAB_DISTANCE;
+                int2 offset = int2(i, j) * TAB_DISTANCE * distanceRate;
                 float2 uv = centerUv + offset * cb.invRtSize;
                 //uv = max(uv, float2(0, 0));
         

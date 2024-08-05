@@ -47,12 +47,15 @@ namespace JinEngine
 	{
 		bool JGraphicResourceInterface::CreateResource(const JGraphicResourceCreationDesc& createDesc, const J_GRAPHIC_RESOURCE_TYPE rType)
 		{
-			if (!HasSpace(rType))
+			int nextIndex = NextResourceIndex(rType);
+			if (nextIndex != invalidIndex)
 				return false;
+
 			auto gUser = JGraphicPrivate::ResourceInterface::CreateResource(createDesc, rType);
 			if (gUser == nullptr)
 				return false;
-			AddInfo(gUser);
+
+			AddInfo(gUser, nextIndex);
 			return true;
 		}
 		bool JGraphicResourceInterface::CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE option)
@@ -115,6 +118,11 @@ namespace JinEngine
 			auto info = GetGraphicInfo(rType, dataIndex);
 			return info != nullptr ? info->GetArrayIndex() : invalidIndex;
 		}
+		int JGraphicResourceInterface::GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		{
+			auto info = GetGraphicInfo(rType, GetResourceIndex(rType, taskType));
+			return info != nullptr ? info->GetArrayIndex() : invalidIndex;
+		}
 		int JGraphicResourceInterface::GetHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept
 		{
 			auto info = GetGraphicInfo(rType, dataIndex);
@@ -130,7 +138,12 @@ namespace JinEngine
 			auto info = GetGraphicInfo(rType, dataIndex);
 			return info != nullptr ? info->GetViewCount(bType) : 0;
 		}
-		Graphic::ResourceHandle JGraphicResourceInterface::GetGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint bIndex, const uint dataIndex) const noexcept
+		uint JGraphicResourceInterface::GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		{
+			int dataIndex = GetResourceIndex(rType, taskType);
+			return dataIndex != invalidIndex ? GetViewCount(rType, bType, dataIndex) : 0;
+		}
+		ResourceHandle JGraphicResourceInterface::GetGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint bIndex, const uint dataIndex) const noexcept
 		{
 			auto info = GetGraphicInfo(rType, dataIndex);
 			if (info != nullptr)
@@ -138,7 +151,7 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		Graphic::ResourceHandle JGraphicResourceInterface::GetOptionGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex, const uint dataIndex) const noexcept
+		ResourceHandle JGraphicResourceInterface::GetOptionGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex, const uint dataIndex) const noexcept
 		{
 			auto info = GetGraphicInfo(rType, dataIndex);
 			if (info != nullptr)
@@ -171,7 +184,7 @@ namespace JinEngine
 			auto info = GetFirstGraphicInfo();
 			return info != nullptr ? info->GetGraphicResourceType() : (J_GRAPHIC_RESOURCE_TYPE)invalidIndex;
 		}
-		Graphic::ResourceHandle JGraphicResourceInterface::GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept
+		ResourceHandle JGraphicResourceInterface::GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept
 		{
 			auto info = GetFirstGraphicInfo();
 			if (info != nullptr)
@@ -188,25 +201,47 @@ namespace JinEngine
 		{
 			return GetGraphicInfo(rType, dataIndex) != nullptr;
 		}
-		bool JGraphicResourceInterface::HasHandle(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+		bool JGraphicResourceInterface::IsValidHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
-			return GetDataCount(rType) != 0;
-		}
+			return GetGraphicInfo(rType, GetResourceIndex(rType, taskType)) != nullptr;
+		} 
 		bool JGraphicResourceInterface::HasFirstHandle()const noexcept
 		{
 			return GetFirstGraphicInfo() != nullptr;
 		}
-		bool JGraphicResourceInterface::HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)
+		bool JGraphicResourceInterface::HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
-			auto info = GetGraphicInfo(rType, dataIndex);
+			auto info = GetGraphicInfo(rType, GetResourceIndex(rType, taskType));
 			return info != nullptr ? info->HasOption(opType) : false;
 		}
-		bool JGraphicResourceInterface::HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
+		bool JGraphicResourceInterface::HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
 		{
 			auto info = GetFirstGraphicInfo();
 			return info != nullptr ? info->HasOption(opType) : false;
 		}
-		bool JGraphicResourceInterface::TryFirstResourceMipmapBind(_Out_ std::vector<Graphic::ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)const
+		bool JGraphicResourceInterface::HasSpace(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		{
+			return NextResourceIndex(rType, taskType) != invalidIndex;
+		} 
+		int JGraphicResourceInterface::NextResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		{
+			const uint allocableCount = GetAllocableResourceCount(rType, taskType);
+			const uint offSet = GetResourceIndex(rType, taskType);
+			if (allocableCount == 0)
+				return invalidIndex;
+
+			int nextIndex = invalidIndex;
+			for (uint i = 0; i < allocableCount; ++i)
+			{
+				if (GetGraphicInfo(rType, i + offSet) == nullptr)
+				{
+					nextIndex = i;
+					break;
+				}
+			}
+			return nextIndex; 
+		} 
+		bool JGraphicResourceInterface::TryFirstResourceMipmapBind(_Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)const
 		{
 #ifdef DEVELOP 
 			auto info = GetFirstGraphicInfo();
@@ -224,22 +259,14 @@ namespace JinEngine
 		{
 			return JGraphicResourceInterface::DestroyGraphicResource(info);
 		}
-		void JGraphicSingleResourceHolder::AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo)
+		void JGraphicSingleResourceHolder::AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint index)
 		{
 			info = newInfo;
 		}
-		uint JGraphicSingleResourceHolder::GetDataCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+		uint JGraphicSingleResourceHolder::GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 		{
-			return info != nullptr && info->GetGraphicResourceType() == rType ? 1 : 0;
-		}
-		int JGraphicSingleResourceHolder::GetResourceWidth()const noexcept
-		{
-			return info != nullptr ? info->GetWidth() : -1;
-		}
-		int JGraphicSingleResourceHolder::GetResourceHeight()const noexcept
-		{
-			return info != nullptr ? info->GetHeight() : -1;
-		}
+			return info != nullptr ? 1 : 0;
+		}   
 		std::vector<J_GRAPHIC_RESOURCE_TYPE> JGraphicSingleResourceHolder::GetResourceTypeVec()const noexcept
 		{
 			return info != nullptr ? std::vector<J_GRAPHIC_RESOURCE_TYPE>{info->GetGraphicResourceType()} : std::vector<J_GRAPHIC_RESOURCE_TYPE>{};
@@ -255,15 +282,11 @@ namespace JinEngine
 		bool JGraphicSingleResourceHolder::HasGraphicResourceHandle()const noexcept
 		{
 			return info != nullptr;
-		}
-		bool JGraphicSingleResourceHolder::HasSpace(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-		{
-			return info == nullptr;
-		}
-		bool JGraphicSingleResourceHolder::AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+		} 
+		bool JGraphicSingleResourceHolder::HasFixedSpaceByTaskType()const noexcept
 		{
 			return false;
-		}
+		} 
 
 		void JGraphicTypePerSingleResourceHolder::DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType)
 		{
@@ -274,14 +297,18 @@ namespace JinEngine
 			for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 				JGraphicResourceInterface::DestroyGraphicResource(info[i]);
 		}
-		void JGraphicTypePerSingleResourceHolder::AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo)
+		void JGraphicTypePerSingleResourceHolder::AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex)
 		{
 			const uint index = (uint)newInfo->GetGraphicResourceType();
 			info[index] = newInfo;
 		}
-		uint JGraphicTypePerSingleResourceHolder::GetDataCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+		uint JGraphicTypePerSingleResourceHolder::GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 		{
 			return info[(uint)rType] != nullptr ? 1 : 0;
+		} 
+		uint JGraphicTypePerSingleResourceHolder::GetAllocableResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		{
+			return GetResourceIndex(rType, taskType) != invalidIndex;
 		}
 		std::vector<J_GRAPHIC_RESOURCE_TYPE> JGraphicTypePerSingleResourceHolder::GetResourceTypeVec()const noexcept
 		{
@@ -306,15 +333,11 @@ namespace JinEngine
 					return info[i];
 			}
 			return nullptr;
-		}
-		bool JGraphicTypePerSingleResourceHolder::HasSpace(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-		{
-			return info[(uint)rType] == nullptr;
-		}
-		bool JGraphicTypePerSingleResourceHolder::AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+		} 
+		bool JGraphicTypePerSingleResourceHolder::HasFixedSpaceByTaskType()const noexcept
 		{
 			return false;
-		}
+		} 
 
 		std::vector<JUserPtr<JGraphicResourceInfo>>& JGraphicMultiResourceHolder::MultiResourceInfo::operator[](const J_GRAPHIC_RESOURCE_TYPE type)noexcept
 		{
@@ -345,13 +368,17 @@ namespace JinEngine
 			for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 				DestroyGraphicResource((J_GRAPHIC_RESOURCE_TYPE)i);
 		}
-		void JGraphicMultiResourceHolder::AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo)
+		void JGraphicMultiResourceHolder::AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex)
 		{
 			info[newInfo->GetGraphicResourceType()].push_back(newInfo);
 		}
-		uint JGraphicMultiResourceHolder::GetDataCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+		uint JGraphicMultiResourceHolder::GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 		{
 			return (uint)info[rType].size();
+		} 
+		uint JGraphicMultiResourceHolder::GetAllocableResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		{
+			return GetResourceIndex(rType, taskType) != invalidIndex ? UINT_MAX : 0;
 		}
 		std::vector<J_GRAPHIC_RESOURCE_TYPE> JGraphicMultiResourceHolder::GetResourceTypeVec()const noexcept
 		{
@@ -386,131 +413,11 @@ namespace JinEngine
 				}
 			}
 			return nullptr;
-		}
-		bool JGraphicMultiResourceHolder::HasSpace(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+		} 
+		bool JGraphicMultiResourceHolder::HasFixedSpaceByTaskType() const noexcept
 		{
-			return true;
-		}
-		bool JGraphicMultiResourceHolder::AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-		{
-			return true;
-		}
-
-		JGraphicResourceUserInterface::JGraphicResourceUserInterface(JGraphicResourceInterface* gInterface)
-			:gPtrWrapper(gInterface->GetPointerWrapper())
-		{ }
-		uint JGraphicResourceUserInterface::GetDataCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-		{
-			return gPtrWrapper->Get()->GetDataCount(rType);
-		}
-		uint JGraphicResourceUserInterface::GetResourceWidth(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetResourceWidth(rType, dataIndex);
-		}
-		uint JGraphicResourceUserInterface::GetResourceHeight(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetResourceHeight(rType, dataIndex);
-		}
-		JVector2F JGraphicResourceUserInterface::GetResourceSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetResourceSize(rType, dataIndex);
-		}
-		JVector2F JGraphicResourceUserInterface::GetResourceInvSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetResourceInvSize(rType, dataIndex);
-		}
-		int JGraphicResourceUserInterface::GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetResourceArrayIndex(rType, dataIndex);
-		}
-		int JGraphicResourceUserInterface::GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
-		{
-			const int dataIndex = GetResourceDataIndex(rType, taskType);
-			return dataIndex != invalidIndex ? GetResourceArrayIndex(rType, dataIndex) : invalidIndex;
-		}
-		int JGraphicResourceUserInterface::GetHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetHeapIndexStart(rType, bType, dataIndex);
-		}
-		int JGraphicResourceUserInterface::GetOptionHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetOptionHeapIndexStart(rType, bType, opType, dataIndex);
-		}
-		uint JGraphicResourceUserInterface::GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper->Get()->GetViewCount(rType, bType, dataIndex);
-		}
-		Graphic::ResourceHandle JGraphicResourceUserInterface::GetGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint bIndex, const uint dataIndex) const noexcept
-		{
-			return gPtrWrapper->Get()->GetGpuHandle(rType, bType, bIndex, dataIndex);
-		}
-		Graphic::ResourceHandle JGraphicResourceUserInterface::GetOptionGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex, const uint dataIndex) const noexcept
-		{
-			return gPtrWrapper->Get()->GetOptionGpuHandle(rType, bType, opType, bIndex, dataIndex);
-		}
-		int JGraphicResourceUserInterface::GetFirstResourceArrayIndex()const noexcept
-		{
-			return gPtrWrapper->Get()->GetFirstResourceArrayIndex();
-		}
-		int JGraphicResourceUserInterface::GetFirstResourceHeapStart(const J_GRAPHIC_BIND_TYPE bType)const noexcept
-		{
-			return gPtrWrapper->Get()->GetFirstResourceHeapStart(bType);
-		}
-		JVector2F JGraphicResourceUserInterface::GetFirstResourceSize()const noexcept
-		{
-			return gPtrWrapper->Get()->GetFirstResourceSize();
-		}
-		JVector2F JGraphicResourceUserInterface::GetFirstResourceInvSize()const noexcept
-		{
-			return gPtrWrapper->Get()->GetFirstResourceInvSize();
-		}
-		J_GRAPHIC_RESOURCE_TYPE JGraphicResourceUserInterface::GetFirstResourceType()const noexcept
-		{
-			return gPtrWrapper->Get()->GetFirstResourceType();
-		}
-		Graphic::ResourceHandle JGraphicResourceUserInterface::GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType)const noexcept
-		{
-			return gPtrWrapper->Get()->GetFirstGpuHandle(bType);
-		}
-		J_GRAPHIC_MIP_MAP_TYPE JGraphicResourceUserInterface::GetFirstMipmapType()const noexcept
-		{
-			return gPtrWrapper->Get()->GetFirstMipmapType();
-		}
-		int JGraphicResourceUserInterface::GetResourceDataIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
-		{
-			return gPtrWrapper->Get()->GetResourceDataIndex(rType, taskType);
-		}
-		bool JGraphicResourceUserInterface::IsValidHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper != nullptr && gPtrWrapper->Get()->IsValidHandle(rType, dataIndex);
-		}
-		bool JGraphicResourceUserInterface::HasHandle(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-		{
-			return gPtrWrapper != nullptr && gPtrWrapper->Get()->HasHandle(rType);
-		}
-		bool JGraphicResourceUserInterface::HasFirstHandle()const noexcept
-		{
-			return gPtrWrapper != nullptr && gPtrWrapper->Get()->HasFirstHandle();
-		}
-		bool JGraphicResourceUserInterface::HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept
-		{
-			return gPtrWrapper != nullptr && gPtrWrapper->Get()->HasOption(rType, opType, dataIndex);
-		}
-		bool JGraphicResourceUserInterface::HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
-		{
-			return gPtrWrapper != nullptr && gPtrWrapper->Get()->HasFirstOption(rType, opType);
-		}
-		bool JGraphicResourceUserInterface::TryFirstResourceMipmapBind(_Out_ std::vector<Graphic::ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)const
-		{
-#ifdef DEVELOP
-			return gPtrWrapper != nullptr && gPtrWrapper->Get()->TryFirstResourceMipmapBind(gpuHandle, dataHandle);
-#else
 			return false;
-#endif
 		}
-		void JGraphicResourceUserInterface::ClearFirstResourceMipmapBind(_Inout_ std::vector<Core::JDataHandle>& dataHandle)
-		{
-			JGraphicResourceInterface::ClearFirstResourceMipmapBind(dataHandle);
-		}
+ 
 	}
 }

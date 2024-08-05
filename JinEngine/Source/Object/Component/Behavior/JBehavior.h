@@ -57,6 +57,7 @@ namespace JinEngine
 		std::unique_ptr<JBehaviorImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* GetModuleManagedData()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;  
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{

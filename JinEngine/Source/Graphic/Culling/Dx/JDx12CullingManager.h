@@ -31,8 +31,7 @@ SOFTWARE.
 namespace JinEngine
 {
 	namespace Graphic
-	{ 
-		class JCullingUserInterface;
+	{  
 		class JDx12CullingResourceHolder;
 		class JDx12GraphicResourceHolder;
 		class JDx12CullingManager final : public JCullingManager

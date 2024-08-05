@@ -66,7 +66,7 @@ namespace JinEngine::Graphic
     uint JShaderTable::GeNumShaderRecords() { return static_cast<UINT>(shaderRecords.size()); }
     void JShaderTable::DebugPrint(ShaderIDMap shaderIdToStringMap)
     { 
-#ifdef _DEBUG
+#ifdef USE_DEBUG
         std::wstringstream wstr;
         wstr << L"| --------------------------------------------------------------------\n";
         wstr << L"|Shader table - " << GetName().c_str() << L": "
@@ -93,7 +93,7 @@ namespace JinEngine::Graphic
 
     void JDx12RaytracingUtility::PrintStateObjectDesc(const D3D12_STATE_OBJECT_DESC* desc)
     {
-#ifdef _DEBUG
+#ifdef USE_DEBUG
         std::wstringstream wstr;
         wstr << L"\n";
         wstr << L"--------------------------------------------------------------------\n";

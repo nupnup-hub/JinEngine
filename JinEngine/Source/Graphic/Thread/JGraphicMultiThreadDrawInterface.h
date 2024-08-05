@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #pragma once
-#include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicTaskDataSet.h"
 
 namespace JinEngine
 {

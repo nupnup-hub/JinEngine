@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #pragma once
-#include"JCullingType.h" 
+#include"JCullingType.h"
 #include"../../Core/Reflection/JReflection.h"
 
 namespace JinEngine

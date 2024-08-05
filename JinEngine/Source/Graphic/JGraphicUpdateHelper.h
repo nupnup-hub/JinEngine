@@ -25,13 +25,13 @@ SOFTWARE.
 
 #pragma once 
 #include"GraphicResource/JGraphicResourceType.h" 
-#include"GraphicResource/JGraphicResourceInterface.h"
-#include"FrameResource/JFrameResourceEnum.h"
+#include"GraphicResource/JGraphicResourceInterface.h" 
 #include"Culling/JCullingInterface.h"   
 #include"Culling/JCullingUserAccess.h"   
 #include"FrameResource/JFrameIndexAccess.h"
+#include"DataSet/JGraphicObjectDataSet.h"
 #include"../Object/Component/JComponentType.h"
-#include"../Object/Component/RenderItem/JRenderLayer.h"
+#include"../Object/Component/RenderItem/JRenderLayer.h" 
 #include"../Core/Geometry/Mesh/JMeshType.h" 
 
 namespace JinEngine
@@ -55,6 +55,13 @@ namespace JinEngine
 		class JGraphic; 
 
 		using GameObjectVec = std::vector<JUserPtr<JGameObject>>;
+
+		enum class J_GRAPHIC_CAPACITY_CONDITION
+		{
+			KEEP,
+			DOWN_CAPACITY,
+			UP_CAPACITY
+		};
 		class JUpdateHelper
 		{
 		public:
@@ -82,31 +89,20 @@ namespace JinEngine
 				uint downCapacityCount = 0;		//count per frame if count over (downCapacityFactor * capacity) count is zero
 				float downCapacityFactor = defaultDownCapacityFactor;		//if count uder capacity / downCapacityFactor  start counting
 			public:
-				J_UPLOAD_CAPACITY_CONDITION reAllocCondition;
+				J_GRAPHIC_CAPACITY_CONDITION reAllocCondition;
 			};
 			struct UploadUpdateData : public UpdateDataBase
-			{
-			public:
-				std::unique_ptr<GetElementCountT::Callable> getElement = nullptr; 
+			{ 
 			public: 
 				uint uploadCountPerTarget = 0;
 				uint uploadOffset = 0;
-				uint setDirty = 0;
-			public:   
-				bool useGetMultiCount = true;
+				uint setDirty = 0; 
 			};
 			struct BindingTextureData : public UpdateDataBase
-			{
-			public:
-				std::unique_ptr<GetElementCountT::Callable> getTextureCount = nullptr;
-				std::unique_ptr<GetElementCapacityT::Callable> getTextureCapacity = nullptr; 
-			public: 
-				bool hasCallable = false;
-			public:
-				bool HasCallable()const noexcept;
+			{  
 			};
 		public:
-			UploadUpdateData uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];	//frame upload resource 
+			UploadUpdateData uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];	//frame upload resource 
 			BindingTextureData bData[(int)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 			bool hasUploadDataDirty;
 			bool hasBindingDataDirty; 
@@ -116,9 +112,7 @@ namespace JinEngine
 			void BeginUpdatingDrawTarget();
 			void EndUpdatingDrawTarget();
 		public:
-			void Clear();
-			void RegisterCallable(J_UPLOAD_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr getCountPtr);
-			void RegisterCallable(J_GRAPHIC_RESOURCE_TYPE type, GetElementCountT::Ptr* getCountPtr, GetElementCapacityT::Ptr* getCapaPtr);
+			void Clear(); 
 			//void RegisterCallable(GetElementMultiCountT::Ptr getMultiCountPtr);
 			void WriteGraphicInfo(JGraphicInfo& info)const noexcept; 
 		}; 
@@ -187,6 +181,7 @@ namespace JinEngine
 			JGraphicResourceUserInterface GetOccGResourceInterface()const noexcept;
 			JCullingUserInterface GetCullInterface()const noexcept;
 			JCullingUserAccess* GetCullingUserAccess()const noexcept;
+			JGraphicObjectDataSetBase* GetObjectDataSet()const noexcept;
 			DRAW_TYPE GetDrawType()const noexcept;
 		public:
 			int GetSceneFrameIndex()const noexcept;

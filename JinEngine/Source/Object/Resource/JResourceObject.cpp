@@ -412,9 +412,9 @@ namespace JinEngine
 	{
 		return rEv.EvInterface();
 	}
-	void JResourceObject::RegisterRTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc)
+	void JResourceObject::RegisterRTypeInfo(const Core::JTypeInfo& typeInfo, const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc)
 	{
-		RTypeRegister::RegisterRTypeInfo(rTypeHint, rTypeCFunc, rTypePFunc);
+		RTypeRegister::RegisterRTypeInfo(typeInfo, rTypeHint, rTypeCFunc, rTypePFunc);
 	}
 	JResourceObject::JResourceObject(const InitData& initData)
 		: JObject(initData), impl(std::make_unique<JResourceObjectImpl>(initData))
@@ -452,7 +452,7 @@ namespace JinEngine
 			if (!rObj->HasFile())
 				rPrivate.GetAssetDataIOInterface().StoreAssetData(&storeData);
 			if (!rObj->HasMetafile())
-				rPrivate.GetAssetDataIOInterface().StoreMetaData(&storeData);
+				rPrivate.GetAssetDataIOInterface().StoreMetadata(&storeData);
 		}
 		//리소스는 생성 후 자원을 초기화한뒤 유효한상태가 된다
 		//Has order dependency 
@@ -543,7 +543,7 @@ namespace JinEngine
 	{
 		return std::make_unique<JResourceObject::StoreData>(rObj);
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadCommonMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JResourceObject::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -564,7 +564,7 @@ namespace JinEngine
 			tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreCommonMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JResourceObject::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;

@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once 
 #include"JDx12GraphicResourceHolder.h"
 #include"../JGraphicResourceType.h"
-#include"../../DataSet/JGraphicDataSet.h"
+#include"../../DataSet/JGraphicTaskDataSet.h"
 #include"../../Utility/Dx/JDx12Utility.h"
 #include"../../../Core/Interface/JValidInterface.h"
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
@@ -53,6 +53,7 @@ namespace JinEngine
 		class JDeviceData
 		{
 		public: 
+			const JGraphicInfo& info;
 			const JGraphicOption& option;
 			JDx12GraphicDevice* dxDevice = nullptr;
 			ID3D12Device* device = nullptr;
@@ -62,7 +63,7 @@ namespace JinEngine
 			bool m4xMsaaState = false;
 			bool startCommandThisCreation = false;
 		public:
-			JDeviceData(JGraphicDevice* device, const JGraphicOption& option);
+			JDeviceData(JGraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option);
 		};
 		struct JBindDesc : public Core::JValidInterface
 		{

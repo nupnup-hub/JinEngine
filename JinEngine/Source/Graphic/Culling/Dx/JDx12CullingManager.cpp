@@ -27,7 +27,7 @@ SOFTWARE.
 #include"JDx12CullingResourceHolder.h"
 #include"../JCullingInfo.h"  
 #include"../JCullingInterface.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../../Core/Log/JLogMacro.h"
 #ifdef DEVELOP
 #include"../../../Develop/Debug/JDevelopDebug.h"
@@ -38,7 +38,7 @@ namespace JinEngine
 	{
 		namespace
 		{
-#if defined (GRAPIC_DEBUG) && defined(DEVELOP)
+#if defined (USE_DEBUG) && defined(DEVELOP)
 			static constexpr bool allowDebug = false; 
 #else
 			static constexpr const bool allowDebug = false;

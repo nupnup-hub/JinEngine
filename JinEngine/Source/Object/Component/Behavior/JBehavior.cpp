@@ -28,10 +28,10 @@ SOFTWARE.
 #include"../JComponentHint.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../GameObject/JGameObject.h"  
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h" 
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-
-
+ 
 #include"../JComponentPrivate.h"
 namespace JinEngine
 { 
@@ -48,6 +48,8 @@ namespace JinEngine
 	public:
 		JWeakPtr<JBehavior> thisPointer;
 	public:
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
+	public:
 		JBehaviorImpl(const InitData& initData, JBehavior* thisBehaviorRaw)
 		{}
 		~JBehaviorImpl()
@@ -57,6 +59,15 @@ namespace JinEngine
 		{
 			//미구현
 			return true;
+		}
+	public:
+		void Activate()
+		{
+			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
+		}
+		void DeActivate()
+		{ 
+			graphicData = nullptr;
 		}
 	public: 
 		void RegisterThisPointer(JBehavior* behav)
@@ -103,6 +114,10 @@ namespace JinEngine
 	{
 		return bPrivate;
 	}
+	JGraphicModuleManagedDataFrame* JBehavior::GetModuleManagedData()const noexcept
+	{
+
+	}
 	J_COMPONENT_TYPE JBehavior::GetComponentType()const noexcept
 	{
 		return GetStaticComponentType();
@@ -125,13 +140,15 @@ namespace JinEngine
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
 		JComponent::DoActivate();
-		RegisterComponent(impl->thisPointer); 
+		impl->Activate();
+		RegisterComponent(impl->thisPointer);
 		NotifyActivate();
 	}
 	void JBehavior::DoDeActivate()noexcept
 	{
-		DeRegisterComponent(impl->thisPointer);
 		NotifyDeActivate();
+		DeRegisterComponent(impl->thisPointer);
+		impl->DeActivate();
 		JComponent::DoDeActivate();
 	}
 	void JBehavior::NotifyActivate(){}
@@ -215,7 +232,7 @@ namespace JinEngine
 		auto iden = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &bPrivate);
 		auto bUser = Core::ConvertChildUserPtr<JBehavior>(std::move(iden));
 		if (!isActivated)
-			bUser->DeActivate();
+			bUser->DoDeActivate();
 
 		return bUser;
 	}

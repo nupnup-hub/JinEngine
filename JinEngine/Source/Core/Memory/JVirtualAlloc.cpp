@@ -112,6 +112,7 @@ namespace JinEngine
 				isUsePage = new bool[reservedPageCount]();
 				isUseBlock = new bool[reservedBlockCount]();
 				//new type[count]() () is special syntax for value-initializing an array:
+				//new int같은 정수타입은 ()이없어도 초기값이 0인 경우가 있는데 원칙적으로는 초기화되지 않은 상태이다.
 
 				allocablePaegHead = new PageInfo();
 				allocablePaegHead->pageIndex = 0;

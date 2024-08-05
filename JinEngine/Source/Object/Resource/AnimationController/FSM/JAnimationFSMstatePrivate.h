@@ -55,7 +55,7 @@ namespace JinEngine
 		protected:
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept override;
 		};
-		class UpdateInterface : public JFSMstatePrivate::UpdateInterface
+		class AnimationInterface : public JFSMstatePrivate::UpdateInterface
 		{
 		private:
 			friend class JAnimationFSMdiagram;
@@ -63,6 +63,7 @@ namespace JinEngine
 			virtual void Enter(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept = 0;
 			virtual void Update(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept = 0;
 			virtual void Close(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData)noexcept = 0;
+			virtual void Compute(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept = 0;
 			virtual void GetRegisteredSkeleton(const JUserPtr<JAnimationFSMstate>& state, std::vector<JUserPtr<JSkeletonAsset>>& skeletonVec)noexcept = 0;
 		};
 		class EditorInterface

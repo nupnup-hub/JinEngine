@@ -31,7 +31,7 @@ SOFTWARE.
 #include"../JGraphicResourceInterface.h"
 #include"../../Device/JGraphicDevice.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Utility/Dx/JDx12Utility.h" 
 #include"../../JGraphic.h"
 
@@ -89,13 +89,13 @@ namespace JinEngine::Graphic
 		{
 			switch (bType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 				return 1;	//Imgui reserved
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 				return 0;
 			default:
 				return 0;
@@ -105,64 +105,64 @@ namespace JinEngine::Graphic
 		{
 			switch (type)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 				return Constants::swapChainBufferCount;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
 				return 512;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
 				return 16;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
 				return 512;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 				return 16 + 16; //(hzb + hd)
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
 				return 16;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				return 16;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 				return 1024;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
 				return 128;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
 				return 256;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
 				return 512;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
 				return 512 * 3;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
 				return 256;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
 				return 16;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
 				return 128;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 				return 16;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
 				return 16;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
 				return 16;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 				return innerResourceInitCapacity;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 				return 32;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
 				return innerResourceInitCapacity;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
 				return 4;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
 				return 4 * 2;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
 				return innerResourceInitCapacity * 4;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
 				return innerResourceInitCapacity;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
 				return Constants::vertexBufferCapacity;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::INDEX:
 				return Constants::indexBufferCapacity;
 			default:
 				return 0;
@@ -173,380 +173,380 @@ namespace JinEngine::Graphic
 			const uint initResourceCapacity = InitCapacity(rType);
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity + initResourceCapacity;	//detph & stencil
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return initResourceCapacity;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity * Constants::occlusionMipmapViewCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return initResourceCapacity * Constants::occlusionMipmapViewCapacity;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return initResourceCapacity;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return initResourceCapacity;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return initResourceCapacity;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return initResourceCapacity;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return initResourceCapacity;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return initResourceCapacity;
 				default:
 					break;
 				}
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					return 0;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return InitCapacity(rType) * InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType) * InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					return 0;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return InitCapacity(rType);
 				default:
 					return 0;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return InitCapacity(rType);
 				default:
 					return 0;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::INDEX:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					break;
@@ -573,13 +573,13 @@ namespace JinEngine::Graphic
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					return 0;
@@ -589,13 +589,13 @@ namespace JinEngine::Graphic
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return InitCapacity(rType);
 				default:
 					return 0;
@@ -605,13 +605,13 @@ namespace JinEngine::Graphic
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return InitCapacity(rType);
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return InitCapacity(rType);
 				default:
 					return 0;
@@ -621,13 +621,13 @@ namespace JinEngine::Graphic
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return 0;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
 				default:
 					return 0;
@@ -659,16 +659,16 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::INDEX:
 				return true;
 			default:
 				return false;
@@ -688,8 +688,8 @@ namespace JinEngine::Graphic
 		{
 			switch (type)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:					//has optional uav for IBL...
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:					//has optional uav for IBL...
 				return false;
 			default:
 				return true;
@@ -699,33 +699,33 @@ namespace JinEngine::Graphic
 		{
 			switch (type)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return true;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return true;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return true;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return false;
 				default:
 					return true;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:					 
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:					 
 			{
 				switch (bType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 					return true;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 					return true;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 					return true;
-				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return false;
 				default:
 					return true;
@@ -752,7 +752,7 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
 			{
 				desc->data = exposureInitData;
 				desc->bufferSize = Constants::exposureBufferCount * sizeof(float);
@@ -767,7 +767,7 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 			{
 				switch (opType)
 				{
@@ -784,15 +784,15 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
 				return true;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				return true;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 				return true;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
 				return true;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
 				return true;
 			default:
 				return false;
@@ -802,13 +802,13 @@ namespace JinEngine::Graphic
 		{
 			switch (bType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 				return JDx12GraphicResourceManager::MPBCapactiy();
-			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+			case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 				return JDx12GraphicResourceManager::MPBCapactiy();
 			default:
 				return 0;
@@ -838,8 +838,8 @@ namespace JinEngine::Graphic
 		std::wofstream stream;
 		stream.open(L"D:\\JinWooJung\\gDebug.txt", std::ios::app | std::ios::out);
 
-		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
-		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
+		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_RESOURCE_TYPE).name());
+		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_BIND_TYPE).name());
 		auto rNameVec = rInfo->GetEnumNameVec();
 		auto bNameVec = bInfo->GetEnumNameVec();
 
@@ -895,13 +895,13 @@ namespace JinEngine::Graphic
 	{
 		switch (bType)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 			return GetCpuRtvDescriptorHandle(index);
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 			return GetCpuDsvDescriptorHandle(index);
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 			return GetCpuSrvDescriptorHandle(index);
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 			return GetCpuSrvDescriptorHandle(index);
 		default:
 			return CD3DX12_CPU_DESCRIPTOR_HANDLE();
@@ -911,13 +911,13 @@ namespace JinEngine::Graphic
 	{
 		switch (bType)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 			return GetGpuRtvDescriptorHandle(index);
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 			return GetGpuDsvDescriptorHandle(index);
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 			return GetGpuSrvDescriptorHandle(index);
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 			return GetGpuSrvDescriptorHandle(index);
 		default:
 			return CD3DX12_GPU_DESCRIPTOR_HANDLE();
@@ -955,13 +955,13 @@ namespace JinEngine::Graphic
 	{
 		switch (bType)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 			return rtvHeap.Get();
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 			return dsvHeap.Get();
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 			return srvHeap.Get();
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 			return srvHeap.Get();
 		default:
 			return nullptr;
@@ -971,13 +971,13 @@ namespace JinEngine::Graphic
 	{
 		switch (bType)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 			return rtvDescriptorSize;
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 			return dsvDescriptorSize;
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 			return cbvSrvUavDescriptorSize;
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 			return cbvSrvUavDescriptorSize;
 		default:
 			return 0;
@@ -1230,13 +1230,13 @@ namespace JinEngine::Graphic
 
 		switch (rType)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 			return nullptr;			//invalid call  
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 			return CreateTexture2D(device, creationDesc);
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
 			return CreateCubeMap(device, creationDesc); 
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 			return CreateLightLinkedList(device, creationDesc);
 		default:
 			return CommonCreationProcess(device, creationDesc, rType);
@@ -1255,7 +1255,7 @@ namespace JinEngine::Graphic
 		if (dxInfo->HasOption(opType))
 			return false;
 		 
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		CreateOption(opType, dxInfo, CreationClass::Create(data, dxInfo->resourceHolder->GetResource(), opType));
@@ -1272,7 +1272,7 @@ namespace JinEngine::Graphic
 		if (info == nullptr || !IsSameDevice(device))
 			return false;
 		 
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		JDx12GraphicResourceInfo* dxInfo = static_cast<JDx12GraphicResourceInfo*>(info);
@@ -1314,7 +1314,7 @@ namespace JinEngine::Graphic
 		if (!info->HasOption(optype))
 			return false;
 		 
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 		JDx12GraphicResourceInfo* dxInfo = static_cast<JDx12GraphicResourceInfo*>(info.Get());
 		const J_GRAPHIC_RESOURCE_TYPE rType = dxInfo->GetGraphicResourceType();
@@ -1340,7 +1340,7 @@ namespace JinEngine::Graphic
 		}
 		 
 		JUserPtr<JDx12GraphicResourceInfo> userPtr = nullptr;
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
@@ -1390,7 +1390,7 @@ namespace JinEngine::Graphic
 			return nullptr;
 
 		JUserPtr<JDx12GraphicResourceInfo> userPtr = nullptr;
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
@@ -1455,7 +1455,7 @@ namespace JinEngine::Graphic
 			return nullptr;
 
 		JUserPtr<JDx12GraphicResourceInfo> userPtr = nullptr;
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> newResource;
@@ -1496,7 +1496,7 @@ namespace JinEngine::Graphic
 		{
 			if (CreateOption(device, user, J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER))
 			{
-				JDeviceData data(device, GetGraphicOption());
+				JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 				device->StartPublicCommandSet(data.startCommandThisCreation);
 
 				auto getNextViewIndexLam = GetNextViewIndexLam;
@@ -1628,7 +1628,7 @@ namespace JinEngine::Graphic
 		if (!IsSameDevice(device) || !JDx12TypeAttribute::CanReAlloc(rType))
 			return false;
 
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		auto& vec = resource[(uint)rType];
@@ -1666,7 +1666,7 @@ namespace JinEngine::Graphic
 		if (!IsSameDevice(device) || !JDx12TypeAttribute::CanReAlloc(rType))
 			return false;
 
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		auto& vec = resource[(uint)rType];
@@ -1686,7 +1686,7 @@ namespace JinEngine::Graphic
 		if (!IsSameDevice(device) || from == nullptr || to == nullptr)
 			return false;
 
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		auto fromHolder = GetDxHolder(from->GetGraphicResourceType(), from->GetArrayIndex());
@@ -1716,7 +1716,7 @@ namespace JinEngine::Graphic
 		if (mpb.GetEmptyCount() < desc.MipLevels || desc.MipLevels < 2)
 			return false;
 
-		JDeviceData data(device, GetGraphicOption());
+		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 		ZeroMemory(&srvDesc, sizeof(srvDesc));
 		srvDesc.Format = desc.Format;
@@ -1766,16 +1766,16 @@ namespace JinEngine::Graphic
 	{
 		switch (bType)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
 			return 0;
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
 			return 0;
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
 		{
 			return GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::SRV) + GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::UAV) +
 				JDx12TypeAttribute::InitViewFixedCount(J_GRAPHIC_BIND_TYPE::SRV) + JDx12TypeAttribute::InitViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV);
 		}
-		case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+		case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 		{
 			return GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::SRV) + GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::UAV) +
 				JDx12TypeAttribute::InitViewFixedCount(J_GRAPHIC_BIND_TYPE::SRV) + JDx12TypeAttribute::InitViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV) +
@@ -2005,7 +2005,7 @@ namespace JinEngine::Graphic
 	}
 	JDx12GraphicResourceComputeSet::JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)
 		: gm(gm),
-		info(gm->GetDxInfo(rType, gInterface.GetResourceArrayIndex(rType, gInterface.GetResourceDataIndex(rType, taskType)))),
+		info(gm->GetDxInfo(rType, gInterface.GetResourceArrayIndex(rType, gInterface.GetResourceIndex(rType, taskType)))),
 		holder(info != nullptr ? gm->GetDxHolder(info->GetGraphicResourceType(), info->GetArrayIndex()) : nullptr),
 		resource(holder != nullptr ? holder->GetResource() : nullptr)
 	{
@@ -2088,8 +2088,8 @@ namespace JinEngine::Graphic
 		std::wofstream stream;
 		stream.open(L"D:\\JinWooJung\\gDebug.txt", std::ios::app | std::ios::out);
 
-		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
-		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
+		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_RESOURCE_TYPE).name());
+		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_BIND_TYPE).name());
 		auto rNameVec = rInfo->GetEnumNameVec();
 		auto bNameVec = bInfo->GetEnumNameVec();
 		JFileIOHelper::InputSpace(stream, 1);

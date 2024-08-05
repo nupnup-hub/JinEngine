@@ -218,8 +218,8 @@ namespace JinEngine
 				const std::wstring path = thisPointer->GetPath(); 
 				if (ImportSkeleton(ReadAssetData(path)))
 				{ 
-					JSkeletonAsset::LoadMetaData metadata(thisPointer->GetDirectory());
-					static_cast<JSkeletonAssetPrivate::AssetDataIOInterface&>(sPrivate.GetAssetDataIOInterface()).LoadMetaData(path, &metadata);
+					JSkeletonAsset::LoadMetadata metadata(thisPointer->GetDirectory());
+					static_cast<JSkeletonAssetPrivate::AssetDataIOInterface&>(sPrivate.GetAssetDataIOInterface()).LoadMetadata(path, &metadata);
 					if (metadata.isValidAvatar)
 						SetAvatar(&metadata.avatar);
 					thisPointer->SetValid(true);
@@ -317,7 +317,7 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false, false, true };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JSkeletonAsset::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JSkeletonAsset::StaticTypeInfo(), sPrivate);
 
 			IMPL_REALLOC_BIND(JSkeletonAsset::JSkeletonAssetImpl, thisPointer)
@@ -378,7 +378,7 @@ namespace JinEngine
 		return JResourceObject::InitData::IsValidData() && joint.size()> 0;
 	}
 
-	JSkeletonAsset::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
+	JSkeletonAsset::LoadMetadata::LoadMetadata(const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
 
@@ -483,9 +483,9 @@ namespace JinEngine
 		auto loadData = static_cast<JSkeletonAsset::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
-		JSkeletonAsset::LoadMetaData metadata(loadData->directory);
+		JSkeletonAsset::LoadMetadata metadata(loadData->directory);
 
-		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JSkeletonAsset> newSkel = nullptr;
@@ -526,22 +526,22 @@ namespace JinEngine
 		skel.ConnnectChild(storeData->obj);
 		return skel->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
-		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkeletonAsset::LoadMetaData::StaticTypeInfo()))
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkeletonAsset::LoadMetadata::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JFileIOTool tool;
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JSkeletonAsset::LoadMetaData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JSkeletonAsset::LoadMetadata*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		loadMetaData->modelHint = JObjectFileIOHelper::LoadHasIdenHint(tool, "ModelHint:");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isValidAvatar, "HasAvatar:");
-		if (loadMetaData->isValidAvatar)
+		loadMetadata->modelHint = JObjectFileIOHelper::LoadHasIdenHint(tool, "ModelHint:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->isValidAvatar, "HasAvatar:");
+		if (loadMetadata->isValidAvatar)
 		{
 			tool.PushExistStack("AvatarData");
 			for (uint i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
@@ -550,15 +550,15 @@ namespace JinEngine
 				tool.PushExistStack();
 				JObjectFileIOHelper::LoadAtomicData(tool, index, std::to_string(i) + "Index:");
 				tool.PopStack();
-				loadMetaData->avatar.jointReference[i] = (uint8)index;
+				loadMetadata->avatar.jointReference[i] = (uint8)index;
 			}
 			tool.PopStack();
 		}
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->skeletonType, "SkeletonType:"); 
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->skeletonType, "SkeletonType:"); 
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkeletonAsset::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -571,7 +571,7 @@ namespace JinEngine
 		if (!tool.Begin(skel->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		//아바타 정보 저장 필요		

@@ -25,7 +25,7 @@ SOFTWARE.
 
 #pragma once  
 #include"JImageProcessingEnum.h"  
-#include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicTaskDataSet.h"
 #include"../JGraphicSubClassInterface.h"
 namespace JinEngine
 {

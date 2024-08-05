@@ -148,6 +148,33 @@ namespace JinEngine
 			typeInfo.SetAllocationOption(std::move(desc));																\
 
 
+#define IMPL_REGISTER_TRANFORM_FRAME_DRITY_LISTENER()			\
+																				\
+		auto listenerLam = [](JUserPtr<JObject> obj)							\
+		{																									\
+			return static_cast<ThisInterfaceType*>(obj.Get())->impl->graphicData.Get()->GetFrameUpdateUserInterface();\
+		};																\
+																		\
+		JFrameDirtyListener listener;									\
+		listener.getFrameUserBind = Core::UniqueBind(std::make_unique<JFrameDirtyListener::GetListenerF>(listenerLam), JUserPtr<JObject>(thisPointer));	\
+		listener.guid = thisPointer->GetGuid();																											\
+																																						\
+		auto tFInterface = thisPointer->GetOwner()->GetTransform()->GetModuleManagedData()->GetFrameUpdateUserInterface();								\
+		tFInterface->TryRegisterDirtyListener(listener);																								\
+
+
+#define IMPL_DEREGISTER_TRANFORM_FRAME_DRITY_LISTENER()			\
+																				\
+		auto transform = thisPointer->GetOwner()->GetTransform();				\
+		if (transform == nullptr)												\
+			return;																\
+																				\
+		auto tFInterface = transform->GetModuleManagedData()->GetFrameUpdateUserInterface();\
+		tFInterface->TryDeRegisterDirtyListener(thisPointer->GetGuid());					\
+
+
+
+
 	}
 }
 

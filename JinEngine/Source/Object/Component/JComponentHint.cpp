@@ -157,7 +157,7 @@ namespace JinEngine
 				data = typeMap.find(nextInfo->TypeGuid());
 				nextInfo = nextInfo->GetParent();
 			}
-			return data != typeMap.end() ? data->second : (J_COMPONENT_TYPE)-1;
+			return data != typeMap.end() ? data->second : (J_COMPONENT_TYPE)invalidIndex;
 		}
 		else
 			return data->second;

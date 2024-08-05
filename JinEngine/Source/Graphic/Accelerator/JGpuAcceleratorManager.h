@@ -27,7 +27,7 @@ SOFTWARE.
 #include"JGpuAcceleratorType.h"
 #include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"
-#include"../DataSet/JGraphicDataSet.h" 
+#include"../DataSet/JGraphicTaskDataSet.h" 
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Reflection/JReflection.h"  
 
@@ -44,6 +44,7 @@ namespace JinEngine
 
 		class JGpuAcceleratorManager : public JGraphicDeviceUser, public JGraphicSubClassInterface
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JGpuAcceleratorManager)
 		public:
 			JGpuAcceleratorHolder* GetHolder(JGpuAcceleratorInfo* info)const noexcept;
 			virtual JGpuAcceleratorInfo* GetInfo(const uint index)const noexcept = 0;

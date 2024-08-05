@@ -32,15 +32,10 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		class JGpuAcceleratorHolder;
-		class JGpuAcceleratorManager;
-		class JGpuAcceleratorInfo final
+		class JGpuAcceleratorHolder; 
+		class JGpuAcceleratorInfo
 		{
 			REGISTER_CLASS_USE_ALLOCATOR(JGpuAcceleratorInfo) 
-		private:
-			friend class JGpuAcceleratorManager; 
-		private:
-			JGpuAcceleratorManager* am = nullptr;
 		private:
 			std::unique_ptr<JGpuAcceleratorHolder> holder = nullptr;
 		private:
@@ -51,10 +46,8 @@ namespace JinEngine
 			J_GPU_ACCELERATOR_BUILD_OPTION GetBuildOption()const noexcept;
 		public:
 			void SetArrayIndex(const int newValue)noexcept;  
-		private:
-			JGpuAcceleratorInfo(JGpuAcceleratorManager* manager,
-				const J_GPU_ACCELERATOR_BUILD_OPTION buildOptionFlag,
-				std::unique_ptr<JGpuAcceleratorHolder>&& holder);
+		protected:
+			JGpuAcceleratorInfo(const J_GPU_ACCELERATOR_BUILD_OPTION buildOptionFlag, std::unique_ptr<JGpuAcceleratorHolder>&& holder);
 			~JGpuAcceleratorInfo();
 		};
 	}

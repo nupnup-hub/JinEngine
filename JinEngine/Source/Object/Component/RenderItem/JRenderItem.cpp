@@ -52,10 +52,10 @@ namespace JinEngine
 	namespace
 	{
 		using RitemFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder4<
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, Graphic::JObjectCpuConstants&, const uint>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, Graphic::JBoundingObjectConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, Graphic::JHzbOccObjectConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT_REF_INFO, Graphic::JObjectRefereneceInfoConstants&, const uint>>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT, Graphic::JObjectCpuConstants&, const uint>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT, Graphic::JBoundingObjectConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT, Graphic::JHzbOccObjectConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO, Graphic::JObjectRefereneceInfoConstants&, const uint>>,
 			Graphic::JFrameDirty>;
 	}
 	namespace
@@ -415,11 +415,10 @@ namespace JinEngine
 		}
 		void UpdateFrame(Graphic::JObjectRefereneceInfoConstants& constant, const uint submeshIndex)noexcept final
 		{
-			auto meshUser = mesh->GraphicResourceUserInterface();
-			constant.uniqueIndex = RefInfoFrame::GetFrameIndex();
+			auto meshUser = mesh->GraphicResourceUserInterface(); 
 			constant.materialIndex = JMaterialPrivate::FrameIndexInterface::GetMaterialFrameIndex(GetValidMaterial(submeshIndex).Get());
-			constant.verticesIndex = meshUser.GetHeapIndexStart(Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
-			constant.indicesIndex = meshUser.GetHeapIndexStart(Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
+			constant.verticesIndex = meshUser.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::VERTEX, J_GRAPHIC_BIND_TYPE::SRV, 0);
+			constant.indicesIndex = meshUser.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::INDEX, J_GRAPHIC_BIND_TYPE::SRV, 0);
 			constant.verticesOffset = mesh->GetSubmeshBaseVertexLocation(submeshIndex);
 			constant.indicesOffset = mesh->GetSubmeshStartIndexLocation(submeshIndex);
 			constant.verticesType = (uint)mesh->GetMeshGeometryType();
@@ -435,10 +434,10 @@ namespace JinEngine
 				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), thisPointer->GetGuid());
 				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this, thisPointer->GetGuid());
 			}
-			ObjectFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, (ObjectFrame*)this);
-			BoundingObjectFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this);
-			OccObjectFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);
-			RefInfoFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT_REF_INFO, (RefInfoFrame*)this);
+			ObjectFrame::ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT, (ObjectFrame*)this);
+			BoundingObjectFrame::ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this);
+			OccObjectFrame::ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);
+			RefInfoFrame::ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO, (RefInfoFrame*)this);
 			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 	public:
@@ -459,17 +458,17 @@ namespace JinEngine
 		}
 		void RegisterRItemFrameData()
 		{
-			ObjectFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, (ObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), mesh->GetTotalSubmeshCount());
-			BoundingObjectFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
-			OccObjectFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
-			RefInfoFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT_REF_INFO, (RefInfoFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), mesh->GetTotalSubmeshCount());
+			ObjectFrame::RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT, (ObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), mesh->GetTotalSubmeshCount());
+			BoundingObjectFrame::RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			OccObjectFrame::RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			RefInfoFrame::RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO, (RefInfoFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), mesh->GetTotalSubmeshCount());
 		}
 		void DeRegisterRItemFrameData()
 		{
-			ObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, (ObjectFrame*)this);
-			BoundingObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this);
-			OccObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);
-			RefInfoFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT_REF_INFO, (RefInfoFrame*)this);
+			ObjectFrame::DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT, (ObjectFrame*)this);
+			BoundingObjectFrame::DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this);
+			OccObjectFrame::DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);
+			RefInfoFrame::DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO, (RefInfoFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
@@ -769,7 +768,7 @@ namespace JinEngine
 			rUser->SetMaterial(i, materialVec[i]);
 		rUser->SetOccluder(isOccluder);
 		if (!isActivated)
-			rUser->DeActivate();
+			rUser->DoDeActivate();
 
 		return rUser;
 	}

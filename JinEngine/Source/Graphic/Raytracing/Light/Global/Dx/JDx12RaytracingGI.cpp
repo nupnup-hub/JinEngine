@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../../../Dx/JDx12RaytracingConstants.h" 
 #include"../../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"    
 #include"../../../../Accelerator/Dx/JDx12GpuAcceleratorHolder.h"
-#include"../../../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../../../Command/Dx/JDx12CommandContext.h"
 #include"../../../../Utility/Dx/JDx12ObjectCreation.h" 
 #include"../../../../Utility/JSampler.h"
@@ -70,7 +70,7 @@ SOFTWARE.
 #define NEIGHBOR_WEIGHT_CLAMP_THRESHOLD L"NEIGHBOR_WEIGHT_CLAMP_THRESHOLD"
 #define SPATIAL_WEIGHT_CLAMP_THRESHOLD L"SPATIAL_WEIGHT_CLAMP_THRESHOLD"
 #define AO_MAP L"USE_AO_MAP"
-
+ 
 namespace JinEngine::Graphic
 {	
 	//ref ReSTIR GI: Path Resampling for Real-Time Path Tracing
@@ -81,7 +81,7 @@ namespace JinEngine::Graphic
 	*/
 	namespace Common
 	{
-#ifdef _DEBUG
+#ifdef USE_DEBUG
 		static constexpr bool allowDebug = false;
 #else
 		static constexpr bool allowDebug = false;
@@ -288,16 +288,16 @@ namespace JinEngine::Graphic
 		const JUserPtr<JScene>& scene = helper.scene;
 		const size_t sceneGuid = scene->GetGuid();
 		 
-		const uint directionalLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
-		const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
-		const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
-		const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
+		const uint directionalLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
+		const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+		const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+		const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 		const uint lightSum = directionalLitCount + pointLitCount + spotLitCount + rectLitCount;
 
-		const uint directionalLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
-		const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
-		const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
-		const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
+		const uint directionalLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
+		const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+		const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+		const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 		 
 		GIPassConstants constants; 
 		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
@@ -363,8 +363,8 @@ namespace JinEngine::Graphic
 		const size_t sceneGuid = helper.scene->GetGuid();
 		auto gInterface = helper.cam->GraphicResourceUserInterface();
 		auto aInterface = helper.scene->GpuAcceleratorUserInterface();
-		auto reserviorIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
-		auto ssaoIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		auto reserviorIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		auto ssaoIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 
 		rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		dsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
@@ -494,7 +494,7 @@ namespace JinEngine::Graphic
 		{
 			//J_LOG_PRINT_OUT("Invalid GIDataSet", " ");
 			return;
-		}
+		} 
 
 		Begin(set, helper);
 		if (set.userPrivate->HasWaitFrame())
@@ -509,7 +509,7 @@ namespace JinEngine::Graphic
 			FinalColor(set, helper);
 			Upsample(set, helper);
 		} 
-		End(set, helper);
+		End(set, helper); 
 	}
 	void JDx12RaytracingGI::Begin(GIDataSet& set, const JDrawHelper& helper)
 	{
@@ -533,12 +533,12 @@ namespace JinEngine::Graphic
 		set.context->SetComputeRootSignature(raytracingRootSignature.Get());
 		set.context->SetComputeRootConstantBufferView(Raytracing::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
 		set.context->SetTlasView(Raytracing::asStructureIndex, set.accelSet);
-		set.context->SetComputeRootShaderResourceView(Raytracing::objRefBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT_REF_INFO);
-		set.context->SetComputeRootShaderResourceView(Raytracing::dLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT);
-		set.context->SetComputeRootShaderResourceView(Raytracing::pLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT);
-		set.context->SetComputeRootShaderResourceView(Raytracing::sLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT);
-		set.context->SetComputeRootShaderResourceView(Raytracing::rLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT);
-		set.context->SetComputeRootShaderResourceView(Raytracing::matBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL);
+		set.context->SetComputeRootShaderResourceView(Raytracing::objRefBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO);
+		set.context->SetComputeRootShaderResourceView(Raytracing::dLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT);
+		set.context->SetComputeRootShaderResourceView(Raytracing::pLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT);
+		set.context->SetComputeRootShaderResourceView(Raytracing::sLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT);
+		set.context->SetComputeRootShaderResourceView(Raytracing::rLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT);
+		set.context->SetComputeRootShaderResourceView(Raytracing::matBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL);
 		set.context->SetComputeRootDescriptorTable(Raytracing::texture2DBufferIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		if(set.skyMapSrvHeapIndex != invalidIndex)
 			set.context->SetComputeRootDescriptorTable(Raytracing::textureCubeBufferIndex, set.skyMapSrvHeapIndex);

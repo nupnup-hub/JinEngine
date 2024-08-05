@@ -23,8 +23,7 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-#include"JCullingType.h"
+#pragma once  
 #include"JCullingInfo.h"
 #include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"

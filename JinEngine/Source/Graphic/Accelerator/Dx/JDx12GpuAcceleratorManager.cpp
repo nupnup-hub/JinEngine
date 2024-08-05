@@ -573,8 +573,8 @@ namespace JinEngine::Graphic
 		if (holder == nullptr)
 			return nullptr;
 
-		JOwnerPtr<JGpuAcceleratorInfo> owner = CreateInfo(std::move(holder), desc);
-		JUserPtr<JGpuAcceleratorInfo> user = owner;
+		JOwnerPtr<JDx12GpuAcceleratorInfo> owner = CreateInfo(std::move(holder), desc);
+		JUserPtr<JDx12GpuAcceleratorInfo> user = owner;
 		user->SetArrayIndex((uint)infoVec.size());
 
 		infoVec.push_back(std::move(owner));
@@ -630,9 +630,9 @@ namespace JinEngine::Graphic
 
 		RemoveBottomLevelAs(buildData, static_cast<JDx12GpuAcceleratorHolder*>(GetHolder(info)));
 	}
-	JOwnerPtr<JGpuAcceleratorInfo> JDx12GpuAcceleratorManager::CreateInfo(std::unique_ptr<JGpuAcceleratorHolder>&& holder, const JGpuAcceleratorBuildDesc& desc)
+	JOwnerPtr<JDx12GpuAcceleratorInfo> JDx12GpuAcceleratorManager::CreateInfo(std::unique_ptr<JGpuAcceleratorHolder>&& holder, const JGpuAcceleratorBuildDesc& desc)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JGpuAcceleratorInfo>(this, desc.flag, std::move(holder));
+		return Core::JPtrUtil::MakeOwnerPtr<JDx12GpuAcceleratorInfo>(desc.flag, std::move(holder), this);
 	}
 	std::unique_ptr<JDx12GpuAcceleratorHolder> JDx12GpuAcceleratorManager::BuildAcceleratorStructure(BuildData& buildData)
 	{
@@ -862,6 +862,32 @@ namespace JinEngine::Graphic
 
 		holder->Swap(std::make_unique<JTlasHolder>(std::move(tlasBuffers.accelerationStructure)));
 		buildData.device->EndPublicCommandSet(startCommandThisCreation, true); 
+	}
+	void JDx12GpuAcceleratorManager::RegisterTypeData()
+	{
+		using JAllocationDesc = JinEngine::Core::JAllocationDesc;
+		using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;
+		using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;
+		using ReceiverPtr = JAllocationDesc::ReceiverPtr;
+		using ReAllocatedPtr = JAllocationDesc::ReAllocatedPtr;
+		using MemIndex = JAllocationDesc::MemIndex;
+
+		NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
+		{
+			JDx12GpuAcceleratorInfo* movedInfo = static_cast<JDx12GpuAcceleratorInfo*>(movedPtr);
+			JDx12GpuAcceleratorManager* manager = movedInfo->manager;
+
+			//Release를 먼저하지않으면 Reset시 유효한 pointer를 소유하므로 pointer 파괴를 시도하며
+			//현재 alloc class에서 메모리를 재배치하는 과정에서 에러를 일으킬수 있으므로
+			//Release() 한다음 Reset()을 호출해야한다.
+			manager->infoVec[movedInfo->GetArrayIndex()].Release();
+			manager->infoVec[movedInfo->GetArrayIndex()].Reset(movedInfo);
+		};
+		auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);
+		std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();
+
+		desc->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);
+		JDx12GpuAcceleratorInfo::StaticTypeInfo().SetAllocationOption(std::move(desc));
 	}
  
 	JDx12AcceleratorResourceComputeSet::JDx12AcceleratorResourceComputeSet(JDx12GpuAcceleratorManager* am, const JUserPtr<JGpuAcceleratorInfo>& aInfo)

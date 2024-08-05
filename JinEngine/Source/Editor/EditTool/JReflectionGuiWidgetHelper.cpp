@@ -1371,7 +1371,7 @@ namespace JinEngine
 				std::string name = "None";
 				if (hasPreviewScene && hasPreviewObject)
 				{
-					JGuiImageInfo info((*previewScene)->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+					JGuiImageInfo info((*previewScene)->GetPreviewCamera().Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					isSelected = JGui::ImageSelectable("##PreviewImageButton" + uniqueLabel, info, JVector2<float>(iconSize, iconSize), false);
 					name = JCUtil::WstrToU8Str(previewObject->GetName());
 				}
@@ -1494,7 +1494,7 @@ namespace JinEngine
 					if (!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
 						continue;
 
-					JGuiImageInfo info(selectorPreviewVec[i]->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+					JGuiImageInfo info(selectorPreviewVec[i]->GetPreviewCamera().Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					JGui::Image(info, JVector2<float>(sizeFactor, sizeFactor));
 					JGui::SameLine();
 					if (JGui::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()) + "##Image" + uniqueLabel,

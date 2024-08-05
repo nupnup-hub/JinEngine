@@ -24,20 +24,14 @@ SOFTWARE.
 
 
 #pragma once   
-#include"../JComponent.h"
-#include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
-#include"../../../Graphic/Culling/JCullingUserAccess.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"../JComponent.h" 
 #include"JLightType.h" 
 #include<DirectXCollision.h>
 
 namespace JinEngine
 {
 	class JMeshGeometry;
-	class JLight :public JComponent,
-		public Graphic::JFrameUpdateUserAccess,
-		public Graphic::JGraphicResourceUserAccess,
-		public Graphic::JCullingUserAccess
+	class JLight :public JComponent
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JLight)
 	public: 
@@ -90,7 +84,7 @@ namespace JinEngine
 		bool IsShadowActivated()const noexcept;
 		bool IsAvailableOverlap()const noexcept final; 
 		bool AllowDisplayShadowMap()const noexcept; 
-		bool AllowLightCulling()const noexcept final;  
+		bool AllowLightCulling()const noexcept;  
 	protected:
 		void DoActivate()noexcept override;
 		void DoDeActivate()noexcept override;

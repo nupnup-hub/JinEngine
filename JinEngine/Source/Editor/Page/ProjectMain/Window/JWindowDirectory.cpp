@@ -782,7 +782,7 @@ namespace JinEngine
 							bgRectDelta,
 							true);
 					}
-					JGuiImageInfo info(nowPreviewScene->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+					JGuiImageInfo info(nowPreviewScene->GetPreviewCamera().Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					JGui::AddRoundedImage(info, JGui::GetCursorScreenPos(), JGui::GetCursorScreenPos() + CreateVec2(iconData.size));
 				
 					const JVector2F multilineSize = widgetAlignCal.GetInnerContentsSize();			 

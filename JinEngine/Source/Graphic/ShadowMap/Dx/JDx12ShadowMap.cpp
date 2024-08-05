@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../../JGraphicInfo.h"
 #include"../../JGraphicOption.h"
 #include"../../JGraphicUpdateHelper.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h" 
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h" 
 #include"../../Culling/Occlusion/JHZBOccCulling.h"
 #include"../../Culling/JCullingInterface.h"
 #include"../../Culling/Dx/JDx12CullingManager.h"
@@ -159,16 +159,18 @@ namespace JinEngine::Graphic
 			return false;
 		}
 		//not use
+		/*
 		template<typename ...Param>
 		void CallShadowMapFunc(const JDrawHelper& helper,
 			void(JShadowMap::* ptr)(const uint, Param&&...),
 			Param&&... param)
 		{
 			auto gRInterface = helper.lit->GraphicResourceUserInterface();
-			const uint dataCount = gRInterface.GetDataCount(JLightType::SmToGraphicR(helper.lit->GetShadowMapType()));
+			const uint dataCount = gRInterface.GetResourceCount(JLightType::SmToGraphicR(helper.lit->GetShadowMapType()));
 			for (uint i = 0; i < dataCount; ++i)
 				(this->*ptr)(i, std::forward<Param>(param)...);
 		}
+		*/
 	}
 	namespace
 	{
@@ -240,10 +242,13 @@ namespace JinEngine::Graphic
 		auto gRInterface = helper.lit->GraphicResourceUserInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceDataIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetDataCount(grType); 	 
+		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface.GetResourceCount(grType); 	 
 		for (uint i = 0; i < smDataCount; ++i)
-		{ 
+		{
+			if (!gRInterface.IsValidHandle(grType, i))
+				continue;
+
 			auto shadowSet = context->ComputeSet(gRInterface, grType, offset + i); 
 			context->Transition(shadowSet.holder, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
 			context->ClearDepthStencilView(shadowSet);
@@ -260,10 +265,13 @@ namespace JinEngine::Graphic
 		auto gRInterface = helper.lit->GraphicResourceUserInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceDataIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetDataCount(grType);
+		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface.GetResourceCount(grType);
 		for (uint i = 0; i < smDataCount; ++i)
 		{
+			if (!gRInterface.IsValidHandle(grType, i))
+				continue;
+
 			auto shadowSet = context->ComputeSet(gRInterface, grType, offset + i);
 			context->Transition(shadowSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		} 
@@ -279,10 +287,13 @@ namespace JinEngine::Graphic
 		auto gRInterface = helper.lit->GraphicResourceUserInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceDataIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetDataCount(grType); 
+		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface.GetResourceCount(grType); 
 		for (uint i = 0; i < smDataCount; ++i)
 		{
+			if (!gRInterface.IsValidHandle(grType, i))
+				continue;
+
 			const uint dataIndex = offset + i; 
 			auto shadowSet = context->ComputeSet(gRInterface, grType, offset + i);
 			const JVector2<uint> size = shadowSet.info->GetResourceSize();
@@ -325,10 +336,13 @@ namespace JinEngine::Graphic
 		auto gRInterface = helper.lit->GraphicResourceUserInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceDataIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetDataCount(grType); 
+		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface.GetResourceCount(grType); 
 		for (uint i = 0; i < smDataCount; ++i)
 		{
+			if (!gRInterface.IsValidHandle(grType, i))
+				continue;
+
 			const uint dataIndex = offset + i;
 			auto shadowSet = context->ComputeSet(gRInterface, grType, offset + i);
 			const JVector2<uint> size = shadowSet.info->GetResourceSize();
@@ -382,12 +396,12 @@ namespace JinEngine::Graphic
 			context->SetMeshGeometryData(renderItem);
 			context->SetPipelineState(GetShaderDataHolder(helper, meshType));
 			if (onSkinned)
-				context->SetGraphicsRootConstantBufferView(aniCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, helper.GetAnimationFrameIndex(animator.Get()));
+				context->SetGraphicsRootConstantBufferView(aniCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, helper.GetAnimationFrameIndex(animator.Get()));
 			
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
 			for (uint j = 0; j < submeshCount; ++j)
 			{
-				context->SetGraphicsRootConstantBufferView(objCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, objFrameIndex + j);
+				context->SetGraphicsRootConstantBufferView(objCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT, objFrameIndex + j);
 				context->DrawIndexedInstanced(mesh, j);
 			}
 		}
@@ -400,11 +414,11 @@ namespace JinEngine::Graphic
 		 
 		const int frameIndex = helper.GetLitShadowFrameIndex() + offset;
 		if (smType == J_SHADOW_MAP_TYPE::NORMAL)
-			context->SetGraphicsRootConstantBufferView(normalShadowMapDrawCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, frameIndex);
+			context->SetGraphicsRootConstantBufferView(normalShadowMapDrawCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, frameIndex);
 		else if (smType == J_SHADOW_MAP_TYPE::CSM)
-			context->SetGraphicsRootConstantBufferView(csmDrawCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, frameIndex);
+			context->SetGraphicsRootConstantBufferView(csmDrawCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW, frameIndex);
 		else if (smType == J_SHADOW_MAP_TYPE::CUBE)
-			context->SetGraphicsRootConstantBufferView(cubeShadowMapDrawCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW, frameIndex);
+			context->SetGraphicsRootConstantBufferView(cubeShadowMapDrawCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW, frameIndex);
 	}
 	void JDx12ShadowMap::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
 	{

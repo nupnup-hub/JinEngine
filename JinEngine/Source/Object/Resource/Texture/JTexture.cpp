@@ -66,28 +66,28 @@ namespace JinEngine
 	namespace
 	{
 		REGISTER_ENUM_CLASS(J_TEXTURE_TYPE, int, TEXTURE_2D, TEXTURE_CUBE)
-		static J_TEXTURE_TYPE Convert(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType)
+		static J_TEXTURE_TYPE Convert(const J_GRAPHIC_RESOURCE_TYPE rType)
 		{
 			switch (rType)
 			{
-			case Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+			case J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 				return J_TEXTURE_TYPE::TEXTURE_2D;
-			case Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+			case J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
 				return J_TEXTURE_TYPE::TEXTURE_CUBE;
 			default:
 				return J_TEXTURE_TYPE::TEXTURE_2D;
 			}
 		}
-		static Graphic::J_GRAPHIC_RESOURCE_TYPE Convert(const J_TEXTURE_TYPE rType)
+		static J_GRAPHIC_RESOURCE_TYPE Convert(const J_TEXTURE_TYPE rType)
 		{
 			switch (rType)
 			{
 			case J_TEXTURE_TYPE::TEXTURE_2D:
-				return Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+				return J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 			case J_TEXTURE_TYPE::TEXTURE_CUBE:
-				return Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
+				return J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
 			default:
-				return Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+				return J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 			}
 		}
 	}
@@ -100,7 +100,7 @@ namespace JinEngine
 	public:
 		JWeakPtr<JTexture> thisPointer = nullptr;
 	public: 
-		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+		J_GRAPHIC_RESOURCE_TYPE textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 	public:
 		REGISTER_PROPERTY_EX(innerTextureType, GetInnerTextureType, SetInnerTextureType, GUI_ENUM_COMBO(J_TEXTURE_TYPE))
 		J_TEXTURE_TYPE innerTextureType = J_TEXTURE_TYPE::TEXTURE_2D;
@@ -123,7 +123,7 @@ namespace JinEngine
 			if (IsValidTextureType(initData.textureType))
 				textureType = initData.textureType;
 			else
-				textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+				textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 
 			innerTextureType = Convert(textureType);
 			resolution = initData.resoultion;			 
@@ -170,12 +170,12 @@ namespace JinEngine
 		{
 			return mipMapGenerateDesc.sharpnessFactor;
 		}
-		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
-			return (rType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || rType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE) ? 0 : invalidIndex;
+			return (rType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || rType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE) ? 0 : invalidIndex;
 		}
 	public:
-		void SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE newTextureType)noexcept
+		void SetTextureType(const J_GRAPHIC_RESOURCE_TYPE newTextureType)noexcept
 		{
 			if (textureType != newTextureType)
 			{
@@ -292,9 +292,9 @@ namespace JinEngine
 			SetConvertDesc(newConvertDesc);
 		}
 	public:
-		static bool IsValidTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE type)
+		static bool IsValidTextureType(const J_GRAPHIC_RESOURCE_TYPE type)
 		{
-			return type == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || type == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
+			return type == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || type == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
 		}
 		bool IsReverseY()const noexcept
 		{
@@ -360,7 +360,7 @@ namespace JinEngine
 		{
 			if (!HasGraphicResourceHandle())
 			{  
-				if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
+				if (textureType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 				{
 					if (CreateResource(CreateTextureCreateDesc(), textureType))
 					{ 
@@ -369,7 +369,7 @@ namespace JinEngine
 						return true;
 					}
 				}
-				else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
+				else if (textureType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 				{
 					if (CreateResource(CreateTextureCreateDesc(), textureType))
 					{
@@ -441,7 +441,7 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, false, true };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JTexture::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
 			auto textureClassifyLam = [](const Core::JFileImportPathData importPathData)->std::vector<J_RESOURCE_TYPE>
 			{
@@ -495,7 +495,7 @@ namespace JinEngine
 	JTexture::InitData::InitData(const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
-		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)
+		J_GRAPHIC_RESOURCE_TYPE textureType)
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory),
 		oridataPath(oridataPath), textureType(textureType)
 	{}
@@ -503,7 +503,7 @@ namespace JinEngine
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
-		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)
+		J_GRAPHIC_RESOURCE_TYPE textureType)
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory),
 		oridataPath(oridataPath), textureType(textureType)
 	{}
@@ -513,7 +513,7 @@ namespace JinEngine
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
-		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)
+		J_GRAPHIC_RESOURCE_TYPE textureType)
 		: JResourceObject::InitData(JTexture::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory),
 		oridataPath(oridataPath), textureType(textureType)
 	{}
@@ -521,7 +521,7 @@ namespace JinEngine
 	{ 
 		return JResourceObject::InitData::IsValidData() && _waccess(oridataPath.c_str(), 00) != -1;
 	}
-	JTexture::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
+	JTexture::LoadMetadata::LoadMetadata(const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
  
@@ -562,7 +562,7 @@ namespace JinEngine
 	{
 		return impl->GetTextureHeight();
 	}
-	Graphic::J_GRAPHIC_RESOURCE_TYPE JTexture::GetTextureType()const noexcept
+	J_GRAPHIC_RESOURCE_TYPE JTexture::GetTextureType()const noexcept
 	{
 		return impl->textureType;
 	}
@@ -570,7 +570,7 @@ namespace JinEngine
 	{
 		return impl->GetTextureResolution();
 	}
-	void JTexture::SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)noexcept
+	void JTexture::SetTextureType(const J_GRAPHIC_RESOURCE_TYPE textureType)noexcept
 	{
 		impl->SetTextureType(textureType);
 	} 
@@ -633,9 +633,9 @@ namespace JinEngine
 		auto loadData = static_cast<JTexture::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
-		JTexture::LoadMetaData metadata(loadData->directory);
+		JTexture::LoadMetadata metadata(loadData->directory);
 
-		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
  
 		JUserPtr<JTexture> newTex = nullptr;
@@ -666,29 +666,29 @@ namespace JinEngine
 		//asset data는 임포트시 한번 저장되고 이후에 저장되지 않는다 (fixed)
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
-		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::LoadMetaData::StaticTypeInfo()))
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::LoadMetadata::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JFileIOTool tool;
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JTexture::LoadMetaData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JTexture::LoadMetadata*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->textureType, "TextureType"); 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->resoultion, "Resoultion");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->mipMapDesc.type, "MipmapType");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->mipMapDesc.kernelSize, "MipmapKernelSize");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->mipMapDesc.sharpnessFactor, "MipmapSharpnessFactor");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->convertDesc.reverseY, "ReverseComponentY");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->textureType, "TextureType"); 
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->resoultion, "Resoultion");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->mipMapDesc.type, "MipmapType");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->mipMapDesc.kernelSize, "MipmapKernelSize");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->mipMapDesc.sharpnessFactor, "MipmapSharpnessFactor");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->convertDesc.reverseY, "ReverseComponentY");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -700,7 +700,7 @@ namespace JinEngine
 		if (!tool.Begin(tex->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	  
 		JObjectFileIOHelper::StoreEnumData(tool, tex->GetTextureType(), "TextureType");

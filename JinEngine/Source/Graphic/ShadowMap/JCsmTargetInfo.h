@@ -34,7 +34,7 @@ namespace JinEngine
 	namespace Graphic
 	{		
 		/*
-		* JCsmHandlerInterface에서만 생성가능한 Info
+		* JCsmHandlerInterface에서만 생성가능한 Info -> 수정 2024-08-01 Manager에서 생성된다.
 		* Handler는 복수가 존재하며 각각 참조하는 Target도 다르다
 		* Target에 대한 접근은 TargetInface를 통해 이루어지며 Handler는 Target에 Frustum을 참조해
 		* 계산을 수행한다.
@@ -43,25 +43,28 @@ namespace JinEngine
 		* Deafult Heap에서 할당받는다.
 		*/
 		class JCsmHandlerInterface;
-		class JCsmTargetInfo final
+		class JCsmTargetInfo
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCsmTargetInfo)
 		private:
-			friend class JCsmHandlerInterface;
+			int index = -1; 
 		private:
-			size_t handlerGuid; 
-			mutable GetCsmTargetBoundingFrustumF::Functor getFrustumF;
+			JCsmAreaInfo* areaInfo = nullptr;
+		private: 
+			GetCsmTargetBoundingFrustumBindPtr getBoundingFrustumB;
 		public:
-			size_t GetHandlerGuid()const noexcept;  
-			DirectX::BoundingFrustum GetFrustum()const noexcept;
+			JCsmTargetInfo(JCsmAreaInfo* areaInfo, GetCsmTargetBoundingFrustumBindPtr&& getBoundingFrustumB);
+			~JCsmTargetInfo();
 		public: 
+			int GetIndex()const noexcept;
+			JCsmAreaInfo* GetAreaInfo()const noexcept;
+			DirectX::BoundingFrustum GetFrustum()noexcept;
+		public: 
+			void SetIndex(const int newIndex)noexcept; 
 			//void SetFrustumPtr(GetCsmTargetBoundingFrustumF::CPtr ptr, JCsmTargetInterface* iTar);
-			void SetFrustumPtr(GetCsmTargetBoundingFrustumF::Functor&& newFunc);
+			void SetFrustumPtr(GetCsmTargetBoundingFrustumBindPtr&& newGetBoundingFrustumB);
 		public:
 			bool IsValid()const noexcept;
-		private:
-			JCsmTargetInfo(const size_t handlerGuid);
-			~JCsmTargetInfo();
 		};
 	}
 }

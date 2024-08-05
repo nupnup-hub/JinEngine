@@ -30,10 +30,46 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 { 
+	JGraphicInfo::FrameResourceInfo::FrameResourceInfo()
+	{
+		for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
+		{
+			count[i] = 0;
+			capacity[i] = minCapacity;
+		} 
+	}
+	uint JGraphicInfo::FrameResourceInfo::GetCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
+	{
+		return count[(uint)type];
+	}
+	uint JGraphicInfo::FrameResourceInfo::GetCapacity(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
+	{
+		return capacity[(uint)type];
+	}
 	uint JGraphicInfo::FrameResourceInfo::GetLocalLightCapacity()const noexcept
 	{
-		return upPLightCapacity + upSLightCapacity + upRLightCapacity;
+		return count[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT] +
+			count[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT] +
+			count[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT];
 	} 
+
+	JGraphicInfo::GraphicResourceInfo::GraphicResourceInfo()
+	{
+		for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
+		{
+			count[i] = 0;
+			border[i] = minCapacity;
+		}
+	}
+	uint JGraphicInfo::GraphicResourceInfo::GetCount(const J_GRAPHIC_RESOURCE_TYPE type)const noexcept
+	{
+		return count[(uint)type];
+	}
+	uint JGraphicInfo::GraphicResourceInfo::GetBorder(const J_GRAPHIC_RESOURCE_TYPE type)const noexcept
+	{
+		return border[(uint)type];
+	}
+
 	void JGraphicInfo::Load()
 	{
 		JFileIOTool tool;
@@ -42,43 +78,13 @@ namespace JinEngine::Graphic
 			return;
 
 		tool.PushExistStack("--FrameInfo--");
-		/*
-		JFileIOHelper::LoadAtomicData(tool, frame.upObjCount, "UploadObjCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upBoundingObjCount, "UploadBoundingObjCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upHzbObjCount, "UploadHzbObjCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upAniCount, "UploadAniCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upScenePassCount, "UploadScenePassCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upCameraCount, "UploadCameraCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upDLightCount, "UploadDirectionalLightCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upPLightCount, "UploadPointLightCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upSLightCount, "UploadSpotLightCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upRLightCount, "UploadRectLightCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upCsmCount, "UploadCsmCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upCubeShadowMapCount, "UploadCubeShadowMapCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upNormalShadowMapCount, "UploadNormalShadowMapCount:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upMaterialCount, "UploadMaterialCount:");
-		*/
-  
-		JFileIOHelper::LoadAtomicData(tool, frame.upObjCapacity, "UploadObjCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upBoundingObjCapacity, "UploadBoundingObjCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upHzbObjCapacity, "UploadHzbObjCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upAniCapacity, "UploadAniCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upScenePassCapacity, "UploadScenePassCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upCameraCapacity, "UploadCameraCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upDLightCapacity, "UploadDirectionalLightCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upPLightCapacity, "UploadPointLightCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upSLightCapacity, "UploadSpotLightCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, frame.upRLightCapacity, "UploadRectLightCapacity:"); 
-		JFileIOHelper::LoadAtomicData(tool, frame.upMaterialCapacity, "UploadMaterialCapacity:");
-		
+		//for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
+		//	JFileIOHelper::LoadAtomicData(tool, frame.capacity[i], "UploadCapacity:" + Core::GetName((J_FRAME_RESOURCE_UPLOAD_TYPE)i));
 		tool.PopStack();
 
 		tool.PushExistStack("--ResourceInfo--");
-		JFileIOHelper::LoadAtomicData(tool, resource.binding2DTextureCapacity, "Bind2DTextureCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, resource.bindingCubeMapCapacity, "BindCubeMapCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, resource.bindingShadowTextureCapacity, "BindShadowTextureCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, resource.bindingShadowTextureArrayCapacity, "BindShadowTextureArrayCapacity:");
-		JFileIOHelper::LoadAtomicData(tool, resource.bindingShadowTextureCubeCapacity, "BindShadowTextureCubeCapacity:");
+		//for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
+		//	JFileIOHelper::LoadAtomicData(tool, resource.border[i], "UploadBorder:" + Core::GetName((J_GRAPHIC_RESOURCE_TYPE)i));
 		tool.PopStack();
 		tool.Close();  
 	}
@@ -90,42 +96,13 @@ namespace JinEngine::Graphic
 			return;
 
 		tool.PushMapMember("--FrameInfo--");
-		/*
-		JFileIOHelper::StoreAtomicData(tool, frame.upObjCount, "UploadObjCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upBoundingObjCount, "UploadBoundingObjCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upHzbObjCount, "UploadHzbObjCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upAniCount, "UploadAniCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upScenePassCount, "UploadScenePassCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upCameraCount, "UploadCameraCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upDLightCount, "UploadDirectionalLightCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upPLightCount, "UploadPointLightCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upSLightCount, "UploadSpotLightCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upRLightCount, "UploadRectLightCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upCsmCount, "UploadCsmCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upCubeShadowMapCount, "UploadCubeShadowMapCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upNormalShadowMapCount, "UploadNormalShadowMapCount:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upMaterialCount, "UploadMaterialCount:");
-		*/
-
-		JFileIOHelper::StoreAtomicData(tool, frame.upObjCapacity, "UploadObjCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upBoundingObjCapacity, "UploadBoundingObjCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upHzbObjCapacity, "UploadHzbObjCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upAniCapacity, "UploadAniCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upScenePassCapacity, "UploadScenePassCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upCameraCapacity, "UploadCameraCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upDLightCapacity, "UploadDirectionalLightCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upPLightCapacity, "UploadPointLightCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upSLightCapacity, "UploadSpotLightCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upRLightCapacity, "UploadRectLightCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, frame.upMaterialCapacity, "UploadMaterialCapacity:");
+		for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
+			JFileIOHelper::StoreAtomicData(tool, frame.capacity[i], "UploadCapacity:" + Core::GetName((J_FRAME_RESOURCE_UPLOAD_TYPE)i));
 		tool.PopStack();
 
 		tool.PushMapMember("--ResourceInfo--");
-		JFileIOHelper::StoreAtomicData(tool, resource.binding2DTextureCapacity, "Bind2DTextureCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, resource.bindingCubeMapCapacity, "BindCubeMapCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, resource.bindingShadowTextureCapacity, "BindShadowTextureCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, resource.bindingShadowTextureArrayCapacity, "BindShadowTextureArrayCapacity:");
-		JFileIOHelper::StoreAtomicData(tool, resource.bindingShadowTextureCubeCapacity, "BindShadowTextureCubeCapacity:");
+		//for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
+		//	JFileIOHelper::StoreAtomicData(tool, resource.border[i], "UploadBorder:" + Core::GetName((J_GRAPHIC_RESOURCE_TYPE)i));
 		tool.PopStack();
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 	}

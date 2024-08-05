@@ -23,11 +23,11 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#include"JGraphicResourceManager.h"   
-#include"JGraphicResourceUserAccess.h"
+#include"JGraphicResourceManager.h"    
 #include"JGraphicResourceInterface.h"
 #include"../../Window/JWindow.h"
 #include"../../Window/JWindowPrivate.h"
+
 namespace JinEngine
 {
 	namespace Graphic
@@ -99,8 +99,8 @@ namespace JinEngine
 		std::wofstream stream;
 		stream.open(L"D:\\JinWooJung\\gDebug.txt", std::ios::app | std::ios::out);
 
-		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
-		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
+		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_RESOURCE_TYPE).name());
+		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_BIND_TYPE).name());
 		auto rNameVec = rInfo->GetEnumNameVec();
 		auto bNameVec = bInfo->GetEnumNameVec();
 		JFileIOHelper::InputSpace(stream, 1);

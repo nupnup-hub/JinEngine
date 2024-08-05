@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"   
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h" 
 #include"../../FrameResource/Dx/JDx12FrameResource.h" 

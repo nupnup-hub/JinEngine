@@ -350,6 +350,11 @@ namespace JinEngine
 		}
 
 		template<typename Ret, typename ...Param, typename ...BindParam>
+		std::unique_ptr<JBindHandle<JFunctor<Ret, Param...>, BindParam...>> UniqueBind(Ret(*ptr)(Param...), BindParam&&... bindVar)
+		{
+			return  std::make_unique<JBindHandle<JFunctor<Ret, Param...>, BindParam...>>(std::make_unique<JFunctor<Ret, Param...>>(ptr), std::forward<BindParam>(bindVar)...);
+		}
+		template<typename Ret, typename ...Param, typename ...BindParam>
 		std::unique_ptr<JBindHandle<JFunctor<Ret, Param...>, BindParam...>> UniqueBind(std::unique_ptr<JFunctor<Ret, Param...>>&& unqFunctor, BindParam&&... bindVar)
 		{
 			return  std::make_unique<JBindHandle<JFunctor<Ret, Param...>, BindParam...>>(std::move(unqFunctor), std::forward<BindParam>(bindVar)...);
@@ -367,6 +372,11 @@ namespace JinEngine
 			using Ptr = Ret(*)(Param...);
 			using Functor = JFunctor<Ret, Param...>;
 			using CompletelyBind = JBindHandle<Functor, Param...>;
+		public: 
+			static std::unique_ptr<JBindHandle<Functor, Param...>> CreateCompletelyBind(Ptr ptr, Param... param)
+			{
+				return UniqueBind(std::make_unique<Functor>(ptr), std::forward<Param>(param)...);
+			}
 		};
 		template<typename Object, typename Ret, typename ...Param>
 		struct JMFunctorType
@@ -377,6 +387,18 @@ namespace JinEngine
 			using Functor = JFunctor<Ret, Param...>;
 			using CompletelyBind = JBindHandle<Functor, Param...>;
 		};
+		/*
+		* 메모 
+		* template function도 function포인터에 타입을 명시해서 할당가능.
+		* 
+		* template<typename T, int threadIndex>
+		* void Somthing(T* type){...}
+		* 
+		*{ 
+		*	using Pointer = void(*)(JObject, 1); 
+		*	Pointer p = Somthing;
+		*}
+		*/
 #pragma endregion
 	}
 }

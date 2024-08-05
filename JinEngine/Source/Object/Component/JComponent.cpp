@@ -116,6 +116,10 @@ namespace JinEngine
 	{
 		return impl->owner;
 	}
+	size_t JComponent::GetAreaGuid()const noexcept
+	{
+		return impl->owner->GetOwnerGuid();
+	}
 	bool JComponent::PassDefectInspection()const noexcept
 	{
 		return impl->owner != nullptr;

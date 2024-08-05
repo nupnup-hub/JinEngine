@@ -140,7 +140,7 @@ namespace JinEngine
 	public:
 		static JResourceEventInterface* EvInterface()noexcept;
 	protected:
-		static void RegisterRTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc);
+		static void RegisterRTypeInfo(const Core::JTypeInfo& typeInfo, const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc);
 	public:
 		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		static std::wstring GetDefaultFormat()noexcept

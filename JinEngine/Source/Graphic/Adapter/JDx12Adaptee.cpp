@@ -26,7 +26,7 @@ SOFTWARE.
 #include"JDx12Adaptee.h"
 #include"../JGraphicUpdateHelper.h"
 #include"../Accelerator/Dx/JDx12GpuAcceleratorManager.h"
-#include"../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../Debug/Dx/JDx12GraphicDebug.h"
 #include"../DepthMap/Dx/JDx12DepthTest.h"
 #include"../Device/Dx/JDx12GraphicDevice.h"
@@ -125,18 +125,18 @@ namespace JinEngine::Graphic
 				return "Unkwon";
 			}
 		}
-		std::string ToString(const J_THREAD_TASK_TYPE threadTask, const uint threadIndex)
+		std::string ToString(const J_THREAD_TASK_TYPE threadTask)
 		{
 			switch (threadTask)
 			{
 			case JinEngine::Graphic::J_THREAD_TASK_TYPE::OCC:
-				return "Occlusion Step0" + std::to_string(threadIndex);
+				return "Occlusion Step";
 			case JinEngine::Graphic::J_THREAD_TASK_TYPE::SHADOW_MAP:
-				return "Shadow Map Step0" + std::to_string(threadIndex);
+				return "Shadow Map Step";
 			case JinEngine::Graphic::J_THREAD_TASK_TYPE::SCENE:
-				return "Scene Step0" + std::to_string(threadIndex);
+				return "Scene Step";
 			default:
-				return "Unkwon0" + std::to_string(threadIndex);
+				return "Unkwon";
 			}
 		}
 		class JDx12CommandContextCashData
@@ -155,7 +155,7 @@ namespace JinEngine::Graphic
 				for (uint i = 0; i < (uint)J_MAIN_THREAD_ORDER::COUNT; ++i)
 				{
 					const J_MAIN_THREAD_ORDER type = (J_MAIN_THREAD_ORDER)i;
-					rawPtr = manager->PushCommandContext(std::make_unique<JDx12CommandContext>(ToString(type)));
+					rawPtr = manager->PushCommandContext(std::make_unique<JDx12CommandContext>(ToString(type), 0));
 					stepContext[i] = static_cast<JDx12CommandContext*>(rawPtr);
 				}
 				for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
@@ -164,7 +164,7 @@ namespace JinEngine::Graphic
 					{
 						const uint index = i * Graphic::Constants::gMaxFrameThread + j;
 						const J_THREAD_TASK_TYPE type = (J_THREAD_TASK_TYPE)i;
-						rawPtr = manager->PushCommandContext(std::make_unique<JDx12CommandContext>(ToString(type, j)));
+						rawPtr = manager->PushCommandContext(std::make_unique<JDx12CommandContext>(ToString(type), j));
 						threadContext[index] = static_cast<JDx12CommandContext*>(rawPtr);
 					}
 				}
@@ -382,17 +382,17 @@ namespace JinEngine::Graphic
 	{
 		if (!IsValid(drawRefSet))
 			return false;
-
+		   
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 		JDx12CommandContext* context = Context::Get(J_MAIN_THREAD_ORDER::BEGIN);
 		context->FlushResourceBarriers();
-
+		 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_MAIN_THREAD_ORDER::BEGIN);
 		ThrowIfFailedG(cmdList->Close());
 		ID3D12CommandList* cmdsLists[] = { cmdList };
 		dx12Device->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
+		 
 		EndContext(context);
 		return true;
 	}
@@ -441,7 +441,7 @@ namespace JinEngine::Graphic
 		ID3D12CommandList* cmdsLists[] = { cmdList };
 		dx12Device->GetCommandQueue()->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-		EndContext(context);
+		EndContext(context); 
 		return true;
 	}
 	bool JDx12Adaptee::SettingEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond)
@@ -452,7 +452,7 @@ namespace JinEngine::Graphic
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
-
+		 
 		//J_MAIN_THREAD_ORDER::END reset 안됬을시 처리필요  
 		if (!cond.isSceneDrawn)
 			dx12Frame->ResetCmd(J_MAIN_THREAD_ORDER::END);
@@ -462,7 +462,7 @@ namespace JinEngine::Graphic
 
 		JDx12CommandContext* context = Context::Get(J_MAIN_THREAD_ORDER::END);
 		BeginContext(context, drawRefSet, cmdList);
-
+		 
 		auto swapChainSet = JDx12GraphicResourceComputeSet(dx12Gm, dx12Gm->GetInfo(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN, dx12Device->GetBackBufferIndex()));
 		auto mainDepthSet = JDx12GraphicResourceComputeSet(dx12Gm, dx12Gm->GetDefaultSceneDsInfo());
 
@@ -488,7 +488,7 @@ namespace JinEngine::Graphic
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_MAIN_THREAD_ORDER::END);
 		JDx12CommandContext* context = Context::Get(J_MAIN_THREAD_ORDER::END);
-
+		 
 		auto swapChainSet = JDx12GraphicResourceComputeSet(dx12Gm, dx12Gm->GetInfo(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN, dx12Device->GetBackBufferIndex()));
 		auto mainDepthSet = JDx12GraphicResourceComputeSet(dx12Gm, dx12Gm->GetDefaultSceneDsInfo());
 

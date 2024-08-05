@@ -99,15 +99,11 @@ cbuffer cbPass : register(b1)
 	float viewHeight;
 	float Near;
 	float Far;
-	int validQueryCount;
-	int validQueryOffset;
+	int validQueryCount; 
 	int occMapCount;
 	int occIndexOffset;
 	int correctFailTrigger;
-	int usePerspective;
-	int hzbOccComputePad00;
-	int hzbOccComputePad01;
-	int hzbOccComputePad02;
+	int usePerspective; 
 };
 
 static const float maxDistance = -100000;
@@ -257,11 +253,14 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
  
 	const int threadIndex = dispatchThreadID.x;
 	const int queryIndex = object[threadIndex].queryResultIndex;
-	const int validQueryRange = validQueryOffset + validQueryCount;
+	//const int validQueryRange = validQueryOffset + validQueryCount;
 
-	if (threadIndex < validQueryOffset || validQueryRange <= threadIndex || !object[threadIndex].isValid)
-		return;
+	//if (threadIndex < validQueryOffset || validQueryRange <= threadIndex || !object[threadIndex].isValid)
+	//	return;
  
+	if (validQueryCount <= threadIndex || !object[threadIndex].isValid)
+		return;
+
 	if (usePerspective == 1 && CullBBox(object[threadIndex].center, object[threadIndex].extents) > 0)
 	{ 
 		queryResult[queryIndex] = 1; 

@@ -32,10 +32,10 @@ namespace JinEngine::Editor
 	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess)
 		:gUserAccess(gUserAccess), useFirstHandle(true)
 	{}
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType)
+	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const J_GRAPHIC_RESOURCE_TYPE rType)
 		: gUserAccess(gUserAccess), rType(rType)
 	{}
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_BIND_TYPE bType)
+	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)
 		: gUserAccess(gUserAccess), rType(rType), bType(bType)
 	{}
 	JGuiImageInfo::JGuiImageInfo(Graphic::ResourceHandle handle)

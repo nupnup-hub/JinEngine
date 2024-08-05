@@ -54,7 +54,7 @@ namespace JinEngine
 		public:
 			const std::wstring oridataPath;
 		public:
-			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
+			J_GRAPHIC_RESOURCE_TYPE textureType;
 			Graphic::JMipmapGenerationDesc mipMapDesc;
 			Graphic::JConvertColorDesc convertDesc;
 			J_TEXTURE_RESOLUTION resoultion;
@@ -62,33 +62,33 @@ namespace JinEngine
 			InitData(const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
 				const std::wstring oridataPath,
-				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
+				J_GRAPHIC_RESOURCE_TYPE textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
 				const std::wstring oridataPath,
-				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
+				J_GRAPHIC_RESOURCE_TYPE textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
 				const std::wstring oridataPath,
-				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
+				J_GRAPHIC_RESOURCE_TYPE textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		public:
 			bool IsValidData()const noexcept final;
 		};
 	protected: 
-		class LoadMetaData final : public JResourceObject::InitData
+		class LoadMetadata final : public JResourceObject::InitData
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			Graphic::JMipmapGenerationDesc mipMapDesc;
 			Graphic::JConvertColorDesc convertDesc;
-			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
+			J_GRAPHIC_RESOURCE_TYPE textureType;
 			J_TEXTURE_RESOLUTION resoultion;
 		public:
-			LoadMetaData(const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JTexturePrivate;
@@ -108,10 +108,10 @@ namespace JinEngine
 	public:	  
 		uint GetTextureWidth()const noexcept;
 		uint GetTextureHeight()const noexcept;
-		Graphic::J_GRAPHIC_RESOURCE_TYPE GetTextureType()const noexcept;
+		J_GRAPHIC_RESOURCE_TYPE GetTextureType()const noexcept;
 		J_TEXTURE_RESOLUTION GetTextureResolution()const noexcept;
 	public:
-		void SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)noexcept;
+		void SetTextureType(const J_GRAPHIC_RESOURCE_TYPE textureType)noexcept;
 		void SetTextureResolution(const J_TEXTURE_RESOLUTION resolutionType)noexcept;
 	protected:
 		void DoActivate()noexcept final;

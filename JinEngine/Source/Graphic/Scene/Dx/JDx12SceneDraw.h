@@ -25,10 +25,10 @@ SOFTWARE.
 
 #pragma once
 #include"../JSceneDraw.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/JGraphicResourceInterface.h"
-#include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
+#include"../../Shader/Dx/JDx12ShaderDataHolder.h"  
 #include<d3d12.h>     
 #include<wrl/client.h>
 
@@ -133,7 +133,7 @@ namespace JinEngine
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> velocityRootsignature;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> velocityShader;
 		private:
-			JOwnerPtr<JDx12GraphicShaderDataHolder> deferredShadingHolder[INNER_DEFERRED_SHADER_COUNT];
+			JOwnerPtr<JDx12GraphicShaderDataHolder> deferredShadingHolder[INNER_DEFERRED_SHADER_COUNT]; 
 		public:
 			~JDx12SceneDraw();
 		public:

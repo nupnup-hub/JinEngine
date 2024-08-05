@@ -65,9 +65,9 @@ namespace JinEngine
 			bool IsValidData()const noexcept final;
 		};
 	protected: 
-		class LoadMetaData final : public JResourceObject::InitData
+		class LoadMetadata final : public JResourceObject::InitData
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			JAvatar avatar;
 			JSKELETON_TYPE skeletonType; 
@@ -75,7 +75,7 @@ namespace JinEngine
 		public:
 			bool isValidAvatar = false;
 		public:
-			LoadMetaData(const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JSkeletonAssetPrivate;

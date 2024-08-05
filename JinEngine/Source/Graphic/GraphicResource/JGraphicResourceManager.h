@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once 
 #include"JGraphicResourceType.h" 
 #include"JGraphicResourceConstants.h"
-#include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicTaskDataSet.h"
 #include"../JGraphicConstants.h"
 #include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"  
@@ -43,8 +43,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicDevice;
-		class JGraphicResourceInfo;  
-		class JGraphicResourceUserAccess;
+		class JGraphicResourceInfo;   
 
 		//multi puerpose bind
 		struct MPBInfo
@@ -136,9 +135,9 @@ namespace JinEngine
 			virtual bool SettingMipmapBind(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& info, const bool isReadOnly,_Out_ std::vector<Core::JDataHandle>& handle) = 0;
 			virtual void DestroyMPB(JGraphicDevice* device, Core::JDataHandle& handle) = 0;
 		public:
-			virtual void ResizeWindow(JGraphicDevice* device) = 0;
+			virtual void ResizeWindow(JGraphicDevice* device) = 0; 
 		public:
-			virtual void StoreTexture(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType, const int index, const std::wstring& path) = 0;
-		};
+			virtual void StoreTexture(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType, const int index, const std::wstring& path) = 0;		
+		};		 
 	}
 }

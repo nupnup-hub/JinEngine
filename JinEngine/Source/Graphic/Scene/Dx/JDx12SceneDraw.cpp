@@ -111,6 +111,7 @@ SOFTWARE.
 #define G_BUFFER_LIGHT_PROP L"G_BUFFER_LIGHT_PROP"
 #define G_BUFFER_VELOCITY L"G_BUFFER_VELOCITY" 
 
+
 namespace JinEngine::Graphic
 {
 	namespace Private
@@ -208,11 +209,11 @@ namespace JinEngine::Graphic
 				initHelper.macro[i].push_back(ConvertMacroSet(layout));
 				ConvertMacroSet(initHelper.gFunctionFlag, initHelper.macro[i]);
 
-				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, std::to_wstring(info.resource.binding2DTextureCapacity) });
-				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, std::to_wstring(info.resource.bindingCubeMapCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_wstring(info.resource.bindingShadowTextureCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_wstring(info.resource.bindingShadowTextureArrayCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_wstring(info.resource.bindingShadowTextureCubeCapacity) });
+				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D]) });
+				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE]) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP]) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY]) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE]) });
 
 				initHelper.macro[i].push_back({ G_BUFFER_ALBEDO_COLOR, std::to_wstring(Constants::gBufferAlbedoLayer) });
 				initHelper.macro[i].push_back({ G_BUFFER_NORMAL_AND_TANGENT,std::to_wstring(Constants::gBufferNormalAndTangentLayer) });
@@ -565,6 +566,12 @@ namespace JinEngine::Graphic
 		}
 	}
 
+	template<J_GRAPHIC_RESOURCE_TYPE ...type>
+	static bool IsChanged(const const JGraphicInfoChangedSet& set)
+	{
+		return ((set.preInfo.resource.border[(uint)type] != set.newInfo.resource.border[(uint)type]) | ...);
+	}
+
 	JDx12SceneDraw::ResourceDataSet::ResourceDataSet(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
 		gRInterface = helper.cam->GraphicResourceUserInterface();
@@ -676,8 +683,18 @@ namespace JinEngine::Graphic
 			return false;
 	}
 	void JDx12SceneDraw::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
-	{
-		RecompileShader(JGraphicShaderCompileSet(static_cast<const JDx12GraphicInfoChangedSet&>(set).device));
+	{ 
+		if (set.changedPart == JGraphicInfo::TYPE::RESOURCE)
+		{
+			if (IsChanged<J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D,
+				J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE,
+				J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP,
+				J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY,
+				J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE>(set))
+			{
+				RecompileShader(JGraphicShaderCompileSet(static_cast<const JDx12GraphicInfoChangedSet&>(set).device));
+			}
+		}
 	}
 	void JDx12SceneDraw::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
 	{
@@ -709,12 +726,12 @@ namespace JinEngine::Graphic
 	void JDx12SceneDraw::BindForwardRootAndResource(JDx12CommandContext* context)
 	{
 		context->SetGraphicsRootSignature(forwardRootSignature.Get());
-		context->SetGraphicsRootShaderResourceView(Forward::dLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Forward::pLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Forward::sLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Forward::rLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Forward::csmBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO);
-		context->SetGraphicsRootShaderResourceView(Forward::matBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL);
+		context->SetGraphicsRootShaderResourceView(Forward::dLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Forward::pLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Forward::sLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Forward::rLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Forward::csmBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO);
+		context->SetGraphicsRootShaderResourceView(Forward::matBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL);
 
 		context->SetGraphicsRootDescriptorTable(Forward::texture2DBuffIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		context->SetGraphicsRootDescriptorTable(Forward::textureCubeBuffIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE);
@@ -728,7 +745,7 @@ namespace JinEngine::Graphic
 	{
 		using namespace Deferred;
 		context->SetGraphicsRootSignature(deferredGeometryRootSignature.Get());
-		context->SetGraphicsRootShaderResourceView(Geometry::matBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL);
+		context->SetGraphicsRootShaderResourceView(Geometry::matBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL);
 
 		context->SetGraphicsRootDescriptorTable(Geometry::texture2DBuffIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		context->SetGraphicsRootDescriptorTable(Geometry::textureCubeBuffIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE);
@@ -737,11 +754,11 @@ namespace JinEngine::Graphic
 	{
 		using namespace Deferred;
 		context->SetGraphicsRootSignature(deferredShadingRootSignature.Get());
-		context->SetGraphicsRootShaderResourceView(Shading::dLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Shading::pLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Shading::sLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Shading::rLitBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT);
-		context->SetGraphicsRootShaderResourceView(Shading::csmBuffIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO);
+		context->SetGraphicsRootShaderResourceView(Shading::dLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Shading::pLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Shading::sLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Shading::rLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT);
+		context->SetGraphicsRootShaderResourceView(Shading::csmBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO);
 
 		context->SetGraphicsRootDescriptorTable(Shading::texture2DBuffIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		context->SetGraphicsRootDescriptorTable(Shading::textureCubeBuffIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE);
@@ -809,8 +826,8 @@ namespace JinEngine::Graphic
 	}
 	void JDx12SceneDraw::BindCommonCB(JDx12CommandContext* context, const ResourceDataSet& rSet, const JDrawHelper& helper)
 	{
-		context->SetGraphicsRootConstantBufferView(rSet.sceneCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, rSet.sceneFrameIndex);
-		context->SetGraphicsRootConstantBufferView(rSet.camCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, rSet.camFrameIndex);
+		context->SetGraphicsRootConstantBufferView(rSet.sceneCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, rSet.sceneFrameIndex);
+		context->SetGraphicsRootConstantBufferView(rSet.camCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA, rSet.camFrameIndex);
 	}
 	void JDx12SceneDraw::BindAoResource(JDx12CommandContext* context, const ResourceDataSet& rSet, const JDrawHelper& helper)
 	{
@@ -912,7 +929,7 @@ namespace JinEngine::Graphic
 		context->SetComputeRootSignature(velocityRootsignature.Get());
 		context->SetPipelineState(velocityShader.get());
 
-		context->SetComputeRootConstantBufferView(Velocity::passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, set.camFrameIndex);
+		context->SetComputeRootConstantBufferView(Velocity::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA, set.camFrameIndex);
 		context->SetComputeRootDescriptorTable(Velocity::depthMapIndex, set.dsSet.GetGpuSrvHandle());
 		context->SetComputeRootDescriptorTable(Velocity::velocityMapIndex, set.velocitySet.GetGpuUavHandle());
 
@@ -1182,7 +1199,7 @@ namespace JinEngine::Graphic
 			if (condition.allowOutline && gameObject[i]->IsSelected())
 				context->SetStencilRef(Constants::outlineStencilRef);
 			if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
-				context->SetGraphicsRootConstantBufferView(skinCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, helper.GetAnimationFrameIndex(animator.Get()));
+				context->SetGraphicsRootConstantBufferView(skinCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, helper.GetAnimationFrameIndex(animator.Get()));
 
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
 
@@ -1195,7 +1212,7 @@ namespace JinEngine::Graphic
 				else
 					context->SetPipelineState(dx12ShaderData, 0);
 
-				context->SetGraphicsRootConstantBufferView(objCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, objFrameIndex + j);
+				context->SetGraphicsRootConstantBufferView(objCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT, objFrameIndex + j);
 				context->DrawIndexedInstanced(mesh, j);
 			}
 			if (condition.allowOutline && gameObject[i]->IsSelected())
@@ -1465,11 +1482,11 @@ namespace JinEngine::Graphic
 		builder.PushShaderResource(0, 4);		//csmBuffIndex
 		builder.PushShaderResource(1);			//material
 
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.binding2DTextureCapacity, 2, 0);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingCubeMapCapacity, 2, 1);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingShadowTextureCapacity, 2, 2);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingShadowTextureArrayCapacity, 2, 3);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingShadowTextureCubeCapacity, 2, 4);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D], 2, 0);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE], 2, 1);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP], 2, 2);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY], 2, 3);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE], 2, 4);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 5);			//ambientOcclusion 
 		if (option.culling.allowLightCluster)
 		{
@@ -1494,9 +1511,8 @@ namespace JinEngine::Graphic
 		builder.PushConstantsBuffer(Geometry::skinCBIndex);
 
 		builder.PushShaderResource(1);		//material
-
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.binding2DTextureCapacity, 2, 0);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingCubeMapCapacity, 2, 1);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D], 2, 0);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE], 2, 1);
 
 		const std::vector<CD3DX12_STATIC_SAMPLER_DESC> sam = Geometry::Sampler();
 		for (const auto& data : sam)
@@ -1518,11 +1534,12 @@ namespace JinEngine::Graphic
 		builder.PushShaderResource(0, 3);		//rLitBuffIndex
 		builder.PushShaderResource(0, 4);		//csmBuffIndex
 
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.binding2DTextureCapacity, 2, 0);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingCubeMapCapacity, 2, 1);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingShadowTextureCapacity, 2, 2);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingShadowTextureArrayCapacity, 2, 3);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.bindingShadowTextureCubeCapacity, 2, 4);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D], 2, 0);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE], 2, 1);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP], 2, 2);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY], 2, 3);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE], 2, 4);
+
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 5);			//ambientOcclusion 
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, layerCount, 2, 6);	//gBuffer
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 7);			//depth 

@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once
 #include"../JGraphicConstants.h"
 #include"../Device/JGraphicDeviceUser.h"
-#include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicTaskDataSet.h"
 #include"../DataSet/JGraphicIndirectDataSet.h" 
 #include"../../Core/Pointer/JOwnerPtr.h" 
 

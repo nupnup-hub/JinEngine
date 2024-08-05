@@ -31,12 +31,16 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		/*
+		* Subclass classification by process
+		*/
 		class JGraphicSubClassInterface;
 		class JGraphicDevice;
 		class JGraphicResourceManager;
 		class JCullingManager;
 		class JGpuAcceleratorManager;
 		class JCsmManager;
+		class JFrameResourceManager;
 		class JCommandContextManager;
 		class JGraphicResourceShareData; 
 		class JFrameResource;
@@ -49,12 +53,13 @@ namespace JinEngine
 			std::unique_ptr<JCullingManager> culling;
 			std::unique_ptr<JGpuAcceleratorManager> accelerator;
 			std::unique_ptr<JCsmManager> csm;	//safe change device
+			std::unique_ptr<JFrameResourceManager> frame;
 			std::unique_ptr<JGraphicResourceShareData> shareData; 
 		public:
 			std::unique_ptr<JCommandContextManager> context;
 		public:
-			std::unique_ptr<JFrameResource> frame[Constants::gNumFrameResources];
-			JFrameResource* currFrame = nullptr;
+			//std::unique_ptr<JFrameResource> frame[Constants::gNumFrameResources];
+			//JFrameResource* currFrame = nullptr;
 		public:
 			void Initialize(JGraphicDevice* device, const JGraphicInfo& info);
 			void Clear();

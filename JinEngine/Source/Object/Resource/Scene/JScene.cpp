@@ -621,7 +621,7 @@ namespace JinEngine
 		void Activate()
 		{			
 			SceneMangerAccess::RegisterScene(thisPointer);
-			RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, this, thisPointer->GetGuid());
+			RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, this, thisPointer->GetGuid());
 			StuffResource();
 			JGameObjectPrivate::ActivateInterface::Activate(root);
 			JGameObjectPrivate::ActivateInterface::Activate(debugRoot);
@@ -636,7 +636,7 @@ namespace JinEngine
 			JGameObjectPrivate::ActivateInterface::DeActivate(root);
 			JGameObjectPrivate::ActivateInterface::DeActivate(debugRoot);
 			ClearResource();
-			DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, this);
+			DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, this);
 			SceneMangerAccess::DeRegisterScene(thisPointer); 
 		}
 	public:
@@ -707,7 +707,7 @@ namespace JinEngine
 	public:
 		void NotifyReAlloc()
 		{
-			ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, this);
+			ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, this);
 			RegisterInterfacePointer();
 		}
 	public:
@@ -750,7 +750,7 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), allRType, false, false, true, false };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JScene::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JScene::StaticTypeInfo(), sPrivate);
 
 			IMPL_REALLOC_BIND(JScene::JSceneImpl, thisPointer)
@@ -778,7 +778,7 @@ namespace JinEngine
 		useCaseType(useCaseType)
 	{}
 
-	JScene::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
+	JScene::LoadMetadata::LoadMetadata(const JUserPtr<JDirectory>& directory)
 		: JResourceObject::InitData(JScene::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
 
@@ -856,13 +856,18 @@ namespace JinEngine
 	}
 	JUserPtr<JLight> JScene::GetFirstDirectionalLight()const noexcept
 	{
-		auto& vec = impl->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+		const std::vector<JUserPtr<JComponent>>& vec = impl->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 		for (const auto& data : vec)
 		{
 			if (static_cast<JLight*>(data.Get())->GetLightType() == J_LIGHT_TYPE::DIRECTIONAL)
 				return Core::ConnectChildUserPtr<JLight>(data);
 		}
 		return nullptr;
+	}
+	JUserPtr<JComponent> JScene::GetFirstComponent(const J_COMPONENT_TYPE type)const noexcept
+	{
+		const std::vector<JUserPtr<JComponent>>& vec = impl->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+		return vec.size() > 0 ? vec[0] : nullptr;
 	}
 	JOctreeOption JScene::GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
 	{
@@ -1025,9 +1030,9 @@ namespace JinEngine
 		auto loadData = static_cast<JScene::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
-		JScene::LoadMetaData metadata(loadData->directory);
+		JScene::LoadMetadata metadata(loadData->directory);
 
-		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JScene> newScene = nullptr;
@@ -1100,28 +1105,28 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JScene::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		//StoreMetaData(data);
+		//StoreMetadata(data);
 		JUserPtr<JScene> scene;
 		scene.ConnnectChild(storeData->obj);
 		return scene->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
-		if (!Core::JDITypeDataBase::IsValidChildData(data, JScene::LoadMetaData::StaticTypeInfo()))
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JScene::LoadMetadata::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JFileIOTool tool;
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JScene::LoadMetaData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JScene::LoadMetadata*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->useCaseType, "UseCaseType:");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isOpen, Core::JFileConstant::GetLastOpenSymbol(JScene::StaticTypeInfo()));
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isMainScene, "IsMainScene:");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isActivatedAccelerator, "IsActivatedAccelerator:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->useCaseType, "UseCaseType:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->isOpen, Core::JFileConstant::GetLastOpenSymbol(JScene::StaticTypeInfo()));
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->isMainScene, "IsMainScene:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->isActivatedAccelerator, "IsActivatedAccelerator:");
 
 		tool.PushExistStack("AcceleratorOption");
 		for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
@@ -1131,16 +1136,16 @@ namespace JinEngine
 			const uint kdIndex = (uint)J_ACCELERATOR_TYPE::KD_TREE;
 
 			tool.PushExistStack();
-			loadMetaData->octreeOption[i].Load(tool, loadMetaData->hasInnerRoot[occIndex][i], loadMetaData->innerRootGuid[occIndex][i]);
-			loadMetaData->bvhOption[i].Load(tool, loadMetaData->hasInnerRoot[bvhIndex][i], loadMetaData->innerRootGuid[bvhIndex][i]);
-			loadMetaData->kdTreeOption[i].Load(tool, loadMetaData->hasInnerRoot[kdIndex][i], loadMetaData->innerRootGuid[kdIndex][i]);
+			loadMetadata->octreeOption[i].Load(tool, loadMetadata->hasInnerRoot[occIndex][i], loadMetadata->innerRootGuid[occIndex][i]);
+			loadMetadata->bvhOption[i].Load(tool, loadMetadata->hasInnerRoot[bvhIndex][i], loadMetadata->innerRootGuid[bvhIndex][i]);
+			loadMetadata->kdTreeOption[i].Load(tool, loadMetadata->hasInnerRoot[kdIndex][i], loadMetadata->innerRootGuid[kdIndex][i]);
 			tool.PopStack();
 		}
 		tool.PopStack();
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JScene::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -1153,7 +1158,7 @@ namespace JinEngine
 		if (!tool.Begin(scene->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
 		JObjectFileIOHelper::StoreEnumData(tool, scene->GetUseCaseType(), "UseCaseType:");

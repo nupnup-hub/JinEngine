@@ -57,13 +57,13 @@ namespace JinEngine
 			bool IsValidData()const noexcept final;
 		};
 	protected: 
-		class LoadMetaData final : public JMeshGeometry::LoadMetaData
+		class LoadMetadata final : public JMeshGeometry::LoadMetadata
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			Core::J_MESHGEOMETRY_TYPE meshType;
 		public:
-			LoadMetaData(const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JSkinnedMeshGeometryPrivate;

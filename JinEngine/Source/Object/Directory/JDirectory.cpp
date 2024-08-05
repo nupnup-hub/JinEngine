@@ -596,7 +596,7 @@ namespace JinEngine
 			return nullptr;
 
 		std::unique_ptr<JDirectory::InitData> initData = std::make_unique<JDirectory::InitData>(loadData->parent);
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetaData(tool, initData.get());
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(tool, initData.get());
 		tool.Close();
 		  
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
@@ -620,11 +620,11 @@ namespace JinEngine
 		if (!tool.Begin(dirUser->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		Core::J_FILE_IO_RESULT res = StoreMetaData(tool, storeData);
+		Core::J_FILE_IO_RESULT res = StoreMetadata(tool, storeData);
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return res;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JDirectory::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -636,7 +636,7 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadObjectIden(tool, dirInit->guid, dirInit->flag);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JDirectory::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;

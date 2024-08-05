@@ -81,13 +81,13 @@ namespace JinEngine
 			bool IsValidData()const noexcept override;
 		};
 	protected: 
-		class LoadMetaData : public JResourceObject::InitData
+		class LoadMetadata : public JResourceObject::InitData
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			Core::J_MESHGEOMETRY_TYPE meshType;
 		public:
-			LoadMetaData(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JMeshGeometryPrivate;

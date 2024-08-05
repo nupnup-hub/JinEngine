@@ -24,14 +24,16 @@ SOFTWARE.
 
 
 #pragma once
-#include"../Core/JCoreEssential.h"  
+#include"../Core/JCoreEssential.h"   
+#include"GraphicResource/JGraphicResourceType.h"
+#include"FrameResource/JFrameResourceType.h"
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
 		struct JGraphicInfo
-		{ 
+		{  
 		public:
 			enum class TYPE
 			{
@@ -40,71 +42,40 @@ namespace JinEngine
 				COUNT
 			};
 		public:
-			static constexpr uint minCapacity = 4;
-		public:
-			static constexpr uint initBindTextureCapacity = 32;
-			static constexpr uint initSkyTextureCapacity = 4;
-			static constexpr uint initBindTShadowCapacity = 4;
+			static constexpr uint minCapacity = 4; 
 		public:
 			struct FrameResourceInfo
 			{
 			public:
-				//FrameResource Count
-				uint upObjCount = 0;
-				uint upBoundingObjCount = 0;
-				uint upHzbObjCount = 0;
-				uint upAniCount = 0;
-				uint upScenePassCount = 0;
-				uint upCameraCount = 0;
-				uint upDLightCount = 0;
-				uint upPLightCount = 0;
-				uint upSLightCount = 0;
-				uint upRLightCount = 0;
-				uint upCsmCount = 0;
-				uint upCubeShadowMapCount = 0;
-				uint upNormalShadowMapCount = 0;
-				uint upMaterialCount = 0;
-			public:
-				//FrameResource Capacity
-				uint upObjCapacity = minCapacity;
-				uint upBoundingObjCapacity = minCapacity;
-				uint upHzbObjCapacity = minCapacity;
-				uint upAniCapacity = minCapacity;
-				uint upScenePassCapacity = minCapacity;
-				uint upCameraCapacity = minCapacity;
-				uint upDLightCapacity = minCapacity;
-				uint upPLightCapacity = minCapacity;
-				uint upSLightCapacity = minCapacity;
-				uint upRLightCapacity = minCapacity;
-				uint upSmLightCapacity = minCapacity;
-				uint upMaterialCapacity = minCapacity;
+				uint count[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
+				uint capacity[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
 			public:
 				uint threadCount = 0;
 			public:
 				int currIndex = 0;
 			public:
+				FrameResourceInfo();
+			public:
+				uint GetCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+				uint GetCapacity(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
 				uint GetLocalLightCapacity()const noexcept;
 			};
 			struct GraphicResourceInfo
 			{
 			public:
-				uint binding2DTextureCount = 0;
-				uint bindingCubeMapCount = 0;
-				uint bindingShadowTextureCount = 0;
-				uint bindingShadowTextureArrayCount = 0;
-				uint bindingShadowTextureCubeCount = 0;
-			public:
-				uint binding2DTextureCapacity = initBindTextureCapacity;
-				uint bindingCubeMapCapacity = initSkyTextureCapacity;
-				uint bindingShadowTextureCapacity = initBindTShadowCapacity;
-				uint bindingShadowTextureArrayCapacity = initBindTShadowCapacity;
-				uint bindingShadowTextureCubeCapacity = initBindTShadowCapacity;
+				uint count[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
+				uint border[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 			public:
 				uint occlusionWidth = 0;
 				uint occlusionHeight = 0;
 				uint occlusionMinSize = 0;
 				uint occlusionMapCount = 0;
 				uint occlusionMapCapacity = 0;
+			public:
+				GraphicResourceInfo();
+			public:
+				uint GetCount(const J_GRAPHIC_RESOURCE_TYPE type)const noexcept;
+				uint GetBorder(const J_GRAPHIC_RESOURCE_TYPE type)const noexcept;
 			};
 		public:
 			FrameResourceInfo frame;

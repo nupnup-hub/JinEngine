@@ -477,7 +477,7 @@ namespace JinEngine
 				}
 				*/
 
-				JGuiImageInfo imageInfo(editCamData.cam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+				JGuiImageInfo imageInfo(editCamData.cam.Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 				JGui::Image(imageInfo, JGui::GetWindowSize());
 				//JGui::Image(*camera, JGui::GetMainViewport()->WorkSize); 
  
@@ -1175,12 +1175,15 @@ namespace JinEngine
 					if (shadowLitVec[data->selectedIndex]->AllowDisplayShadowMap())
 					{
 						auto gInterface = selectedLit->GraphicResourceUserInterface();
-						const uint debugMapCount = gInterface.GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+						const uint debugMapCount = gInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 						for (uint i = 0; i < debugMapCount; ++i)
 						{
+							if (!gInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
+								continue;
+
 							JGuiImageInfo info(shadowLitVec[data->selectedIndex],
-								Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP,
-								Graphic::J_GRAPHIC_BIND_TYPE::SRV);
+								J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP,
+								J_GRAPHIC_BIND_TYPE::SRV);
 							info.dataIndex = i; 
 							JGui::Image(info, RenderResultImageSize());
 							if(i % 2 == 0)
@@ -1197,9 +1200,9 @@ namespace JinEngine
 		{
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_RENDER_RESULT];
 			const size_t sceneGuid = scene->GetGuid();
-			const uint pointLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
-			const uint spotLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
-			const uint rectLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
+			const uint pointLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+			const uint spotLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+			const uint rectLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 			const uint litSum = pointLitCount + spotLitCount + rectLitCount;		
 		 
 			if (JGui::BeginWindow("RenderResult##" + GetName(), &data->isOpen, J_GUI_WINDOW_FLAG_NO_DOCKING))
@@ -1214,7 +1217,7 @@ namespace JinEngine
 				{
 					JCamera* cam = static_cast<JCamera*>(camData.Get());
 					auto gInterface = cam->GraphicResourceUserInterface();
-					const uint rtDataIndex = gInterface.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+					const uint rtDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
  
 					JGui::Text(JCUtil::WstrToU8Str(cam->GetOwner()->GetName()));
 					if (!cam->AllowDisplayRenderResult())
@@ -1229,32 +1232,32 @@ namespace JinEngine
 						[](const GI& g) {return true; },
 						[](const GI& g)
 						{
-							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
+							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
 						},
 						[](const GI& g)
 						{
-							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
+							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
 						},
 						[](const GI& g) 
 						{
-							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
+							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
 						},
 						[](const GI& g)
 						{
-							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
+							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
 						},
 						/*
 						[](const GI& g)
 						{
-							auto index = g.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, index);
+							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, index);
 						},
 						*/
-						[](const GI& g){return g.HasHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP); }
+						[](const GI& g){return g.HasHandle(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP); }
 					};
 					std::string name[deubgMapCount]
 					{
@@ -1267,19 +1270,22 @@ namespace JinEngine
 						"SSAO Map"
 					};
 
-					const uint debugMapCount = gInterface.GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+					const uint debugMapCount = gInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 					const uint sequence[deubgMapCount]
 					{
 						1, 2, 0, 3, 4, 5
 					};
 					for (uint i = 0; i < debugMapCount; ++i)
 					{
+						if (!gInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
+							continue;
+
 						const uint dataIndex = sequence[i];
 						if (!cond[dataIndex](gInterface))
 							continue;
 						 
 						JGui::Text(name[dataIndex]);
-						auto handle = gInterface.GetGpuHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0, dataIndex);
+						auto handle = gInterface.GetGpuHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_BIND_TYPE::SRV, 0, dataIndex);
 						JGuiImageInfo info(handle);
 						JGui::Image(info, RenderResultImageSize());
 					}
@@ -1288,10 +1294,10 @@ namespace JinEngine
 					{ 
 						JGui::Text("Light list visualize");
 						JGuiImageInfo info(cam,
-							Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
-							Graphic::J_GRAPHIC_BIND_TYPE::SRV);
+							J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
+							J_GRAPHIC_BIND_TYPE::SRV);
 
-						info.dataIndex = gInterface.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW);
+						info.dataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW);
 						info.displayAllType = false;
 
 						JGui::Image(info, RenderResultImageSize());
@@ -1303,8 +1309,8 @@ namespace JinEngine
 						{ 
 							JGui::Text("First point light rt");
 							JGuiImageInfo pointInfo(cam,
-								Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING,
-								Graphic::J_GRAPHIC_BIND_TYPE::SRV);
+								J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING,
+								J_GRAPHIC_BIND_TYPE::SRV);
 							pointInfo.dataIndex = 0;
 							pointInfo.displayAllType = false;
 							JGui::Image(pointInfo, RenderResultImageSize());
@@ -1313,8 +1319,8 @@ namespace JinEngine
 						{ 
 							JGui::Text("First spot light rt");
 							JGuiImageInfo spotInfo(cam,
-								Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING,
-								Graphic::J_GRAPHIC_BIND_TYPE::SRV);
+								J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING,
+								J_GRAPHIC_BIND_TYPE::SRV);
 							spotInfo.dataIndex = 1;
 							spotInfo.displayAllType = false;
 							JGui::Image(spotInfo, RenderResultImageSize());
@@ -1323,8 +1329,8 @@ namespace JinEngine
 						{ 
 							JGui::Text("First rect light rt");
 							JGuiImageInfo rectInfo(cam,
-								Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING,
-								Graphic::J_GRAPHIC_BIND_TYPE::SRV);
+								J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING,
+								J_GRAPHIC_BIND_TYPE::SRV);
 							rectInfo.dataIndex = 2;
 							rectInfo.displayAllType = false;
 							JGui::Image(rectInfo, RenderResultImageSize());
@@ -1343,8 +1349,8 @@ namespace JinEngine
 						 
 						JGui::Text("Occlusion Depth Map");
 						JGuiImageInfo info(cam,
-							Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG,
-							Graphic::J_GRAPHIC_BIND_TYPE::SRV); 
+							J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG,
+							J_GRAPHIC_BIND_TYPE::SRV); 
 						if (cam->AllowHzbOcclusionCulling())
 							info.extraPerImagePtr = afterDisplayImagePtr;
 
@@ -1354,9 +1360,9 @@ namespace JinEngine
 					{
 						JGui::Text("RtGi");
 						JGuiImageInfo info(cam,
-							Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
-							Graphic::J_GRAPHIC_BIND_TYPE::SRV); 
-						info.dataIndex = gInterface.GetResourceDataIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+							J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
+							J_GRAPHIC_BIND_TYPE::SRV); 
+						info.dataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 						JGui::Image(info, RenderResultImageSize());
 
 						//finalColorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);

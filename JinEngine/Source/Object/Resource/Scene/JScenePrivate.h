@@ -63,8 +63,8 @@ namespace JinEngine
 			JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) final;
 			Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) final;
 		private:
-			Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetaData
-			Core::J_FILE_IO_RESULT StoreMetaData(Core::JDITypeDataBase* data)final;	//use storeData	 
+			Core::J_FILE_IO_RESULT LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetadata
+			Core::J_FILE_IO_RESULT StoreMetadata(Core::JDITypeDataBase* data)final;	//use storeData	 
 		};
 		class CreateInstanceInterface final : public JResourceObjectPrivate::CreateInstanceInterface
 		{

@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../JBloom.h"  
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
 #include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include<wrl/client.h> 

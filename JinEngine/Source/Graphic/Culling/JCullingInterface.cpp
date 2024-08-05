@@ -185,57 +185,5 @@ namespace JinEngine
 		{
 			return true;
 		}
-
-		JCullingUserInterface::JCullingUserInterface(JCullingInterface* currInterface)
-			:cPtrWrapper(currInterface->GetPointerWrapper())
-		{}
-		int JCullingUserInterface::GetArrayIndex(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept
-		{
-			return cPtrWrapper->Get()->GetArrayIndex(type, target);
-		}
-		uint JCullingUserInterface::GetResultBufferSize(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept
-		{
-			return cPtrWrapper->Get()->GetResultBufferSize(type, target);
-		}
-		float JCullingUserInterface::GetUpdateFrequency(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept
-		{
-			return cPtrWrapper->Get()->GetUpdateFrequency(type, target);
-		} 
-		void JCullingUserInterface::SetCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept
-		{
-			cPtrWrapper->Get()->SetCulling(type, target, index);
-		}
-		void JCullingUserInterface::OffCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept
-		{
-			cPtrWrapper->Get()->OffCulling(type, target, index);
-		}
-		void JCullingUserInterface::OffCullingArray(const J_CULLING_TYPE type, const J_CULLING_TARGET target)noexcept
-		{
-			cPtrWrapper->Get()->OffCullingArray(type, target);
-		}
-		bool JCullingUserInterface::IsCulled(const J_CULLING_TARGET target, const uint index)const noexcept
-		{
-			return cPtrWrapper != nullptr && cPtrWrapper->Get()->IsCulled(target, index);
-		}
-		bool JCullingUserInterface::IsCulled(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)const noexcept
-		{
-			return cPtrWrapper != nullptr && cPtrWrapper->Get()->IsCulled(type, target, index);
-		}
-		bool JCullingUserInterface::IsValid()const noexcept
-		{
-			return cPtrWrapper != nullptr;
-		}
-		bool JCullingUserInterface::IsUpdateEnd(const J_CULLING_TYPE type)const noexcept
-		{
-			return cPtrWrapper != nullptr && cPtrWrapper->Get()->IsUpdateEnd(type);
-		}
-		bool JCullingUserInterface::IsUpdateEnd(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept
-		{
-			return cPtrWrapper != nullptr && cPtrWrapper->Get()->IsUpdateEnd(type, target);
-		}
-		bool JCullingUserInterface::HasCullingData(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept
-		{
-			return cPtrWrapper->Get()->HasCullingData(type, target);
-		}
 	}
 }

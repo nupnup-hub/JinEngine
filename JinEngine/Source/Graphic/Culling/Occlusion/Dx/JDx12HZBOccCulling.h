@@ -119,6 +119,7 @@ namespace JinEngine
 			void OcclusionCulling(JDx12CommandContext* context,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle,
 				const uint passCBIndex,
+				const uint computeCBOffset,
 				const JDx12CullingResourceComputeSet& cSet,
 				const bool isPerspective);
 		private:

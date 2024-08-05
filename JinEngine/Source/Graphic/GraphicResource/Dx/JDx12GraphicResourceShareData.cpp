@@ -43,8 +43,8 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP: 
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP: 
 				return true;
 			default:
 				return false;

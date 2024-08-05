@@ -48,7 +48,7 @@ namespace JinEngine
 	namespace
 	{
 		using MaterialFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder1<
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, Graphic::JMaterialConstants&>>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, Graphic::JMaterialConstants&>>,
 			Graphic::JFrameDirty>;
 	}
 	namespace
@@ -705,7 +705,7 @@ namespace JinEngine
 	public:
 		void NotifyReAlloc()
 		{
-			MaterialFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, (MaterialFrame*)this);
+			MaterialFrame::ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, (MaterialFrame*)this);
 			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 	public:
@@ -731,11 +731,11 @@ namespace JinEngine
 		{
 			//all material belong same area
 			static constexpr size_t materialArea = 0;
-			MaterialFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, (MaterialFrame*)this, materialArea);
+			MaterialFrame::RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, (MaterialFrame*)this, materialArea);
 		}
 		void DeRegisterRItemFrameData()
 		{
-			MaterialFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, (MaterialFrame*)this);
+			MaterialFrame::DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, (MaterialFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
@@ -755,7 +755,7 @@ namespace JinEngine
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 			static RTypePrivateFunc rTypeiFunc{ &setFrameDirtyCallable};
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);
+			RegisterRTypeInfo(JMaterial::StaticTypeInfo(), rTypeHint, rTypeCFunc, rTypeiFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JMaterial::StaticTypeInfo(), mPrivate);
 
 			IMPL_REALLOC_BIND(JMaterial::JMaterialImpl, thisPointer)
@@ -1078,7 +1078,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = std::make_unique< JMaterial::InitData>(directory);	//for load metadata
-		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JMaterial> newMat = nullptr;
@@ -1107,7 +1107,7 @@ namespace JinEngine
 		mat.ConnnectChild(storeData->obj);
 		return mat->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JMaterial::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -1116,14 +1116,14 @@ namespace JinEngine
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JMaterial::InitData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JMaterial::InitData*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JMaterial::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -1136,7 +1136,7 @@ namespace JinEngine
 		if (!tool.Begin(mat->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);

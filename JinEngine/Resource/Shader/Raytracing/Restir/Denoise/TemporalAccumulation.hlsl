@@ -67,13 +67,13 @@ bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 
     TA::Actor actor = RestirTA::CreateActor(preUv, posW, normal, viewZ, materialID, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
     TA::ComputeCubicWeight(actor, result);
     
-    result.canUseBilinear &= all(abs(velocity) <= EPSILON);
+    //result.canUseBilinear &= all(abs(velocity) <= EPSILON);
     if (result.canUseCubic)
     { 
         preColor = Catmul::Compute(preColorHistory, samLinearClmap, result.bicubicParameter);
         preFastColor = Catmul::Compute(preFastColorHistory, samLinearClmap, result.bicubicParameter);
         currentHistory = preHistoryLength[prePixelCenterCoord].x;
-        //preColor = float4(0, 0, 1, 1);
+       // preColor = float4(0, 0, 1, 1);
         //preFastColor = float4(0, 0, 1, 1);
         return true;
     }
@@ -82,8 +82,8 @@ bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 
         preColor = CustomSampling::ComputeBilinear(preColorHistory, samLinearClmap, result.bilinearParameter, actor.invRtSize, result.customWeight);
         preFastColor = CustomSampling::ComputeBilinear(preFastColorHistory, samLinearClmap, result.bilinearParameter, actor.invRtSize, result.customWeight);
         currentHistory = preHistoryLength[prePixelCenterCoord].x;
-        //preColor = float4(1, 0, 0, 1);
-        //preFastColor = float4(1, 0, 0, 1);
+       // preColor = float4(1, 0, 0, 1);
+       // preFastColor = float4(1, 0, 0, 1);
         return true;
     }
     else

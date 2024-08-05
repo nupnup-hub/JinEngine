@@ -54,8 +54,8 @@ namespace JinEngine
 	namespace
 	{
 		using LitFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder2<
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, Graphic::JSpotLightConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, Graphic::JShadowMapDrawConstants&>>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, Graphic::JSpotLightConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, Graphic::JShadowMapDrawConstants&>>,
 			Graphic::JFrameDirty>;
 		using JCullingSingleHolder = Graphic::JCullingSingleHolder<Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM>;
 	}
@@ -242,13 +242,13 @@ namespace JinEngine
 		{
 			return thisPointer->GetOwner()->GetTransform();
 		}
-		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
 				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
 				return 0;
 			default:
 				return invalidIndex;
@@ -340,7 +340,7 @@ namespace JinEngine
 	public:
 		void CreateShadowMapResource()noexcept
 		{
-			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP);
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP);
 			CreateFrustumCullingData();
 
 			if (thisPointer->AllowDisplayShadowMap())
@@ -362,11 +362,11 @@ namespace JinEngine
 		};
 		void CreateShadowMapDebugResource()
 		{
-			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+			DestroyGraphicResource(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 	public:
 		void Activate()noexcept
@@ -399,7 +399,7 @@ namespace JinEngine
 			constant.outerConeAngle = outerConeAngle;
 			constant.penumbraScale = thisPointer->GetPenumbraWidth();
 			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
-			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
+			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
 			constant.hasShadowMap = IsShadowActivated();
 			constant.shadowMapSize = thisPointer->GetShadowMapSize();
 			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
@@ -454,11 +454,11 @@ namespace JinEngine
 		{
 			JLightPrivate::ChildInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
 		}
-		void RegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
+		void RegisterLightFrameData(const Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE type)
 		{
-			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT)
+			if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT)
 				SpotLitFrame::RegisterFrameData(type, (SpotLitFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW)
+			else if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW)
 				ShadowMapDrawFrame::RegisterFrameData(type, (ShadowMapDrawFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
 		}
 		void DeRegisterPreDestruction()
@@ -466,11 +466,11 @@ namespace JinEngine
 			if (thisPointer != nullptr)
 				JLightPrivate::ChildInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
 		}
-		void DeRegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
+		void DeRegisterLightFrameData(const Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE type)
 		{
-			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT)
+			if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT)
 				SpotLitFrame::DeRegisterFrameData(type, (SpotLitFrame*)this);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW)
+			else if (type == Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW)
 				ShadowMapDrawFrame::DeRegisterFrameData(type, (ShadowMapDrawFrame*)this);
 		}
 		static void RegisterTypeData()
@@ -760,7 +760,7 @@ namespace JinEngine
 		litUser->impl->SetInnerConeAngle(sInnerAngle);
 		litUser->impl->SetOuterConeAngle(sOuterConeAngle);
 		if (!isActivated)
-			litUser->DeActivate();
+			litUser->DoDeActivate();
 		return litUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)

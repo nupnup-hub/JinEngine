@@ -174,7 +174,7 @@ namespace JinEngine
 		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 	 
 		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::QUAD;
-		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
+		if (texture->GetTextureType() == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 		{
 			JDefaultMaterialSetting::SetSky(newTextureMat, texture);
 			shapeType = J_DEFAULT_SHAPE::SPHERE;
@@ -212,7 +212,7 @@ namespace JinEngine
 		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 
 		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::EMPTY;
-		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
+		if (texture->GetTextureType() == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 		{
 			JDefaultMaterialSetting::SetSky(newTextureMat, texture);
 			shapeType = J_DEFAULT_SHAPE::SPHERE;

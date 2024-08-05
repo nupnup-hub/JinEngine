@@ -252,7 +252,7 @@ namespace JinEngine
 			}
 		}
 	public:
-		static std::unique_ptr<InitData> CreateInitData(const std::wstring& name, const std::wstring& path, LoadMetaData* meta)
+		static std::unique_ptr<InitData> CreateInitData(const std::wstring& name, const std::wstring& path, LoadMetadata* meta)
 		{
 			return std::make_unique<InitData>(name, meta->guid, meta->flag, meta->formatIndex, meta->directory, ReadAssetData(path));
 		}
@@ -315,8 +315,8 @@ namespace JinEngine
 	}
 
 
-	JSkinnedMeshGeometry::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
-		: JMeshGeometry::LoadMetaData(JSkinnedMeshGeometry::StaticTypeInfo(), directory)
+	JSkinnedMeshGeometry::LoadMetadata::LoadMetadata(const JUserPtr<JDirectory>& directory)
+		: JMeshGeometry::LoadMetadata(JSkinnedMeshGeometry::StaticTypeInfo(), directory)
 	{}
 
 	Core::JIdentifierPrivate& JSkinnedMeshGeometry::PrivateInterface()const noexcept
@@ -386,8 +386,8 @@ namespace JinEngine
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
 
-		auto metaData = std::make_unique<JSkinnedMeshGeometry::LoadMetaData>(directory);	//for load metadata
-		if (LoadMetaData(pathData.metaFilePath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto metaData = std::make_unique<JSkinnedMeshGeometry::LoadMetadata>(directory);	//for load metadata
+		if (LoadMetadata(pathData.metaFilePath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JSkinnedMeshGeometry> newMesh = nullptr;
@@ -415,24 +415,24 @@ namespace JinEngine
 		newMesh.ConnnectChild(storeData->obj);
 		return newMesh->impl->WriteAssetData(newMesh->GetPath(), newMesh->GetMeshGroupData()) ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
-		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkinnedMeshGeometry::LoadMetaData::StaticTypeInfo()))
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkinnedMeshGeometry::LoadMetadata::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JFileIOTool tool;
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JSkinnedMeshGeometry::LoadMetaData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JSkinnedMeshGeometry::LoadMetadata*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->meshType, "MeshType");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->meshType, "MeshType");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkinnedMeshGeometry::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -445,7 +445,7 @@ namespace JinEngine
 		if (!tool.Begin(mesh->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		JObjectFileIOHelper::StoreEnumData(tool, mesh->GetMeshGeometryType(), "MeshType");

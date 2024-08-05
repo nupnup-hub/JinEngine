@@ -31,7 +31,7 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h" 
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"
 #include"../../FrameResource/JCameraConstants.h" 
 #include"../../FrameResource/Dx/JDx12FrameResource.h" 
@@ -394,9 +394,9 @@ namespace JinEngine::Graphic
 
 		const JUserPtr<JGraphicResourceInfo>& randomInfo = randomInfoVec[(uint)ssaoDesc.ssaoType];
 		auto gInterface = helper.cam->GraphicResourceUserInterface();
-		int rtDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		int dsDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		int aoDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
+		int rtDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		int dsDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		int aoDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
 
 		const JVector2<uint> size = gInterface.GetResourceSize(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtDataIndex);
 		inter = dx12Share->GetSsaoData(size.x, size.y);
@@ -521,7 +521,7 @@ namespace JinEngine::Graphic
 
 		set.context->SetGraphicsRootSignature(ssaoDepthLinearizeRootSignature.Get());
 		set.context->SetGraphicsRootDescriptorTable(SsaoDepthLinearlize::depthMapIndex, set.dsSet.GetGpuSrvHandle());
-		set.context->SetGraphicsRootConstantBufferView(SsaoDepthLinearlize::passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+		set.context->SetGraphicsRootConstantBufferView(SsaoDepthLinearlize::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
 		set.context->DrawFullScreenTriangle(); 
 	}
 	void JDx12Ssao::DepthMapInetrleave(SSaoDrawDataSet& set, const JDrawHelper& helper)
@@ -533,7 +533,7 @@ namespace JinEngine::Graphic
 
 		set.context->SetGraphicsRootSignature(ssaoDepthInterleaveRootSignature.Get());
 		set.context->SetGraphicsRootDescriptorTable(SsaoDepthInterleave::depthMapIndex, set.aoDepthSet.GetGpuSrvHandle());
-		set.context->SetGraphicsRootConstantBufferView(SsaoDepthInterleave::passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao)); 
+		set.context->SetGraphicsRootConstantBufferView(SsaoDepthInterleave::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao)); 
 		set.context->SetViewportAndRect(set.aoDepthInterleaveSet.info->GetResourceSize());		//quater
 		 
 		set.aoDepthInterleaveSet.viewOffset = 1;
@@ -552,7 +552,7 @@ namespace JinEngine::Graphic
 		auto shaderData = ssao[shaderInedx].get();
 		set.context->SetPipelineState(shaderData);
 		set.context->SetGraphicsRootSignature(set.ssaoDesc.ssaoType == J_SSAO_TYPE::DEFAULT ? ssaoRootSignature.Get() : hbaoRootSignature.Get());
-		set.context->SetGraphicsRootConstantBufferView(Ssao::passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao)); 
+		set.context->SetGraphicsRootConstantBufferView(Ssao::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao)); 
 
 		if (set.canUseHbaoInterleave)
 		{ 
@@ -592,7 +592,7 @@ namespace JinEngine::Graphic
 
 		set.context->SetGraphicsRootDescriptorTable(SsaoCombine::aoMapIndex, set.aoInterleaveSet.GetGpuSrvHandle());
 		set.context->SetGraphicsRootDescriptorTable(SsaoCombine::depthMapIndex, set.aoDepthSet.GetGpuSrvHandle());
-		set.context->SetGraphicsRootConstantBufferView(SsaoCombine::passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+		set.context->SetGraphicsRootConstantBufferView(SsaoCombine::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
 		
 		if (set.canBlur)
 		{
@@ -619,7 +619,7 @@ namespace JinEngine::Graphic
 			set.context->SetPipelineState(shaderData);
 			set.context->SetGraphicsRootSignature(ssaoBlurRootSignature.Get());
 			set.context->SetGraphicsRootDescriptorTable(SsaoBlur::srcMapIndex, set.aoInter00Set.GetGpuSrvHandle());
-			set.context->SetGraphicsRootConstantBufferView(SsaoBlur::passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+			set.context->SetGraphicsRootConstantBufferView(SsaoBlur::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
 			 
 			set.context->SetRenderTargetView(set.aoInter01Set);
 			set.context->SetViewportAndRect(set.aoInter01Set.info->GetResourceSize());

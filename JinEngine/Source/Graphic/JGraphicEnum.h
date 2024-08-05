@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #pragma once
-#include"../Core/Reflection/JReflection.h"
+#include"../Object/GraphicRule/JGraphicModuleType.h"
 
 namespace JinEngine
 {
@@ -36,43 +36,7 @@ namespace JinEngine
 			ORTHOLOGIC,
 			COUNT
 		};
-
-		//contain draw & compute process 
-		enum class J_GRAPHIC_TASK_TYPE
-		{
-			SCENE_DRAW = 0,
-			SHADOW_MAP_DRAW,
-			OUT_LINE_DRAW,
-			DEPTH_MAP_DRAW,
-			DEPTH_MAP_VISUALIZE,		//convert non linear to linear depth map (debug)
-			ALBEDO_MAP_VISUALIZE,
-			SPECULAR_MAP_VISUALIZE,
-			NORMAL_MAP_VISUALIZE,
-			TANGENT_MAP_VISUALIZE,
-			VELOCITY_MAP_VISUALIZE,
-			APPLY_BLUR,
-			APPLY_DOWN_SAMPLING,
-			APPLY_SSAO,
-			APPLY_TONE_MAPPING,
-			APPLY_BLOOM,
-			MANAGE_POST_PROCESS_EXPOSURE,
-			MANAGE_POST_PROCESS_HISTOGRAM,
-			APPLY_ANTIALISE,
-			APPLY_POST_PROCESS_RESULT,
-			APPLY_CONVERT_COLOR,
-			CONTROLL_POST_PROCESS_PIPELINE,
-			SSAO_VISUALIZE,
-			//FRUSTUM_CULLING,		//mostly execute on cpu
-			HZB_CULLING,
-			HD_CULLING,
-			LIGHT_CULLING,
-			LIGHT_LIST_DRAW,		//visualize light list (debug),
-			RAYTRACING_AMBIENT_OCCLUSION,
-			RAYTRACING_GI,
-			RAYTRACING_DENOISE,
-			STORE_PREVIOUS_FRAME_DATA
-		};
-
+		 
 		REGISTER_ENUM_CLASS(J_GRAPHIC_FORMAT, int, R8G8B8A8_UNORM,
 			R10G10B10A2_UNORM, 
 			R16G16B16A16_UNORM,

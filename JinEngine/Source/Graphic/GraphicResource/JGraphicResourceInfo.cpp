@@ -35,7 +35,7 @@ namespace JinEngine
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:	//owner is swapchain class
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:	//owner is swapchain class
 				return false;
 			default:
 				return true;

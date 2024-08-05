@@ -36,41 +36,33 @@ SOFTWARE.
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/JResourceObjectUserInterface.h" 
 #include"../../GameObject/JGameObject.h" 
-#include"../../JObjectFileIOHelper.h"
+#include"../../JObjectFileIOHelper.h" 
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../../Core/FSM/JFSMparameter.h" 
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
-#include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Graphic/Frameresource/JAnimationConstants.h" 
-#include"../../../Graphic/Frameresource/JFrameUpdate.h"
+#include"../../../Core/Reflection/JTypeImplBase.h" 
 #include<fstream>
 namespace JinEngine
-{
-	namespace
-	{
-		using ContFrameUpdateInteface = JAnimationControllerPrivate::FrameUpdateInterface;
-		using AnimatorFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder1<Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, Graphic::JAnimationConstants&>>, Core::JEmptyType>;
-	}
+{ 
+	using AnimationControllerInterfaced = JAnimationControllerPrivate::AnimationInterface;
 	namespace
 	{
 		static auto isAvailableoverlapLam = []() {return false; };
 		static JAnimatorPrivate aPrivate;
 	} 
  
-	class JAnimator::JAnimatorImpl : public Core::JTypeImplBase,
-		public JResourceObjectUserInterface,
-		public AnimatorFrameUpdate
+	class JAnimator::JAnimatorImpl : public Core::JTypeImplBase, public JResourceObjectUserInterface
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimatorImpl)
+		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimatorImpl) 
 	public:
-		using AniFrame = JFrameInterface1;
+		JWeakPtr<JAnimator> thisPointer = nullptr;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
 	public:
-		JWeakPtr<JAnimator> thisPointer;
-	public:
-		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false))
+		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false));
 		JUserPtr<JSkeletonAsset> skeletonAsset;
-		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false))
+		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false));
 		JUserPtr<JAnimationController> animationController;
 		Core::JGameTimer* userTimer = nullptr;
 		std::unique_ptr<JAnimationUpdateData> animationUpdateData;
@@ -133,7 +125,7 @@ namespace JinEngine
 					JUserPtr<Core::JFSMparameter> param = animationController->GetParameterByIndex(i);
 					animationUpdateData->RegisterParameter(param->GetGuid(), param->GetValue());
 				}
-				ContFrameUpdateInteface::Initialize(animationController.Get(), animationUpdateData.get());
+				AnimationControllerInterfaced::Initialize(animationController.Get(), animationUpdateData.get());
 				reqSettingAniData = false; 
 			}
 		}
@@ -143,14 +135,6 @@ namespace JinEngine
 			return animationController.IsValid() && userTimer != nullptr;
 		}
 	public:
-		void UpdateFrame(Graphic::JAnimationConstants& constant)noexcept final
-		{
-			animationUpdateData->SetTimer(userTimer);
-			animationUpdateData->SetModelSkeleton(skeletonAsset);
-			ContFrameUpdateInteface::Update(animationController.Get(), animationUpdateData.get(), constant);
-			AniFrame::MinusMovedDirty();
-		}
-	public:
 		static bool DoCopy(JAnimator* from, JAnimator* to)
 		{ 
 			to->SetSkeletonAsset(from->GetSkeletonAsset());
@@ -158,9 +142,32 @@ namespace JinEngine
 			return true;
 		}
 	public:
+		void Update()
+		{
+			AnimationControllerInterfaced::Update(animationController.Get(), animationUpdateData.get()); 
+		}
+		void Compute(JSkeletonMatrixSet& set)
+		{
+			AnimationControllerInterfaced::Compute(animationController.Get(), animationUpdateData.get(), set);
+		}
 		void ClearAnimationUpdateData()noexcept
 		{
 			animationUpdateData.reset();
+		}
+	public:
+		void Activate()
+		{
+			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
+			RegisterAnimationFrameData();
+			OnResourceRef();
+			SettingAnimationUpdateData();
+		}
+		void DeActivate()
+		{
+			ClearAnimationUpdateData();
+			OffResourceRef();
+			DeRegisterAnimationFrameData();
+			GraphicModuleInterface()->DeAllocate(graphicData); 
 		}
 	public:
 		void OnResourceRef()
@@ -193,7 +200,7 @@ namespace JinEngine
 	public:
 		void NotifyReAlloc()
 		{
-			ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, this);
+			//ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, this);
 			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 	public:
@@ -211,11 +218,12 @@ namespace JinEngine
 		}
 		void RegisterAnimationFrameData()
 		{
-			RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, this, thisPointer->GetOwner()->GetOwnerGuid());
+			JFrameUploadDataCreationDesc desc(J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, thisPointer->GetOwner()->GetOwnerGuid());
+			GraphicModuleInterface()->CreateFrameUploadData(graphicData.Get(), desc);
 		}
 		void DeRegisterAnimationFrameData()
 		{
-			DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, this);
+			GraphicModuleInterface()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION);
 		}
 		static void RegisterTypeData()
 		{
@@ -259,6 +267,10 @@ namespace JinEngine
 	{
 		return aPrivate;
 	}
+	JGraphicModuleManagedDataFrame* JAnimator::GetModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
 	J_COMPONENT_TYPE JAnimator::GetComponentType()const noexcept
 	{
 		return GetStaticComponentType();
@@ -295,6 +307,14 @@ namespace JinEngine
 		else
 			return false;
 	}
+	void JAnimator::Update()
+	{
+		impl->Update();
+	}
+	void JAnimator::Compute(JSkeletonMatrixSet& set)
+	{
+		impl->Compute(set);
+	}
 	void JAnimator::DoActivate()noexcept
 	{
 		//Caution 
@@ -302,17 +322,13 @@ namespace JinEngine
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
 		JComponent::DoActivate();
-		impl->RegisterAnimationFrameData();
-		impl->OnResourceRef();
-		impl->SettingAnimationUpdateData();
+		impl->Activate();
 		RegisterComponent(impl->thisPointer);
 	}
 	void JAnimator::DoDeActivate()noexcept
 	{
 		DeRegisterComponent(impl->thisPointer);
-		impl->ClearAnimationUpdateData();
-		impl->OffResourceRef();
-		impl->DeRegisterAnimationFrameData(); 
+		impl->DeActivate();
 		JComponent::DoDeActivate();
 	}
 	JAnimator::JAnimator(const InitData& initData)
@@ -326,9 +342,7 @@ namespace JinEngine
 	using CreateInstanceInterface = JAnimatorPrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JAnimatorPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JAnimatorPrivate::AssetDataIOInterface;
-	using AnimationUpdateInterface = JAnimatorPrivate::AnimationUpdateInterface;
-	using FrameUpdateInterface = JAnimatorPrivate::FrameUpdateInterface;
-	using FrameIndexInterface = JAnimatorPrivate::FrameIndexInterface;
+	using AnimationUpdateInterface = JAnimatorPrivate::AnimationUpdateInterface; 
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{  
@@ -384,7 +398,7 @@ namespace JinEngine
 		aniUser->SetAnimatorController(aniCont);
 		aniUser->SetSkeletonAsset(skeletonAsset);
 		if (!isActivated)
-			aniUser->DeActivate();
+			aniUser->DoDeActivate();
 
 		return aniUser;
 	}
@@ -418,33 +432,7 @@ namespace JinEngine
 		ani->impl->reqSettingAniData = false;
 		ani->impl->userTimer = nullptr;
 		ani->impl->ClearAnimationUpdateData();
-	}
-
-	bool FrameUpdateInterface::UpdateStart(JAnimator* ani)noexcept
-	{ 
-		return ani->impl->animationController.IsValid();
-	}
-	void FrameUpdateInterface::UpdateFrame(JAnimator* ani, Graphic::JAnimationConstants& constant)noexcept
-	{
-		ani->impl->UpdateFrame(constant);
-	}
-	void FrameUpdateInterface::UpdateEnd(JAnimator* ani)noexcept
-	{
-		ani->impl->UpdateFrameEnd();
-	}
-	int FrameUpdateInterface::GetFrameIndex(JAnimator* ani)noexcept
-	{
-		return ani->impl->AniFrame::GetFrameIndex();
 	} 
-	bool FrameUpdateInterface::HasRecopyRequest(JAnimator* ani)noexcept
-	{
-		return ani->impl->AniFrame::HasMovedDirty();
-	}
-
-	int FrameIndexInterface::GetFrameIndex(JAnimator* ani)noexcept
-	{
-		return ani->impl->AniFrame::GetFrameIndex();
-	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JAnimatorPrivate::GetCreateInstanceInterface()const noexcept
 	{

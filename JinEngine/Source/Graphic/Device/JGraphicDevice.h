@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once
 #include"JGraphicDeviceType.h"
 #include"../JGraphicSubClassInterface.h"
-#include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicTaskDataSet.h"
 #include"../JGraphicConstants.h"
 #include"../../Core/JCoreEssential.h" 
 

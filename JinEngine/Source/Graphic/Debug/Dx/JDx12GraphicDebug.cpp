@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../../JGraphicInfo.h"
 #include"../../JGraphicUpdateHelper.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h" 
 #include"../../Utility/Dx/JDx12Utility.h" 
@@ -160,14 +160,17 @@ namespace JinEngine::Graphic
 			auto gRInterface = helper.lit->GraphicResourceUserInterface();
 			const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType());
 
-			const uint shadowDataIndex = gRInterface.GetResourceDataIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			const uint debugDataIndex = gRInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
-			const uint debugCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+			const uint shadowDataIndex = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+			const uint debugDataIndex = gRInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
+			const uint debugCount = gRInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 			const uint macCount = srcBase.GetMaxCount();
 			 
 			//array texture가 항상 먼저 할당된다.
 			for (uint i = 0; i < arrayCount; ++i)
 			{
+				if (!gRInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
+					continue;
+
 				if(i == 0)
 					srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataIndex));
 				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataIndex + i));
@@ -190,11 +193,14 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceComputeSetBufferBase& srcBase,
 		JDx12GraphicResourceComputeSetBufferBase& destBase)const
 	{
-		const uint dataCount = gRInterface->GetDataCount(srcType);
+		const uint dataCount = gRInterface->GetResourceCount(srcType);
 		const uint macCount = srcBase.GetMaxCount();
 
 		for (uint i = 0; i < dataCount && i < macCount; ++i)
 		{
+			if (!gRInterface->IsValidHandle(srcType, i))
+				continue;
+
 			srcBase.Push(context->ComputeSet(*gRInterface, srcType, i));
 			destBase.Push(context->ComputeSet(*gRInterface, destType, i));
 		}
@@ -245,6 +251,9 @@ namespace JinEngine::Graphic
 
 		for (uint i = 0; i < DEBUG_TYPE_COUNT; ++i)
 		{
+			if (!srcBuff(i).IsValid() || !destBuff(i).IsValid())
+				continue;
+
 			if (set.allowTrigger[i])
 			{ 
 				set.srcHandle = srcBuff(i).GetGpuSrvHandle();
@@ -278,6 +287,9 @@ namespace JinEngine::Graphic
 		//array texture가 항상 먼저 할당된다.
 		for (uint i = 0; i < set.arrayCount; ++i)
 		{
+			if (!destBuff(i).IsValid())
+				continue;
+
 			set.srcHandle = srcBuff(0).GetGpuSrvHandle();
 			set.destHandle = destBuff(i).GetGpuUavHandle();
 			set.size = srcBuff(0).info->GetResourceSize();
@@ -287,7 +299,10 @@ namespace JinEngine::Graphic
 		set.arrayIndex = invalidIndex; 
 		uint srcIndex = set.isArrayTexture ? 1 : 0;
 		for (uint i = set.arrayCount; i < destBuff.validCount; ++i)
-		{   
+		{
+			if (!destBuff(i).IsValid())
+				continue;
+
 			set.srcHandle = srcBuff(srcIndex).GetGpuSrvHandle();
 			set.destHandle = destBuff(i).GetGpuUavHandle();
 			set.size = srcBuff(srcIndex).info->GetResourceSize();
@@ -339,9 +354,12 @@ namespace JinEngine::Graphic
 		//context->Transition(&srcBuff, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		//context->Transition(&destBuff, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
-		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
+		const uint dataCount = gRInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
 		for (uint i = 0; i < dataCount; ++i)
 		{
+			if (!gRInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, i))
+				continue;
+
 			JDx12GraphicResourceComputeSet& srcSet = srcBuff(i);
 			JDx12GraphicResourceComputeSet& destSet = destBuff(i);
 

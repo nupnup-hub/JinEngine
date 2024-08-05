@@ -52,14 +52,13 @@ namespace JinEngine
 		public:
 			ID3D12Device* device;
 			IDXGIFactory4* dxgiFactory;
-			ID3D12CommandQueue* commandQueue; 
+			ID3D12CommandQueue* commandQueue;
 			Microsoft::WRL::ComPtr<IDXGISwapChain3>* swapChain;
 			uint width;
 			uint height;
 			bool m4xMsaaState;
-			uint m4xMsaaQuality; 
-		};
-		class JGraphicResourceUserInterface;
+			uint m4xMsaaQuality;
+		}; 
 		class JDx12GraphicResourceInfo;
 		class JDx12GraphicResourceManager final : public JGraphicResourceManager
 		{
@@ -96,7 +95,7 @@ namespace JinEngine
 			JUserPtr<JGraphicResourceInfo> defaultSceneDsInfo;	//cashing
 		private:
 			MPBStructure mpb; 
-		public: 
+		public:
 			~JDx12GraphicResourceManager();
 		public:
 			void Initialize(JGraphicDevice* device)final;
@@ -123,10 +122,10 @@ namespace JinEngine
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetMPBCpuDescriptorHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetMPBGpuDescriptorHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			ID3D12DescriptorHeap* GetDescriptorHeap(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			uint GetDescriptorSize(const J_GRAPHIC_BIND_TYPE bType)const noexcept; 
+			uint GetDescriptorSize(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			D3D12_VERTEX_BUFFER_VIEW VertexBufferView(const JUserPtr<JMeshGeometry>& mesh)const noexcept;
 			D3D12_INDEX_BUFFER_VIEW IndexBufferView(const JUserPtr<JMeshGeometry>& mesh)const noexcept;
-		public: 
+		public:
 			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
 			uint GetResourceCapacity(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept final;
@@ -166,7 +165,7 @@ namespace JinEngine
 			bool CreateOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo> info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)final;
 			bool DestroyGraphicTextureResource(JGraphicDevice* device, JGraphicResourceInfo* info)final;
 			bool DestroyGraphicOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype)final;
-		private: 
+		private:
 			JUserPtr<JDx12GraphicResourceInfo> CommonCreationProcess(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType, const ExtraOption& extraOption = ExtraOption());
 			JUserPtr<JDx12GraphicResourceInfo> CreateTexture2D(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
 			JUserPtr<JDx12GraphicResourceInfo> CreateCubeMap(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
@@ -180,7 +179,7 @@ namespace JinEngine
 		public:
 			bool ReAllocTypePerAllResource(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType);
 			bool ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType) final;
-		public: 
+		public:
 			bool CopyResource(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& from, const JUserPtr<JGraphicResourceInfo>& to) final;
 		public:
 			bool SettingMipmapBind(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& info, const bool isReadOnly, _Out_ std::vector<Core::JDataHandle>& handle)final;
@@ -195,7 +194,7 @@ namespace JinEngine
 		private:
 			void ClearResource();
 		public:
-			void ResizeWindow(JGraphicDevice* device)final;
+			void ResizeWindow(JGraphicDevice* device)final; 
 		public:
 			void StoreTexture(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType, const int index, const std::wstring& path)final;
 		public:
@@ -210,10 +209,10 @@ namespace JinEngine
 			JDx12GraphicResourceInfo* info = nullptr;
 			JDx12GraphicResourceManager* gm = nullptr;
 			JDx12GraphicResourceHolder* holder = nullptr;
-			ID3D12Resource* resource = nullptr; 
+			ID3D12Resource* resource = nullptr;
 		public:
 			uint viewOffset = 0;
-		private: 
+		private:
 			//if construct by option
 			//set valid enum
 			J_GRAPHIC_RESOURCE_OPTION_TYPE opType = J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNT;
@@ -236,11 +235,11 @@ namespace JinEngine
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuUavHandle()const noexcept;
 		public:
 			bool IsValid()const noexcept;
-		}; 
+		};
 		struct JDx12GraphicResourceComputeSetBufferBase
 		{
 		public:
-			virtual JDx12GraphicResourceComputeSet& operator()(const uint index) = 0; 
+			virtual JDx12GraphicResourceComputeSet& operator()(const uint index) = 0;
 		public:
 			virtual void Push(JDx12GraphicResourceComputeSet&& set) = 0;
 		public:
@@ -253,7 +252,7 @@ namespace JinEngine
 		struct JDx12GraphicResourceComputeSetBuffer : public JDx12GraphicResourceComputeSetBufferBase
 		{
 		public:
-			JDx12GraphicResourceComputeSet buffer[count]; 
+			JDx12GraphicResourceComputeSet buffer[count];
 		public:
 			uint validCount = 0;
 		public:
@@ -285,6 +284,6 @@ namespace JinEngine
 				validCount = count;
 			}
 		};
- 
+
 	}
 }

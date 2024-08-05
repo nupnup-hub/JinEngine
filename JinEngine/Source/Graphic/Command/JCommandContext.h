@@ -30,6 +30,7 @@ SOFTWARE.
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Time/JStopWatch.h"
 #include"../../Core/Singleton/JSingletonHolder.h" 
+#include"../../Core/Unit/JRGBUnit.h"
 
 namespace JinEngine
 {
@@ -37,7 +38,7 @@ namespace JinEngine
 	{
 		class JCommandContextManager;
 		class JCommandContext : public JGraphicDeviceUser
-		{
+		{ 
 		private:
 			friend class JCommandContextManager;
 		private:
@@ -45,14 +46,15 @@ namespace JinEngine
 		private:
 			JCommandContextLog log;
 			Core::JStopWatch stopWatch;
-			uint logUpdateCount = 0;
+			uint logUpdateCount = 0; 
+			uint threadNumber = 0;
 		private: 
 			bool isAlwausActivated = false;
 			bool isLastFrameUpdated = false;
 			bool canUse = true; 
 			bool canWriteLog = true;
 		public:
-			JCommandContext(const std::string& name, const bool isAlwausActivated = false);
+			JCommandContext(const std::string& name, const uint threadNumber, const bool isAlwausActivated = false);
 			virtual ~JCommandContext() = default;
 		public:
 			virtual bool Begin();
@@ -64,7 +66,11 @@ namespace JinEngine
 		public:
 			void SetWriteLogTrigger(const bool value);
 		public:
-			bool CanUse()const noexcept; 
+			bool CanUse()const noexcept;
+		public: 
+			//Debugging
+			virtual void BeginDebuggingCapture(const std::string& name, const Core::JRGBVector& color = Core::JRGBColorDefine::White()) = 0;
+			virtual void EndDebuggingCapture() = 0;
 		};
 		 
 		class JCommandContextManager

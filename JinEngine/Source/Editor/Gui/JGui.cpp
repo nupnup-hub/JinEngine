@@ -328,27 +328,27 @@ namespace JinEngine::Editor
 #pragma endregion
 
 #pragma region Color
-	JVector4<float> JGui::GetSelectedWidgetColorFactor()noexcept
+	Core::JRGBVector JGui::GetSelectedWidgetColorFactor()noexcept
 	{
-		return JVector4<float>(0.35f, 0.35f, 0.35f, 0.35f);
+		return Core::JRGBVector(0.35f, 0.35f, 0.35f, 0.35f);
 	} 
-	JVector4<float> JGui::GetUnFocusedWidgetColorFactor()noexcept
+	Core::JRGBVector JGui::GetUnFocusedWidgetColorFactor()noexcept
 	{
-		return JVector4<float>(0.2f, 0.2f, 0.2f, 0.2f);
+		return Core::JRGBVector(0.2f, 0.2f, 0.2f, 0.2f);
 	}
-	JVector4<float> JGui::GetDeActivatedTextColorFactor()noexcept
+	Core::JRGBVector JGui::GetDeActivatedTextColorFactor()noexcept
 	{
-		return JVector4<float>(-0.3f, -0.3f, -0.3f, -0.25f);
+		return Core::JRGBVector(-0.3f, -0.3f, -0.3f, -0.25f);
 	}
-	JVector4<float> JGui::GetColor(const J_GUI_COLOR flag)noexcept
+	Core::JRGBVector JGui::GetColor(const J_GUI_COLOR flag)noexcept
 	{
 		return Private::Adaptee()->GetColor(flag);
 	}
-	uint JGui::GetUColor(const J_GUI_COLOR flag)noexcept
+	Core::JRGBUint JGui::GetUColor(const J_GUI_COLOR flag)noexcept
 	{
 		return Private::Adaptee()->GetUColor(flag);
 	}
-	JVector4<float> JGui::GetSelectableColorFactor(const bool isFocus, const bool isSelecetd, const bool isHovered) noexcept
+	Core::JRGBVector JGui::GetSelectableColorFactor(const bool isFocus, const bool isSelecetd, const bool isHovered) noexcept
 	{
 		if (isSelecetd)
 		{
@@ -367,11 +367,11 @@ namespace JinEngine::Editor
 		else
 			return JVector4F::Zero();
 	}
-	void JGui::SetColor(const J_GUI_COLOR flag, const JVector4<float>& color)noexcept
+	void JGui::SetColor(const J_GUI_COLOR flag, const Core::JRGBVector& color)noexcept
 	{
 		Private::Adaptee()->SetColor(flag, color);
 	}
-	void JGui::SetColorToSoft(const J_GUI_COLOR flag, const JVector4<float>& factor)noexcept
+	void JGui::SetColorToSoft(const J_GUI_COLOR flag, const Core::JRGBVector& factor)noexcept
 	{
 		Private::Adaptee()->SetColor(flag, GetColor(flag) + factor);
 	}
@@ -379,7 +379,7 @@ namespace JinEngine::Editor
 	{
 		Private::Adaptee()->SetColorToDefault(flag);
 	}
-	void JGui::SetAllColorToSoft(const JVector4<float>& factor)noexcept
+	void JGui::SetAllColorToSoft(const Core::JRGBVector& factor)noexcept
 	{
 		Private::Adaptee()->SetAllColorToSoft(factor);
 	}
@@ -387,25 +387,25 @@ namespace JinEngine::Editor
 	{
 		Private::Adaptee()->SetAllColorToDefault();
 	} 
-	uint32 JGui::ConvertUColor(const JVector4<float>& color)noexcept
+	Core::JRGBUint JGui::ConvertUColor(const Core::JRGBVector& color)noexcept
 	{
 		return Private::Adaptee()->ConvertUColor(color);
 	}
-	void JGui::PushColor(const J_GUI_COLOR colType, const JVector4<float>& color)
+	void JGui::PushColor(const J_GUI_COLOR colType, const Core::JRGBVector& color)
 	{
 		Private::Adaptee()->PushColor(colType, color);
 	}
-	void JGui::PushColorToSoft(const J_GUI_COLOR colType, const JVector4<float>& factor)
+	void JGui::PushColorToSoft(const J_GUI_COLOR colType, const Core::JRGBVector& factor)
 	{
 		Private::Adaptee()->PushColor(colType, GetColor(colType) + factor);
 	}
-	void JGui::PushTreeNodeColorToSoft(const JVector4<float>& factor)noexcept
+	void JGui::PushTreeNodeColorToSoft(const Core::JRGBVector& factor)noexcept
 	{ 
 		PushColorToSoft(J_GUI_COLOR::HEADER, factor);
 		PushColorToSoft(J_GUI_COLOR::HEADER_HOVERED, factor);
 		PushColorToSoft(J_GUI_COLOR::HEADER_ACTIVE, factor);
 	}
-	void JGui::PushButtonColorToSoftSet(const JVector4<float>& factor)noexcept
+	void JGui::PushButtonColorToSoftSet(const Core::JRGBVector& factor)noexcept
 	{ 
 		PushColorToSoft(J_GUI_COLOR::BUTTON, factor);
 		PushColorToSoft(J_GUI_COLOR::BUTTON_HOVERED, factor);
@@ -1092,7 +1092,7 @@ namespace JinEngine::Editor
 	{
 		return Private::Adaptee()->ColorPicker(name, color, flags);
 	}
-	bool JGui::ColorPicker(const std::string& name, JVector4<float>& color, J_GUI_COLOR_EDIT_FALG_ flags)
+	bool JGui::ColorPicker(const std::string& name, Core::JRGBVector& color, J_GUI_COLOR_EDIT_FALG_ flags)
 	{
 		return Private::Adaptee()->ColorPicker(name, color, flags);
 	}
@@ -1115,8 +1115,8 @@ namespace JinEngine::Editor
 	void JGui::InvalidImage(const JVector2<float>& size,
 		const JVector2<float>& uv0,
 		const JVector2<float>& uv1,
-		const JVector4<float>& tintCol,
-		const JVector4<float>& borderCol)
+		const Core::JRGBVector& tintCol,
+		const Core::JRGBVector& borderCol)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::IMAGE);
 		Private::Adaptee()->InvalidImage(size, uv0, uv1, tintCol, borderCol);
@@ -1125,8 +1125,8 @@ namespace JinEngine::Editor
 		const JVector2<float>& size,
 		const JVector2<float>& uv0,
 		const JVector2<float>& uv1,
-		const JVector4<float>& tintCol,
-		const JVector4<float>& borderCol)
+		const Core::JRGBVector& tintCol,
+		const Core::JRGBVector& borderCol)
 	{
 		if (!info.IsValid())
 			InvalidImage(size);
@@ -1141,9 +1141,12 @@ namespace JinEngine::Editor
 		{ 
 			uint imageCount = 0;
 			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetDataCount(info.rType);
+			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetResourceCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
+				if (!info.gUserAccess->IsValidHandle(info.rType, i))
+					continue;
+
 				info.dataIndex = i;
 				const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, i);
 				for (uint j = 0; j < viewCount; ++j)
@@ -1177,8 +1180,8 @@ namespace JinEngine::Editor
 		const JVector2<float>& uv0,
 		const JVector2<float>& uv1,
 		float framePadding,
-		const JVector4<float>& bgCol,
-		const JVector4<float>& tintCol)
+		const Core::JRGBVector& bgCol,
+		const Core::JRGBVector& tintCol)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::IMAGE);
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::BUTTON);
@@ -1198,7 +1201,7 @@ namespace JinEngine::Editor
 	void JGui::AddInvalidImage(const JVector2<float>& pMin,
 		const JVector2<float>& pMax,
 		const bool isFront, 
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const JVector2<float>& uvMin,
 		const JVector2<float>& uvMax)
 	{
@@ -1213,7 +1216,7 @@ namespace JinEngine::Editor
 		const float rounding,
 		J_GUI_DRAW_FLAG_ flag,
 		const bool isFront,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const JVector2<float>& uvMin,
 		const JVector2<float>& uvMax)
 	{
@@ -1227,7 +1230,7 @@ namespace JinEngine::Editor
 		const JVector2<float>& pMin,
 		const JVector2<float>& pMax,
 		const bool isFront,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const JVector2<float>& uvMin,
 		const JVector2<float>& uvMax)
 	{
@@ -1244,9 +1247,12 @@ namespace JinEngine::Editor
 		{
 			uint imageCount = 0;
 			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetDataCount(info.rType);
+			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetResourceCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
+				if (!info.gUserAccess->IsValidHandle(info.rType, i))
+					continue;
+
 				info.dataIndex = i;
 				const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, i);
 				for (uint j = 0; j < viewCount; ++j)
@@ -1281,7 +1287,7 @@ namespace JinEngine::Editor
 		const bool isFront,
 		const float rounding,
 		J_GUI_DRAW_FLAG_ flag,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const JVector2<float>& uvMin,
 		const JVector2<float>& uvMax)
 	{
@@ -1298,9 +1304,12 @@ namespace JinEngine::Editor
 		{
 			uint imageCount = 0;
 			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetDataCount(info.rType);
+			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetResourceCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
+				if (!info.gUserAccess->IsValidHandle(info.rType, i))
+					continue;
+
 				info.dataIndex = i;
 				const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, i);
 				for (uint j = 0; j < viewCount; ++j)
@@ -1361,8 +1370,8 @@ namespace JinEngine::Editor
 		bool& pressed,
 		bool changeValueIfPreesd,
 		const JVector2<float>& size,
-		const JVector4<float>& bgColor, 
-		const JVector4<float>& frameColor,
+		const Core::JRGBVector& bgColor, 
+		const Core::JRGBVector& frameColor,
 		const float frameThickness)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SWITCH);
@@ -1371,8 +1380,8 @@ namespace JinEngine::Editor
 	bool JGui::ImageButton(const std::string name,
 		JGuiImageInfo info,
 		const JVector2<float>& size,
-		const JVector4<float>& bgColor, 
-		const JVector4<float>& frameColor,
+		const Core::JRGBVector& bgColor, 
+		const Core::JRGBVector& frameColor,
 		const float frameThickness)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::BUTTON);
@@ -1392,8 +1401,8 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFilledMultiColor(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& color,
-		const JVector4<float>& colorDelta,
+		const Core::JRGBVector& color,
+		const Core::JRGBVector& colorDelta,
 		const bool useRestoreCursorPos,
 		const bool useFrameRounding)noexcept
 	{
@@ -1405,8 +1414,8 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFilledMultiColor(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& color,
-		const JVector4<float>& colorDelta,
+		const Core::JRGBVector& color,
+		const Core::JRGBVector& colorDelta,
 		const bool useRestoreCursorPos,
 		const J_GUI_ORDINAL_DIR_FLAG_ addedDeltaDir,
 		const bool useFrameRounding)noexcept
@@ -1422,10 +1431,10 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFilledMultiColor(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& upLeftCol,
-		const JVector4<float>& upRightCol,
-		const JVector4<float>& downLeftCol,
-		const JVector4<float>& downRightCol,
+		const Core::JRGBVector& upLeftCol,
+		const Core::JRGBVector& upRightCol,
+		const Core::JRGBVector& downLeftCol,
+		const Core::JRGBVector& downRightCol,
 		const bool useRestoreCursorPos,
 		const bool useFrameRounding)noexcept
 	{
@@ -1449,10 +1458,10 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFilledMultiColor(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& upLeftCol,
-		const JVector4<float>& upRightCol,
-		const JVector4<float>& downLeftCol,
-		const JVector4<float>& downRightCol,
+		const Core::JRGBVector& upLeftCol,
+		const Core::JRGBVector& upRightCol,
+		const Core::JRGBVector& downLeftCol,
+		const Core::JRGBVector& downRightCol,
 		const float rounding,
 		const J_GUI_DRAW_FLAG_ drawFlag,
 		const bool useRestoreCursorPos)noexcept
@@ -1466,7 +1475,7 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFilledColor(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const bool useRestoreCursorPos,
 		const bool useFrameRounding)noexcept
 	{
@@ -1481,7 +1490,7 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFilledColor(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const float rounding,
 		const J_GUI_DRAW_FLAG_ drawFlag,
 		const bool useRestoreCursorPos)noexcept
@@ -1491,7 +1500,7 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFrame(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const float thickness,
 		const bool useRestoreCursorPos,
 		const bool useFrameRounding)noexcept
@@ -1507,7 +1516,7 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawRectFrame(const JVector2<float>& pos,
 		const JVector2<float>& size,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const float thickness,
 		const float rounding,
 		const J_GUI_DRAW_FLAG_ drawFlag,
@@ -1538,7 +1547,7 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawCircleFilledColor(const JVector2<float>& centerPos,
 		const float radius,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const bool useRestoreCursorPos)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::DRAW);
@@ -1546,7 +1555,7 @@ namespace JinEngine::Editor
 	}
 	void JGui::DrawCircle(const JVector2<float>& centerPos,
 		const float radius,
-		const JVector4<float>& color,
+		const Core::JRGBVector& color,
 		const bool useRestoreCursorPos,
 		const float thickness)
 	{
@@ -1558,17 +1567,17 @@ namespace JinEngine::Editor
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::DRAW);
 		Private::Adaptee()->PushClipRect(rectMinP, rectMaxP, intersectWithCurrentClipRect);
 	}
-	void JGui::AddLine(const JVector2<float>& p1, const JVector2<float>& p2, const JVector4<float>& color, const float thickness)
+	void JGui::AddLine(const JVector2<float>& p1, const JVector2<float>& p2, const Core::JRGBVector& color, const float thickness)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::DRAW);
 		Private::Adaptee()->AddLine(p1, p2, color, thickness);
 	}
-	void JGui::AddTriangle(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const JVector4<float>& color, const float thickness)
+	void JGui::AddTriangle(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const Core::JRGBVector& color, const float thickness)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::DRAW);
 		Private::Adaptee()->AddTriangle(p1, p2, p3, color, thickness);
 	}
-	void JGui::AddTriangleFilled(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const JVector4<float>& color)
+	void JGui::AddTriangleFilled(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const Core::JRGBVector& color)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::DRAW);
 		Private::Adaptee()->AddTriangleFilled(p1, p2, p3, color);

@@ -286,7 +286,8 @@ namespace JinEngine
 			}propertyName##Property;																\
 																									\
 
-#define REGISTER_PROPERTY_EX(propertyName, getName, setName, ...)														\
+#define REGISTER_PROPERTY_EX(propertyName, getName, setName, ...)									\
+																									\
 			template<typename Class, typename Field, typename Pointer, Pointer ptr>					\
 			class JinEngine::Core::JPropertyExInfoRegister;												\
 																									\
@@ -301,6 +302,7 @@ namespace JinEngine
 						&ThisType::propertyName> jPropertyRegister{#propertyName, &ThisType::getName, &ThisType::setName, __VA_ARGS__};					\
 					}																				\
 			}propertyName##Property;																\
+			 																						\
 
 
 #define REGISTER_METHOD(methodName, ...)																\

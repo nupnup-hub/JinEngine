@@ -22,27 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
-
 #pragma once
-#include"../../Core/JCoreEssential.h"
+#include"../../Object/GraphicRule/Culling/JGraphicModuleCullingType.h"
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		enum class J_CULLING_TYPE
-		{
-			FRUSTUM,
-			HZB_OCCLUSION,
-			HD_OCCLUSION,  
-			COUNT
-		};  
 
-		enum class J_CULLING_TARGET
-		{
-			RENDERITEM,
-			LIGHT,
-			COUNT
-		};
 	}
 }

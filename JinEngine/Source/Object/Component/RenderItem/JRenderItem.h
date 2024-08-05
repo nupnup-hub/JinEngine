@@ -27,8 +27,7 @@ SOFTWARE.
 #include"../JComponent.h"
 #include"JRenderLayer.h" 
 #include"JRenderItemAcceleratorMask.h"   
-#include"JRenderItemPrimitive.h"
-#include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
+#include"JRenderItemPrimitive.h" 
 #include"../../../Core/Math/JMatrix.h"
 #include<DirectXCollision.h> 
 
@@ -37,8 +36,7 @@ namespace JinEngine
 	class JMeshGeometry;
 	class JMaterial;
 	class JRenderItemPrivate;
-	class JRenderItem final : public JComponent, 
-		public Graphic::JFrameUpdateUserAccess
+	class JRenderItem final : public JComponent
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JRenderItem)
 	public: 
@@ -64,6 +62,7 @@ namespace JinEngine
 		std::unique_ptr<JRenderItemImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
+		JGraphicModuleManagedDataFrame* GetModuleManagedData()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{

@@ -47,5 +47,5 @@ namespace JinEngine::Graphic
 	void JGraphicSubClassInterface::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
 	{}
 	void JGraphicSubClassInterface::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
-	{}
+	{} 
 }

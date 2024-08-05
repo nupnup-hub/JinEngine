@@ -24,9 +24,9 @@ SOFTWARE.
 
 
 #pragma once
-#include"../../../Core/Reflection/JReflection.h"
-#include"../../../Graphic/FrameResource/JFrameResourceEnum.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceType.h"
+#include"../../../Core/Reflection/JReflection.h" 
+#include"../../GraphicRule/FrameResource/JGraphicModuleFrameResourceType.h"
+#include"../../GraphicRule/GraphicResource/JGraphicModuleTextureResourceType.h" 
 
 namespace JinEngine
 {
@@ -73,60 +73,60 @@ namespace JinEngine
 			}
 			return J_SHADOW_MAP_TYPE::NORMAL;
 		}
-		static Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE LitToFrameR(const J_LIGHT_TYPE litType)
+		static J_FRAME_RESOURCE_UPLOAD_TYPE LitToFrameR(const J_LIGHT_TYPE litType)
 		{
 			switch (litType)
 			{
 			case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
-				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT;
+				return J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT;
 			case JinEngine::J_LIGHT_TYPE::POINT:
-				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT;
+				return J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT;
 			case JinEngine::J_LIGHT_TYPE::SPOT:
-				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT;
+				return J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT;
 			case JinEngine::J_LIGHT_TYPE::RECT:
-				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT;
+				return J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT;
 			default:
 				break;
 			}
-			return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT;
+			return J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT;
 		}
-		static Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE SmToFrameR(const J_LIGHT_TYPE litType, const bool canAllocCsm)
+		static J_FRAME_RESOURCE_UPLOAD_TYPE SmToFrameR(const J_LIGHT_TYPE litType, const bool canAllocCsm)
 		{
 			return SmToFrameR(LitToSmType(litType, canAllocCsm));
 		}
-		static Graphic::J_GRAPHIC_RESOURCE_TYPE SmToGraphicR(const J_LIGHT_TYPE litType, const bool canAllocCsm)
+		static J_GRAPHIC_RESOURCE_TYPE SmToGraphicR(const J_LIGHT_TYPE litType, const bool canAllocCsm)
 		{
 			return SmToGraphicR(LitToSmType(litType, canAllocCsm));
 		}
-		static Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE SmToFrameR(const J_SHADOW_MAP_TYPE smType)
+		static J_FRAME_RESOURCE_UPLOAD_TYPE SmToFrameR(const J_SHADOW_MAP_TYPE smType)
 		{
 			switch (smType)
 			{
 			case JinEngine::J_SHADOW_MAP_TYPE::NORMAL:
-				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW;
+				return J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW;
 			case JinEngine::J_SHADOW_MAP_TYPE::CSM:
-				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW;
+				return J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW;
 			case JinEngine::J_SHADOW_MAP_TYPE::CUBE:
-				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW;
+				return J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW;
 			default:
 				break;
 			}
-			return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW;
+			return J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW;
 		}
-		static Graphic::J_GRAPHIC_RESOURCE_TYPE SmToGraphicR(const J_SHADOW_MAP_TYPE smType)
+		static J_GRAPHIC_RESOURCE_TYPE SmToGraphicR(const J_SHADOW_MAP_TYPE smType)
 		{
 			switch (smType)
 			{
 			case JinEngine::J_SHADOW_MAP_TYPE::NORMAL:
-				return Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP;
+				return J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP;
 			case JinEngine::J_SHADOW_MAP_TYPE::CSM:
-				return Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY;
+				return J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY;
 			case JinEngine::J_SHADOW_MAP_TYPE::CUBE:
-				return Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE;
+				return J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE;
 			default:
 				break;
 			}
-			return Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP;
+			return J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP;
 		}
 	public:
 		static constexpr uint GetGlobalLightCount()

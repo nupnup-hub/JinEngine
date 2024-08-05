@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 #include"JAnimationUpdateData.h"
+#include"JAnimationFSMstate.h"
 #include"../../Skeleton/JSkeletonAsset.h"
 #include"../../Skeleton/JSkeleton.h"
 #include"../../../../Core/Time/JGameTimer.h"
@@ -78,17 +79,13 @@ namespace JinEngine
 		for (auto& data : skeletonBlendRate[index])
 			data.second = 0;
 	}
-	bool JAnimationUpdateData::FindClipGuid(size_t& guid, const uint index)noexcept
+	float JAnimationUpdateData::GetParameterValue(const size_t guid)const noexcept
 	{
-		for (auto& data : skeletonBlendRate[index])
-		{
-			if (data.second == 1)
-			{
-				guid = data.first;
-				return true;
-			}
-		}
-		return false;
+		auto data = paramValueMap.find(guid);
+		if (data != paramValueMap.end())
+			return data->second;
+		else
+			return -1;
 	}
 	void JAnimationUpdateData::SetIKRate(const uint ikNumber)noexcept
 	{
@@ -98,6 +95,20 @@ namespace JinEngine
 			++ikRate[jointIndex].count;
 			ikRate[jointIndex].rate = (float)(1.0f / ikRate[jointIndex].count);
 		}
+	}
+	void JAnimationUpdateData::SetTimer(Core::JGameTimer* newTimer)
+	{
+		timer = newTimer;
+	}
+	void JAnimationUpdateData::SetModelSkeleton(Core::JUserPtr<JSkeletonAsset> newModelSkeleton)
+	{
+		modelSkeleton = newModelSkeleton;
+	}
+	void JAnimationUpdateData::SetParameterValue(const size_t guid, const float value)noexcept
+	{
+		auto data = paramValueMap.find(guid);
+		if (data != paramValueMap.end())
+			data->second = value;
 	}
 	void JAnimationUpdateData::EnterCalculateIK()noexcept
 	{
@@ -109,6 +120,18 @@ namespace JinEngine
 
 		for (uint i = 0; i < 4; ++i)
 			ikCount[i] = 0;
+	}
+	bool JAnimationUpdateData::FindClipGuid(size_t& guid, const uint index)noexcept
+	{
+		for (auto& data : skeletonBlendRate[index])
+		{
+			if (data.second == 1)
+			{
+				guid = data.first;
+				return true;
+			}
+		}
+		return false;
 	}
 	void JAnimationUpdateData::StuffIdentity(const uint layerNumber, const uint updateNumber)noexcept
 	{
@@ -134,27 +157,5 @@ namespace JinEngine
 	void JAnimationUpdateData::RegisterParameter(const size_t guid, const float value)noexcept
 	{
 		paramValueMap.emplace(guid, value);
-	}
-	float JAnimationUpdateData::GetParameterValue(const size_t guid)const noexcept
-	{
-		auto data = paramValueMap.find(guid);
-		if (data != paramValueMap.end())
-			return data->second;
-		else
-			return -1;
-	}
-	void JAnimationUpdateData::SetParameterValue(const size_t guid, const float value)noexcept
-	{
-		auto data = paramValueMap.find(guid);
-		if (data != paramValueMap.end())
-			data->second = value;
-	}
-	void JAnimationUpdateData::SetTimer(Core::JGameTimer* newTimer)
-	{
-		timer = newTimer;
-	}
-	void JAnimationUpdateData::SetModelSkeleton(Core::JUserPtr<JSkeletonAsset> newModelSkeleton)
-	{
-		modelSkeleton = newModelSkeleton;
 	} 
 }

@@ -354,7 +354,7 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, true, true, false, false };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JShader::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JShader::StaticTypeInfo(), sPrivate);
 
 			IMPL_REALLOC_BIND(JShader::JShaderImpl, thisPointer)
@@ -503,7 +503,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = std::make_unique<JShader::InitData>();	//for load metadata
-		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JShader> newShdaer = nullptr;
@@ -532,7 +532,7 @@ namespace JinEngine
 		shader.ConnnectChild(storeData->obj);
 		return shader->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JShader::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -541,23 +541,23 @@ namespace JinEngine
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JShader::InitData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JShader::InitData*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->gFunctionFlag, "ShaderFuncFlag:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->cFunctionFlag, "ComputeShaderFuncFlag:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->gFunctionFlag, "ShaderFuncFlag:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->cFunctionFlag, "ComputeShaderFuncFlag:");
 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.primitiveCondition, "SubPsoPrimitiveCondition:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.depthCompareCondition, "SubPsoDepthComparesionCondition:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.cullModeCondition, "SubPsoCullModeCondition:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.primitiveType, "SubPsoPrimitive:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.depthCompareFunc, "SubPsoDepthComparesion:");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->condition.isCullModeNone, "SubPsoCullMode:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.primitiveCondition, "SubPsoPrimitiveCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.depthCompareCondition, "SubPsoDepthComparesionCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.cullModeCondition, "SubPsoCullModeCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.primitiveType, "SubPsoPrimitive:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.depthCompareFunc, "SubPsoDepthComparesion:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->condition.isCullModeNone, "SubPsoCullMode:");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JShader::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -570,7 +570,7 @@ namespace JinEngine
 		if (!tool.Begin(shader->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->gFunctionFlag, "ShaderFuncFlag:");

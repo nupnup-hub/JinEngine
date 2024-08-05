@@ -34,6 +34,7 @@ SOFTWARE.
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Window/JWindow.h"
 
+ 
 namespace JinEngine::Graphic
 {
 	using CreaetD3dResource = Core::JSFunctorType<JDx12GraphicResourceHolderDesc, const JDeviceData&, const JGraphicResourceCreationDesc&>;
@@ -45,18 +46,18 @@ namespace JinEngine::Graphic
 	{
 		switch (type)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 			return Constants::lightClusterNodeSize;
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
 			return Constants::lightClusterOffsetSize;
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
 			return Constants::restirSampleSize;
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
 			return Constants::restirReserviorSize;
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
 			return sizeof(uint);
 		default:
 			return 0;
@@ -66,17 +67,21 @@ namespace JinEngine::Graphic
 	{
 		switch (type)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
+		case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
 			return sizeof(uint);
 		default:
 			return 0;
 		}
 	}
-	static JVector3<uint> GetFixedDimention(const J_GRAPHIC_RESOURCE_TYPE type)
+	static JVector3<uint> GetFixedDimention(const JDeviceData& data, const J_GRAPHIC_RESOURCE_TYPE type)
 	{
 		switch (type)
 		{
-		case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+			return JVector3<uint>(data.option.GetClusterIndexCount(), 1, 1);
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
+			return JVector3<uint>(data.option.GetClusterTotalCount(), 1, 1);
+		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
 			return JVector3<uint>(Constants::exposureBufferCount, 1, 1);
 		default:
 			return JVector3<uint>::Zero();
@@ -167,7 +172,7 @@ namespace JinEngine::Graphic
 			if (creationDesc.useEngineDefine)
 			{
 				dataSize = GetFixedBufferElementSize(rType);
-				width = GetFixedDimention(rType).x;
+				width = GetFixedDimention(data, rType).x;
 			}
 			else
 			{
@@ -348,22 +353,22 @@ namespace JinEngine::Graphic
 			return JDx12GraphicResourceHolderDesc(std::move(newLayerDepthDebugResource), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 		static JDx12GraphicResourceHolderDesc CreateHZBOcclusionResource(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc)
-		{
+		{ 
 			Microsoft::WRL::ComPtr<ID3D12Resource> occDsResource;
 
-			D3D12_RESOURCE_DESC depthStencilDesc;
-			ZeroMemory(&depthStencilDesc, sizeof(D3D12_RESOURCE_DESC));
-			depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-			depthStencilDesc.Alignment = 0;
-			depthStencilDesc.Width = creationDesc.width;
-			depthStencilDesc.Height = creationDesc.height;
-			depthStencilDesc.DepthOrArraySize = 1;
-			depthStencilDesc.MipLevels = 1;
-			depthStencilDesc.SampleDesc.Count = 1;
-			depthStencilDesc.SampleDesc.Quality = 0;
-			depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-			depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-			depthStencilDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			D3D12_RESOURCE_DESC desc;
+			ZeroMemory(&desc, sizeof(D3D12_RESOURCE_DESC));
+			desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+			desc.Alignment = 0;
+			desc.Width = creationDesc.useEngineDefine ? data.info.resource.occlusionWidth : creationDesc.width;
+			desc.Height = creationDesc.useEngineDefine ? data.info.resource.occlusionHeight : creationDesc.height;
+			desc.DepthOrArraySize = 1;
+			desc.MipLevels = 1;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+			desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+			desc.Format = DXGI_FORMAT_R32_TYPELESS;
 
 			float optColor[4] = { 1.0f, 0, 0, 0 };
 			CD3DX12_CLEAR_VALUE optClear(DXGI_FORMAT_D32_FLOAT, optColor);
@@ -375,7 +380,7 @@ namespace JinEngine::Graphic
 			ThrowIfFailedG(data.device->CreateCommittedResource(
 				&heapProperties,
 				D3D12_HEAP_FLAG_NONE,
-				&depthStencilDesc,
+				&desc,
 				D3D12_RESOURCE_STATE_DEPTH_READ,
 				&optClear,
 				IID_PPV_ARGS(&occDsResource)));
@@ -387,8 +392,8 @@ namespace JinEngine::Graphic
 			ZeroMemory(&mipMapDesc, sizeof(D3D12_RESOURCE_DESC));
 			mipMapDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 			mipMapDesc.Alignment = 0;
-			mipMapDesc.Width = creationDesc.width;
-			mipMapDesc.Height = creationDesc.height;
+			mipMapDesc.Width = creationDesc.useEngineDefine ? data.info.resource.occlusionWidth : creationDesc.width;
+			mipMapDesc.Height = creationDesc.useEngineDefine ? data.info.resource.occlusionHeight : creationDesc.height;
 			mipMapDesc.DepthOrArraySize = 1;
 			mipMapDesc.MipLevels = 0;	// 0 = 최대 miplevel 자동계산
 			mipMapDesc.SampleDesc.Count = 1;
@@ -409,15 +414,15 @@ namespace JinEngine::Graphic
 			return JDx12GraphicResourceHolderDesc(std::move(occMipmapResource), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 		static JDx12GraphicResourceHolderDesc CreateOcclusionResourceDebug(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc)
-		{
+		{ 
 			Microsoft::WRL::ComPtr<ID3D12Resource> occDebugResource;
 			CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 			D3D12_RESOURCE_DESC debugDesc;
 			ZeroMemory(&debugDesc, sizeof(D3D12_RESOURCE_DESC));
 			debugDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 			debugDesc.Alignment = 0;
-			debugDesc.Width = creationDesc.width;
-			debugDesc.Height = creationDesc.height;
+			debugDesc.Width = creationDesc.useEngineDefine ? data.info.resource.occlusionWidth : creationDesc.width;
+			debugDesc.Height = creationDesc.useEngineDefine ? data.info.resource.occlusionHeight : creationDesc.height;
 			debugDesc.DepthOrArraySize = 1;
 			debugDesc.MipLevels = creationDesc.bindDesc.allowMipmapBind ? 0 : 1;
 			debugDesc.SampleDesc.Count = 1;
@@ -551,65 +556,65 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
 				return &CreateSceneDepthStencilResource;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
 				return &CreateDebugDepthStencilResource;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
 				return &CreateDebugMapResource;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 				return &CreateHZBOcclusionResource;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
 				return &CreateHZBOcclusionMipmapResource;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				return &CreateOcclusionResourceDebug;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 				return &CreateTexture2D;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
 				return &CreateTextureCommon;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
 				return &CreateRenderTargetTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
 				return &CreateRenderTargetTextureForLightCull;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
 				return &CreateShadowMapTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
 				return &CreateShadowMapTextureArray;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
 				return &CreateShadowMapTextureCube;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 				return &CreateLightLinkedList;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
 				return &CreateLightOffsetBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
 				return &CreateSsaoTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
 				return &CreateSsaoIntermediateTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
 				return &CreateSsaoInterleaveTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
 				return &CreateSsaoDepthTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 				return &CreateSsaoDepthInterleaveTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 				return &CreateImageProcessingTexture;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
 				return &CreateExposure;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
 				return &CreateLuma;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
 				return &CreateFxaaColor;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
 				return &CreateRestirSample;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
 				return &CreateRestirReservior;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
 				return &CreateByteBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
 				return &CreateStructureBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
 				return &CreateVertexBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::INDEX:
 				return &CreateIndexBuffer;
 			default:
 				return nullptr;
@@ -715,9 +720,9 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
 				return true;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				return true;
 			default:
 				return false;
@@ -1675,69 +1680,69 @@ namespace JinEngine::Graphic
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 				return &BindSwapChain;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
 				return &BindMainDepthStencil;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL:
 				return &BindDebugDepthStencil;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
 				return &BindDebugMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 				return &BindOcclusionDepthMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
 				return &BindHZBOcclusionDepthMipmap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				return &BindOcclusionDebug;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 				return &BindTexture2D;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
 				return &BindCubeMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON:
 				return &BindTextureCommon;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
 				return &BindRenderTarget;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING:
 				return &BindRenderTargetForLigthCull;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
 				return &BindShadowMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
 				return &BindShadowMapArray;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
 				return &BindShadowMapCube;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 				return &BindLightLinkedList;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
 				return &BindLightClusterOffsetBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
 				return &BindSsaoMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP:
 				return &BindSsaoIntermediateMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP:
 				return &BindSsaoInterleaveMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
 				return &BindSsaoDepthMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 				return &BindSsaoDepthInterleaveMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 				return &BindImageProcessing;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
 				return &BindByteBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
 				return &BindLuma;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE:
 				return &BindFxaaColor;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
 				return &BindStructureBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
 				return &BindStructureBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON:
 				return &BindByteBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::STRUCTURE_BUFFER_COMMON:
 				return &BindStructureBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::VERTEX:
 				return &BindReadOnlyStructureBuffer;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX:
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::INDEX:
 				return &BindReadOnlyStructureBuffer;
 			default:
 				return nullptr;
@@ -1762,8 +1767,8 @@ namespace JinEngine::Graphic
 			}
 		}
 	}
-	JDeviceData::JDeviceData(JGraphicDevice* device, const JGraphicOption& option)
-		:option(option)
+	JDeviceData::JDeviceData(JGraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option)
+		:info(info), option(option)
 	{
 		dxDevice = static_cast<JDx12GraphicDevice*>(device);
 		JDeviceData::device = dxDevice->GetDevice();

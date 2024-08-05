@@ -29,7 +29,7 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"  
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"  
 #include"../../Utility/Dx/JDx12ObjectCreation.h"  
 #include"../../JGraphicUpdateHelper.h" 
 #include"../../../Core/Platform/JHardwareInfo.h"

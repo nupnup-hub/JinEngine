@@ -31,12 +31,7 @@ namespace JinEngine
 	class JAnimationClip; 
 	class JAnimationController;
 	class JSkeletonAsset;
-
-	namespace Graphic
-	{
-		struct JAnimationConstants;
-	}
-
+	  
 	class JAnimationFSMstate;
 	class JAnimationFSMtransition;
 	class JAnimationFSMdiagramPrivate;

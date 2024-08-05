@@ -28,7 +28,7 @@ SOFTWARE.
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"   
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
-#include"../../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../../Command/Dx/JDx12CommandContext.h"
 #include"../../../Utility/Dx/JDx12ObjectCreation.h" 
 #include"../../../FrameResource/Dx/JDx12FrameResource.h" 
@@ -62,7 +62,7 @@ namespace JinEngine::Graphic
 	};
 	namespace Private
 	{
-#ifdef _DEBUG
+#ifdef USE_DEBUG
 		static constexpr bool allowDebug = false;
 		static constexpr uint bufferSize = 32;
 #else
@@ -199,7 +199,7 @@ namespace JinEngine::Graphic
 		context->Transition(aoSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
 		context->SetComputeRootSignature(globalRootSignature.Get());
-		context->SetComputeRootConstantBufferView(Private::ssaoCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+		context->SetComputeRootConstantBufferView(Private::ssaoCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
 		context->SetComputeRootConstantBufferView(Private::sampleCBIndex, sampleCB.get(), 3);
 		context->SetComputeRoot32BitConstants(Private::rtCBIndex, 2, camInvView);
 		context->SetTlasView(Private::asViewindex, accelSet);

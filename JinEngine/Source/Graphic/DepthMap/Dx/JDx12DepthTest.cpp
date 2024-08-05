@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #include"JDx12DepthTest.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../Utility/Dx/JDx12Utility.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"
@@ -164,7 +164,7 @@ namespace JinEngine::Graphic
 			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cullUser.IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
 				continue;
 			 
-			context->SetGraphicsRootConstantBufferView(objCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, boundFrameIndex);		 
+			context->SetGraphicsRootConstantBufferView(objCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT, boundFrameIndex);		 
 			context->DrawIndexedInstanced(mesh);
 		}
 	}
@@ -205,7 +205,7 @@ namespace JinEngine::Graphic
 				continue;
 
 			const bool canQuery = condition.IsValidDrawingIndex(boundFrameIndex);
-			context->SetGraphicsRootConstantBufferView(objCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, boundFrameIndex);
+			context->SetGraphicsRootConstantBufferView(objCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT, boundFrameIndex);
 			
 			if(canQuery)
 				context->BeginQuery(occQueryHeap, D3D12_QUERY_TYPE_BINARY_OCCLUSION, boundFrameIndex);
@@ -242,7 +242,7 @@ namespace JinEngine::Graphic
 		if (frameIndex == invalidIndex)
 			return false;
 		 
-		context->SetGraphicsRootConstantBufferView(passCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS, frameIndex);
+		context->SetGraphicsRootConstantBufferView(passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS, frameIndex);
 		return true;
 	}
 	void JDx12DepthTest::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)

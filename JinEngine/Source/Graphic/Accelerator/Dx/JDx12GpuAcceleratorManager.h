@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 #pragma once
+#include"JDx12GpuAcceleratorInfo.h"
 #include"../JGpuAcceleratorManager.h"
 #include"../../FrameResource/JFrameIndexAccess.h"
 #include<d3d12.h>
@@ -34,16 +35,16 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGpuAcceleratorHolder;
-		class JDx12GpuAcceleratorHolder;
-		class JGpuAcceleratorUserInterface;
+		class JDx12GpuAcceleratorHolder; 
 
 		class JDx12GpuAcceleratorManager : public JGpuAcceleratorManager
-		{ 
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JDx12GpuAcceleratorManager)
 		public:
 			struct BuildData;
 		private:
 			JFrameIndexAccess* frameAccess = nullptr;
-			std::vector<JOwnerPtr<JGpuAcceleratorInfo>> infoVec;
+			std::vector<JOwnerPtr<JDx12GpuAcceleratorInfo>> infoVec;
 		public:
 			JDx12GpuAcceleratorManager(JFrameIndexAccess* frameAccess);
 		public:
@@ -58,12 +59,14 @@ namespace JinEngine
 			void Add(JGraphicDevice* device, JGraphicResourceManager* gm, JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp) final;
 			void Remove(JGraphicDevice* device, JGraphicResourceManager* gm, JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp) final;
 		private:
-			JOwnerPtr<JGpuAcceleratorInfo> CreateInfo(std::unique_ptr<JGpuAcceleratorHolder>&& holder, const JGpuAcceleratorBuildDesc& desc);
+			JOwnerPtr<JDx12GpuAcceleratorInfo> CreateInfo(std::unique_ptr<JGpuAcceleratorHolder>&& holder, const JGpuAcceleratorBuildDesc& desc);
 		private:
 			std::unique_ptr<JDx12GpuAcceleratorHolder> BuildAcceleratorStructure(BuildData& buildData);
 			void UpdateInstance(const BuildData& buildData, JDx12GpuAcceleratorHolder* holder, const J_GPU_ACCELERATOR_BUILD_OPTION preBuildOption);
 			void AddBottomLevelAs(BuildData& buildData, JDx12GpuAcceleratorHolder* holder);
 			void RemoveBottomLevelAs(const BuildData& buildData, JDx12GpuAcceleratorHolder* holder);
+		public:
+			static void RegisterTypeData();
 		};
 
 

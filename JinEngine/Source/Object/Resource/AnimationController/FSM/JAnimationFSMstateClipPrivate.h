@@ -49,13 +49,14 @@ namespace JinEngine
 		protected:
 			void Clear(Core::JIdentifier* ptr, const bool isForced)final;
 		};
-		class UpdateInterface final : public JAnimationFSMstatePrivate::UpdateInterface
+		class AnimationInterface final : public JAnimationFSMstatePrivate::AnimationInterface
 		{
 		private:
 			void Initialize(const JUserPtr<Core::JFSMstate>& state)noexcept final;
 			void Enter(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept final;
 			void Update(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept final;
 			void Close(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData)noexcept final;
+			void Compute(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept final;
 			void GetRegisteredSkeleton(const JUserPtr<JAnimationFSMstate>& state, std::vector<JUserPtr<JSkeletonAsset>>& skeletonVec)noexcept final;
 		};
 	public:

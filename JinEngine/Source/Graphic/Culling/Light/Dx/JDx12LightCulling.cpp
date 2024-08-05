@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../../../JGraphicUpdateHelper.h"
 #include"../../../JGraphicOption.h"
 #include"../../../Device/Dx/JDx12GraphicDevice.h" 
-#include"../../../DataSet/Dx/JDx12GraphicDataSet.h"  
+#include"../../../DataSet/Dx/JDx12GraphicTaskDataSet.h"  
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
 #include"../../../FrameResource/Dx/JDx12FrameResource.h"
@@ -95,7 +95,7 @@ namespace JinEngine::Graphic
 		static constexpr uint litListCounterCount = 1;
 		static constexpr bool useLinearDepth = false;
 		static constexpr bool rectLightShapeIsHemisphere = false;
-#if defined (_DEBUG) && defined(DEVELOP)
+#if defined (USE_DEBUG) && defined(DEVELOP)
 		static constexpr bool allowDebugging = true;
 #else
 		static constexpr bool allowDebugging = false;
@@ -286,16 +286,16 @@ namespace JinEngine::Graphic
 				return;
 			--count;
 
-			const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
-			const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
-			const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
+			const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+			const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+			const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 
-			const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
-			const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
-			const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
+			const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+			const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+			const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 
 			auto gInterface = cam->GraphicResourceUserInterface();
-			const uint rsDataIndex = gInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+			const uint rsDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
 
 			const int pointRtvVecIndex = gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, rsDataIndex);
 			const int spotRtvVecIndex = gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, rsDataIndex + 1);
@@ -549,14 +549,14 @@ namespace JinEngine::Graphic
 			hemiSphere = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::LOW_SPHERE);
 
 		const size_t sceneGuid = helper.scene->GetGuid();
-		const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
-		const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
-		const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
+		const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+		const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+		const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 		const uint lightSum = pointLitCount + spotLitCount + rectLitCount;
 
-		const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, sceneGuid);
-		const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sceneGuid);
-		const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, sceneGuid);
+		const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+		const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+		const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 
 		const uint pointLitLocalOffset = 0;
 		const uint spotLitLocalOffset = pointLitCount + pointLitOffset;
@@ -607,7 +607,7 @@ namespace JinEngine::Graphic
 		D3D12_RECT rect{ 0, 0, clusterX, clusterY, };
 		 
 		context->SetGraphicsRootSignature(mGRootSignature.Get());
-		context->SetGraphicsRootConstantBufferView(Private::gCamCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_CULLING_PASS, helper.GetCamFrameIndex(CameraFrameLayer::lightCulling));
+		context->SetGraphicsRootConstantBufferView(Private::gCamCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS, helper.GetCamFrameIndex(CameraFrameLayer::lightCulling));
 		context->SetViewport(viewPort);
 		context->SetScissorRect(rect);
 
@@ -615,7 +615,7 @@ namespace JinEngine::Graphic
 		{
 			context->SetPipelineState(drawLightShader[0].get());
 			//context->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 0, pointLitOffset);
-			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, pointLitOffset);
+			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, pointLitOffset);
 
 			context->ClearRenderTargetView(pointSet, Constants::GetWhiteClearColor());
 			context->SetRenderTargetView(pointSet, 1, true);
@@ -626,7 +626,7 @@ namespace JinEngine::Graphic
 		{
 			context->SetPipelineState(drawLightShader[1].get());
 			//context->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 0, spotLitOffset);
-			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, spotLitOffset);
+			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, spotLitOffset);
 
 			context->ClearRenderTargetView(spotSet, Constants::GetWhiteClearColor());
 			context->SetRenderTargetView(spotSet, 1, true);
@@ -637,7 +637,7 @@ namespace JinEngine::Graphic
 		{
 			context->SetPipelineState(drawLightShader[2].get());
 			//context->SetGraphicsRoot32BitConstants(Private::gPassCBIndex, 0, rectLitOffset);
-			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, rectLitOffset);
+			context->SetGraphicsRootShaderResourceView(Private::gLightBufferIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, rectLitOffset);
 
 			context->ClearRenderTargetView(rectSet, Constants::GetWhiteClearColor());
 			context->SetRenderTargetView(rectSet, 1, true);
@@ -1017,7 +1017,7 @@ namespace JinEngine::Graphic
 		desc.height = GetGraphicOption().GetClusterYCount();
 		desc.arraySize = GetGraphicInfo().minCapacity;
 		for (uint i = 0; i < SIZE_OF_ARRAY(lightRt); ++i)
-			lightRt[i] = dx12Gm->CreateResource(device, desc, Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING);
+			lightRt[i] = dx12Gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING);
 	}
 	void JDx12LightCulling::ClearResource()
 	{

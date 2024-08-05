@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #pragma once
-#include"JGraphicDataSet.h"
+#include"JGraphicTaskDataSet.h"
 
 namespace JinEngine
 {
@@ -64,7 +64,7 @@ namespace JinEngine
 		public:
 			std::unique_ptr<JGraphicConvertColorComputeSet> dataSet;		//out
 		public: 
-			JGraphicResourceInfo* from;											//in
+			JGraphicResourceInfo* from;										//in
 			JGraphicResourceInfo* to;										//in
 		public:
 			JConvertColorDesc desc;											//in
