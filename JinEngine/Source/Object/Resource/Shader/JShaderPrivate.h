@@ -28,12 +28,6 @@ SOFTWARE.
 
 namespace JinEngine
 {
-	namespace Graphic
-	{
-		class JGraphic; 
-		class JGraphicShaderDataHandler;
-		class JComputeShaderDataHandler;
-	}
 	class JShader;
 	class JShaderPrivate final : public JResourceObjectPrivate
 	{
@@ -55,16 +49,6 @@ namespace JinEngine
 			JOwnerPtr<Core::JIdentifier> Create(Core::JDITypeDataBase* initData) final;
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
-		};
-		class CompileInterface final
-		{
-		private:
-			friend class Graphic::JGraphic;
-			friend class Graphic::JGraphicShaderDataHandler;
-			friend class Graphic::JComputeShaderDataHandler;
-		private:
-			static void RecompileGraphicShader(JShader* shader)noexcept;
-			static void RecompileComputeShader(JShader* shader)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

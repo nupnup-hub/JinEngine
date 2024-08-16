@@ -135,7 +135,7 @@ namespace JinEngine::Graphic
 		const JGraphicInfo* info,
 		const JGraphicOption* option,
 		const bool settingRaycastDevice)
-	{
+	{ 
 		JDx12CommandContext::cmd = cmd;
 		JDx12CommandContext::device = device;
 		JDx12CommandContext::gm = gm;
@@ -172,13 +172,13 @@ namespace JinEngine::Graphic
 	{
 		return JDx12GraphicResourceComputeSet(gm, info);
 	}
-	JDx12GraphicResourceComputeSet JDx12CommandContext::ComputeSet(const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)
+	JDx12GraphicResourceComputeSet JDx12CommandContext::ComputeSet(JGraphicResourceUserInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)
 	{
-		return JDx12GraphicResourceComputeSet(gm, gInterface, rType, taskType);
+		return JDx12GraphicResourceComputeSet(gm, static_cast<JGraphicResourceInterface*>(gInterface), rType, taskType);
 	}
-	JDx12GraphicResourceComputeSet JDx12CommandContext::ComputeSet(const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)
+	JDx12GraphicResourceComputeSet JDx12CommandContext::ComputeSet(JGraphicResourceUserInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)
 	{
-		return JDx12GraphicResourceComputeSet(gm, gInterface, rType, dataIndex);
+		return JDx12GraphicResourceComputeSet(gm, static_cast<JGraphicResourceInterface*>(gInterface), rType, dataIndex);
 	} 
 	JDx12GraphicResourceComputeSet JDx12CommandContext::ComputeSet(JGraphicResourceInfo* info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
 	{
@@ -192,17 +192,17 @@ namespace JinEngine::Graphic
 	{
 		return JDx12CullingResourceComputeSet(cm, info);
 	}
-	JDx12CullingResourceComputeSet JDx12CommandContext::ComputeSet(const JCullingUserInterface& cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget)
+	JDx12CullingResourceComputeSet JDx12CommandContext::ComputeSet(JCullingUserInterface* cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget)
 	{
-		return JDx12CullingResourceComputeSet(cm, cInterface, cType, cTarget);
+		return JDx12CullingResourceComputeSet(cm, static_cast<JCullingInterface*>(cInterface), cType, cTarget);
 	}
 	JDx12AcceleratorResourceComputeSet JDx12CommandContext::ComputeSet(const JUserPtr<JGpuAcceleratorInfo>& info)
 	{
 		return JDx12AcceleratorResourceComputeSet(am, info);
 	}
-	JDx12AcceleratorResourceComputeSet JDx12CommandContext::ComputeSet(const JGpuAcceleratorUserInterface& user)
+	JDx12AcceleratorResourceComputeSet JDx12CommandContext::ComputeSet(JGpuAcceleratorUserInterface* user)
 	{
-		return JDx12AcceleratorResourceComputeSet(am, user);
+		return JDx12AcceleratorResourceComputeSet(am, static_cast<JGpuAcceleratorInterface*>(user));
 	}
 	void JDx12CommandContext::Transition(JDx12GraphicResourceHolder* holder, const D3D12_RESOURCE_STATES newState, const bool flushImmediate)
 	{ 
@@ -328,6 +328,10 @@ namespace JinEngine::Graphic
 	{
 		frameResource->GetDx12Buffer(type)->SetGraphicsRootShaderResourceView(cmd, rootIndex, addressOffset);
 	}
+	void JDx12CommandContext::SetGraphicsRootShaderResourceView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset)
+	{
+		frameResource->GetDx12Buffer(type)->SetGraphicsRootShaderResourceView(cmd, rootIndex, fInterface->GetFrameIndex(type) + frameOffset);
+	}
 	void JDx12CommandContext::SetGraphicsRootShaderResourceView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset)
 	{
 		bufferInterface->SetGraphicsRootShaderResourceView(cmd, rootIndex, addressOffset);
@@ -340,9 +344,17 @@ namespace JinEngine::Graphic
 	{
 		frameResource->GetDx12Buffer(type)->SetGraphicsRootUnorderedAccessView(cmd, rootIndex, addressOffset);
 	}
+	void JDx12CommandContext::SetGraphicsRootUnorderedAccessView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset)
+	{
+		frameResource->GetDx12Buffer(type)->SetGraphicsRootUnorderedAccessView(cmd, rootIndex, fInterface->GetFrameIndex(type) + frameOffset);
+	}
 	void JDx12CommandContext::SetGraphicsRootConstantBufferView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset)
 	{
 		frameResource->GetDx12Buffer(type)->SetGraphicCBBufferView(cmd, rootIndex, addressOffset);
+	}
+	void JDx12CommandContext::SetGraphicsRootConstantBufferView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset)
+	{
+		frameResource->GetDx12Buffer(type)->SetGraphicCBBufferView(cmd, rootIndex, fInterface->GetFrameIndex(type) + frameOffset);
 	}
 	void JDx12CommandContext::SetGraphicsRootConstantBufferView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset)
 	{
@@ -472,6 +484,10 @@ namespace JinEngine::Graphic
 	{
 		frameResource->GetDx12Buffer(type)->SetComputeRootShaderResourceView(cmd, rootIndex, addressOffset);
 	}
+	void JDx12CommandContext::SetComputeRootShaderResourceView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset)
+	{
+		frameResource->GetDx12Buffer(type)->SetComputeRootShaderResourceView(cmd, rootIndex, fInterface->GetFrameIndex(type) + frameOffset);
+	}
 	void JDx12CommandContext::SetComputeRootShaderResourceView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset)
 	{
 		bufferInterface->SetComputeRootShaderResourceView(cmd, rootIndex, addressOffset);
@@ -484,6 +500,10 @@ namespace JinEngine::Graphic
 	{
 		frameResource->GetDx12Buffer(type)->SetComputeRootUnorderedAccessView(cmd, rootIndex, addressOffset);
 	}
+	void JDx12CommandContext::SetComputeRootUnorderedAccessView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset)
+	{
+		frameResource->GetDx12Buffer(type)->SetComputeRootUnorderedAccessView(cmd, rootIndex, fInterface->GetFrameIndex(type) + frameOffset);
+	}
 	void JDx12CommandContext::SetComputeRootUnorderedAccessView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset)
 	{
 		bufferInterface->SetComputeRootUnorderedAccessView(cmd, rootIndex, addressOffset);
@@ -495,6 +515,10 @@ namespace JinEngine::Graphic
 	void JDx12CommandContext::SetComputeRootConstantBufferView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset)
 	{
 		frameResource->GetDx12Buffer(type)->SetComputeCBBufferView(cmd, rootIndex, addressOffset);
+	}
+	void JDx12CommandContext::SetComputeRootConstantBufferView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset)
+	{
+		frameResource->GetDx12Buffer(type)->SetComputeCBBufferView(cmd, rootIndex, fInterface->GetFrameIndex(type) + frameOffset);
 	}
 	void JDx12CommandContext::SetComputeRootConstantBufferView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset)
 	{
@@ -570,12 +594,12 @@ namespace JinEngine::Graphic
 	}
 	uint JDx12CommandContext::GetAreaRegistedOffset(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept
 	{
-		return fm->GetAreaRegistedCount(type, areaGuid);
+		return fm->GetAreaRegistedOffset(type, areaGuid);
 	}
 	void JDx12CommandContext::BeginDebuggingCapture(const std::string& name, const Core::JRGBVector& color)
 	{  
-#ifdef DEVELOP  
-		PIXBeginEvent(device->GetCommandQueue(), PIX_COLOR_DEFAULT, name.c_str());
+#ifdef DEVELOP   
+		PIXBeginEvent(device->GetCommandQueue(), Core::JRGBConvert::ToColorU(color), name.c_str());
 #endif
 	}
 	void JDx12CommandContext::EndDebuggingCapture()

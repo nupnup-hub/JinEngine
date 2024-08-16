@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 #include"JDx12CullingManager.h"
+#include"JDx12CullingInfo.h"
 #include"JDx12CullingResourceHolder.h"
 #include"../JCullingInfo.h"  
 #include"../JCullingInterface.h"
@@ -77,6 +78,18 @@ namespace JinEngine
 		JDx12CullingManager::~JDx12CullingManager()
 		{
 			ClearResource();
+		}
+		void JDx12CullingManager::Initialize(JGraphicDevice* device)
+		{
+			if (!IsSameDevice(device))
+				return;
+
+			JCullingManager::Initialize(device);
+		}
+		void JDx12CullingManager::Clear()
+		{
+			ClearResource();
+			JCullingManager::Clear();
 		}
 		J_GRAPHIC_DEVICE_TYPE JDx12CullingManager::GetDeviceType()const noexcept
 		{
@@ -168,7 +181,7 @@ namespace JinEngine
 			const J_CULLING_TYPE cType = info->GetCullingType();
 			switch (cType)
 			{
-			case JinEngine::Graphic::J_CULLING_TYPE::FRUSTUM:
+			case JinEngine::J_CULLING_TYPE::FRUSTUM:
 			{
 				if (info->IsCullingResultInGpu())
 				{
@@ -180,13 +193,13 @@ namespace JinEngine
 					
 				break;
 			}
-			case JinEngine::Graphic::J_CULLING_TYPE::HZB_OCCLUSION:
+			case JinEngine::J_CULLING_TYPE::HZB_OCCLUSION:
 			{
 				static_cast<JHzbDx12CullingResultHolder*>(holder)->Build(device, capacity);
 				static_cast<JHzbDx12CullingResultHolder*>(holder)->SutffClearValue(data.cmdList, data.upload.Get());
 				break;
 			}
-			case JinEngine::Graphic::J_CULLING_TYPE::HD_OCCLUSION:
+			case JinEngine::J_CULLING_TYPE::HD_OCCLUSION:
 			{  
 				BuildOccQueryHeaps(device, capacity, occQueryHeap[index]);
 				static_cast<JHdDx12CullingResultHolder*>(holder)->Build(device, capacity);
@@ -243,21 +256,22 @@ namespace JinEngine
 		void JDx12CullingManager::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
 		{
 			auto dx12Set = static_cast<const JDx12GraphicInfoChangedSet&>(set);
-			if (dx12Set.preInfo.frame.upPLightCapacity != dx12Set.newInfo.frame.upPLightCapacity ||
-				dx12Set.preInfo.frame.upSLightCapacity != dx12Set.newInfo.frame.upSLightCapacity ||
-				dx12Set.preInfo.frame.upRLightCapacity != dx12Set.newInfo.frame.upRLightCapacity)
+			auto& preFrame = dx12Set.preInfo.frame;
+			auto& newFrame = dx12Set.newInfo.frame;
+			if (preFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT) != newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT) ||
+				preFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT) != newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT) ||
+				preFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT) != newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT))
 			{
-				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::FRUSTUM, dx12Set.device,
-					dx12Set.newInfo.frame.GetLocalLightCapacity(), J_CULLING_TARGET::LIGHT);
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::FRUSTUM, dx12Set.device, newFrame.GetLocalLightCapacity(), J_CULLING_TARGET::LIGHT);
 			}
-			if (dx12Set.preInfo.frame.upBoundingObjCapacity != dx12Set.newInfo.frame.upBoundingObjCapacity)
+			if (preFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT) != newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT))
 			{ 
-				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::FRUSTUM, dx12Set.device, dx12Set.newInfo.frame.upBoundingObjCapacity, J_CULLING_TARGET::RENDERITEM);
-				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::HD_OCCLUSION, dx12Set.device, dx12Set.newInfo.frame.upBoundingObjCapacity);
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::FRUSTUM, dx12Set.device, newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT), J_CULLING_TARGET::RENDERITEM);
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::HD_OCCLUSION, dx12Set.device, newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT));
 			}
-			if (dx12Set.preInfo.frame.upHzbObjCapacity != dx12Set.newInfo.frame.upHzbObjCapacity)
+			if (preFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT) != newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT))
 			{ 
-				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::HZB_OCCLUSION, dx12Set.device, dx12Set.newInfo.frame.upHzbObjCapacity);
+				JCullingManager::ReBuildBuffer(J_CULLING_TYPE::HZB_OCCLUSION, dx12Set.device, newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT));
 			}
 		}
 		void JDx12CullingManager::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
@@ -282,13 +296,13 @@ namespace JinEngine
 				auto resultHolder = std::make_unique<JDx12FrustumCullingResultHolder>(desc.target, desc.currFrameIndex);
 				resultHolder->Build(device, desc.capacity);
 				resultHolder->SutffClearValue(data.cmdList, data.upload.Get());
-				ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JCullingInfo>(this, J_CULLING_TYPE::FRUSTUM, Constants::gNumFrameResources, std::move(resultHolder));
+				ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JDx12CullingInfo>(J_CULLING_TYPE::FRUSTUM, Constants::gNumFrameResources, std::move(resultHolder), this);
 			}
 			else
 			{
 				auto resultHolder = std::make_unique<JFrustumCullingResultHolder>(desc.target);
 				resultHolder->Build(desc.capacity);
-				ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JCullingInfo>(this, J_CULLING_TYPE::FRUSTUM, Constants::gNumFrameResources, std::move(resultHolder));
+				ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JDx12CullingInfo>(J_CULLING_TYPE::FRUSTUM, Constants::gNumFrameResources, std::move(resultHolder), this);
 			}	  
 			auto user = PostCreation(std::move(ownerPtr), J_CULLING_TYPE::FRUSTUM);
 			
@@ -309,7 +323,7 @@ namespace JinEngine
 			dx12Holder->Build(device, desc.capacity); 
 			dx12Holder->SutffClearValue(data.cmdList, data.upload.Get());
 
-			auto ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JCullingInfo>(this, J_CULLING_TYPE::HZB_OCCLUSION, Constants::gNumFrameResources, std::move(dx12Holder));
+			auto ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JDx12CullingInfo>(J_CULLING_TYPE::HZB_OCCLUSION, Constants::gNumFrameResources, std::move(dx12Holder), this);
 			auto user = PostCreation(std::move(ownerPtr), J_CULLING_TYPE::HZB_OCCLUSION);
 
 			device->EndPublicCommandSet(data.startCommandThisFunc);
@@ -329,7 +343,7 @@ namespace JinEngine
 			dx12Holder->Build(device, desc.capacity); 
 			dx12Holder->SutffClearValue(data.cmdList, data.upload.Get());
 
-			auto ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JCullingInfo>(this, J_CULLING_TYPE::HD_OCCLUSION, Constants::gNumFrameResources, std::move(dx12Holder));
+			auto ownerPtr = Core::JPtrUtil::MakeOwnerPtr<JDx12CullingInfo>(J_CULLING_TYPE::HD_OCCLUSION, Constants::gNumFrameResources, std::move(dx12Holder), this);
 			auto user = PostCreation(std::move(ownerPtr), J_CULLING_TYPE::HD_OCCLUSION);
 			if (user != nullptr)
 			{
@@ -386,14 +400,42 @@ namespace JinEngine
 			return false;
 #endif
 		}
-		void JDx12CullingManager::Clear()
-		{
-			ClearResource();
-			JCullingManager::Clear();
-		}
 		void JDx12CullingManager::ClearResource()
 		{
 			occQueryHeap.clear(); 
+		}
+		void JDx12CullingManager::RegisterTypeData()
+		{
+			//Caution!
+			//Culling Info은 Device에 따른 상속을 사용하지않으므로 
+			//JCullingManager(Base)에서 Realloc 함수를 등록한다
+			//추후에 상속을 사용할시 해당 device를 사용하는 JCullingManager에서 
+			//Realloc을 등록하도록한다.
+			using JAllocationDesc = JinEngine::Core::JAllocationDesc;
+			using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;
+			using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;
+			using ReceiverPtr = JAllocationDesc::ReceiverPtr;
+			using ReAllocatedPtr = JAllocationDesc::ReAllocatedPtr;
+			using MemIndex = JAllocationDesc::MemIndex;
+
+			NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
+			{
+				JDx12CullingInfo* movedInfo = static_cast<JDx12CullingInfo*>(movedPtr);
+				JDx12CullingManager* manager = movedInfo->manager;
+
+				auto& vec = manager->GetCullinginfoRefVec(movedInfo->GetCullingType());
+
+				//Release를 먼저하지않으면 Reset시 유효한 pointer를 소유하므로 pointer 파괴를 시도하며
+				//현재 alloc class에서 메모리를 재배치하는 과정에서 에러를 일으킬수 있으므로
+				//Release() 한다음 Reset()을 호출해야한다.
+				//2024-08-15 수정 포인터만 변경하는 Swap 사용
+				vec[movedInfo->GetArrayIndex()].Swap(movedInfo);
+			};
+			auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);
+			std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();
+
+			desc->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);
+			JDx12CullingInfo::StaticTypeInfo().SetAllocationOption(std::move(desc));
 		}
 		 
 		JDx12CullingResourceComputeSet::JDx12CullingResourceComputeSet(JDx12CullingManager* cm, JCullingInfo* info)
@@ -410,9 +452,9 @@ namespace JinEngine
 			gHolder(cHolder != nullptr ? cHolder->GetHolder() : nullptr),
 			resource(cHolder != nullptr ? cHolder->GetResource() : nullptr)
 		{}
-		JDx12CullingResourceComputeSet::JDx12CullingResourceComputeSet(JDx12CullingManager* cm, const JCullingUserInterface& cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget)
+		JDx12CullingResourceComputeSet::JDx12CullingResourceComputeSet(JDx12CullingManager* cm, JCullingInterface* cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget)
 			: cm(cm), 
-			info(cm->GetCullingInfo(cType, cInterface.GetArrayIndex(cType, cTarget)).Get()),
+			info(cm->GetCullingInfo(cType, cInterface->GetArrayIndex(cType, cTarget)).Get()),
 			cHolder(info != nullptr ? cm->GetDxHolder(info->GetCullingType(), info->GetArrayIndex()) : nullptr),
 			gHolder(cHolder != nullptr ? cHolder->GetHolder() : nullptr),
 			resource(cHolder != nullptr ? cHolder->GetResource() : nullptr)

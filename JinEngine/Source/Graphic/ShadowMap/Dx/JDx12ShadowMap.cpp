@@ -32,42 +32,28 @@ SOFTWARE.
 #include"../../Culling/JCullingInterface.h"
 #include"../../Culling/Dx/JDx12CullingManager.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
-#include"../../FrameResource/Dx/JDx12FrameResource.h"
-#include"../../FrameResource/JObjectConstants.h" 
-#include"../../FrameResource/JAnimationConstants.h" 
-#include"../../FrameResource/JLightConstants.h"   
+#include"../../FrameResource/Dx/JDx12FrameResource.h" 
 #include"../../Utility/Dx/JDx12ObjectCreation.h"
 
-#include"../../GraphicResource/JGraphicResourceInterface.h"
-#include"../../GraphicResource/JGraphicResourceUserAccess.h"
+#include"../../GraphicResource/JGraphicResourceInterface.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h" 
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../Utility/Dx/JDx12Utility.h"
 
 #include"../../../Object/GameObject/JGameObject.h"
-#include"../../../Object/Component/Animator/JAnimator.h"
-#include"../../../Object/Component/Animator/JAnimatorPrivate.h"
-#include"../../../Object/Component/Light/JLight.h"
-#include"../../../Object/Component/Light/JLightPrivate.h"
-#include"../../../Object/Component/Light/JDirectionalLight.h"
-#include"../../../Object/Component/Light/JDirectionalLightPrivate.h"
-#include"../../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../../Object/Component/RenderItem/JRenderItemPrivate.h" 
-#include"../../../Object/Resource/Scene/JScene.h" 
-#include"../../../Object/Resource/Scene/JScenePrivate.h"  
-#include"../../../Object/Resource/Mesh/JMeshGeometry.h"
-#include"../../../Object/Resource/Mesh/JMeshGeometryPrivate.h" 
+#include"../../../Object/Component/Animator/JAnimator.h" 
+#include"../../../Object/Component/Light/JLight.h" 
+#include"../../../Object/Component/Light/JDirectionalLight.h" 
+#include"../../../Object/Component/RenderItem/JRenderItem.h" 
+#include"../../../Object/Resource/Scene/JScene.h"  
+#include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Application/Engine/JApplicationEngine.h"
  
 namespace JinEngine::Graphic
 {
 	namespace
-	{
-		using AniFrameIndexInterface = JAnimatorPrivate::FrameIndexInterface;
-		using RItemFrameIndexInterface = JRenderItemPrivate::FrameIndexInterface;
-		using LitFrameIndexInterface = JLightPrivate::FrameIndexInterface;
-		 
+	{ 
 		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
 		{
 			switch (meshType)
@@ -239,14 +225,14 @@ namespace JinEngine::Graphic
 		const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12BindSet->context);
 
-		auto gRInterface = helper.lit->GraphicResourceUserInterface();
+		auto gRInterface = helper.GetResourceInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetResourceCount(grType); 	 
+		const int offset = gRInterface->GetResourceIndexOffset(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface->GetResourceCount(grType); 	 
 		for (uint i = 0; i < smDataCount; ++i)
 		{
-			if (!gRInterface.IsValidHandle(grType, i))
+			if (!gRInterface->IsValidHandle(grType, i))
 				continue;
 
 			auto shadowSet = context->ComputeSet(gRInterface, grType, offset + i); 
@@ -262,14 +248,14 @@ namespace JinEngine::Graphic
 		const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12BindSet->context);
 
-		auto gRInterface = helper.lit->GraphicResourceUserInterface();
+		auto gRInterface = helper.GetResourceInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetResourceCount(grType);
+		const int offset = gRInterface->GetResourceIndexOffset(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface->GetResourceCount(grType);
 		for (uint i = 0; i < smDataCount; ++i)
 		{
-			if (!gRInterface.IsValidHandle(grType, i))
+			if (!gRInterface->IsValidHandle(grType, i))
 				continue;
 
 			auto shadowSet = context->ComputeSet(gRInterface, grType, offset + i);
@@ -284,14 +270,14 @@ namespace JinEngine::Graphic
 		const JDx12GraphicShadowMapDrawSet* dx12SmDrawSet = static_cast<const JDx12GraphicShadowMapDrawSet*>(shadowDrawSet);
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12SmDrawSet->context);
 
-		auto gRInterface = helper.lit->GraphicResourceUserInterface();
+		auto gRInterface = helper.GetResourceInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetResourceCount(grType); 
+		const int offset = gRInterface->GetResourceIndexOffset(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface->GetResourceCount(grType); 
 		for (uint i = 0; i < smDataCount; ++i)
 		{
-			if (!gRInterface.IsValidHandle(grType, i))
+			if (!gRInterface->IsValidHandle(grType, i))
 				continue;
 
 			const uint dataIndex = offset + i; 
@@ -310,8 +296,8 @@ namespace JinEngine::Graphic
 			 
 			BindLightFrameResource(context, helper, i);
 
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 			DrawShadowMapGameObject(context, objVec00, helper, JDrawCondition(helper, false, true, false), i);
 			DrawShadowMapGameObject(context, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, false), i);
@@ -333,14 +319,14 @@ namespace JinEngine::Graphic
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12SmDrawSet->context);
 
 		//BindRootSignature(cmdList);
-		auto gRInterface = helper.lit->GraphicResourceUserInterface();
+		auto gRInterface = helper.GetResourceInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType()); 
 
-		const int offset = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-		const uint smDataCount = gRInterface.GetResourceCount(grType); 
+		const int offset = gRInterface->GetResourceIndexOffset(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		const uint smDataCount = gRInterface->GetResourceCount(grType); 
 		for (uint i = 0; i < smDataCount; ++i)
 		{
-			if (!gRInterface.IsValidHandle(grType, i))
+			if (!gRInterface->IsValidHandle(grType, i))
 				continue;
 
 			const uint dataIndex = offset + i;
@@ -356,8 +342,8 @@ namespace JinEngine::Graphic
 			context->SetDepthStencilView(shadowSet);
 			BindLightFrameResource(context, helper, i); 
 
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 			DrawShadowMapGameObject(context, objVec00, helper, JDrawCondition(helper, false, true, false), i);
 			DrawShadowMapGameObject(context, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, false), i);
@@ -376,15 +362,17 @@ namespace JinEngine::Graphic
 		helper.DispatchWorkIndex(gameObject.size(), st, ed);
 
 		uint smIndex = (uint)helper.lit->GetShadowMapType();
-		auto cullUser = helper.GetCullInterface();
+		auto cInterface = helper.GetCullInterface();
 		for (uint i = st; i < ed; ++i)
 		{
 			auto renderItem = gameObject[i]->GetRenderItem();
-			const uint objFrameIndex = helper.GetObjectFrameIndex(renderItem.Get());
-			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem.Get());
+			auto rItemFInterface = static_cast<JFrameUpdateInterface*>(renderItem->ModuleManagedData()->GetFrameUpdateUserInterface());
+
+			const uint objFrameIndex = rItemFInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT);
+			const uint boundFrameIndex = rItemFInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
 
 			//share same inedx culling and shadow
-			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cullUser.IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM,boundFrameIndex))
+			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cInterface->IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
 				continue;
 
 			JUserPtr<JMeshGeometry> mesh = renderItem->GetMesh();	 
@@ -396,8 +384,10 @@ namespace JinEngine::Graphic
 			context->SetMeshGeometryData(renderItem);
 			context->SetPipelineState(GetShaderDataHolder(helper, meshType));
 			if (onSkinned)
-				context->SetGraphicsRootConstantBufferView(aniCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, helper.GetAnimationFrameIndex(animator.Get()));
-			
+			{ 
+				auto animatorFInterface = static_cast<JFrameUpdateInterface*>(animator->ModuleManagedData()->GetFrameUpdateUserInterface());
+				context->SetGraphicsRootConstantBufferView(aniCBIndex, animatorFInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, 0);
+			}
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
 			for (uint j = 0; j < submeshCount; ++j)
 			{
@@ -412,7 +402,7 @@ namespace JinEngine::Graphic
 		if (smType == J_SHADOW_MAP_TYPE::NONE)
 			return;
 		 
-		const int frameIndex = helper.GetLitShadowFrameIndex() + offset;
+		const int frameIndex = helper.GetLitShadowFrameIndex(smType) + offset;
 		if (smType == J_SHADOW_MAP_TYPE::NORMAL)
 			context->SetGraphicsRootConstantBufferView(normalShadowMapDrawCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, frameIndex);
 		else if (smType == J_SHADOW_MAP_TYPE::CSM)

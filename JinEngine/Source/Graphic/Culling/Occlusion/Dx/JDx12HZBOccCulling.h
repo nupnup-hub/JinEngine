@@ -24,9 +24,9 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JHZBOccCulling.h" 
-#include"../../../FrameResource/JOcclusionConstants.h" 
+#include"../JHZBOccCulling.h"  
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
+#include"../../../FrameResource/Dx/JOcclusionConstants.h"
 #include"../../../Culling/Dx/JDx12CullingManager.h"
 #include"../../../Buffer/Dx/JHlslDebug.h" 
 #include"../../../Shader/Dx/JDx12ShaderDataHolder.h"

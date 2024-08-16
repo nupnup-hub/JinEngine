@@ -37,7 +37,7 @@ SOFTWARE.
 #include"../../Graphic/JGraphic.h" 
 #include"../../Graphic/JGraphicPrivate.h" 
 #include"../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"../../Graphic/GraphicResource/JGraphicResourceManager.h"
 #include"../../Window/JWindow.h" 
 #include"../../Application/Engine/JApplicationEngine.h"
 #include"../../Application/Project/JApplicationProject.h"
@@ -1139,16 +1139,15 @@ namespace JinEngine::Editor
 		}
 		else if (info.displayAllType)
 		{ 
-			uint imageCount = 0;
-			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetResourceCount(info.rType);
+			uint imageCount = 0;  
+			const uint dataCount = info.gUser->GetResourceCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
-				if (!info.gUserAccess->IsValidHandle(info.rType, i))
+				if (!info.gUser->IsValidHandle(info.rType, i))
 					continue;
 
 				info.dataIndex = i;
-				const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, i);
+				const uint viewCount = info.gUser->GetViewCount(info.rType, info.bType, i);
 				for (uint j = 0; j < viewCount; ++j)
 				{ 
 					info.bIndex = j;
@@ -1161,9 +1160,8 @@ namespace JinEngine::Editor
 			}
 		}
 		else
-		{
-			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, info.dataIndex);
+		{ 
+			const uint viewCount = info.gUser->GetViewCount(info.rType, info.bType, info.dataIndex);
 			for (uint i = 0; i < viewCount; ++i)
 			{
 				info.bIndex = i;
@@ -1189,7 +1187,10 @@ namespace JinEngine::Editor
 		info.displayAllType = false;
 		//if invalue set missing texture
 		if (!info.IsValid())
-			info.gUserAccess = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING).Get();
+		{		
+			auto defualtTexture = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
+			info.gUser = defualtTexture->ModuleManagedData()->GetGraphicResourceUserInterface();
+		}
 
 		return Private::Adaptee()->ImageButton(name,
 			info,
@@ -1245,16 +1246,15 @@ namespace JinEngine::Editor
 		}
 		else if (info.displayAllType)
 		{
-			uint imageCount = 0;
-			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetResourceCount(info.rType);
+			uint imageCount = 0; 
+			const uint dataCount = info.gUser->GetResourceCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
-				if (!info.gUserAccess->IsValidHandle(info.rType, i))
+				if (!info.gUser->IsValidHandle(info.rType, i))
 					continue;
 
 				info.dataIndex = i;
-				const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, i);
+				const uint viewCount = info.gUser->GetViewCount(info.rType, info.bType, i);
 				for (uint j = 0; j < viewCount; ++j)
 				{
 					info.bIndex = j;
@@ -1268,9 +1268,8 @@ namespace JinEngine::Editor
 
 		}
 		else
-		{
-			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, info.dataIndex);
+		{ 
+			const uint viewCount = info.gUser->GetViewCount(info.rType, info.bType, info.dataIndex);
 			for (uint i = 0; i < viewCount; ++i)
 			{
 				info.bIndex = i;
@@ -1302,16 +1301,15 @@ namespace JinEngine::Editor
 		}
 		else if (info.displayAllType)
 		{
-			uint imageCount = 0;
-			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetResourceCount(info.rType);
+			uint imageCount = 0; 
+			const uint dataCount = info.gUser->GetResourceCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
-				if (!info.gUserAccess->IsValidHandle(info.rType, i))
+				if (!info.gUser->IsValidHandle(info.rType, i))
 					continue;
 
 				info.dataIndex = i;
-				const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, i);
+				const uint viewCount = info.gUser->GetViewCount(info.rType, info.bType, i);
 				for (uint j = 0; j < viewCount; ++j)
 				{
 					info.bIndex = j;
@@ -1325,9 +1323,8 @@ namespace JinEngine::Editor
 
 		}
 		else
-		{
-			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
-			const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, info.dataIndex);
+		{ 
+			const uint viewCount = info.gUser->GetViewCount(info.rType, info.bType, info.dataIndex);
 			for (uint i = 0; i < viewCount; ++i)
 			{
 				info.bIndex = i;

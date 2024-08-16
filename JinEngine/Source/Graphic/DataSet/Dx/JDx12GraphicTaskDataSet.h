@@ -212,7 +212,7 @@ namespace JinEngine
 		struct JDx12GraphicRtGiComputeSet : public JGraphicRtGiComputeSet
 		{
 		public:
-			JGraphicDevice* device;
+			JGraphicDevice* device; 
 			JGraphicResourceShareData* shareData;
 		public:
 			JDx12GraphicRtGiComputeSet(JCommandContext* context, JGraphicDevice* device, JGraphicResourceShareData* shareData);

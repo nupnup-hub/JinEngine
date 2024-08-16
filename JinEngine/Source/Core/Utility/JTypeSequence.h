@@ -27,6 +27,7 @@ SOFTWARE.
 #include"JTypeTraitUtility.h"  
 #include"../Empty/JEmptyType.h" 
 
+#include<Windows.h>
 namespace JinEngine
 {
 	namespace Core
@@ -43,11 +44,19 @@ namespace JinEngine
 			static constexpr uint count = sizeof...(Type);
 		public: 
 			static int Index(T t)
-			{  
+			{
 				int index = 0;
 				int result = invalidIndex;
 
-				((t == Type ? (result = index): ++index), ...);
+				auto lam = [](int& result, int& index, T type)
+				{
+					if (index == (int)type)
+						result = index;
+					++index;
+				};
+
+				(lam(result, index, Type), ...);
+				//((i == index ? (result = Param::first) : ++index), ...);
 				return result;
 			}
 			static T At(int i)
@@ -59,8 +68,7 @@ namespace JinEngine
 				{
 					if (i == index)
 						result = type;
-					else
-						++index;
+					++index;
 				};
 
 				(lam(result, Type, index, i), ...);
@@ -128,7 +136,25 @@ namespace JinEngine
 			{
 				int index = 0;
 				int result = invalidIndex;
-	 
+
+				auto lam = [](int& result, int& index, T type)
+				{
+					if (index == (int)type)
+						result = index;
+					++index;
+				};
+
+				if constexpr (std::is_same_v<T, FirstType>)
+				{
+					(lam(result, index, Param::first), ...);
+					//((i == index ? (result = Param::first) : ++index), ...);
+				}
+				else if constexpr (std::is_same_v<T, SecondType>)
+				{
+					(lam(result, index, Param::second), ...); 
+					//((i == index ? (result = Param::second) : ++index), ...);
+				}
+
 				if constexpr (std::is_same_v<T, FirstType>)
 					((t == Param::first ? (result = index) : ++index), ...);
 				else if constexpr (std::is_same_v<T, SecondType>)
@@ -142,13 +168,12 @@ namespace JinEngine
 				T result = (T)invalidIndex;
 
 				auto lam = [](T& result, T type, int& index, int i)
-				{
+				{				 
 					if (i == index)
-						result = type;
-					else
-						++index;
+						result = type;			
+					++index; 
 				};
-
+				 
 				if constexpr (std::is_same_v<T, FirstType>)
 				{
 					(lam(result, Param::first, index, i), ...);
@@ -167,12 +192,12 @@ namespace JinEngine
 			{
 				for (int i = 0; i < maxCount; ++i)
 					order[i] = invalidIndex;
-
+				 
 				uint orderNumber = 0;
 				for (uint i = 0; i < sizeof...(Is); ++i)
 				{
 					order[(int)At<T>(i)] = orderNumber;
-					++orderNumber;
+					++orderNumber; 
 				}
 			}
 		};

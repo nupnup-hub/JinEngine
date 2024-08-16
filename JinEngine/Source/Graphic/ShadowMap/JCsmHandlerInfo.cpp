@@ -376,13 +376,6 @@ namespace JinEngine::Graphic
 		return info != nullptr;
 	}
 
-	JCsmHandlerInfo::JCsmHandlerInfo(JCsmAreaInfo* areaInfo,
-		NotifyAddCsmTargetBindPtr&& notifyAddCsmTargetB,
-		NotifySubtractCsmTargetBindPtr&& notifySubtractCsmTargetB)
-		:areaInfo(areaInfo),
-		notifyAddCsmTargetB(std::move(notifyAddCsmTargetB)), 
-		notifySubtractCsmTargetB(std::move(notifySubtractCsmTargetB))
-	{}
 	int JCsmHandlerInfo::GetIndex()const noexcept
 	{
 		return index;
@@ -610,6 +603,13 @@ namespace JinEngine::Graphic
 			result.fFar[i] = outFrustumFar;
 		}
 	}
+	JCsmHandlerInfo::JCsmHandlerInfo(JCsmAreaInfo* areaInfo,
+		NotifyAddCsmTargetBindPtr&& notifyAddCsmTargetB,
+		NotifySubtractCsmTargetBindPtr&& notifySubtractCsmTargetB)
+		:areaInfo(areaInfo),
+		notifyAddCsmTargetB(std::move(notifyAddCsmTargetB)),
+		notifySubtractCsmTargetB(std::move(notifySubtractCsmTargetB))
+	{}
 
 	/*
 		JUserPtr<JCsmTargetInfo> JCsmHandlerInterface::CreateTargetInfo()

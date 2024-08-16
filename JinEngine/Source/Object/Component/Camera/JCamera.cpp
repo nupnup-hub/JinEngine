@@ -46,22 +46,19 @@ SOFTWARE.
 
 //JCsmTargetInterface
 //#include"../../../Develop/Debug/JDevelopDebug.h"
+
+using namespace DirectX;
 namespace JinEngine
 {
-	using namespace DirectX;
-	namespace
-	{
-		static auto isAvailableoverlapLam = []() {return false; };
-		static JCameraPrivate cPrivate;
-	}
-
 	namespace
 	{
 		using WindowEventListener = Core::JEventListener<size_t, Window::J_WINDOW_EVENT>;
-		//first extra is occlusion 
 	}
 	namespace Private
 	{
+		static auto isAvailableoverlapLam = []() {return false; };
+		static JCameraPrivate instance;
+
 		static constexpr float minSsaoRadius = 0.01f;
 		static constexpr float maxSsaoRadius = 32.0f;
 		static constexpr float minSsaoBias = -maxSsaoRadius;
@@ -73,21 +70,22 @@ namespace JinEngine
 		static constexpr float maxSsaoAoScale = 1.25f;
 
 		static constexpr uint minSsaoBlurRadius = 0;
-		static constexpr uint maxSsaoBlurRadius = (uint)J_KERNEL_SIZE::COUNT; 
+		static constexpr uint maxSsaoBlurRadius = (uint)J_KERNEL_SIZE::COUNT;
 
 		static constexpr float cullingUpdateFrequencyMin = 0.0f;
 		static constexpr float cullingUpdateFrequencyMax = 1.0f;
 	}
+
 	class JCamera::JCameraImpl : public Core::JTypeImplBase, public WindowEventListener
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JCameraImpl)
-		REGISTER_GUI_BOOL_CONDITION(IsOrthoCam, isOrtho, false)
+			REGISTER_GUI_BOOL_CONDITION(IsOrthoCam, isOrtho, false)
 	public:
 		//manage set func releated graphic resource
 		enum MANAGED_SET
 		{
 			MANAGED_SET_MAIN_RENDER_TARGET = 0,
-			MANAGED_SET_MAIN_DEPTH_STENCIL, 
+			MANAGED_SET_MAIN_DEPTH_STENCIL,
 			MANAGED_SET_DISPLAY_RENDER_RESULT,
 			MANAGED_SET_DISPLAY_DEBUG_OBJECT,
 			MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP,
@@ -119,6 +117,7 @@ namespace JinEngine
 			{}
 		};
 		using ManageFuncList = Core::JFuncListG<MANAGED_SET_COUNT, GROUP_SET_COUNT, JCamera::JCameraImpl, SetParam>;
+		using CONDTION_MASK = ManageFuncList::CONDITION_MASK;
 	public:
 		JWeakPtr<JCamera> thisPointer = nullptr;
 	public:
@@ -195,7 +194,7 @@ namespace JinEngine
 		bool allowHdOcclusionCulling = false;
 		//REGISTER_PROPERTY_EX(allowLightCulling, AllowLightCulling, SetAllowLightCulling, GUI_CHECKBOX())
 		//bool allowLightCulling = false;
-		bool allowAllCamCullResult = false;	//use editor cam for check space spatial result
+		bool allowReflectAllCullResult = false;	//use editor cam for check space spatial result
 		REGISTER_PROPERTY_EX(allowSsao, AllowSsao, SetAllowSsao, GUI_CHECKBOX())
 		bool allowSsao = false;
 	public:
@@ -285,14 +284,14 @@ namespace JinEngine
 			DirectX::BoundingFrustum worldCamFrustum;
 			mCamFrustum.Transform(worldCamFrustum, thisPointer->GetOwner()->GetTransform()->GetWorldMatrix().LoadXM());
 			return worldCamFrustum;
-		} 
+		}
 		JVector2F GetRtSize()const noexcept
-		{ 
+		{
 			JVector2<uint> rtSize = JWindow::GetClientSize() * rtSizeRate;
 			rtSize.x = JMathHelper::AlignT(rtSize.x, 8);
 			rtSize.y = JMathHelper::AlignT(rtSize.y, 8);
 			return rtSize;
-		} 
+		}
 		float GetSsaoRadius()const noexcept
 		{
 			return ssaoDesc.radius;
@@ -420,7 +419,7 @@ namespace JinEngine
 				return;
 
 			allowDisplayRs = value;
-			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_RENDER_RESULT, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_RENDER_RESULT, this, SetParam(value, false));
 		}
 		void SetAllowDisplayDebugObject(bool value)noexcept
 		{
@@ -428,7 +427,7 @@ namespace JinEngine
 				return;
 
 			allowDisplayDebugObject = value;
-			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_DEBUG_OBJECT, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_DEBUG_OBJECT, this, SetParam(value, false));
 		}
 		void SetAllowDisplayOccCullingDepthMap(bool value)noexcept
 		{
@@ -436,7 +435,7 @@ namespace JinEngine
 				return;
 
 			allowDisplayOccCullingDepthMap = value;
-			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, this, SetParam(value, false));
 		}
 		void SetAllowDisplayLightCullingDebugging(bool value)noexcept
 		{
@@ -444,7 +443,7 @@ namespace JinEngine
 				return;
 
 			allowDisplayLightCullingDebug = value;
-			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_LIGHT_CULLING_DEBUG, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_LIGHT_CULLING_DEBUG, this, SetParam(value, false));
 		}
 		void SetAllowFrustumCulling(bool value)noexcept
 		{
@@ -452,7 +451,7 @@ namespace JinEngine
 				return;
 
 			allowFrustumCulling = value;
-			SetFuncList().InvokePassCondition(MANAGED_SET_FURSTUM_CULLING, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_FURSTUM_CULLING, this, SetParam(value, false));
 		}
 		void SetAllowHzbOcclusionCulling(bool value)noexcept
 		{
@@ -463,7 +462,7 @@ namespace JinEngine
 			if (allowHzbOcclusionCulling && AllowHdOcclusionCulling())
 				SetAllowHdOcclusionCulling(false);
 
-			SetFuncList().InvokePassCondition(MANAGED_SET_HZB_CULLING, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_HZB_CULLING, this, SetParam(value, false));
 		}
 		void SetAllowHdOcclusionCulling(bool value)noexcept
 		{
@@ -474,18 +473,18 @@ namespace JinEngine
 			if (allowHdOcclusionCulling && AllowHzbOcclusionCulling())
 				SetAllowHzbOcclusionCulling(false);
 
-			SetFuncList().InvokePassCondition(MANAGED_SET_HD_CULLING, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_HD_CULLING, this, SetParam(value, false));
 		}
 		void SetAllowLightCulling(bool value)
 		{
 			if (AllowLightCulling() == value || !thisPointer->GetOwner()->GetOwnerScene()->AllowLightCulling())
 				return;
 
-			SetFuncList().InvokePassCondition(MANAGED_SET_LIGHT_CULLING, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_LIGHT_CULLING, this, SetParam(value, false));
 		}
-		void SetAllowAllCullingResult(const bool value)noexcept
+		void SetReflectAllCullingResult(const bool value)noexcept
 		{
-			allowAllCamCullResult = value; 
+			allowReflectAllCullResult = value;
 			SetFrameDirty();
 		}
 		void SetAllowSsao(bool value)
@@ -494,7 +493,7 @@ namespace JinEngine
 				return;
 
 			allowSsao = value;
-			SetFuncList().InvokePassCondition(MANAGED_SET_SSAO, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_SSAO, this, SetParam(value, false));
 		}
 		void SetCameraState(const J_CAMERA_STATE state)noexcept
 		{
@@ -526,7 +525,7 @@ namespace JinEngine
 			if (rtSizeRate == rate || rate.x == 0 || rate.y == 0)
 				return;
 
-			rtSizeRate = rate;   
+			rtSizeRate = rate;
 			if (gUser->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW))
 			{
 				DeActivate();
@@ -622,6 +621,10 @@ namespace JinEngine
 		{
 			return isOrtho;
 		}
+		bool IsActivated()const noexcept
+		{
+			return thisPointer->IsActivated();
+		}
 		bool CanResizeTarget()const
 		{
 			return thisPointer->GetOwner()->GetOwnerScene()->IsMainScene();
@@ -660,9 +663,9 @@ namespace JinEngine
 			//return allowLightCulling;
 			// !thisPointer->GetOwner()->HasFlag(OBJECT_FLAG_ONLY_USED_IN_EDITOR)
 		}
-		bool AllowAllCullingResult()const noexcept
+		bool AllowReflectAllCullingResult()const noexcept
 		{
-			return allowAllCamCullResult;
+			return allowReflectAllCullResult;
 		}
 		bool AllowSsao()const noexcept
 		{
@@ -674,7 +677,7 @@ namespace JinEngine
 			return JGraphic::Instance().GetGraphicOptionRef().rendering.allowDeferred;
 			//return true;
 			//return thisPointer->GetOwner()->GetOwnerScene()->IsMainScene();
-		} 
+		}
 		*/
 		bool AllowTemporalResource()const noexcept
 		{
@@ -684,17 +687,20 @@ namespace JinEngine
 		{
 			//test code
 			return thisPointer->GetOwner()->GetOwnerScene()->IsMainScene() &&
-				!thisPointer->GetOwner()->IsEditorObject();
-				//JGraphic::Instance().GetGraphicOptionRef().IsPostProcessActivated();
-			//return false;
+				!thisPointer->GetOwner()->IsEditorObject() &&
+				GMI()->IsActivatedPostprocessing();
+			//JGraphic::Instance().GetGraphicOptionRef().IsPostProcessActivated();
+		//return false;
 		}
 		bool OnGITrigger()const noexcept
 		{
 			//test code
 			return thisPointer->GetOwner()->GetOwnerScene()->IsMainScene() &&
-				!thisPointer->GetOwner()->IsEditorObject();
-				//JGraphic::Instance().GetGraphicOptionRef().rendering.allowRaytracing && 
-				//JGraphic::Instance().GetGraphicOptionRef().rendering.allowDeferred;
+				!thisPointer->GetOwner()->IsEditorObject() && 
+				GMI()->IsActivatedRaytracingGI() &&
+				GMI()->IsActivatedDeferredRendering();
+			//JGraphic::Instance().GetGraphicOptionRef().rendering.allowRaytracing && 
+			//JGraphic::Instance().GetGraphicOptionRef().rendering.allowDeferred;
 		}
 	public:
 		void CalPerspectiveLens() noexcept
@@ -722,13 +728,14 @@ namespace JinEngine
 	public:
 		void Activate()noexcept
 		{
-			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
+			IMPL_REGISTER_TRANFORM_FRAME_DRITY_LISTENER();
+			IMPL_REGISTER_FRAME_UPDATE_ACTION();
 
 			RegisterEvent();
-			RegisterFrame<J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA>();		 
+			RegisterFrame<J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA>();
 			RegisterCsmTarget();
 
-			SetFuncList().InvokeAll(this, true, SetParam(true, true));
+			SetFuncList().InvokeAll(this, CONDTION_MASK::PASS_NONE, SetParam(true, true));
 			if (thisPointer->GetOwner()->GetOwnerScene()->GetUseCaseType() == J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW)
 				GraphicModuleInterface()->RequestExecutableGraphicFeature(graphicData.Get(), JGraphicRequestCreationDesc(J_GRAPHIC_REQUEST_TYPE::DRAW_SCENE, J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::UPDATED));
 			else
@@ -737,18 +744,18 @@ namespace JinEngine
 		}
 		void DeActivate()noexcept
 		{
-			graphicData->GetFrameUpdateUserInterface()->OffFrameDirty();
 			GraphicModuleInterface()->CancelExecutableGraphicFeature(graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::DRAW_SCENE);
-			SetFuncList().InvokeAllReverse(this, true, SetParam(false, true));
+			SetFuncList().InvokeAllReverse(this, CONDTION_MASK::PASS_NONE, SetParam(false, true));
 
 			GraphicModuleInterface()->DestroyAllGraphicsResources(graphicData.Get());
 			GraphicModuleInterface()->DestroyAllCullingData(graphicData.Get());
- 
+
 			DeRegisterCsmTarget();
 			DeRegisterFrame<J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA>();
 			DeRegisterEvent();
 
-			GraphicModuleInterface()->DeAllocate(graphicData);
+			IMPL_DEREGISTER_FRAME_UPDATE_ACTION();
+			IMPL_DEREGISTER_TRANFORM_FRAME_DRITY_LISTENER() 
 		}
 	private:
 		void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
@@ -766,7 +773,7 @@ namespace JinEngine
 				SetFuncList().InvokeGroup(GROUP_SET_CLIENT_SIZE_DEPENDENCY, this, SetParam(true, false));
 			}
 		}
-	public:
+	private:
 		void Update()
 		{
 			UpdateViewMatrix();
@@ -775,7 +782,7 @@ namespace JinEngine
 		{
 			mPreViewProj.StoreXM(XMMatrixMultiply(mView.LoadXM(), mProj.LoadXM()));
 			thisPointer->GetTransform()->CalTransformMatrix(mView);
- 
+
 			//test 
 			/*
 			if (IsFrameHotDirted())
@@ -783,7 +790,7 @@ namespace JinEngine
 				const XMMATRIX view = mView.LoadXM();
 				const XMMATRIX viewProj = XMMatrixMultiply(view, mProj.LoadXM());
 				XMMATRIX reProj;
- 
+
 				for (uint i = 0; i < 1; ++i)
 				{
 					reProj = (XMMatrixMultiply(XMMatrixInverse(nullptr, viewProj), mPreViewProj.LoadXM()));
@@ -824,7 +831,7 @@ namespace JinEngine
 				}
 				Develop::JDevelopDebug::PushLog("\n");
 				Develop::JDevelopDebug::Write();
-			} 
+			}
 			*/
 			//결과값에 차이가 없거나 있어도 미세할것으로 판단.
 			/*
@@ -895,7 +902,7 @@ namespace JinEngine
 		}
 	public:
 		void NotifyReAlloc()
-		{ 
+		{
 			if (CanResizeTarget())
 				WindowEventListener::ResetEventListenerPointer(*JWindow::EvInterface(), thisPointer->GetGuid());
 		}
@@ -925,21 +932,12 @@ namespace JinEngine
 		}
 		void RegisterPostCreation()
 		{
-			IMPL_REGISTER_TRANFORM_FRAME_DRITY_LISTENER();
-
-			auto updateLam = [](JUserPtr<JObject> obj)
-			{
-				static_cast<JCamera*>(obj.Get())->impl->Update();
-			};
-			 
-			auto bind = JFrameObjectUpdateF::CreateCompletelyBind(updateLam, JUserPtr<JObject>(thisPointer));
-			graphicData->GetFrameUpdateUserInterface()->RegisterObjectUpdateB(std::move(bind));
 		}
 		template<J_FRAME_RESOURCE_UPLOAD_TYPE T, const uint indexSize = 1>
 		void RegisterFrame()
-		{  
+		{
 			JFrameUploadDataCreationDesc desc(T, thisPointer->GetAreaGuid(), indexSize);
-			GraphicModuleInterface()->CreateFrameUploadData(graphicData, desc);
+			GraphicModuleInterface()->CreateFrameUploadData(graphicData.Get(), desc);
 		}
 		void RegisterCsmTarget()
 		{
@@ -948,41 +946,39 @@ namespace JinEngine
 				return static_cast<JCamera*>(obj.Get())->GetBoundingFrustum();
 			};
 			using FrustumF = GetCsmTargetBoundingFrustumF;
-	  
-			JCsmTargetCreationDesc desc(thisPointer->GetGuid(), 
+
+			JCsmTargetCreationDesc desc(thisPointer->GetGuid(),
 				thisPointer->GetAreaGuid(),
 				FrustumF::CreateCompletelyBind(getFrustumLam, JUserPtr<JObject>(thisPointer)));
 
 			GraphicModuleInterface()->CreateCsmTarget(graphicData.Get(), desc);
 		}
 		void RegisterEvent()
-		{ 
+		{
 			if (CanResizeTarget())
 				WindowEventListener::AddEventListener(*JWindow::EvInterface(), thisPointer->GetGuid(), Window::J_WINDOW_EVENT::WINDOW_RESIZE);
 		}
 		void DeRegisterPreDestruction()
 		{
-			graphicData->GetFrameUpdateUserInterface()->DeRegisterObjectUpdateB();
-			IMPL_DEREGISTER_TRANFORM_FRAME_DRITY_LISTENER()
 		}
 		template<J_FRAME_RESOURCE_UPLOAD_TYPE T>
 		bool DeRegisterFrame()
 		{
-			GraphicModuleInterface()->DestroyFrameUploadData(graphicData, T);
+			return GraphicModuleInterface()->DestroyFrameUploadData(graphicData.Get(), T);
 		}
 		void DeRegisterCsmTarget()
 		{
 			GraphicModuleInterface()->DestroyCsmTarget(graphicData.Get());
 		}
 		void DeRegisterEvent()
-		{ 
+		{
 			if (CanResizeTarget())
 				WindowEventListener::RemoveEventListener(*JWindow::EvInterface(), thisPointer->GetGuid(), Window::J_WINDOW_EVENT::WINDOW_RESIZE);
 		}
 		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JCamera::StaticTypeInfo };
-			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
+			static IsAvailableOverlapCallable isAvailableOverlapCallable{ Private::isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
 			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
@@ -998,23 +994,20 @@ namespace JinEngine
 			};
 			static CreateInitDataCallable createInitDataCallable{ createInitDataLam };
 
-			static auto setFrameLam = [](JComponent* component) {static_cast<JCamera*>(component)->impl->SetFrameDirty(); };
-			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
-
 			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable, isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+			static CTypePrivateFunc cTypeInterfaceFunc{ };
 
 			JComponent::RegisterCTypeInfo(JCamera::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
-			Core::JIdentifier::RegisterPrivateInterface(JCamera::StaticTypeInfo(), cPrivate);
+			Core::JIdentifier::RegisterPrivateInterface(JCamera::StaticTypeInfo(), Private::instance);
 
-			IMPL_REALLOC_BIND(JCamera::JCameraImpl, thisPointer)
-				 
+			IMPL_REALLOC_BIND()
+
 			auto setMainRtLam = [](JCameraImpl* impl, SetParam p)
 			{
 				const JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 				if (p.value)
-				{				 
+				{
 					JGraphicResourceCreationDesc rtDesc(typeSet, impl->GetRtSize());
 					const bool canBindUav = impl->OnImageProcessingTrigger() || impl->OnGITrigger();
 					if (canBindUav)
@@ -1042,7 +1035,7 @@ namespace JinEngine
 				const JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
 				if (p.value)
 				{
-					auto gInterface = impl->graphicData.Get()->GetGraphicResourceUserInterface(); 
+					auto gInterface = impl->graphicData.Get()->GetGraphicResourceUserInterface();
 					J_GRAPHIC_TASK_TYPE taskType[]
 					{
 						J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE,
@@ -1050,14 +1043,14 @@ namespace JinEngine
 						J_GRAPHIC_TASK_TYPE::SPECULAR_MAP_VISUALIZE,
 						J_GRAPHIC_TASK_TYPE::NORMAL_MAP_VISUALIZE,
 						J_GRAPHIC_TASK_TYPE::TANGENT_MAP_VISUALIZE,
-						J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE
-					}; 
+						J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE
+					};
 					JGraphicResourceCreationDesc desc(typeSet, impl->GetRtSize());
 					for (uint i = 0; i < SIZE_OF_ARRAY(taskType); ++i)
 					{
 						if (!gInterface->GetAllocableResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, taskType[i]))
 							continue;
-						 
+
 						desc.type.task = taskType[i];
 						GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
 					}
@@ -1081,9 +1074,9 @@ namespace JinEngine
 				if (p.value)
 				{
 					const bool hasHandle = impl->graphicData.Get()->GetGraphicResourceUserInterface()->IsValidHandle(typeSet.resouce, typeSet.task);
-					if(hasHandle)
+					if (hasHandle)
 						return;
-					  
+
 					JGraphicResourceCreationDesc desc(typeSet);
 					desc.useEngineDefine = true;
 					desc.bindDesc.allowMipmapBind = impl->allowHzbOcclusionCulling;
@@ -1134,15 +1127,15 @@ namespace JinEngine
 					desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP;
 					desc.type.task = J_GRAPHIC_TASK_TYPE::HZB_CULLING;
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
-					
+
 					desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP;
 					desc.type.task = J_GRAPHIC_TASK_TYPE::HZB_CULLING;
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
-					 
-					GMI()->CreateCullingData(impl->graphicData.Get(), cullingTypeSet); 
+
+					GMI()->CreateCullingData(impl->graphicData.Get(), cullingTypeSet);
 
 					JGraphicRequestCreationDesc requestDesc(J_GRAPHIC_REQUEST_TYPE::HZB_OCCLUSION_CULLING, J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::UPDATED);
-					GMI()->RequestExecutableGraphicFeature(impl->graphicData.Get(), requestDesc); 
+					GMI()->RequestExecutableGraphicFeature(impl->graphicData.Get(), requestDesc);
 
 					auto gUser = impl->graphicData.Get()->GetGraphicResourceUserInterface();
 
@@ -1160,7 +1153,7 @@ namespace JinEngine
 				}
 				else
 				{
-					   
+
 					GMI()->CancelExecutableGraphicFeature(impl->graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::HZB_OCCLUSION_CULLING);
 					GMI()->DestroyCullingData(impl->graphicData.Get(), cullingTypeSet);
 
@@ -1192,7 +1185,7 @@ namespace JinEngine
 
 					JGraphicRequestCreationDesc requestDesc(J_GRAPHIC_REQUEST_TYPE::HARD_WARE_OCCLUSION_CULLING, J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::UPDATED);
 					GMI()->RequestExecutableGraphicFeature(impl->graphicData.Get(), requestDesc);
-					 
+
 					if (impl->AllowDisplayOccCullingDepthMap())
 					{
 						auto gUser = impl->graphicData->GetGraphicResourceUserInterface();
@@ -1200,12 +1193,12 @@ namespace JinEngine
 						const bool hasDebug = debugSrvCount != 0;
 
 						if (!hasDebug)
-							impl->SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
-						else if (debugSrvCount > 1)	
+							impl->SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+						else if (debugSrvCount > 1)
 						{
 							//이전 hzb occ를 사용했고 debug map이 남아있을 경우 재생성
-							impl->SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
-							impl->SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+							impl->SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
+							impl->SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
 						}
 					}
 				}
@@ -1213,7 +1206,7 @@ namespace JinEngine
 				{
 					GMI()->CancelExecutableGraphicFeature(impl->graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::HARD_WARE_OCCLUSION_CULLING);
 					GMI()->DestroyCullingData(impl->graphicData.Get(), cullingTypeSet);
- 
+
 					if (p.isCalledByAct || (!impl->AllowHzbOcclusionCulling() && !impl->AllowHdOcclusionCulling()))
 						impl->DeRegisterFrame<J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS>();
 					if (!impl->AllowHzbOcclusionCulling())
@@ -1229,19 +1222,19 @@ namespace JinEngine
 				const JCullingTypeSet cullingTypeSet(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::LIGHT);
 				if (p.value)
 				{
-					impl->RegisterFrame<J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS>(); 
+					impl->RegisterFrame<J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS>();
 					GMI()->CreateCullingData(impl->graphicData.Get(), cullingTypeSet);
- 
+
 					JGraphicResourceTypeSet typeSet;
 					JGraphicResourceCreationDesc desc(typeSet);
 					desc.useEngineDefine = true;
-					 
-					typeSet.resouce = J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST;
-					typeSet.task = J_GRAPHIC_TASK_TYPE::LIGHT_CULLING;
+
+					desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST;
+					desc.type.task = J_GRAPHIC_TASK_TYPE::LIGHT_CULLING;
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
-					 
-					typeSet.resouce = J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET;
-					typeSet.task = J_GRAPHIC_TASK_TYPE::LIGHT_CULLING;
+
+					desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET;
+					desc.type.task = J_GRAPHIC_TASK_TYPE::LIGHT_CULLING;
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
 				}
 				else
@@ -1270,7 +1263,7 @@ namespace JinEngine
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), JGraphicResourceCreationDesc(typeSet, impl->GetRtSize()));
 				}
 				else
-				{ 
+				{
 					GMI()->DestroyGraphicResource(impl->graphicData.Get(), typeSet);
 					impl->DeRegisterFrame<J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS>();
 				}
@@ -1287,7 +1280,7 @@ namespace JinEngine
 					rtDesc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), rtDesc);
 
-					JGraphicResourceCreationDesc exposureDesc(exposureTypeSet);				 
+					JGraphicResourceCreationDesc exposureDesc(exposureTypeSet);
 					exposureDesc.useEngineDefine = true;
 					exposureDesc.uploadBufferDesc = std::make_unique<JUploadBufferCreationDesc>();
 					exposureDesc.uploadBufferDesc->useEngineDefine = true;
@@ -1296,7 +1289,7 @@ namespace JinEngine
 				else
 				{
 					GMI()->DestroyGraphicResource(impl->graphicData.Get(), exposureTypeSet);
-					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtTypeSet); 
+					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtTypeSet);
 				}
 				impl->SetFrameDirty();
 			};
@@ -1322,13 +1315,13 @@ namespace JinEngine
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), reserviorDesc);
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), reserviorDesc);
 					GMI()->CreateGraphicResource(impl->graphicData.Get(), reserviorDesc);
-					GMI()->CreateGraphicResource(impl->graphicData.Get(), reserviorDesc); 
+					GMI()->CreateGraphicResource(impl->graphicData.Get(), reserviorDesc);
 				}
 				else
 				{
 					GMI()->DestroyAllGraphicsResourcesOfType(impl->graphicData.Get(), reserviorTypeSet.resouce);
 					GMI()->DestroyGraphicResource(impl->graphicData.Get(), initialSampleTypeSet);
-					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtTypeSet); 
+					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtTypeSet);
 				}
 				impl->SetFrameDirty();
 			};
@@ -1339,7 +1332,6 @@ namespace JinEngine
 				JGraphicResourceTypeSet rtDepthTypeSet(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 
 				auto gUser = impl->graphicData->GetGraphicResourceUserInterface();
-				 
 				if (!gUser->IsValidHandle(rtDrawTypeSet.resouce, rtDrawTypeSet.task) || !gUser->IsValidHandle(rtGiTypeSet.resouce, rtGiTypeSet.task))
 					return;
 
@@ -1347,36 +1339,39 @@ namespace JinEngine
 				{
 					rtDrawTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY;
 					if (!gUser->HasOption(rtDrawTypeSet.resouce, rtDrawTypeSet.option, rtDrawTypeSet.task))
-						GMI()->CreateGraphicResource(impl->graphicData.Get(), rtDrawTypeSet);
+						GMI()->CreateGraphicResourceOption(impl->graphicData.Get(), rtDrawTypeSet);
 
 					rtGiTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
 					if (!gUser->HasOption(rtGiTypeSet.resouce, rtGiTypeSet.option, rtGiTypeSet.task))
-					{
-						GMI()->CreateGraphicResource(impl->graphicData.Get(), rtDepthTypeSet);
+					{ 
+						JGraphicResourceCreationDesc rtDepthDesc(rtDepthTypeSet, impl->GetRtSize());
+						GMI()->CreateGraphicResource(impl->graphicData.Get(), rtDepthDesc);
 
 						rtGiTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
-						GMI()->CreateGraphicResource(impl->graphicData.Get(), rtGiTypeSet);
+						GMI()->CreateGraphicResourceOption(impl->graphicData.Get(), rtGiTypeSet);
 
 						rtGiTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY;
-						GMI()->CreateGraphicResource(impl->graphicData.Get(), rtGiTypeSet);
+						GMI()->CreateGraphicResourceOption(impl->graphicData.Get(), rtGiTypeSet);
 
 						rtGiTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY;
-						GMI()->CreateGraphicResource(impl->graphicData.Get(), rtGiTypeSet);
-					} 
+						GMI()->CreateGraphicResourceOption(impl->graphicData.Get(), rtGiTypeSet);
+					}
 				}
 				else
 				{
-					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtDrawTypeSet);
-					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtDepthTypeSet);
-
 					rtGiTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY;
-					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtGiTypeSet);
+					GMI()->DestroyGraphicResourceOption(impl->graphicData.Get(), rtGiTypeSet);
 
 					rtGiTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY;
-					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtGiTypeSet);
+					GMI()->DestroyGraphicResourceOption(impl->graphicData.Get(), rtGiTypeSet);
 
 					rtGiTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
-					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtGiTypeSet);
+					GMI()->DestroyGraphicResourceOption(impl->graphicData.Get(), rtGiTypeSet);
+
+					GMI()->DestroyGraphicResource(impl->graphicData.Get(), rtDepthTypeSet);
+
+					rtDrawTypeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY;
+					GMI()->DestroyGraphicResourceOption(impl->graphicData.Get(), rtDrawTypeSet);
 				}
 				impl->SetFrameDirty();
 			};
@@ -1384,7 +1379,7 @@ namespace JinEngine
 			using CondCallable = Core::JMemberCNCallable<JCameraImpl, bool>;
 
 			SetFuncList().Register(std::make_unique<SetCallable>(setMainRtLam), MANAGED_SET_MAIN_RENDER_TARGET);
-			SetFuncList().Register(std::make_unique<SetCallable>(setMainDsLam), MANAGED_SET_MAIN_DEPTH_STENCIL); 
+			SetFuncList().Register(std::make_unique<SetCallable>(setMainDsLam), MANAGED_SET_MAIN_DEPTH_STENCIL);
 			SetFuncList().Register(std::make_unique<SetCallable>(setDisplayRsLam), std::make_unique<CondCallable>(&JCameraImpl::AllowDisplayRenderResult), MANAGED_SET_DISPLAY_RENDER_RESULT);
 			SetFuncList().Register(std::make_unique<SetCallable>(setDisplayDebugObjLam), std::make_unique<CondCallable>(&JCameraImpl::AllowDisplayDebugObject), MANAGED_SET_DISPLAY_DEBUG_OBJECT);
 			SetFuncList().Register(std::make_unique<SetCallable>(setDisplayOccDepthMapLam), std::make_unique<CondCallable>(&JCameraImpl::AllowDisplayOccCullingDepthMap), MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP);
@@ -1393,21 +1388,21 @@ namespace JinEngine
 			SetFuncList().Register(std::make_unique<SetCallable>(setHzbCullLam), std::make_unique<CondCallable>(&JCameraImpl::AllowHzbOcclusionCulling), MANAGED_SET_HZB_CULLING);
 			SetFuncList().Register(std::make_unique<SetCallable>(setHdCullLam), std::make_unique<CondCallable>(&JCameraImpl::AllowHdOcclusionCulling), MANAGED_SET_HD_CULLING);
 			SetFuncList().Register(std::make_unique<SetCallable>(setLitCullLam), std::make_unique<CondCallable>(&JCameraImpl::AllowLightCulling), MANAGED_SET_LIGHT_CULLING);
-			SetFuncList().Register(std::make_unique<SetCallable>(setSsaoLam), std::make_unique<CondCallable>(&JCameraImpl::AllowSsao), MANAGED_SET_SSAO); 
+			SetFuncList().Register(std::make_unique<SetCallable>(setSsaoLam), std::make_unique<CondCallable>(&JCameraImpl::AllowSsao), MANAGED_SET_SSAO);
 			SetFuncList().Register(std::make_unique<SetCallable>(setImageProcessingRtLam), std::make_unique<CondCallable>(&JCameraImpl::OnImageProcessingTrigger), MANAGED_SET_IMAGE_PROCESSING);
 			SetFuncList().Register(std::make_unique<SetCallable>(setGIRtLam), std::make_unique<CondCallable>(&JCameraImpl::OnGITrigger), MANAGED_SET_GI);
-			 
 			SetFuncList().Register(std::make_unique<SetCallable>(setSpatialTemporalResourceLam), std::make_unique<CondCallable>(&JCameraImpl::AllowTemporalResource), MANAGED_SET_SPATIAL_TEMPORAL_RESOURCE);
 
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_MAIN_RENDER_TARGET);
-			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_MAIN_DEPTH_STENCIL); 
+			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_MAIN_DEPTH_STENCIL);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_IMAGE_PROCESSING);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_GI);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_DISPLAY_RENDER_RESULT);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_DISPLAY_DEBUG_OBJECT);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_DISPLAY_LIGHT_CULLING_DEBUG);
-			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_SSAO); 
+			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_SSAO);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_SPATIAL_TEMPORAL_RESOURCE);
+			SetFuncList().RegisterGlobalCond(std::make_unique<CondCallable>(&JCameraImpl::IsActivated));
 		}
 	};
 
@@ -1420,11 +1415,15 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JCamera::PrivateInterface()const noexcept
 	{
-		return cPrivate;
-	} 
-	JGraphicModuleManagedDataFrame* JCamera::GetModuleManagedData()const noexcept
+		return Private::instance;
+	}
+	JGraphicModuleManagedDataFrame* JCamera::ModuleManagedData()const noexcept
 	{
 		return impl->graphicData.Get();
+	}
+	uint JCamera::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_COMPONENT_TYPE JCamera::GetComponentType()const noexcept
 	{
@@ -1445,7 +1444,7 @@ namespace JinEngine
 	DirectX::XMMATRIX JCamera::GetInvView()const noexcept
 	{
 		return XMMatrixInverse(nullptr, impl->mView.LoadXM());
-	} 
+	}
 	XMMATRIX JCamera::GetProj()const noexcept
 	{
 		return impl->mProj.LoadXM();
@@ -1492,7 +1491,7 @@ namespace JinEngine
 		return impl->camFov;
 	}
 	float JCamera::GetFovYDegree()const noexcept
-	{ 
+	{
 		return impl->GetFovYDegree();
 	}
 	float JCamera::GetTanHalfFovY()const noexcept
@@ -1529,11 +1528,11 @@ namespace JinEngine
 	}
 	float JCamera::GetRenderViewWidth()const noexcept
 	{
-		return impl->GetRenderViewWidth(); 
+		return impl->GetRenderViewWidth();
 	}
 	float JCamera::GetRenderViewHeight()const noexcept
 	{
-		return impl->GetRenderViewHeight(); 
+		return impl->GetRenderViewHeight();
 	}
 	J_CAMERA_STATE JCamera::GetCameraState()const noexcept
 	{
@@ -1542,7 +1541,7 @@ namespace JinEngine
 	JVector2F JCamera::GetRenderTargetSize()const noexcept
 	{
 		return impl->GetRtSize();
-	} 
+	}
 	JVector2F JCamera::GetRenderTargetRate()const noexcept
 	{
 		return impl->rtSizeRate;
@@ -1611,6 +1610,10 @@ namespace JinEngine
 	{
 		impl->SetAllowDisplayOccCullingDepthMap(value);
 	}
+	void JCamera::SetReflectAllCullingResult(const bool value)noexcept
+	{
+		impl->SetReflectAllCullingResult(value);
+	}
 	void JCamera::SetAllowSsao(const bool value)noexcept
 	{
 		impl->SetAllowSsao(value);
@@ -1633,7 +1636,7 @@ namespace JinEngine
 	}
 	bool JCamera::IsAvailableOverlap()const noexcept
 	{
-		return isAvailableoverlapLam();
+		return Private::isAvailableoverlapLam();
 	}
 	bool JCamera::PassDefectInspection()const noexcept
 	{
@@ -1674,6 +1677,10 @@ namespace JinEngine
 	{
 		return impl->AllowDisplayLightCullingDebug();
 	}
+	bool JCamera::AllowReflectAllCullingResult()const noexcept
+	{
+		return impl->AllowDisplayLightCullingDebug();
+	}
 	bool JCamera::AllowSsao()const noexcept
 	{
 		return impl->AllowSsao();
@@ -1685,13 +1692,14 @@ namespace JinEngine
 	bool JCamera::AllowRaytracingGI()const noexcept
 	{
 		return impl->OnGITrigger();
-	} 
+	}
 	void JCamera::DoActivate()noexcept
 	{
 		//Caution 
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
+		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JComponent::DoActivate();
 		if (impl->camState == J_CAMERA_STATE::RENDER)
 		{
@@ -1706,8 +1714,8 @@ namespace JinEngine
 			DeRegisterComponent(impl->thisPointer);
 			impl->DeActivate();
 		}
-		impl->graphicData->GetFrameUpdateUserInterface()->OffFrameDirty();
 		JComponent::DoDeActivate();
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	}
 	JCamera::JCamera(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JCameraImpl>(initData, this))
@@ -1719,7 +1727,7 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JCameraPrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JCameraPrivate::DestroyInstanceInterface;
-	using AssetDataIOInterface = JCameraPrivate::AssetDataIOInterface; 
+	using AssetDataIOInterface = JCameraPrivate::AssetDataIOInterface;
 	using EditorSettingInterface = JCameraPrivate::EditorSettingInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
@@ -1730,7 +1738,7 @@ namespace JinEngine
 	{
 		JComponentPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JCamera* cam = static_cast<JCamera*>(createdPtr);
-		cam->impl->RegisterThisPointer(cam); 
+		cam->impl->RegisterThisPointer(cam);
 		cam->impl->RegisterPostCreation();
 		cam->impl->Initialize();
 	}
@@ -1821,7 +1829,7 @@ namespace JinEngine
 		auto initData = std::make_unique<JCamera::InitData>(guid, flag, owner);
 		initData->rtSizeRate = rtSizeRate;
 
-		auto idenUser = cPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &cPrivate);
+		auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::move(initData), &Private::instance);
 		JUserPtr<JCamera> camUser;
 		camUser.ConnnectChild(idenUser);
 
@@ -1855,7 +1863,7 @@ namespace JinEngine
 		impl->SetRenderTargetRate(rtSizeRate);
 		impl->SetCameraState(camState);
 		if (!isActivated)
-			camUser->DoDeActivate();
+			camUser->DeActivate();
 
 		return camUser;
 	}
@@ -1906,14 +1914,14 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreEnumData(tool, impl->ssaoDesc.blurKenelSize, "SsaoBlurKenelSize:");
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
- 
-	void EditorSettingInterface::SetAllowAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept
+
+	void EditorSettingInterface::SetReflectAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept
 	{
-		cam->impl->SetAllowAllCullingResult(value);
+		cam->impl->SetReflectAllCullingResult(value);
 	}
-	bool EditorSettingInterface::AllowAllCullingResult(const JUserPtr<JCamera>& cam)noexcept
+	bool EditorSettingInterface::AllowReflectAllCullingResult(const JUserPtr<JCamera>& cam)noexcept
 	{
-		return cam->impl->AllowAllCullingResult();
+		return cam->impl->AllowReflectAllCullingResult();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JCameraPrivate::GetCreateInstanceInterface()const noexcept

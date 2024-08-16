@@ -37,23 +37,23 @@ namespace JinEngine
 	{ 
 		class JFrameUpdateAreaInfo
 		{
-		public:
+		public: 
 			const size_t guid = 0;
 		public:
 			int stIndex = 0;
-			int edIndex = 0;
+			int count = 0;
 		public:
-			JFrameUpdateAreaInfo(size_t guid, int stIndex = 0, int edIndex = 0);
+			JFrameUpdateAreaInfo(size_t guid, int stIndex = 0, int count = 0);
 		public:
 			int GetInfoCount()const noexcept;
 			int GetStIndex()const noexcept;
 			int GetEdIndex()const noexcept;
 		public:
-			int Increase();
-			int Decrease();
+			void IncreaseStIndex();
+			void DecreaseStIndex();
 		public:
-			int IncreaseEdIndex();
-			int DecreaseEdIndex();
+			void IncreaseCount();
+			void DecreaseCount();
 		};
 		 
 		class JFrameUpdateInfo
@@ -64,9 +64,9 @@ namespace JinEngine
 			int number = 0; 
 		private:
 			//frame index	calculated) index = pre data index + pre data indexSize
-			int index = -1;
+			int index = invalidIndex;
 			//frame index size
-			int indexSize = -1;
+			int indexSize = invalidIndex;
 		private:
 			const J_FRAME_RESOURCE_UPLOAD_TYPE type;
 		private:

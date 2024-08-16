@@ -29,7 +29,8 @@ SOFTWARE.
 #include"../String/JEditorStringMap.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Math/JVectorExtend.h"
- 
+#include"../../Object/GraphicRule/GraphicResource/JGraphicModuleTextureResourceUserAccess.h"
+
 namespace JinEngine
 {
 	namespace Editor

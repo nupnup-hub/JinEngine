@@ -33,18 +33,15 @@ SOFTWARE.
 #include"../Object/Component/Camera/JCameraPrivate.h"
 #include"../Object/Component/Light/JLight.h"    
 #include"../Object/Component/Light/JLightPrivate.h"    
-#include"../Object/Resource/Scene/JScenePrivate.h"
+#include"../Object/Resource/Scene/JScene.h"
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
 		namespace
-		{
-			using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
-			using SceneCashInterface = JScenePrivate::CashInterface;
-			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface; 
-			using CamFrameIndexInterface = JCameraPrivate::FrameIndexInterface;  
+		{  
+			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface;  
 		}
 		namespace
 		{
@@ -57,23 +54,13 @@ namespace JinEngine
 				return (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT;
 			}
 		}
+		 
 
-		bool JUpdateHelper::BindingTextureData::HasCallable()const noexcept
-		{
-			return hasCallable;
+		void JUpdateHelper::Begin()
+		{ 
 		}
-
-		void JUpdateHelper::BeginUpdatingDrawTarget()
-		{
-			const uint uCount = UDataCount();
-			for (uint i = 0; i < uCount; ++i)
-				uData[i].uploadCountPerTarget = 0;
-		}
-		void JUpdateHelper::EndUpdatingDrawTarget()
-		{
-			const uint uCount = UDataCount();
-			for (uint i = 0; i < uCount; ++i)
-				uData[i].uploadOffset += uData[i].uploadCountPerTarget;
+		void JUpdateHelper::End()
+		{ 
 		}
 		void JUpdateHelper::Clear()
 		{
@@ -81,12 +68,7 @@ namespace JinEngine
 			for (uint i = 0; i < uCount; ++i)
 			{
 				uData[i].count = 0;
-				uData[i].capacity = 0; 
-				uData[i].uploadCountPerTarget = 0;
-				uData[i].uploadOffset = 0;
-				//uData[i].setDirty = false;
-				if (uData[i].setDirty > 0)
-					--uData[i].setDirty;
+				uData[i].capacity = 0;    
 				uData[i].reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::KEEP;
 			}
 
@@ -107,46 +89,18 @@ namespace JinEngine
 		*/ 
 		void JUpdateHelper::WriteGraphicInfo(JGraphicInfo& info)const noexcept
 		{
-			info.frame.upObjCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT].count;
-			info.frame.upBoundingObjCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT].count;
-			info.frame.upHzbObjCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].count;
-			info.frame.upScenePassCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS].count;
-			info.frame.upAniCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION].count;
-			info.frame.upCameraCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA].count;
-			info.frame.upDLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT].count;
-			info.frame.upPLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT].count;
-			info.frame.upSLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT].count;
-			info.frame.upRLightCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT].count;
-			info.frame.upCsmCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO].count;
-			info.frame.upCubeShadowMapCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW].count;
-			info.frame.upNormalShadowMapCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW].count;
-			info.frame.upMaterialCount = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL].count;
-
-			info.frame.upObjCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT].capacity;
-			info.frame.upBoundingObjCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT].capacity;
-			info.frame.upHzbObjCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].capacity;
-			info.frame.upScenePassCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS].capacity;
-			info.frame.upAniCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION].capacity;
-			info.frame.upCameraCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA].capacity;
-			info.frame.upDLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT].capacity;
-			info.frame.upPLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT].capacity;
-			info.frame.upSLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT].capacity;
-			info.frame.upRLightCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT].capacity;
-			info.frame.upMaterialCapacity = uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL].capacity;
-
-			info.resource.binding2DTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].count;
-			info.resource.bindingCubeMapCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].count;
-			info.resource.bindingShadowTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].count;
-			info.resource.bindingShadowTextureArrayCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY].count;
-			info.resource.bindingShadowTextureCubeCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE].count;
-
-			info.resource.binding2DTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].capacity;
-			info.resource.bindingCubeMapCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].capacity;
-			info.resource.bindingShadowTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].capacity;
-			info.resource.bindingShadowTextureArrayCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY].capacity;
-			info.resource.bindingShadowTextureCubeCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE].capacity;
+			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
+			{
+				info.frame.count[i] = uData[i].count;
+				info.frame.capacity[i] = uData[i].capacity;
+			}
+			for (uint i = 0; i < (uint)J_RESOURCE_TYPE::COUNT; ++i)
+			{
+				info.resource.count[i] = bData[i].count;
+				info.resource.border[i] = bData[i].capacity;
+			}
 		}
-		
+	
 		void JGameObjectBuffer::ClearAlignedVecElement()
 		{
 			for (auto& data : aligned)
@@ -170,91 +124,55 @@ namespace JinEngine
 				if(guid == data->jCamera->GetGuid())
 					continue;
 
-				auto cullingInterface = data->jCamera->CullingUserInterface(); 
-				if (cullingInterface.IsCulled(J_CULLING_TARGET::RENDERITEM, rItemIndex))
+				auto cullingInterface = data->jCamera->ModuleManagedData()->GetCullingUserInterface(); 
+				if (cullingInterface->IsCulled(J_CULLING_TARGET::RENDERITEM, rItemIndex))
 					return true;
 			}
 			return false;
 		} 
-		JGraphicResourceUserInterface JDrawHelper::GetOccGResourceInterface()const noexcept
+		JGraphicResourceInterface* JDrawHelper::GetResourceInterface()const noexcept
 		{
-			if (drawType == DRAW_TYPE::OCC)
-			{
-				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					return cam->GraphicResourceUserInterface();
-				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					return lit->GraphicResourceUserInterface();
-			}
-			return JGraphicResourceUserInterface();
+			return static_cast<JGraphicResourceInterface*>(comp->ModuleManagedData()->GetGraphicResourceUserInterface());
 		}
-		JCullingUserInterface JDrawHelper::GetCullInterface()const noexcept
+		JCullingInterface* JDrawHelper::GetCullInterface()const noexcept
 		{
-			if (drawType == DRAW_TYPE::SCENE)
-				return cam->CullingUserInterface();
-			else if (drawType == DRAW_TYPE::OCC)
-			{
-				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					return cam->CullingUserInterface();
-				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					return lit->CullingUserInterface();
-				else
-					return nullptr;
-			}
-			else if (drawType == DRAW_TYPE::FRUSTUM_CULLING)
-			{
-				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					return cam->CullingUserInterface();
-				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					return lit->CullingUserInterface();
-				else
-					return nullptr;
-			}
-			else
-				return lit->CullingUserInterface();
+			return static_cast<JCullingInterface*>(comp->ModuleManagedData()->GetCullingUserInterface()); 
+		} 
+		JFrameUpdateInterface* JDrawHelper::GetFrameInterface()const noexcept
+		{
+			return static_cast<JFrameUpdateInterface*>(comp->ModuleManagedData()->GetFrameUpdateUserInterface());
 		}
-		JCullingUserAccess* JDrawHelper::GetCullingUserAccess()const noexcept
+		JGpuAcceleratorInterface* JDrawHelper::GetGpuAcceleratorInterface()const noexcept
 		{
-			if (drawType == DRAW_TYPE::SCENE)
-				return cam.Get();
-			else if (drawType == DRAW_TYPE::OCC)
-			{
-				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					return cam.Get();
-				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					return lit.Get();
-			}
-			else if (drawType == DRAW_TYPE::FRUSTUM_CULLING)
-			{
-				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					return cam.Get();
-				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					return lit.Get();
-			}
-			return nullptr;
+			return static_cast<JGpuAcceleratorInterface*>(scene->ModuleManagedData()->GetGpuAcceleratorUserInterface());
+		}
+		JGraphicObjectDataSetBase* JDrawHelper::GetObjectDataSet()const noexcept
+		{
+			return static_cast<JGraphicObjectDataSetBase*>(comp->ModuleManagedData());
 		}
 		JDrawHelper::DRAW_TYPE JDrawHelper::GetDrawType()const noexcept
 		{
 			return drawType;
 		} 
-		int JDrawHelper::GetSceneFrameIndex()const noexcept
+		int JDrawHelper::GetSceneFrameIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
 		{
-			return JFrameIndexAccess::GetSceneFrameIndex(scene.Get());
+			return scene->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(type);
 		}
-		int JDrawHelper::GetCamFrameIndex(const uint frameLayerIndex)const noexcept
+		int JDrawHelper::GetCamFrameIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
 		{
-			return JFrameIndexAccess::GetCamFrameIndex(cam.Get(), frameLayerIndex);
+			return cam->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(type); 
 		} 
-		int JDrawHelper::GetLitFrameIndex(const uint frameLayerIndex)const noexcept
+		int JDrawHelper::GetLitFrameIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
 		{
-			return JFrameIndexAccess::GetLitFrameIndex(lit.Get(), frameLayerIndex);
+			return lit->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(type); 
 		} 
-		int JDrawHelper::GetLitShadowFrameIndex()const noexcept
+		int JDrawHelper::GetLitShadowFrameIndex(const J_SHADOW_MAP_TYPE smType)const noexcept
 		{
-			return JFrameIndexAccess::GetLitShadowFrameIndex(lit.Get()); ;
+			return lit->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(JLightType::SmToFrameR(smType));
 		}
-		const std::vector<JUserPtr<JGameObject>>& JDrawHelper::GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept
+		const std::vector<JUserPtr<JGameObject>>& JDrawHelper::GetGameObjectCacheVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept
 		{
-			return SceneCashInterface::GetGameObjectCashVec(scene, rLayer, meshType);
+			return scene->GetGameObjectCacheVec(rLayer, meshType);
 		} 
 		void JDrawHelper::SetDrawTarget(JGraphicDrawTarget* drawTarget)noexcept
 		{
@@ -272,7 +190,7 @@ namespace JinEngine
 		}
 		void JDrawHelper::SettingDrawShadowMap(const JWeakPtr<JLight>& lit)noexcept
 		{
-			JDrawHelper::lit = lit;
+			SetLight(lit); 
 			drawType = DRAW_TYPE::SHADOW_MAP; 
 
 			allowDrawShadowMap = lit->IsShadowActivated();
@@ -281,7 +199,7 @@ namespace JinEngine
 		}
 		void JDrawHelper::SettingDrawScene(const JWeakPtr<JCamera>& cam)noexcept
 		{
-			JDrawHelper::cam = cam;
+			SetCamera(cam); 
 			drawType = DRAW_TYPE::SCENE;
 
 			allowDrawDebugMap = cam->AllowDisplayRenderResult();
@@ -298,54 +216,68 @@ namespace JinEngine
 		void JDrawHelper::SettingFrustumCulling(const JWeakPtr<JComponent>& comp)noexcept
 		{
 			drawType = DRAW_TYPE::FRUSTUM_CULLING;
-			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_CAMERA)
 			{
-				cam = Core::ConnectChildUserPtr<JCamera>(comp);
-				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+				SetCamera(Core::ConnectChildUserPtr<JCamera>(comp)); 
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_CAMERA;
 			}
-			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_LIGHT)
 			{
-				lit = Core::ConnectChildUserPtr<JLight>(comp);
-				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
+				SetLight(Core::ConnectChildUserPtr<JLight>(comp)); 
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_LIGHT;
 			}
 		}
 		void JDrawHelper::SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept
-		{
-			Graphic::JCullingUserAccess* userAccess = nullptr;
-			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-			{
-				cam = Core::ConnectChildUserPtr<JCamera>(comp);
-				userAccess = cam.Get();
+		{ 
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_CAMERA)
+			{ 
+				SetCamera(Core::ConnectChildUserPtr<JCamera>(comp)); 
 				//draw depth map + mipmap 
-				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_CAMERA;
 			}
-			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_LIGHT)
 			{
-				lit = Core::ConnectChildUserPtr<JLight>(comp);
-				userAccess = lit.Get();
+				SetLight(Core::ConnectChildUserPtr<JLight>(comp)); 
 				//draw depth map  
-				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_LIGHT;
 			}
 			drawType = DRAW_TYPE::OCC;
 
-			if (userAccess != nullptr)
+			if (comp->ModuleManagedData()->CanAccessCullingResource())
 			{
 				const bool isOcclusionActivated = option.culling.isOcclusionQueryActivated;
-				allowFrustumCulling = userAccess->AllowFrustumCulling();
-				if (isOcclusionActivated)
+				if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_CAMERA)
 				{
-					allowHzbOcclusionCulling = userAccess->AllowHzbOcclusionCulling();
-					allowHdOcclusionCulling = userAccess->AllowHdOcclusionCulling();
-					allowDrawOccDepthMap = (allowHzbOcclusionCulling || allowHdOcclusionCulling) && userAccess->AllowDisplayOccCullingDepthMap();
+					allowFrustumCulling = cam->AllowFrustumCulling();
+					allowHzbOcclusionCulling = isOcclusionActivated && cam->AllowHzbOcclusionCulling();
+					allowHdOcclusionCulling = isOcclusionActivated && cam->AllowHdOcclusionCulling();
+					allowDrawOccDepthMap = (allowHzbOcclusionCulling || allowHdOcclusionCulling) && cam->AllowDisplayOccCullingDepthMap();
+				}
+				else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_LIGHT)
+				{
+					allowFrustumCulling = lit->AllowFrustumCulling();
+					allowHzbOcclusionCulling = isOcclusionActivated && lit->AllowHzbOcclusionCulling();
+					allowHdOcclusionCulling = isOcclusionActivated && lit->AllowHdOcclusionCulling();
+					allowDrawOccDepthMap = (allowHzbOcclusionCulling || allowHdOcclusionCulling) && lit->AllowDisplayOccCullingDepthMap();
 				}
 			}
 		}
 		void JDrawHelper::SettingLightCulling(const JWeakPtr<JCamera>& cam)
 		{
-			JDrawHelper::cam = cam;
+			SetCamera(cam); 
 			drawType = DRAW_TYPE::LIT_CULLING;
 			allowLightCulling = cam->AllowLightCulling() && option.culling.isLightCullingActivated;
 			allowLightCullingDebug = cam->AllowDisplayLightCullingDebug() && option.debugging.allowDisplayLightCullingResult;
+		}			 
+		void JDrawHelper::SetCamera(const JWeakPtr<JCamera>& newCam)noexcept
+		{
+			cam = newCam;
+			comp = cam.Get();
+		}
+		void JDrawHelper::SetLight(const JWeakPtr<JLight>& newLit)noexcept
+		{
+			lit = newLit;
+			comp = lit.Get();
 		}
 		bool JDrawHelper::CanDispatchWorkIndex()const noexcept
 		{
@@ -365,7 +297,7 @@ namespace JinEngine
 				isPerspective = lit->GetLightType() == J_LIGHT_TYPE::POINT || lit->GetLightType() == J_LIGHT_TYPE::SPOT;
 			else if (drawType == DRAW_TYPE::OCC)
 			{
-				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_CAMERA)
 					isPerspective = !cam->IsOrthoCamera();
 				else
 					isPerspective = lit->GetLightType() == J_LIGHT_TYPE::POINT || lit->GetLightType() == J_LIGHT_TYPE::SPOT;
@@ -453,7 +385,7 @@ namespace JinEngine
 			allowAnimation = newAllowAnimation; 
 			allowCulling = newAllowCulling; 
 			allowOutline = newAllowDebugOutline && helper.allowDrawDebugObject && helper.option.debugging.allowOutline;
-			allowAllCullingResult = helper.cam != nullptr && CamEditorSettingInterface::AllowAllCullingResult(helper.cam);
+			allowAllCullingResult = helper.cam != nullptr && helper.cam->AllowReflectAllCullingResult();
 			if (allowAllCullingResult)
 				allowCulling = newAllowCulling;
 		}

@@ -39,6 +39,8 @@ SOFTWARE.
 #include"../../Directory/JDirectory.h"
 #include"../../Directory/JFile.h"
 #include"../../JObjectFileIOHelper.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h"
@@ -70,7 +72,8 @@ namespace JinEngine
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationControllerImpl)
 	public:
-		JWeakPtr<JAnimationController> thisPointer = nullptr;
+		JWeakPtr<JAnimationController> thisPointer;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		JOwnerPtr<Core::JFSMparameterStorage> paramStorage;
 		std::vector<JUserPtr<JAnimationFSMdiagram>> diagramVec;
@@ -84,7 +87,7 @@ namespace JinEngine
 		{
 			return paramStorage.Get();
 		}
-	public:
+	private:
 		Core::JUserPtr<JAnimationFSMdiagram> FindDiagram(const size_t guid)noexcept
 		{
 			const uint dCount = (uint)diagramVec.size();
@@ -129,7 +132,7 @@ namespace JinEngine
 			if (!hasValidValue)
 				set.StuffIdentity();
 		}
-	public:
+	private:
 		void StuffResource()
 		{
 			if (!thisPointer->IsValid())
@@ -204,6 +207,16 @@ namespace JinEngine
 			return std::move(unq);
 		}
 	public:
+		void Activate()noexcept
+		{ 
+			StuffResource();
+		}
+		void DeActivate()noexcept
+		{
+			//has order dependency 
+			ClearResource(); 
+		}
+	public:
 		bool RegisterDiagram(JUserPtr<Core::JFSMdiagram> diagram)noexcept final
 		{	 
 			if (diagram != nullptr)
@@ -266,14 +279,13 @@ namespace JinEngine
 			RegisterRTypeInfo(JAnimationController::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JAnimationController::StaticTypeInfo(), aPrivate);
 
-			IMPL_REALLOC_BIND(JAnimationController::JAnimationControllerImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 
 			NotifyReAllocPtr notifyParamReAllocPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
 			{
 				auto movedParamStorage = static_cast<Core::JFSMparameterStorage*>(movedPtr);
 				JAnimationController* cond = static_cast<JAnimationController*>(movedParamStorage->GetOwner().Get());
-				cond->impl->paramStorage.Release();
-				cond->impl->paramStorage.Reset(movedParamStorage);
+				cond->impl->paramStorage.Swap(movedParamStorage);
 			};
 			auto paramReAllocF = std::make_unique<NotifyReAllocF>(notifyParamReAllocPtr);
 			std::unique_ptr<JAllocationDesc> paramAllocDesc = std::make_unique<JAllocationDesc>();
@@ -301,6 +313,14 @@ namespace JinEngine
 	Core::JIdentifierPrivate& JAnimationController::PrivateInterface()const noexcept
 	{
 		return aPrivate;
+	}
+	JGraphicModuleManagedDataFrame* JAnimationController::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JAnimationController::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_RESOURCE_TYPE JAnimationController::GetResourceType()const noexcept
 	{
@@ -408,13 +428,15 @@ namespace JinEngine
 	}
 	void JAnimationController::DoActivate()noexcept
 	{
+		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JResourceObject::DoActivate();
-		impl->StuffResource();
+		impl->Activate();
 	}
 	void JAnimationController::DoDeActivate()noexcept
 	{ 
-		impl->ClearResource();
+		impl->DeActivate();
 		JResourceObject::DoDeActivate();
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	} 
 	JAnimationController::JAnimationController(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JAnimationControllerImpl>(initData, this))

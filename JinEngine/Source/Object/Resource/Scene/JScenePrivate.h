@@ -35,15 +35,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JSceneObserver; 
-	}
-	namespace Graphic
-	{ 
-		class JGraphic;
-		class JGraphicDrawList; 
-		class JFrustumCulling;
-		class JFrameIndexAccess;
-		class JDrawHelper;
-	}
+	} 
 	class JGameObject;
 	class JScene;
 	class JComponent; 
@@ -75,18 +67,6 @@ namespace JinEngine
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
 		}; 
-		class CashInterface
-		{
-		private:
-			friend class Graphic::JDrawHelper;
-			friend class Graphic::JGraphic;
-			friend class Editor::JSceneObserver; //Debug
-		private:
-			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept;
-			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept;
-			static const std::vector<JUserPtr<JComponent>>& GetComponentCashVec(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;
-			static const std::vector<JUserPtr<JComponent>>& GetComponentCashVec(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType)noexcept;
-		};
 		class TimeInterface
 		{
 		private:
@@ -124,42 +104,14 @@ namespace JinEngine
 			static bool RegisterComponent(const JUserPtr<JComponent>& comp, CompSortPtr comparePtr = nullptr)noexcept;
 			static bool DeRegisterComponent(const JUserPtr<JComponent>& comp)noexcept;
 			static bool ReRegisterComponent(const JUserPtr<JComponent>& comp, CompSortPtr comparePtr = nullptr)noexcept;
-		};
-		class CompFrameInterface
-		{
-		private: 
-			friend class Graphic::JGraphicDrawList; 
-		public:
-			using SetCompCondition = bool(*)(const JUserPtr<JComponent>&);
-		private:
-			//range: all comp vector
-			static void SetAllComponentFrameDirty(const JUserPtr<JScene>& scene)noexcept;
-			//range: comp vector
-			static void SetComponentFrameDirty(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType, JUserPtr<JComponent> stComp = nullptr, SetCompCondition condiiton = nullptr)noexcept;
-		};
-		class CullingInterface
-		{
-		private:
-			friend class Graphic::JFrustumCulling;
-		private:
-			static void ViewCulling(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& comp)noexcept; 
-			static void ViewCulling(const JUserPtr<JScene>& scene, JAcceleratorCullingInfo& info)noexcept;
-		};
+		}; 
 		class DebugInterface
 		{
 		private:
 			friend class Editor::JSceneObserver; 
 		private:
 			static void BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept;
-		};
-		class FrameIndexInterface
-		{
-		private:
-			friend class Graphic::JGraphic;
-			friend class Graphic::JFrameIndexAccess;
-		private:
-			static uint GetFrameIndex(JScene* scene);
-		};
+		}; 
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		JResourceObjectPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;

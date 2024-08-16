@@ -133,15 +133,13 @@ namespace JinEngine
 				ID3D12Resource** uploadBuffer,
 				const uint subResourceCount = 1);
 			static JDx12GraphicResourceHolderDesc CreateBufferAndUploadCpuBuffer(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer);
-			static JDx12GraphicResourceHolderDesc Create(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE type);
+			static JDx12GraphicResourceHolderDesc Create(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc);
 			static JDx12GraphicResourceHolderDesc Create(const JDeviceData& data, ID3D12Resource* dxInfoResource, const J_GRAPHIC_RESOURCE_OPTION_TYPE type);
 			static JDx12GraphicResourceHolderDesc Create(const JDeviceData& data,
 				const JGraphicResourceCreationDesc& creationDesc,
-				const J_GRAPHIC_RESOURCE_TYPE type, 
 				Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer);
 			static bool Load(const JDeviceData& data, 
 				const JGraphicResourceCreationDesc& creationDesc,
-				const J_GRAPHIC_RESOURCE_TYPE type,
 				Microsoft::WRL::ComPtr<ID3D12Resource>& newResource,
 				Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				std::unique_ptr<DirectX::ResourceUploadBatch>& uploadBatch,

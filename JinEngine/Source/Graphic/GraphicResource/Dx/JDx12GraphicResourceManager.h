@@ -161,12 +161,12 @@ namespace JinEngine
 			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;
 		public:
 			void CreateSwapChainBuffer(JDx12SwapChainCreationData& creationData);
-			JUserPtr<JGraphicResourceInfo> CreateResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType)final;
+			JUserPtr<JGraphicResourceInfo> CreateResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc)final;
 			bool CreateOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo> info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)final;
 			bool DestroyGraphicTextureResource(JGraphicDevice* device, JGraphicResourceInfo* info)final;
 			bool DestroyGraphicOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype)final;
 		private:
-			JUserPtr<JDx12GraphicResourceInfo> CommonCreationProcess(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType, const ExtraOption& extraOption = ExtraOption());
+			JUserPtr<JDx12GraphicResourceInfo> CommonCreationProcess(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const ExtraOption& extraOption = ExtraOption());
 			JUserPtr<JDx12GraphicResourceInfo> CreateTexture2D(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
 			JUserPtr<JDx12GraphicResourceInfo> CreateCubeMap(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
 			JUserPtr<JDx12GraphicResourceInfo> CreateTextureCommon(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
@@ -178,7 +178,7 @@ namespace JinEngine
 			void ReBind(ID3D12Device* device, const J_GRAPHIC_RESOURCE_TYPE rType, const uint index, const int additionalArrayIndex = 0);
 		public:
 			bool ReAllocTypePerAllResource(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType);
-			bool ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType) final;
+			bool ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc) final;
 		public:
 			bool CopyResource(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& from, const JUserPtr<JGraphicResourceInfo>& to) final;
 		public:
@@ -201,6 +201,7 @@ namespace JinEngine
 			static void RegisterTypeData();
 		};
 
+		class JGraphicResourceInterface;
 		struct JDx12GraphicResourceComputeSet
 		{
 		private:
@@ -220,8 +221,8 @@ namespace JinEngine
 			JDx12GraphicResourceComputeSet() = default;
 			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, JGraphicResourceInfo* gInfo);
 			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, const JUserPtr<JGraphicResourceInfo>& info);
-			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType);
-			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
+			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, JGraphicResourceInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType);
+			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, JGraphicResourceInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
 			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, JGraphicResourceInfo* gInfo, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 			JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, const JUserPtr<JGraphicResourceInfo>& gInfo, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 		public:

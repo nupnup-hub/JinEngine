@@ -55,11 +55,12 @@ namespace JinEngine
 		std::unique_ptr<JCameraImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;  
-		JGraphicModuleManagedDataFrame* GetModuleManagedData()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
-			return J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+			return J_COMPONENT_TYPE::ENGINE_CAMERA;
 		} 	  
 		JUserPtr<JTransform> GetTransform()noexcept;
 		DirectX::XMMATRIX GetView()const noexcept;
@@ -119,6 +120,7 @@ namespace JinEngine
 		void SetAllowHzbOcclusionCulling(const bool value)noexcept;
 		void SetAllowHdOcclusionCulling(const bool value)noexcept;
 		void SetAllowDisplayOccCullingDepthMap(const bool value)noexcept;
+		void SetReflectAllCullingResult(const bool value)noexcept;
 		void SetAllowSsao(const bool value)noexcept;
 		void SetCameraState(const J_CAMERA_STATE state)noexcept;
 		void SetRenderTargetRate(const JVector2F rate)noexcept;		//default 1,1 = client window size
@@ -135,6 +137,7 @@ namespace JinEngine
 		bool AllowDisplayOccCullingDepthMap()const noexcept;
 		bool AllowLightCulling()const noexcept;
 		bool AllowDisplayLightCullingDebug()const noexcept;
+		bool AllowReflectAllCullingResult()const noexcept;
 		bool AllowSsao()const noexcept;
 		bool AllowPostProcess()const noexcept;
 		bool AllowRaytracingGI()const noexcept; 

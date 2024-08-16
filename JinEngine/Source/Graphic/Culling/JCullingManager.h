@@ -25,9 +25,9 @@ SOFTWARE.
 
 #pragma once  
 #include"JCullingInfo.h"
+#include"JCullingInterface.h"
 #include"../JGraphicSubClassInterface.h"
-#include"../Device/JGraphicDeviceUser.h"
-#include"../../Core/Reflection/JReflection.h"  
+#include"../Device/JGraphicDeviceUser.h" 
   
 namespace JinEngine
 {
@@ -52,7 +52,10 @@ namespace JinEngine
 		private: 
 			std::vector<JOwnerPtr<JCullingInfo>> cullingInfo[(uint)J_CULLING_TYPE::COUNT];
 		public:
-			~JCullingManager();
+			virtual ~JCullingManager();
+		public:
+			virtual void Initialize(JGraphicDevice* device);
+			virtual void Clear();
 		public:
 			uint GetCullingInfoCount(const J_CULLING_TYPE type)const noexcept;
 			JUserPtr<JCullingInfo> GetCullingInfo(const J_CULLING_TYPE type, const uint index)const noexcept;   
@@ -78,8 +81,6 @@ namespace JinEngine
 			virtual void PostDestruction(const J_CULLING_TYPE type, const uint index) = 0;
 		public:
 			virtual bool TryStreamOutCullingBuffer(JCullingInfo* info, const std::string& logName) = 0;
-		public:
-			virtual void Clear();
 		private:
 			void ClearResource();
 		public:

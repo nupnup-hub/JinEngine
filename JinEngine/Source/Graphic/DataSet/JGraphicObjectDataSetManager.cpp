@@ -22,74 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
-#include"JGraphicObjectDataSetManager.h"
-#include"../DataSet/JGraphicTaskDataSet.h"
-#include"../../Object/Component/Camera/JCamera.h"
-#include"../../Object/GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"JGraphicObjectDataSetManager.h"  
 
 namespace JinEngine::Graphic
-{
-	namespace
-	{
-		void ApplyDeferred(const JGraphicOptionChangedSet& set, const ObjectDataSetVec& camVec)
-		{
-			if (set.preOption.rendering.allowDeferred == set.newOption.rendering.allowDeferred)
-				return;
-
-			const bool isAct = set.newOption.rendering.allowDeferred;	 
-			const uint count = camVec.Count();
-			for (uint i = 0; i < count; ++i)
-			{
-				JOwnerPtr<JGraphicObjectDataSetBase>& objSet = *camVec.Get(i);
-				JCamera* cam = static_cast<JCamera*>(objSet->Object().Get());
-				auto graphicData = cam->GetModuleManagedData();
-
-				JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-				const int resourceIndex = graphicData->GetGraphicResourceUserInterface()->GetResourceIndex(typeSet.resouce, typeSet.task);
-				if (!graphicData->GetGraphicResourceUserInterface()->IsValidHandle(typeSet.resouce, resourceIndex))
-					continue;
-
-				if (isAct)
-				{
-					//typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP;
-					//if (graphicData->GetGraphicResourceUserInterface()->HasOption(typeSet.resouce, typeSet.option, resourceIndex))
-					//	continue;
-
-					JGraphicResourceCreationDesc desc(typeSet);
-					typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP;
-					GMI()->CreateGraphicResourceOption(graphicData, desc);
-
-					typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY;
-					GMI()->CreateGraphicResourceOption(graphicData, desc);
-
-					typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
-					GMI()->CreateGraphicResourceOption(graphicData, desc);
-				}
-				else
-				{
-					typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
-					GMI()->DestroyGraphicResourceOption(graphicData, typeSet);
-
-					typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY;
-					GMI()->DestroyGraphicResourceOption(graphicData, typeSet);
-
-					typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP;
-					GMI()->DestroyGraphicResourceOption(graphicData, typeSet);
-				}
-				graphicData->GetFrameUpdateUserInterface()->SetFrameDirty();
-			}
-		}
-	}
-	bool JGraphicObjectDataSetManager::HasDependency(const JGraphicOption::TYPE type)const noexcept
-	{
-		if (type == JGraphicOption::TYPE::RENDERING)
-			return true;
-		else
-			return false;
-	}
-	void JGraphicObjectDataSetManager::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
-	{
-		if (set.preOption.rendering.allowDeferred != set.newOption.rendering.allowDeferred)
-			ApplyDeferred(set, GetDataVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA));
-	}
+{ 
 }

@@ -65,11 +65,10 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceComputeSetBufferBase& srcBase,
 		JDx12GraphicResourceComputeSetBufferBase& destBase)
 	{
+		auto gRInterface = helper.GetResourceInterface();
 		if (helper.cam != nullptr)
 		{
-			auto gRInterface = helper.cam->GraphicResourceUserInterface();
-			auto rtSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-			
+			auto rtSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);		
 			//DEBUG_TYPE_DEPTH	-depth
 			//DEBUG_TYPE_ALBEDO
 			//DEBUG_TYPE_SPECULAR
@@ -156,37 +155,36 @@ namespace JinEngine::Graphic
 			nearFar.y = helper.lit->GetFrustumFar();
 			allowTrigger[DEBUG_TYPE_DEPTH] = true;
 			allowHzb = helper.lit->AllowHzbOcclusionCulling();
-
-			auto gRInterface = helper.lit->GraphicResourceUserInterface();
+			 
 			const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType());
 
-			const uint shadowDataIndex = gRInterface.GetResourceIndex(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			const uint debugDataIndex = gRInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
-			const uint debugCount = gRInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+			const uint shadowDataOffset = gRInterface->GetResourceIndexOffset(grType, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+			const uint debugDataOffset = gRInterface->GetResourceIndexOffset(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
+			const uint debugCount = gRInterface->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 			const uint macCount = srcBase.GetMaxCount();
 			 
 			//array texture가 항상 먼저 할당된다.
 			for (uint i = 0; i < arrayCount; ++i)
 			{
-				if (!gRInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
+				if (!gRInterface->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
 					continue;
 
 				if(i == 0)
-					srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataIndex));
-				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataIndex + i));
+					srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataOffset));
+				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataOffset + i));
 			}
 			int srcBaseIndexOffset = isArrayTexture ? 1 : 0;
 			for (uint i = arrayCount; i < debugCount && i < macCount; ++i)
 			{
-				srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataIndex + srcBaseIndexOffset));
-				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataIndex + i));
+				srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataOffset + srcBaseIndexOffset));
+				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataOffset + i));
 				++srcBaseIndexOffset;
 			}
 		}
 		allowOccDepth = helper.allowDrawOccDepthMap;
 	}
 	void JDx12GraphicDebug::DebugDataSet::SetOcclusionBuffer(JDx12CommandContext* context,
-		JGraphicResourceUserInterface* gRInterface,
+		JGraphicResourceInterface* gRInterface,
 		const JDrawHelper& helper,
 		const J_GRAPHIC_RESOURCE_TYPE srcType,
 		const J_GRAPHIC_RESOURCE_TYPE destType,
@@ -201,8 +199,8 @@ namespace JinEngine::Graphic
 			if (!gRInterface->IsValidHandle(srcType, i))
 				continue;
 
-			srcBase.Push(context->ComputeSet(*gRInterface, srcType, i));
-			destBase.Push(context->ComputeSet(*gRInterface, destType, i));
+			srcBase.Push(context->ComputeSet(gRInterface, srcType, i));
+			destBase.Push(context->ComputeSet(gRInterface, destType, i));
 		}
 	}
 
@@ -340,24 +338,20 @@ namespace JinEngine::Graphic
 			return;
 		}
 
-		Graphic::JGraphicResourceUserInterface gRInterface;
-		if (helper.cam != nullptr)
-			gRInterface = helper.cam->GraphicResourceUserInterface();
-		else if (helper.lit != nullptr)
-			gRInterface = helper.lit->GraphicResourceUserInterface();
-		else
+		auto gInterface = helper.GetResourceInterface(); 
+		if (gInterface == nullptr)
 			return;
 
 		JDx12GraphicResourceComputeSetBuffer<1> srcBuff;
 		JDx12GraphicResourceComputeSetBuffer<1> destBuff;
-		set.SetOcclusionBuffer(context, &gRInterface, helper, srcType, destType, srcBuff, destBuff);
+		set.SetOcclusionBuffer(context, gInterface, helper, srcType, destType, srcBuff, destBuff);
 		//context->Transition(&srcBuff, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		//context->Transition(&destBuff, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
-		const uint dataCount = gRInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
+		const uint dataCount = gInterface->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
 		for (uint i = 0; i < dataCount; ++i)
 		{
-			if (!gRInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, i))
+			if (!gInterface->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, i))
 				continue;
 
 			JDx12GraphicResourceComputeSet& srcSet = srcBuff(i);

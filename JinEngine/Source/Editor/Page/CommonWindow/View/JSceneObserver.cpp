@@ -42,8 +42,7 @@ SOFTWARE.
 #include"../../../../Core/Math/JVectorExtend.h"
 #include"../../../../Core/Math/JMathHelper.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
-#include"../../../../Object/Component/Camera/JCamera.h"  
-#include"../../../../Object/Component/Camera/JCameraPrivate.h"  
+#include"../../../../Object/Component/Camera/JCamera.h"   
 #include"../../../../Object/Component/Transform/JTransform.h"
 #include"../../../../Object/Component/RenderItem/JRenderItem.h" 
 #include"../../../../Object/Component/Light/JLight.h" 
@@ -58,12 +57,10 @@ SOFTWARE.
 #include"../../../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../../../Object/GameObject/JGameObject.h"  
 #include"../../../../Object/GameObject/JGameObjectCreator.h"   
+#include"../../../../Object/GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../../../Graphic/JGraphic.h"
 #include"../../../../Graphic/JGraphicPrivate.h"
-#include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h" 
-#include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h" 
-#include"../../../../Graphic/Outline/JOutlineConstants.h"
-#include"../../../../Graphic/FrameResource/JFrameUpdate.h"
+#include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"   
 #include"../../../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
 #include<random>
 //test
@@ -85,12 +82,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		using GUser = JGraphicResourceUserInterface;
 		namespace
 		{
 			using SceneTimeInterface = JScenePrivate::TimeInterface;
-			using SceneDebugInterface = JScenePrivate::DebugInterface;
-			using SceneCashInterface = JScenePrivate::CashInterface;
-			using GraphicResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
+			using SceneDebugInterface = JScenePrivate::DebugInterface;  
 			//Debug
 			//using RItemFrameIndex = JRenderItemPrivate::FrameIndexInterface;
 		}
@@ -297,14 +293,14 @@ namespace JinEngine
 
 			GetGResourcePtr getGLamVec[menuSwitchIconCount]
 			{
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SPOT_LIGHT).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME).Get(); }
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW)->ModuleManagedData()->GetGraphicResourceUserInterface(); },
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW)->ModuleManagedData()->GetGraphicResourceUserInterface(); },
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW)->ModuleManagedData()->GetGraphicResourceUserInterface(); },
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON)->ModuleManagedData()->GetGraphicResourceUserInterface(); },
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SPOT_LIGHT)->ModuleManagedData()->GetGraphicResourceUserInterface(); },
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON)->ModuleManagedData()->GetGraphicResourceUserInterface(); },
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME)->ModuleManagedData()->GetGraphicResourceUserInterface(); },
+				[]() -> GUser* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME)->ModuleManagedData()->GetGraphicResourceUserInterface(); }
 			};
 
 			MenuSwitchIconOnF::Ptr onPtrVec[menuSwitchIconCount] =
@@ -552,10 +548,6 @@ namespace JinEngine
 				return  ((range * 2 - (zValue * 0.5f)) / (range * 2));;
 			};
 
-			//obj to screen pos
-			auto litVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
-			auto camVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
-
 			auto camFrustum = editCamData.cam->GetBoundingFrustum();
 			auto validFrustum = camFrustum;
 			const float frustumRange = camFrustum.Far - camFrustum.Near;
@@ -576,40 +568,47 @@ namespace JinEngine
 			const JVector4F selectColor = JVector4F(1.0f, 1.0f, 1.0f, 1.0f);
 
 			if (nodeUtilData[(uint)J_OBSERVER_SETTING_TYPE::VIEW_LIGHT].isOpen)
-			{
-				for (const auto& data : litVec)
+			{ 
+				for (uint i = 0; i < (uint)J_COMPONENT_TYPE::ENGINE_LIGHT; ++i)
 				{
-					const auto wPos = JVector4F(data->GetOwner()->GetTransform()->GetWorldPosition(), 1.0f).ToXmV();
-					if (validFrustum.Contains(wPos) == DirectX::ContainmentType::DISJOINT)
-						continue;
-
-					const JLight* lit = static_cast<JLight*>(data.Get());
-					JTexture* texture = sceneIconTexture[Private::GetLightTextureIndex(lit->GetLightType())].Get();
-					const JVector2F offsetScaleRate = JVector2F(iconSizeFactor, iconSizeFactor) / JVector2F(texture->GetTextureWidth(), texture->GetTextureHeight());
-
-					const JVector4F cPos = DirectX::XMVector4Transform(DirectX::XMVector4Transform(wPos, viewM), projM);
-					const JVector2F ndcPos = JVector2F(cPos.x / cPos.w, cPos.y / cPos.w);
-					const float reduceSizeFactor = calReduceRateLam(iconRange, cPos.w);
-
-					const JVector2F iconCenterPos = JVector2F((ndcPos.x * wndSize.x + wndSize.x) / 2, (-ndcPos.y * wndSize.y + wndSize.y) / 2) + posOffset;
-					const JVector2F iconHalfSize = JVector2F(iconSizeFactor * reduceSizeFactor, iconSizeFactor * reduceSizeFactor) * offsetScaleRate * 0.5f;
-					const JVector2F iconMinPos = iconCenterPos - iconHalfSize;
-					const JVector2F iconMaxPos = iconCenterPos + iconHalfSize;
-
-					JGuiImageInfo info(texture);
-					JGui::AddImage(info, iconMinPos, iconMaxPos, false, data->GetOwner()->IsSelected() ? selectColor : color);
-					if (canSelectIcon && JGui::IsMouseInRectMM(iconMinPos, iconMaxPos))
+					auto litVec = scene->GetComponentVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(i));
+					for (const auto& data : litVec)
 					{
-						AddEventNotification(*JEditorEvent::EvInterface(),
-							GetGuid(),
-							J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
-							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), data->GetOwner(), JEditorEvStruct::RANGE::ALL)));
-						hasSelected = true;
+						const auto wPos = JVector4F(data->GetOwner()->GetTransform()->GetWorldPosition(), 1.0f).ToXmV();
+						if (validFrustum.Contains(wPos) == DirectX::ContainmentType::DISJOINT)
+							continue;
+
+						const JLight* lit = static_cast<JLight*>(data.Get());
+						JTexture* texture = sceneIconTexture[Private::GetLightTextureIndex(lit->GetLightType())].Get();
+						const JVector2F offsetScaleRate = JVector2F(iconSizeFactor, iconSizeFactor) / JVector2F(texture->GetTextureWidth(), texture->GetTextureHeight());
+
+						const JVector4F cPos = DirectX::XMVector4Transform(DirectX::XMVector4Transform(wPos, viewM), projM);
+						const JVector2F ndcPos = JVector2F(cPos.x / cPos.w, cPos.y / cPos.w);
+						const float reduceSizeFactor = calReduceRateLam(iconRange, cPos.w);
+
+						const JVector2F iconCenterPos = JVector2F((ndcPos.x * wndSize.x + wndSize.x) / 2, (-ndcPos.y * wndSize.y + wndSize.y) / 2) + posOffset;
+						const JVector2F iconHalfSize = JVector2F(iconSizeFactor * reduceSizeFactor, iconSizeFactor * reduceSizeFactor) * offsetScaleRate * 0.5f;
+						const JVector2F iconMinPos = iconCenterPos - iconHalfSize;
+						const JVector2F iconMaxPos = iconCenterPos + iconHalfSize;
+
+						JGuiImageInfo info(texture);
+						JGui::AddImage(info, iconMinPos, iconMaxPos, false, data->GetOwner()->IsSelected() ? selectColor : color);
+						if (canSelectIcon && JGui::IsMouseInRectMM(iconMinPos, iconMaxPos))
+						{
+							AddEventNotification(*JEditorEvent::EvInterface(),
+								GetGuid(),
+								J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
+								JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), data->GetOwner(), JEditorEvStruct::RANGE::ALL)));
+							hasSelected = true;
+						}
 					}
 				}
+
+				 
 			}
 			if (nodeUtilData[(uint)J_OBSERVER_SETTING_TYPE::VIEW_CAMERA].isOpen)
 			{
+				const auto& camVec = scene->GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>());
 				for (const auto& data : camVec)
 				{
 					if (data->GetGuid() == editCamData.cam->GetGuid())
@@ -796,7 +795,10 @@ namespace JinEngine
 			case J_OBSERVER_SETTING_TYPE::VIEW_TEXTURE_DETAIL:
 			{
 				if (textureDebug->HasValidHandle())
-					Graphic::JGraphicResourceUserInterface::ClearFirstResourceMipmapBind(textureDebug->dataHandle);
+				{ 
+					GMI()->ClearFirstGraphicResourceMipmapBind(textureDebug->texture->ModuleManagedData(), textureDebug->dataHandle);
+					textureDebug = nullptr;
+				}
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_CAMERA:
@@ -922,8 +924,8 @@ namespace JinEngine
 				editCamData.cam->SetAllowFrustumCulling(editOption.allowFrustumCulling);
 			if (JGui::CheckBox("occ culling##"+ GetName(), editOption.allowOccCulling))
 				editCamData.cam->SetAllowHzbOcclusionCulling(editOption.allowOccCulling);
-			if (JGui::CheckBox("reflect othrer cam culling##"+ GetName(), editOption.allowReflectCullingResult))
-				JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCamData.cam, editOption.allowReflectCullingResult);
+			if (JGui::CheckBox("reflect othrer cam culling##" + GetName(), editOption.allowReflectCullingResult))
+				editCamData.cam->SetReflectAllCullingResult(editOption.allowReflectCullingResult);
 			if (JGui::Button("fit main cam##"+ GetName()))
 			{
 				auto mainCam = scene->FindFirstSelectedCamera(false); 
@@ -1154,44 +1156,48 @@ namespace JinEngine
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER];
 			if (JGui::BeginWindow("ShadowMap##"+ GetName(), &data->isOpen, J_GUI_WINDOW_FLAG_NO_DOCKING))
 			{
-				const std::vector<JUserPtr<JComponent>> litVec = SceneCashInterface::GetComponentCashVec(scene, J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
-				const uint litCount = (uint)litVec.size();
-				std::vector<JLight*> shadowLitVec;
-				for (uint i = 0; i < litCount; ++i)
+				for (uint i = 0; i < LightVariation::value; ++i)
 				{
-					JLight* lit = static_cast<JLight*>(litVec[i].Get());
-					if (lit->IsShadowActivated())
-						shadowLitVec.push_back(lit);
-				}
-
-				const uint shadowLitCount = (uint)shadowLitVec.size();
-				if (shadowLitCount > 0)
-				{
-					if (data->selectedIndex >= shadowLitCount)
-						data->selectedIndex = 0;
-
-					auto selectedLit = shadowLitVec[data->selectedIndex]; 
-					JGui::ComboSet("Light##SceneObserve", data->selectedIndex, shadowLitVec);
-					if (shadowLitVec[data->selectedIndex]->AllowDisplayShadowMap())
+					const UniqueIndex uniqueIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(i);
+					const std::vector<JUserPtr<JComponent>> litVec = scene->GetComponentCacheVec(uniqueIndex);
+					const uint litCount = (uint)litVec.size();
+					std::vector<JLight*> shadowLitVec;
+					for (uint j = 0; j < litCount; ++j)
 					{
-						auto gInterface = selectedLit->GraphicResourceUserInterface();
-						const uint debugMapCount = gInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
-						for (uint i = 0; i < debugMapCount; ++i)
-						{
-							if (!gInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
-								continue;
-
-							JGuiImageInfo info(shadowLitVec[data->selectedIndex],
-								J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP,
-								J_GRAPHIC_BIND_TYPE::SRV);
-							info.dataIndex = i; 
-							JGui::Image(info, RenderResultImageSize());
-							if(i % 2 == 0)
-								JGui::SameLine();
-						}
+						JLight* lit = static_cast<JLight*>(litVec[j].Get());
+						if (lit->IsShadowActivated())
+							shadowLitVec.push_back(lit);
 					}
-					else
-						JGui::Text("Can display shadow map... please on allowDisplayShadowMap trigger");
+
+					const uint shadowLitCount = (uint)shadowLitVec.size();
+					if (shadowLitCount > 0)
+					{
+						if (data->selectedIndex >= shadowLitCount)
+							data->selectedIndex = 0;
+
+						auto selectedLit = shadowLitVec[data->selectedIndex];
+						JGui::ComboSet("Light##SceneObserve", data->selectedIndex, shadowLitVec);
+						if (shadowLitVec[data->selectedIndex]->AllowDisplayShadowMap())
+						{
+							auto gUser = selectedLit->ModuleManagedData()->GetGraphicResourceUserInterface();
+							const uint debugMapCount = gUser->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+							for (uint j = 0; j < debugMapCount; ++j)
+							{
+								if (!gUser->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, j))
+									continue;
+
+								JGuiImageInfo info(shadowLitVec[data->selectedIndex],
+									J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP,
+									J_GRAPHIC_BIND_TYPE::SRV);
+								info.dataIndex = j;
+								JGui::Image(info, RenderResultImageSize());
+								if (j % 2 == 0)
+									JGui::SameLine();
+							}
+						}
+						else
+							JGui::Text("Can display shadow map... please on allowDisplayShadowMap trigger");
+					}
 				} 
 			}
 			JGui::EndWindow();
@@ -1199,12 +1205,9 @@ namespace JinEngine
 		void JSceneObserver::RenderResultOnScreen()
 		{
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_RENDER_RESULT];
+			auto fUser = scene->ModuleManagedData()->GetFrameUpdateUserInterface();
 			const size_t sceneGuid = scene->GetGuid();
-			const uint pointLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
-			const uint spotLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
-			const uint rectLitCount = Graphic::JFrameUpdateData::GetAreaRegistedCount(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
-			const uint litSum = pointLitCount + spotLitCount + rectLitCount;		
-		 
+			  
 			if (JGui::BeginWindow("RenderResult##" + GetName(), &data->isOpen, J_GUI_WINDOW_FLAG_NO_DOCKING))
 			{
 				JGui::SetCursorPosX(JGui::GetWindowSize().x * 0.9f - JGui::GetFramePadding().x - JGui::GetScrollBarSize());
@@ -1212,52 +1215,35 @@ namespace JinEngine
 				JGui::SliderFloat("##RenderResult_Size", &rsImageSizeFactor, 0.001f, 2.0f, 2);
 
 				auto graphicOption = JGraphic::Instance().GetGraphicOption();
-				auto camVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
+				auto& camVec = scene->GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>());
 				for (const auto& camData : camVec)
 				{
 					JCamera* cam = static_cast<JCamera*>(camData.Get());
-					auto gInterface = cam->GraphicResourceUserInterface();
-					const uint rtDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+					auto gUser = cam->ModuleManagedData()->GetGraphicResourceUserInterface();
+					const uint rtDataIndex = gUser->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
  
 					JGui::Text(JCUtil::WstrToU8Str(cam->GetOwner()->GetName()));
 					if (!cam->AllowDisplayRenderResult())
 						continue;
  
-					//depth, normal, ssao		... except tangent
-					using GI = Graphic::JGraphicResourceUserInterface; 
-					using condFunc = bool(*)(const GI&);
+					//depth, normal, ssao		... except tangent 
+					using condFunc = bool(*)(const GUser*);
 					constexpr uint deubgMapCount = 6; //7; 
 					condFunc cond[deubgMapCount]
 					{
-						[](const GI& g) {return true; },
-						[](const GI& g)
-						{
-							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
-						},
-						[](const GI& g)
-						{
-							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, index);
-						},
-						[](const GI& g) 
-						{
-							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
-						},
-						[](const GI& g)
-						{
-							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, index);
-						},
+						[](const GUser* g) {return true; },
+						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);},
+						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);},
+						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);},
+						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);},
 						/*
-						[](const GI& g)
+						[](const GUser& g)
 						{
 							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, index);
 						},
 						*/
-						[](const GI& g){return g.HasHandle(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP); }
+						[](const GUser* g){return g->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO); }
 					};
 					std::string name[deubgMapCount]
 					{
@@ -1270,25 +1256,29 @@ namespace JinEngine
 						"SSAO Map"
 					};
 
-					const uint debugMapCount = gInterface.GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+					const uint debugMapCount = gUser->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 					const uint sequence[deubgMapCount]
 					{
 						1, 2, 0, 3, 4, 5
 					};
 					for (uint i = 0; i < debugMapCount; ++i)
 					{
-						if (!gInterface.IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
+						if (!gUser->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
 							continue;
 
 						const uint dataIndex = sequence[i];
-						if (!cond[dataIndex](gInterface))
+						if (!cond[dataIndex](gUser))
 							continue;
 						 
 						JGui::Text(name[dataIndex]);
-						auto handle = gInterface.GetGpuHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_BIND_TYPE::SRV, 0, dataIndex);
+						auto handle = gUser->GetGpuHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_BIND_TYPE::SRV, 0, dataIndex);
 						JGuiImageInfo info(handle);
 						JGui::Image(info, RenderResultImageSize());
 					}
+
+					uint litSum = 0;
+					for(uint i = 0; i < LightVariation::value; ++i)
+						litSum += scene->GetComponetCount(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(i));
 
 					if (cam->AllowDisplayLightCullingDebug() && litSum > 0)
 					{ 
@@ -1297,7 +1287,7 @@ namespace JinEngine
 							J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
 							J_GRAPHIC_BIND_TYPE::SRV);
 
-						info.dataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW);
+						info.dataIndex = gUser->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW);
 						info.displayAllType = false;
 
 						JGui::Image(info, RenderResultImageSize());
@@ -1356,16 +1346,16 @@ namespace JinEngine
 
 						JGui::Image(info, RenderResultImageSize());
 					} 
-					if (graphicOption.CanUseRtGi() && cam->AllowRaytracingGI())
+					if (cam->AllowRaytracingGI())
 					{
 						JGui::Text("RtGi");
 						JGuiImageInfo info(cam,
 							J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON,
 							J_GRAPHIC_BIND_TYPE::SRV); 
-						info.dataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+						info.dataIndex = gUser->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 						JGui::Image(info, RenderResultImageSize());
 
-						//finalColorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+						//finalColorSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 					}
 					JGui::Separator();
 				}
@@ -1383,8 +1373,15 @@ namespace JinEngine
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_TEXTURE_DETAIL];
 			const J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_SAVE |  J_GUI_WINDOW_FLAG_NO_DOCKING;
 			if (JGui::BeginWindow(("TextureDetail##" + GetName()), &data->isOpen, flag))
-			{
-				auto selectLam = [](JSceneObserver* ob){Graphic::JGraphicResourceUserInterface::ClearFirstResourceMipmapBind(ob->textureDebug->dataHandle);};
+			{ 
+				auto selectLam = [](JSceneObserver* ob)
+				{
+					if (ob->textureDebug == nullptr)
+						return;
+
+					GMI()->ClearFirstGraphicResourceMipmapBind(ob->textureDebug->texture->ModuleManagedData(), ob->textureDebug->dataHandle); 
+					ob->textureDebug->texture = nullptr;
+				};
 				using SelectF = Core::JSFunctorType<void, JSceneObserver*>;
 				
 				JEditorIdentifierList::DisplayDataSet dataSet(GetName());
@@ -1398,22 +1395,27 @@ namespace JinEngine
 				JGui::SetNextItemWidth(JGui::GetWindowSize().x * 0.1f);
 				JGui::SliderFloat("##TextureDetailOnScreen_Size", &textureDebug->sizeFactor, 0.001f, 1.0f, 2);
 
-				const JVector2F imageSize = JGui::GetWindowSize() * textureDebug->sizeFactor;
-				auto selectedTexture = idenList->GetSelectedUser<JTexture>(); 
+				const JVector2F imageSize = JGui::GetWindowSize() * textureDebug->sizeFactor; 
+				JUserPtr<JTexture> texture = idenList->GetSelectedUser<JTexture>();
+				 
 				bool canDisplayMipmap = false;
-			 
-				auto gUser = selectedTexture->GraphicResourceUserInterface();
-				if (gUser.GetFirstMipmapType() != Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE)
-				{
-					if (gUser.TryFirstResourceMipmapBind(textureDebug->gpuHandle, textureDebug->dataHandle))
-						canDisplayMipmap = true;
+				if (texture != nullptr)
+				{ 
+					auto objDataSet = texture->ModuleManagedData();
+					auto gUser = objDataSet->GetGraphicResourceUserInterface();
+					if (gUser->GetFirstMipmapType() != J_GRAPHIC_MIP_MAP_TYPE::NONE)
+					{
+						if (GMI()->TryFirstGraphicResourceMipmapBind(objDataSet, textureDebug->gpuHandle, textureDebug->dataHandle))
+						{
+							textureDebug->texture = texture;
+							canDisplayMipmap = true;
+						}
+					}
+					//JVector2<uint> oriSize = JVector2<uint>(texture->GetTextureWidth(), texture->GetTextureHeight());
+					JGuiImageInfo info(texture.Get());
+					JGui::Image(info, imageSize);
 				}
-
-				JTexture* texture = static_cast<JTexture*>(selectedTexture.Get());
-				//JVector2<uint> oriSize = JVector2<uint>(texture->GetTextureWidth(), texture->GetTextureHeight());
-				JGuiImageInfo info(texture); 
-				JGui::Image(info, imageSize);
-
+  
 				if (canDisplayMipmap)
 				{ 
 					//oriSize /= 2;
@@ -1425,14 +1427,14 @@ namespace JinEngine
 						JGui::Image(info, imageSize);
 						//oriSize /= 2;
 					}
-					Graphic::JGraphicResourceUserInterface::ClearFirstResourceMipmapBind(textureDebug->dataHandle);
+					//GMI()->ClearFirstGraphicResourceMipmapBind(objDataSet, textureDebug->dataHandle);
 				} 			 
 			}
 			JGui::EndWindow();
 		}
 		void JSceneObserver::UpdateMainCamFrustum()noexcept
 		{
-			auto camVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
+			auto& camVec = scene->GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>());
 			for (const auto& data : camVec)
 			{
 				if (!data->GetOwner()->IsEditorObject())
@@ -1587,7 +1589,7 @@ namespace JinEngine
 			editCamData.cam->SetAllowFrustumCulling(editOption.allowFrustumCulling);
 			editCamData.cam->SetAllowHzbOcclusionCulling(editOption.allowOccCulling);
 			editCamData.cam->SetAllowDisplayDebugObject(editOption.allowDisplayDebugging);
-			JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCamData.cam, editOption.allowReflectCullingResult);
+			editCamData.cam->SetReflectAllCullingResult(editOption.allowReflectCullingResult); 
 
 			std::vector<J_EDITOR_EVENT> listenEvTypeVec{ J_EDITOR_EVENT::PUSH_SELECT_OBJECT };
 			AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), listenEvTypeVec);
@@ -1815,7 +1817,7 @@ namespace JinEngine
 //frustum culling debug
 /*
 
-				auto rVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
+				auto rVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_RENDERITEM);
 				for (const auto& data : rVec)
 				{
 					if(data->GetOwner()->GetName() != L"Cube")

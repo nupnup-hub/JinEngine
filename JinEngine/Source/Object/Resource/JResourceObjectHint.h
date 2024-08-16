@@ -84,16 +84,9 @@ namespace JinEngine
 
 	struct RTypePrivateFunc
 	{
-	private:
-		SetRFrameDirtyCallable* setFrameDirtyCallable = nullptr; 
-	public:
-		RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable);
-		RTypePrivateFunc() = default;
+	public: 
+		RTypePrivateFunc();
 		~RTypePrivateFunc();
-	public:
-		SetRFrameDirtyCallable GetSetFrameDirtyCallable(); 
-	public:
-		void CallSetFrameDirty(JResourceObject* jRobj); 
 	};
 
 	class RTypeRegister
@@ -122,14 +115,5 @@ namespace JinEngine
 	public:
 		static J_RESOURCE_TYPE ConvertCompType(const Core::JTypeInfo& info);
 	};
-
-	class RTypePrivateCall
-	{
-	private: 
-		friend class JResourceObjectPrivate; 
-	private:
-		static SetRFrameDirtyCallable GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type); 
-	private:
-		static void CallSetFrameDirty(JResourceObject* jRobj); 
-	};
+	 
 }

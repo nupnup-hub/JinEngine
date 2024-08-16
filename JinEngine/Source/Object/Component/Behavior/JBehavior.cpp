@@ -35,11 +35,11 @@ SOFTWARE.
 #include"../JComponentPrivate.h"
 namespace JinEngine
 { 
-	namespace
+	namespace Private
 	{
 		static auto isAvailableoverlapLam = []() {return true; };
 		static std::unordered_map<size_t, JBehavior::DerivedTypeData> derivedPrivateMap;
-		static JBehaviorPrivate bPrivate;
+		static JBehaviorPrivate instance;
 	}
 	
 	class JBehavior::JBehaviorImpl : public Core::JTypeImplBase
@@ -63,11 +63,9 @@ namespace JinEngine
 	public:
 		void Activate()
 		{
-			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
 		}
 		void DeActivate()
-		{ 
-			graphicData = nullptr;
+		{  
 		}
 	public: 
 		void RegisterThisPointer(JBehavior* behav)
@@ -77,7 +75,7 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JBehavior::StaticTypeInfo };
-			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
+			static IsAvailableOverlapCallable isAvailableOverlapCallable{ Private::isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
 			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
@@ -97,9 +95,9 @@ namespace JinEngine
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable, isAvailableOverlapCallable, createInitDataCallable };
 
 			JComponent::RegisterCTypeInfo(JBehavior::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, CTypePrivateFunc{});
-			Core::JIdentifier::RegisterPrivateInterface(JBehavior::StaticTypeInfo(), bPrivate);
+			Core::JIdentifier::RegisterPrivateInterface(JBehavior::StaticTypeInfo(), Private::instance);
 
-			IMPL_REALLOC_BIND(JBehavior::JBehaviorImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -112,11 +110,15 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JBehavior::PrivateInterface()const noexcept
 	{
-		return bPrivate;
+		return Private::instance;
 	}
-	JGraphicModuleManagedDataFrame* JBehavior::GetModuleManagedData()const noexcept
+	JGraphicModuleManagedDataFrame* JBehavior::ModuleManagedData()const noexcept
 	{
-
+		return impl->graphicData.Get();
+	}
+	uint JBehavior::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_COMPONENT_TYPE JBehavior::GetComponentType()const noexcept
 	{
@@ -124,7 +126,7 @@ namespace JinEngine
 	}
 	bool JBehavior::IsAvailableOverlap()const noexcept
 	{
-		return isAvailableoverlapLam();
+		return Private::isAvailableoverlapLam();
 	}
 	bool JBehavior::PassDefectInspection()const noexcept
 	{
@@ -139,7 +141,9 @@ namespace JinEngine
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
+		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JComponent::DoActivate();
+
 		impl->Activate();
 		RegisterComponent(impl->thisPointer);
 		NotifyActivate();
@@ -149,7 +153,9 @@ namespace JinEngine
 		NotifyDeActivate();
 		DeRegisterComponent(impl->thisPointer);
 		impl->DeActivate();
+
 		JComponent::DoDeActivate();
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	}
 	void JBehavior::NotifyActivate(){}
 	void JBehavior::NotifyDeActivate(){}
@@ -161,11 +167,11 @@ namespace JinEngine
 	}
 	void JBehavior::RegisterDerivedData(const Core::JTypeInfo& info, const DerivedTypeData& derivedData)
 	{
-		auto data = derivedPrivateMap.find(info.TypeGuid());
-		if (data != derivedPrivateMap.end())
+		auto data = Private::derivedPrivateMap.find(info.TypeGuid());
+		if (data != Private::derivedPrivateMap.end())
 			return;
 
-		derivedPrivateMap.emplace(info.TypeGuid(), derivedData);
+		Private::derivedPrivateMap.emplace(info.TypeGuid(), derivedData);
 	}
 	JBehavior::JBehavior(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JBehaviorImpl>(initData, this))
@@ -182,8 +188,8 @@ namespace JinEngine
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
 		auto initPtr = static_cast<JBehavior::InitData*>(initData);
-		auto dPrivate = derivedPrivateMap.find(initPtr->initTypeInfo.TypeGuid());
-		return dPrivate != derivedPrivateMap.end() ? dPrivate->second.createPtr(initData) : nullptr;
+		auto dPrivate = Private::derivedPrivateMap.find(initPtr->initTypeInfo.TypeGuid());
+		return dPrivate != Private::derivedPrivateMap.end() ? dPrivate->second.createPtr(initData) : nullptr;
 	}
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
@@ -229,10 +235,10 @@ namespace JinEngine
 		J_OBJECT_FLAG flag; 
 		bool isActivated;
 		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
-		auto iden = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &bPrivate);
+		auto iden = Private::instance.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &Private::instance);
 		auto bUser = Core::ConvertChildUserPtr<JBehavior>(std::move(iden));
 		if (!isActivated)
-			bUser->DoDeActivate();
+			bUser->DeActivate();
 
 		return bUser;
 	}

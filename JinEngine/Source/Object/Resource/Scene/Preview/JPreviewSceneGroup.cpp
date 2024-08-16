@@ -30,7 +30,8 @@ SOFTWARE.
 #include"../JScene.h" 
 #include"../../../Directory/JDirectory.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
-#include"../../../../Core/Utility/JCommonUtility.h 
+#include"../../../../Core/Utility/JCommonUtility.h"
+
 namespace JinEngine
 {
 	JPreviewSceneGroup::JPreviewSceneGroup()

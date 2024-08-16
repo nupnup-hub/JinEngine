@@ -36,7 +36,7 @@ SOFTWARE.
 namespace JinEngine
 { 
 	namespace Graphic
-	{ 
+	{  
 		/*
 		* struct JGraphicObjectDataCreationHelperSet : public Core::JValidInterface
 		{
@@ -48,6 +48,7 @@ namespace JinEngine
 			JGraphicObjectDataCreationHelperSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, JCullingManager* cullingM);
 		}; 
 		*/ 
+		class JGraphicObjectDataSetManager;
 		class JGraphicObjectDataSetBase : public JGraphicModuleManagedDataFrame
 		{
 			REGISTER_CLASS_USE_ALLOCATOR(JGraphicObjectDataSetBase)
@@ -65,6 +66,8 @@ namespace JinEngine
 			public:
 				static constexpr bool isValid = csmHandler || csmTarget || culling || frame || gpuAcc || graphicResource;
 			};
+		private:
+			friend class JGraphicObjectDataSetManager; 
 		public:
 			JGraphicObjectDataSetBase(const JUserPtr<JObject>& object);
 		private:
@@ -83,8 +86,7 @@ namespace JinEngine
 			virtual JGraphicResourceInterface* GetGraphicResourceInterface()const noexcept = 0;
 		};  
 		   
- 
-
+  
 		template<typename Type>
 		class JGraphicObjectDataOneSocket : public JGraphicObjectDataSetBase
 		{
@@ -97,7 +99,8 @@ namespace JinEngine
 		private:
 			std::unique_ptr<Type> firstInterface;
 		public:
-			JGraphicObjectDataOneSocket(const JUserPtr<JObject>& object, std::unique_ptr<Type>&& firstInterface)
+			JGraphicObjectDataOneSocket(const JUserPtr<JObject>& object, 
+				std::unique_ptr<Type>&& firstInterface)
 				:JGraphicObjectDataSetBase(object), firstInterface(std::move(firstInterface))
 			{}
 		public:
@@ -159,7 +162,9 @@ namespace JinEngine
 			std::unique_ptr<FirstType> firstInterface;
 			std::unique_ptr<SecondType> secondInterface;
 		public:
-			JGraphicObjectDataDoubleSocket(const JUserPtr<JObject>& object, std::unique_ptr<FirstType>&& firstInterface, std::unique_ptr<SecondType>&& secondInterface)
+			JGraphicObjectDataDoubleSocket(const JUserPtr<JObject>& object, 
+				std::unique_ptr<FirstType>&& firstInterface, 
+				std::unique_ptr<SecondType>&& secondInterface)
 				:JGraphicObjectDataSetBase(object), firstInterface(std::move(firstInterface)), secondInterface(std::move(secondInterface))
 			{}
 		public:
@@ -235,7 +240,7 @@ namespace JinEngine
 			std::unique_ptr<SecondType> secondInterface;
 			std::unique_ptr<ThirdType> thirdInterface;
 		public:
-			JGraphicObjectDataTripleSocket(const JUserPtr<JObject>& object,
+			JGraphicObjectDataTripleSocket(const JUserPtr<JObject>& object, 
 				std::unique_ptr<FirstType>&& firstInterface, 
 				std::unique_ptr<SecondType>&& secondInterface,
 				std::unique_ptr<ThirdType>&& thirdInterface)
@@ -331,7 +336,7 @@ namespace JinEngine
 			std::unique_ptr<ThirdType> thirdInterface;
 			std::unique_ptr<ForthType> forthInterface;
 		public:
-			JGraphicObjectDataQuadrupleSocket(const JUserPtr<JObject>& object,
+			JGraphicObjectDataQuadrupleSocket(const JUserPtr<JObject>& object, 
 				std::unique_ptr<FirstType>&& firstInterface,
 				std::unique_ptr<SecondType>&& secondInterface,
 				std::unique_ptr<ThirdType>&& thirdInterface,
@@ -451,19 +456,16 @@ namespace JinEngine
 		{ 
 		private:
 			static constexpr int invalidType = invalidIndex;
-		public:
-			size_t typeGuid = 0;
-		public:
-			//type hint
-			int componentTypeValue = invalidType;				//-1 if not component 	
-			int resourceTypeValue = invalidType;				//-1 if not resource 	
+		public: 
+			int uniqueIndex = 0; 
+			std::string tag;
 		public:
 			//feature
 			bool isSupportedCulling = false;
 			bool isSupportedFrameResourceUpload = false;
 			bool isSupportedFrameDirty = false;
 			bool isSupportedGpuAccelerator = false;
-			bool isSupportedGraphicResource = false;
+			bool isSupportedGraphicResource = false; 
 		public:
 			bool IsComponentType()const noexcept;
 			bool IsResourceType()const noexcept;

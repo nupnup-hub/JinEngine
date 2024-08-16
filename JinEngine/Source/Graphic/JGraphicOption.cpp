@@ -104,6 +104,10 @@ namespace JinEngine
 		{
 			return rendering.allowDeferred && rendering.allowRaytracing;
 		}
+		bool JGraphicOption::CanUsePostProcess()const noexcept
+		{
+			return IsPostProcessActivated();
+		}
 		bool JGraphicOption::CanUseSSAO()const noexcept
 		{ 
 			return rendering.allowDeferred && postProcess.useSsao;

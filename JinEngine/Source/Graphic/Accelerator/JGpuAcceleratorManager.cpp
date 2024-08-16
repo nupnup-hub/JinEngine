@@ -28,6 +28,14 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 {
+	void JGpuAcceleratorManager::Initialize(JGraphicDevice* device)
+	{
+
+	}
+	void JGpuAcceleratorManager::Clear()
+	{
+
+	}
 	JGpuAcceleratorHolder* JGpuAcceleratorManager::GetHolder(JGpuAcceleratorInfo* info)const noexcept
 	{
 		return info != nullptr ? info->holder.get() : nullptr;

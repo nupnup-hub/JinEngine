@@ -39,8 +39,7 @@ SOFTWARE.
 #include"../../../Component/Camera/JCamera.h"
 #include"../../../Component/Camera/JCameraState.h"
 #include"../../../GameObject/JGameObject.h"  
-#include"../../../GameObject/JGameObjectCreator.h" 
-#include"../../../../Graphic/JGraphicDrawList.h"
+#include"../../../GameObject/JGameObjectCreator.h"  
 #include"../../../../Application/Project/JApplicationProject.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
@@ -143,8 +142,10 @@ namespace JinEngine
 		JUserPtr<JMaterial> material = Core::ConvertChildUserPtr<JMaterial>(GetJObject());
 		if (material == nullptr)
 			return false;
-
-		_JSceneManager::Instance().RegisterObservationFrame(GetScene(), material);
+		 
+		auto fUser = GetPreviewCamera()->ModuleManagedData()->GetFrameUpdateUserInterface();
+		fUser->TryRegisterDirtyListener(material);
+		 
 		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::SPHERE);
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 

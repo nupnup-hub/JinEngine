@@ -64,6 +64,9 @@ namespace JinEngine
 				JUserPtr<JGraphicResourceInfo> interleave;
 				JUserPtr<JGraphicResourceInfo> depth;
 				JUserPtr<JGraphicResourceInfo> depthInterleave;
+			private:
+				JGraphicDevice* device = nullptr;
+				JGraphicResourceManager* gM = nullptr;
 			public:
 				SsaoData(JGraphicDevice* device, JGraphicResourceManager* gM, const uint width, const uint height);
 				~SsaoData();
@@ -92,6 +95,9 @@ namespace JinEngine
 				JUserPtr<JGraphicResourceInfo> fxaaIndirectParameters;
 				JUserPtr<JGraphicResourceInfo> fxaaWorkerQueue;
 				JUserPtr<JGraphicResourceInfo> fxaaColorQueue;
+			private:
+				JGraphicDevice* device = nullptr;
+				JGraphicResourceManager* gM = nullptr;
 			private:
 				int lastUpdatedIndex = invalidIndex;
 			public:
@@ -125,6 +131,9 @@ namespace JinEngine
 			public:
 				JUserPtr<JGraphicResourceInfo> viewZ;			//sample 연산중 중복되는 계산을 피하기 위해
 				JUserPtr<JGraphicResourceInfo> preViewZ;		//sample 연산중 중복되는 계산을 피하기 위해
+			private:
+				JGraphicDevice* device = nullptr;
+				JGraphicResourceManager* gM = nullptr;
 			public:
 				RestirTemporalAccumulationData(JGraphicDevice* device, JGraphicResourceManager* gM, const uint width, const uint height);
 				~RestirTemporalAccumulationData();

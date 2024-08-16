@@ -87,7 +87,7 @@ namespace JinEngine
 	public:
 		static std::wstring GetCacheFilePath(JResourceObject* rObj) noexcept
 		{ 
-			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rObj->GetGuid()) + Core::JFileConstant::GetCacheFileFormatW();
+			return Core::JFileConstant::MakeCacheFilePath(JApplicationProject::ModResourceCachePath(), rObj->GetGuid());
 		}
 	public:
 		static bool DoCopy(const JUserPtr<JResourceObject>& from, const JUserPtr<JResourceObject>& to)
@@ -232,6 +232,10 @@ namespace JinEngine
 		}
 		void CreateCacheFile()noexcept
 		{
+			/*
+			* Engine 실행중에 사용되는 파일
+			* 종료시 일괄삭제된다.
+			*/
 			JResourceObject::StoreData storeData(thisPointer);
 			static_cast<JResourceObjectPrivate&>(thisPointer->PrivateInterface()).GetAssetDataIOInterface().StoreAssetData(&storeData);
 			if (!RTypeCommonCall::GetRTypeHint(thisPointer->GetResourceType()).isFixedAssetFile)
@@ -263,7 +267,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			IMPL_REALLOC_BIND(JResourceObject::JResourceObjectImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	}; 
 	 
@@ -461,10 +465,7 @@ namespace JinEngine
 
 		RTypeHint rTypeHint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
 		if (rTypeHint.isFrameResource)
-		{
-			auto setFrameDirtyCallable = RTypePrivateCall::GetSetFrameDirtyCallable(rObj->GetResourceType());
-			setFrameDirtyCallable(nullptr, rObj);
-		}
+			rObj->ModuleManagedData()->GetFrameUpdateUserInterface()->SetFrameDirty();
 	}
 	void CreateInstanceInterface::TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept{}
 	bool CreateInstanceInterface::Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept
@@ -485,8 +486,10 @@ namespace JinEngine
 		{
 			int index = rObj->GetTypeInfo().GetInstanceIndex(rObj->GetGuid());
 			auto objVec = rObj->GetTypeInfo().GetInstanceRawPtrVec();
-			auto setFrameDirtyCallable = RTypePrivateCall::GetSetFrameDirtyCallable(rObj->GetResourceType());
-			JCUtil::ApplyFunc(index, setFrameDirtyCallable, objVec);
+			
+			const uint count = (uint)objVec.size();
+			for (uint i = index + 1; i < count; ++i)
+				static_cast<JResourceObject*>(objVec[i])->ModuleManagedData()->GetFrameUpdateUserInterface()->SetFrameDirty();
 		}		
 		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
@@ -502,7 +505,7 @@ namespace JinEngine
 		{
 			rObj->impl->ConvertToDeActFileData(); 
 			if (canCreateCache && JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
-			{
+			{ 
 				if (JModifedObjectInterface{}.IsModifiedAndStoreAble(rObj->GetGuid()))
 				{
 					if (!rObj->IsActivated())

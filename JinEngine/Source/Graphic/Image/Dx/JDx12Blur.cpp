@@ -87,13 +87,13 @@ namespace JinEngine::Graphic
 			initHelper.macro.push_back({ KERNEL_MAX_SIZE, std::to_wstring(kenelMaxSize) });
 			switch (blurType)
 			{
-			case JinEngine::Graphic::J_BLUR_TYPE::BOX:
+			case JinEngine::J_BLUR_TYPE::BOX:
 				initHelper.macro.push_back({ BOX_BLUR_SYMBOL, std::to_wstring(kenelMaxSize) });
 				break;
-			case JinEngine::Graphic::J_BLUR_TYPE::GAUSIAAN:
+			case JinEngine::J_BLUR_TYPE::GAUSIAAN:
 				initHelper.macro.push_back({ GAUS_BLUR_SYMBOL, std::to_wstring(kenelMaxSize) });
 				break;
-			case JinEngine::Graphic::J_BLUR_TYPE::KAISER:
+			case JinEngine::J_BLUR_TYPE::KAISER:
 				initHelper.macro.push_back({ KAISER_BLUR_SYMBOL, std::to_wstring(kenelMaxSize) });
 				break; 
 			default:
@@ -101,13 +101,13 @@ namespace JinEngine::Graphic
 			}
 			switch (size)
 			{
-			case JinEngine::Graphic::J_KERNEL_SIZE::_3x3:
+			case JinEngine::J_KERNEL_SIZE::_3x3:
 				initHelper.macro.push_back({ USE_3x3_KERNEL, std::to_wstring(1) });
 				break;
-			case JinEngine::Graphic::J_KERNEL_SIZE::_5x5:
+			case JinEngine::J_KERNEL_SIZE::_5x5:
 				initHelper.macro.push_back({ USE_5x5_KERNEL, std::to_wstring(1) });
 				break;
-			case JinEngine::Graphic::J_KERNEL_SIZE::_7x7:
+			case JinEngine::J_KERNEL_SIZE::_7x7:
 				initHelper.macro.push_back({ USE_7x7_KERNEL, std::to_wstring(1) });
 				break;
 			default:
@@ -193,17 +193,17 @@ namespace JinEngine::Graphic
 				auto gausDesc = static_cast<JGaussianBlurDesc*>(blurSet->desc.get()); 
 				switch (gausDesc->kernelSize)
 				{
-				case JinEngine::Graphic::J_KERNEL_SIZE::_3x3:
+				case JinEngine::J_KERNEL_SIZE::_3x3:
 				{
 					JFilter::ComputeFilter<3, JKenelType::MaxSize()>(constants.kernel, &JFilter::Gaus1D, gausDesc->sigma);
 					break;
 				}
-				case JinEngine::Graphic::J_KERNEL_SIZE::_5x5:
+				case JinEngine::J_KERNEL_SIZE::_5x5:
 				{
 					JFilter::ComputeFilter<5, JKenelType::MaxSize()>(constants.kernel, &JFilter::Gaus1D, gausDesc->sigma);
 					break;
 				}
-				case JinEngine::Graphic::J_KERNEL_SIZE::_7x7:
+				case JinEngine::J_KERNEL_SIZE::_7x7:
 				{
 					JFilter::ComputeFilter<7, JKenelType::MaxSize()>(constants.kernel, &JFilter::Gaus1D, gausDesc->sigma);
 					break;
@@ -217,17 +217,17 @@ namespace JinEngine::Graphic
 				auto kaiserDesc = static_cast<JKaiserBlurDesc*>(blurSet->desc.get()); 
 				switch (kaiserDesc->kernelSize)
 				{
-				case JinEngine::Graphic::J_KERNEL_SIZE::_3x3:
+				case JinEngine::J_KERNEL_SIZE::_3x3:
 				{
 					JFilter::ComputeFilter<3, JKenelType::MaxSize()>(constants.kernel, &JFilter::Kaiser1D, kaiserDesc->beta, 3);
 					break;
 				}
-				case JinEngine::Graphic::J_KERNEL_SIZE::_5x5:
+				case JinEngine::J_KERNEL_SIZE::_5x5:
 				{
 					JFilter::ComputeFilter<5, JKenelType::MaxSize()>(constants.kernel, &JFilter::Kaiser1D, kaiserDesc->beta, 5);
 					break;
 				}
-				case JinEngine::Graphic::J_KERNEL_SIZE::_7x7:
+				case JinEngine::J_KERNEL_SIZE::_7x7:
 				{
 					JFilter::ComputeFilter<7, JKenelType::MaxSize()>(constants.kernel, &JFilter::Kaiser1D, kaiserDesc->beta, 7);
 					break;
@@ -241,17 +241,17 @@ namespace JinEngine::Graphic
 				auto boxDesc = static_cast<JBoxBlurDesc*>(blurSet->desc.get());
 				switch (boxDesc->kernelSize)
 				{
-				case JinEngine::Graphic::J_KERNEL_SIZE::_3x3:
+				case JinEngine::J_KERNEL_SIZE::_3x3:
 				{
 					JFilter::ComputeFilter<3, JKenelType::MaxSize()>(constants.kernel, &JFilter::Box1D, 3);
 					break;
 				}
-				case JinEngine::Graphic::J_KERNEL_SIZE::_5x5:
+				case JinEngine::J_KERNEL_SIZE::_5x5:
 				{
 					JFilter::ComputeFilter<5, JKenelType::MaxSize()>(constants.kernel, &JFilter::Box1D, 5);
 					break;
 				}
-				case JinEngine::Graphic::J_KERNEL_SIZE::_7x7:
+				case JinEngine::J_KERNEL_SIZE::_7x7:
 				{
 					JFilter::ComputeFilter<7, JKenelType::MaxSize()>(constants.kernel, &JFilter::Box1D, 7);
 					break;

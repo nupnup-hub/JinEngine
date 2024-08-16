@@ -187,7 +187,7 @@ namespace JinEngine::Graphic
 		SetValid(true);
 	}
 	void JDx12GraphicBuffer::CopyData(const uint elementIndex, const void* data)
-	{
+	{ 
 		memcpy(&mappedData[elementIndex * elementByteSize], data, elementByteSize);
 	}
 	void JDx12GraphicBuffer::CopyData(const uint elementIndex, const uint count, const void* data, const uint dataElementSize)
@@ -201,14 +201,14 @@ namespace JinEngine::Graphic
 		}  
 		memcpy(&mappedData[elementIndex * elementByteSize], data, (size_t)elementByteSize * count);
 	}
-	void JDx12GraphicBuffer::MoveData(const uint index, const uint range, const uint moveCount)
+	void JDx12GraphicBuffer::MoveData(const uint index, const uint moveCount)
 	{
-		if (moveCount == 0 || range == 0)
+		if (moveCount == 0)
 			return;
 		 
 		//memcpy = 바로 복사
 		//memmove = src의 값을 임시배열로 복사한 다음 dest로 복사하며 src와 dest가 겹치는 영역을 가져도 안전하게 수행가능. 
-		memmove(&mappedData[index * elementByteSize], &mappedData[(index + moveCount) * elementByteSize], (size_t)elementByteSize * range);
+		memmove(&mappedData[index * elementByteSize], &mappedData[(index + moveCount) * elementByteSize], (size_t)elementByteSize * moveCount);
 	}
 	std::wstring JDx12GraphicBuffer::GetName()const noexcept
 	{

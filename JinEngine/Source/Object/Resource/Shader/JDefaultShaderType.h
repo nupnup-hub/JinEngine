@@ -25,7 +25,7 @@ SOFTWARE.
 
 #pragma once 
 #include"../../JObjectFlag.h"
-#include"../../../Graphic/Shader/JShaderType.h"
+#include"../../GraphicRule/Shader/JGraphicModuleShaderType.h"
 
 namespace JinEngine
 {

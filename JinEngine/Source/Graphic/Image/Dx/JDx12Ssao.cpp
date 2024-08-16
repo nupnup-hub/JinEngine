@@ -33,7 +33,7 @@ SOFTWARE.
 #include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"
-#include"../../FrameResource/JCameraConstants.h" 
+#include"../../FrameResource/Dx/JCameraConstants.h" 
 #include"../../FrameResource/Dx/JDx12FrameResource.h" 
 #include"../../JGraphicUpdateHelper.h"
 #include"../../../Application/Engine/JApplicationEngine.h"
@@ -129,13 +129,13 @@ namespace JinEngine::Graphic
 			initHelper.macro[0].push_back({ KERNEL_MAX_SIZE, std::to_wstring(kenelMaxSize) });
 			switch (size)
 			{
-			case JinEngine::Graphic::J_KERNEL_SIZE::_3x3:
+			case JinEngine::J_KERNEL_SIZE::_3x3:
 				initHelper.macro[0].push_back({ USE_3x3_KERNEL, std::to_wstring(1) });
 				break;
-			case JinEngine::Graphic::J_KERNEL_SIZE::_5x5:
+			case JinEngine::J_KERNEL_SIZE::_5x5:
 				initHelper.macro[0].push_back({ USE_5x5_KERNEL, std::to_wstring(1) });
 				break;
-			case JinEngine::Graphic::J_KERNEL_SIZE::_7x7:
+			case JinEngine::J_KERNEL_SIZE::_7x7:
 				initHelper.macro[0].push_back({ USE_7x7_KERNEL, std::to_wstring(1) });
 				break;
 			default:
@@ -393,12 +393,12 @@ namespace JinEngine::Graphic
 		canBlur = ssaoDesc.useBlur;
 
 		const JUserPtr<JGraphicResourceInfo>& randomInfo = randomInfoVec[(uint)ssaoDesc.ssaoType];
-		auto gInterface = helper.cam->GraphicResourceUserInterface();
-		int rtDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		int dsDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		int aoDataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
+		auto gInterface = helper.GetResourceInterface();
+		int rtDataIndex = gInterface->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		int dsDataIndex = gInterface->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		int aoDataIndex = gInterface->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
 
-		const JVector2<uint> size = gInterface.GetResourceSize(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtDataIndex);
+		const JVector2<uint> size = gInterface->GetResourceSize(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtDataIndex);
 		inter = dx12Share->GetSsaoData(size.x, size.y);
 		if (inter == nullptr)
 			return;
@@ -519,9 +519,10 @@ namespace JinEngine::Graphic
 		auto shaderData = ssaoDepthLinearize.get();
 		set.context->SetPipelineState(shaderData);
 
+		auto fInterface = helper.GetFrameInterface();
 		set.context->SetGraphicsRootSignature(ssaoDepthLinearizeRootSignature.Get());
 		set.context->SetGraphicsRootDescriptorTable(SsaoDepthLinearlize::depthMapIndex, set.dsSet.GetGpuSrvHandle());
-		set.context->SetGraphicsRootConstantBufferView(SsaoDepthLinearlize::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+		set.context->SetGraphicsRootConstantBufferView(SsaoDepthLinearlize::passCBIndex, fInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS);
 		set.context->DrawFullScreenTriangle(); 
 	}
 	void JDx12Ssao::DepthMapInetrleave(SSaoDrawDataSet& set, const JDrawHelper& helper)
@@ -531,9 +532,10 @@ namespace JinEngine::Graphic
 		auto shaderData = ssaoDepthInterleave.get();
 		set.context->SetPipelineState(shaderData);
 
+		auto fInterface = helper.GetFrameInterface();
 		set.context->SetGraphicsRootSignature(ssaoDepthInterleaveRootSignature.Get());
 		set.context->SetGraphicsRootDescriptorTable(SsaoDepthInterleave::depthMapIndex, set.aoDepthSet.GetGpuSrvHandle());
-		set.context->SetGraphicsRootConstantBufferView(SsaoDepthInterleave::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao)); 
+		set.context->SetGraphicsRootConstantBufferView(SsaoDepthInterleave::passCBIndex, fInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS);
 		set.context->SetViewportAndRect(set.aoDepthInterleaveSet.info->GetResourceSize());		//quater
 		 
 		set.aoDepthInterleaveSet.viewOffset = 1;
@@ -550,9 +552,11 @@ namespace JinEngine::Graphic
 	{
 		const uint shaderInedx = Private::CalIndex(set.ssaoDesc.ssaoType, set.ssaoDesc.sampleType, set.canBlur ? J_SSAO_FUNCTION::BLUR : J_SSAO_FUNCTION::NONE);
 		auto shaderData = ssao[shaderInedx].get();
+		auto fInterface = helper.GetFrameInterface();
+
 		set.context->SetPipelineState(shaderData);
 		set.context->SetGraphicsRootSignature(set.ssaoDesc.ssaoType == J_SSAO_TYPE::DEFAULT ? ssaoRootSignature.Get() : hbaoRootSignature.Get());
-		set.context->SetGraphicsRootConstantBufferView(Ssao::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao)); 
+		set.context->SetGraphicsRootConstantBufferView(Ssao::passCBIndex, fInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS);
 
 		if (set.canUseHbaoInterleave)
 		{ 
@@ -589,10 +593,11 @@ namespace JinEngine::Graphic
 		auto shaderData = ssaoCombine[(uint)set.canBlur ? (uint)J_SSAO_FUNCTION::BLUR : (uint)J_SSAO_FUNCTION::NONE].get();
 		set.context->SetPipelineState(shaderData);
 		set.context->SetGraphicsRootSignature(ssaoCombineRootSignature.Get());
-
+	
+		auto fInterface = helper.GetFrameInterface();
 		set.context->SetGraphicsRootDescriptorTable(SsaoCombine::aoMapIndex, set.aoInterleaveSet.GetGpuSrvHandle());
 		set.context->SetGraphicsRootDescriptorTable(SsaoCombine::depthMapIndex, set.aoDepthSet.GetGpuSrvHandle());
-		set.context->SetGraphicsRootConstantBufferView(SsaoCombine::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+		set.context->SetGraphicsRootConstantBufferView(SsaoCombine::passCBIndex, fInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS);
 		
 		if (set.canBlur)
 		{
@@ -616,10 +621,11 @@ namespace JinEngine::Graphic
 			set.context->Transition(set.aoInter00Set.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
  
 			auto shaderData = ssaoBlur[(uint)J_SSAO_BLUR_SHADER::BILATERAL_X][(uint)set.ssaoDesc.blurKenelSize].get();
+			auto fInterface = helper.GetFrameInterface();
 			set.context->SetPipelineState(shaderData);
 			set.context->SetGraphicsRootSignature(ssaoBlurRootSignature.Get());
 			set.context->SetGraphicsRootDescriptorTable(SsaoBlur::srcMapIndex, set.aoInter00Set.GetGpuSrvHandle());
-			set.context->SetGraphicsRootConstantBufferView(SsaoBlur::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+			set.context->SetGraphicsRootConstantBufferView(SsaoBlur::passCBIndex, fInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS);
 			 
 			set.context->SetRenderTargetView(set.aoInter01Set);
 			set.context->SetViewportAndRect(set.aoInter01Set.info->GetResourceSize());
@@ -654,6 +660,9 @@ namespace JinEngine::Graphic
 		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildBuffer(dx12Device, dx12Gm);
+
+		cachedDevice = dx12Device;
+		cachedGm = dx12Gm;
 	}
 	void JDx12Ssao::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{ 
@@ -708,7 +717,8 @@ namespace JinEngine::Graphic
 			JVector4F noise(disSNorm(gen), disSNorm(gen), 0.0f, 1.0f);
 			ssaoRandomVec[i] = noise.Normalize();
 		} 
-		JGraphicResourceCreationDesc desc;
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
+		JGraphicResourceCreationDesc desc(typeSet);
 		desc.width = Ssao::randomWidth;
 		desc.height = Ssao::randomWidth;
 		desc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
@@ -722,7 +732,7 @@ namespace JinEngine::Graphic
 		//desc.formatHint = std::make_unique< JGraphicFormatHint>();
 		//desc.formatHint->componentPerByte = 2;
 
-		randomVecInfo[(uint)J_SSAO_TYPE::DEFAULT] = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		randomVecInfo[(uint)J_SSAO_TYPE::DEFAULT] = gm->CreateResource(device, desc);
 
 		randomCount = Ssao::randomWidth * Ssao::randomWidth;
 		std::vector<JVector4F> hbaoRandomVec(randomCount);
@@ -753,8 +763,8 @@ namespace JinEngine::Graphic
 		desc.uploadBufferDesc = std::make_unique<JUploadBufferCreationDesc>(hbaoRandomVec.data(), hbaoRandomVec.size() * sizeof(JVector4F));
 		desc.formatHint = std::make_unique<JGraphicFormatHint>(); 
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
-
-		randomVecInfo[(uint)J_SSAO_TYPE::HORIZON_BASED] = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		randomVecInfo[(uint)J_SSAO_TYPE::HORIZON_BASED] = gm->CreateResource(device, desc);
 
 		ssaoAoSliceCB = std::make_unique<JDx12GraphicBufferT<SsaoAoSliceConstants>>(L"SsaoAoSliceCB", J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
 		ssaoAoSliceCB->Build(device, Ssao::sliceCount);
@@ -1008,6 +1018,8 @@ namespace JinEngine::Graphic
 		ClearRootSignature();
 		ClearPso();
 		ClearBuffer(); 
+		cachedDevice = nullptr; 
+		cachedGm = nullptr;
 	}
 	void JDx12Ssao::ClearRootSignature()
 	{ 
@@ -1039,7 +1051,7 @@ namespace JinEngine::Graphic
 		ssaoSampleCB = nullptr;
 
 		for (uint i = 0; i < SIZE_OF_ARRAY(randomVecInfo); ++i)
-			JGraphicResourceInfo::Destroy(randomVecInfo[i].Release());
+			cachedGm->DestroyGraphicTextureResource(cachedDevice, randomVecInfo[i].Release());
 		if (ssaoAoSliceCB != nullptr)
 			ssaoAoSliceCB->Clear();
 		ssaoAoSliceCB = nullptr;

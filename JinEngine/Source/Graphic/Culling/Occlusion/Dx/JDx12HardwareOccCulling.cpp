@@ -182,8 +182,11 @@ namespace JinEngine::Graphic
 	void JDx12HardwareOccCulling::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
 	{
 		auto dx12Set = static_cast<const JDx12GraphicInfoChangedSet&>(set);  
-		if (dx12Set.preInfo.frame.upBoundingObjCapacity != dx12Set.newInfo.frame.upBoundingObjCapacity)
-			NotifyReBuildHdOccBuffer(dx12Set.device, dx12Set.newInfo.frame.upBoundingObjCapacity, dx12Set.cm->GetCullingInfoVec(J_CULLING_TYPE::HD_OCCLUSION));
+		auto& preFrame = dx12Set.preInfo.frame;
+		auto& newFrame = dx12Set.newInfo.frame;
+
+		if (preFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT) != newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT))
+			NotifyReBuildHdOccBuffer(dx12Set.device, newFrame.GetCapacity(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT), dx12Set.cm->GetCullingInfoVec(J_CULLING_TYPE::HD_OCCLUSION));
 	}
 	void JDx12HardwareOccCulling::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
 	{ 
@@ -226,15 +229,15 @@ namespace JinEngine::Graphic
 		const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12BindSet->context);
 
-		auto gRInterface = helper.GetOccGResourceInterface(); 
+		auto gRInterface = helper.GetResourceInterface();
+		auto cInterface = helper.GetCullInterface();
 		auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		 
 		//D3D12_DEPTH_WRITE_MASK_ZERO
 		context->Transition(dsSet.holder, D3D12_RESOURCE_STATE_DEPTH_WRITE);		 
 		context->FlushResourceBarriers();
-
-		auto cInterface = helper.GetCullInterface();
-		UpdateData& upData = updateData[cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
+		 
+		UpdateData& upData = updateData[cInterface->GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
 		upData.Update();
 	}
 	void JDx12HardwareOccCulling::EndDraw(const JGraphicBindSet* bindSet, const JDrawHelper& helper)
@@ -263,16 +266,16 @@ namespace JinEngine::Graphic
 		const JDx12GraphicOccDrawSet* dx12DrawSet = static_cast<const JDx12GraphicOccDrawSet*>(occDrawSet);
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12DrawSet->context);
 
-		auto gRInterface = helper.GetOccGResourceInterface(); 
+		auto gRInterface = helper.GetResourceInterface();
 		auto cInterface = helper.GetCullInterface();
-		UpdateData& upData = updateData[cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
+		UpdateData& upData = updateData[cInterface->GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
 		if (upData.CanPassThisFrame(helper.info.frame.currIndex))
 			return;
 
-		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const uint camFrustumIndex = cInterface->GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 
-		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA &&
+		const bool hasFrustumCulling = cInterface->HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_CAMERA &&
 			helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT) &&
 			helper.objVec.aligned[camFrustumIndex].size() > 0;
 
@@ -296,8 +299,8 @@ namespace JinEngine::Graphic
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, helper.objVec.aligned[camFrustumIndex], helper, drawCondition);
 		else
 		{
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 			
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec00, helper, drawCondition);
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec01, helper, drawCondition);
@@ -311,16 +314,16 @@ namespace JinEngine::Graphic
 		const JDx12GraphicOccDrawSet* dx12DrawSet = static_cast<const JDx12GraphicOccDrawSet*>(occDrawSet);
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12DrawSet->context);
 
-		auto gRInterface = helper.GetOccGResourceInterface(); 
+		auto gRInterface = helper.GetResourceInterface(); 
 		auto cInterface = helper.GetCullInterface();
-		UpdateData& upData = updateData[cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
+		UpdateData& upData = updateData[cInterface->GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM)];
 		if (upData.CanPassThisFrame(helper.info.frame.currIndex))
 			return;
 
-		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const uint camFrustumIndex = cInterface->GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 
-		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA && 
+		const bool hasFrustumCulling = cInterface->HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_CAMERA && 
 			helper.scene->HasCanCullingAccelerator(J_ACCELERATOR_LAYER::COMMON_OBJECT) && 
 			helper.objVec.aligned[camFrustumIndex].size() > 0;
 	 
@@ -336,8 +339,8 @@ namespace JinEngine::Graphic
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, helper.objVec.aligned[camFrustumIndex], helper, drawCondition);
 		else
 		{
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec00, helper, drawCondition);
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet, objVec01, helper, drawCondition);

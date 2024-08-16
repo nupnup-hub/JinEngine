@@ -49,13 +49,14 @@ namespace JinEngine
 		{ 
 			if (helper.cam != nullptr)
 			{ 
-				JAcceleratorCullingInfo info(helper.cam->CullingUserInterface(), helper.cam->GetBoundingFrustum());
+				auto cInterface = helper.cam->ModuleManagedData()->GetCullingUserInterface();
+				JAcceleratorCullingInfo info(cInterface, helper.cam->GetBoundingFrustum());
 				info.allowCullingOrderedByDistance = true;
 				info.allowPushVisibleObjVec = true;
 				info.appAlignedObjVec = &helper.objVec.common; 
-				JScenePrivate::CullingInterface::ViewCulling(scene, info);
+				scene->ViewCulling(info);
 				 
-				const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+				const uint camFrustumIndex = cInterface->GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 				auto& alignedVec = helper.objVec.aligned[camFrustumIndex];
 	 
 				if (alignedVec.size() > 0)
@@ -66,7 +67,7 @@ namespace JinEngine
 					std::make_move_iterator(info.appAlignedObjVec->begin() + info.pushedCount));
 			}
 			else
-				JScenePrivate::CullingInterface::ViewCulling(scene, helper.lit);
+				scene->ViewCulling(helper.lit);
 		}
 	}
 }

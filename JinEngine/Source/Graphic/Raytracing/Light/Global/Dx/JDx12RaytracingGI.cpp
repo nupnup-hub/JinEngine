@@ -31,8 +31,9 @@ SOFTWARE.
 #include"../../../../Command/Dx/JDx12CommandContext.h"
 #include"../../../../Utility/Dx/JDx12ObjectCreation.h" 
 #include"../../../../Utility/JSampler.h"
-#include"../../../../FrameResource/JFrameUpdate.h"
-#include"../../../../FrameResource/Dx/JDx12FrameResource.h" 
+#include"../../../../FrameResource/JFrameUpdateInterface.h"
+#include"../../../../FrameResource/Dx/JDx12FrameResourceManager.h"
+#include"../../../../FrameResource/Dx/JDx12FrameResource.h"
 #include"../../../../JGraphicUpdateHelper.h"  
 #include"../../../../../Core/Math/JVectorExtend.h" 
 #include"../../../../../Core/Geometry/Mesh/JMeshStruct.h" 
@@ -279,7 +280,7 @@ namespace JinEngine::Graphic
 	{ 
 		frameBuffer.Clear();
 	}
-	void JDx12RaytracingGI::UserPrivateData::Begin(const JDrawHelper& helper)
+	void JDx12RaytracingGI::UserPrivateData::Begin(JDx12CommandContext* context, const JDrawHelper& helper)
 	{ 
 		const JUserPtr<JCamera>& cam = helper.cam;
 		const JVector2F camRtSize = cam->GetRenderTargetSize(); 
@@ -288,17 +289,17 @@ namespace JinEngine::Graphic
 		const JUserPtr<JScene>& scene = helper.scene;
 		const size_t sceneGuid = scene->GetGuid();
 		 
-		const uint directionalLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
-		const uint pointLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
-		const uint spotLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
-		const uint rectLitCount = JFrameUpdateData::GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
+		const uint directionalLitCount = context->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
+		const uint pointLitCount = context->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+		const uint spotLitCount = context->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+		const uint rectLitCount = context->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 		const uint lightSum = directionalLitCount + pointLitCount + spotLitCount + rectLitCount;
 
-		const uint directionalLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
-		const uint pointLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
-		const uint spotLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
-		const uint rectLitOffset = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
-		 
+		const uint directionalLitOffset = context->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
+		const uint pointLitOffset = context->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+		const uint spotLitOffset = context->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+		const uint rectLitOffset = context->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
+		  
 		GIPassConstants constants; 
 		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
 		constants.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj()));
@@ -357,14 +358,15 @@ namespace JinEngine::Graphic
 	{
 		const JDx12GraphicRtGiComputeSet* set = static_cast<const JDx12GraphicRtGiComputeSet*>(computeSet);
 		context = static_cast<JDx12CommandContext*>(set->context);
-		device = static_cast<JDx12GraphicDevice*>(set->device);
+		device = static_cast<JDx12GraphicDevice*>(set->device); 
 		cam = helper.cam;
 
 		const size_t sceneGuid = helper.scene->GetGuid();
-		auto gInterface = helper.cam->GraphicResourceUserInterface();
-		auto aInterface = helper.scene->GpuAcceleratorUserInterface();
-		auto reserviorIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
-		auto ssaoIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		auto gInterface = helper.GetResourceInterface();
+		auto aInterface = helper.GetGpuAcceleratorInterface();
+
+		auto reserviorIndex = gInterface->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		auto ssaoIndex = gInterface->GetResourceIndexOffset(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 
 		rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		dsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
@@ -407,13 +409,14 @@ namespace JinEngine::Graphic
 		if (skyObj.size() > 0)
 		{
 			auto albedoMap = skyObj[0]->GetRenderItem()->GetValidMaterial(0)->GetAlbedoMap();
-			skyMapSrvHeapIndex = albedoMap != nullptr ? albedoMap->GraphicResourceUserInterface().GetFirstResourceHeapStart(J_GRAPHIC_BIND_TYPE::SRV) : invalidIndex;
+			if (albedoMap != nullptr)
+				skyMapSrvHeapIndex = albedoMap->ModuleManagedData()->GetGraphicResourceUserInterface()->GetFirstResourceHeapStart(J_GRAPHIC_BIND_TYPE::SRV);		 
 		}  
 	}
 	void JDx12RaytracingGI::GIDataSet::SetUserPrivate(UserPrivateData* data, const JDrawHelper& helper)
 	{ 
 		userPrivate = data;
-		userPrivate->Begin(helper);
+		userPrivate->Begin(context, helper);
 
 		preTemporalReserviorSet = &temporalReserviorSet[userPrivate->preReserviorIndex];
 		currTemporalReserviorSet = &temporalReserviorSet[userPrivate->currReserviorIndex];
@@ -458,7 +461,10 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingGI::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
 	{
 		auto dx12Set = static_cast<const JDx12GraphicInfoChangedSet&>(set);
-		if (dx12Set.preInfo.resource.binding2DTextureCapacity != dx12Set.newInfo.resource.binding2DTextureCapacity)
+		auto& preInfo = dx12Set.preInfo.resource;
+		auto& newInfo = dx12Set.newInfo.resource;
+		 
+		if (preInfo.GetBorder(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D) != newInfo.GetBorder(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D))
 		{
 			raytracingRootSignature = nullptr;
 			ClearStateObject();
@@ -731,7 +737,7 @@ namespace JinEngine::Graphic
 		builder.PushShaderResource(2, 3);
 		builder.PushShaderResource(3, 0);
 
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, GetGraphicInfo().resource.binding2DTextureCapacity, 4, 5);
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, GetGraphicInfo().resource.GetBorder(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D), 4, 5);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4, 6);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4, 7);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4, 8);
@@ -809,7 +815,7 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingGI::BuildDxilLibrarySubobject(JStateObjectBuildData& buildData, const JGraphicOption& option)
 	{
 		JComputeShaderInitData initData;
-		initData.macro.push_back({ TEXTURE_2D_COUNT, std::to_wstring(GetGraphicInfo().resource.binding2DTextureCapacity) });
+		initData.macro.push_back({ TEXTURE_2D_COUNT, std::to_wstring(GetGraphicInfo().resource.GetBorder(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)) });
 		//initData.macro.push_back({ T_MIN, std::to_wstring(Raytracing::tMin) });
 		initData.macro.push_back({ MIN_DEPTH, std::to_wstring(Raytracing::minDepth) });
 		initData.macro.push_back({ MAX_DEPTH, std::to_wstring(option.rendering.restir.bounceCount.Get()) });

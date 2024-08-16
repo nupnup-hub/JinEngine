@@ -28,8 +28,7 @@ SOFTWARE.
 #include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/JGraphicResourceInterface.h"
-#include"../../Shader/Dx/JDx12ShaderDataHolder.h"  
-#include<d3d12.h>     
+#include"../../Shader/Dx/JDx12ShaderDataHolder.h"   
 #include<wrl/client.h>
 
 namespace JinEngine
@@ -86,7 +85,7 @@ namespace JinEngine
 				int camFrameIndex = invalidIndex;
 				int sceneFrameIndex = invalidIndex;
 			public:
-				Graphic::JGraphicResourceUserInterface gRInterface;
+				JGraphicResourceInterface* gInterface;
 			public:
 				JDx12GraphicResourceComputeSet rtSet;
 				JDx12GraphicResourceComputeSet dsSet;

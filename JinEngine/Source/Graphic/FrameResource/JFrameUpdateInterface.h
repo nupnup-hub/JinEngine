@@ -27,28 +27,51 @@ SOFTWARE.
 #include"../../Core/Utility/JTypeSequence.h"
 #include"../../Object/GraphicRule/FrameResource/JGraphicModuleFrameResourceUserAccess.h"
 
+//#include"../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine
 {
 	namespace Graphic
-	{ 
+	{
+		class JFrameDirtyChain
+		{
+		private:
+			std::vector<JFrameDirtyListener> listenerVec;
+		public:
+			uint GetListenerCount()const noexcept;
+		public:
+			void SetFrameDirty()noexcept;
+		public:
+			bool AddFrameDirtyListener(JFrameDirtyListener&& listener)noexcept;
+			bool RemoveFrameDirtyListener(const size_t guid)noexcept;
+		};
+
 		class JFrameDirtyBase
 		{
+		private:
+			std::unique_ptr<JFrameDirtyChain> dirtyChain;
 		protected:
-			virtual ~JFrameDirtyBase() = default; 
+			virtual ~JFrameDirtyBase() = default;
 		public:
 			virtual int GetFrameDirty()const noexcept = 0;
 			virtual int GetFrameDirtyMax()const noexcept = 0;
+			uint GetListenerCount()const noexcept;
 		public:
-			virtual void SetFrameDirty()noexcept = 0;
+			virtual void SetFrameDirty()noexcept;
 		public:
 			virtual bool IsFrameDirted()const noexcept = 0;
+			virtual bool IsLastFrameUpdated()const noexcept = 0;
 			bool IsFrameHotDirted()const noexcept;
 			bool IsLastFrameHotUpdated()const noexcept;
 		public:
-			virtual void MinusFrameDirty()noexcept = 0;
 			virtual void OffFrameDirty()noexcept = 0;
+		public:
+			virtual void BeginUpdate()noexcept = 0;
+			virtual void EndUpdate()noexcept = 0;
+		public:
+			bool AddFrameDirtyListener(JFrameDirtyListener&& listener)noexcept;
+			bool RemoveFrameDirtyListener(const size_t guid)noexcept;
 		};
-		 
+
 		//just call empty func
 		class JFrameDirtyTrigger : public JFrameDirtyBase
 		{
@@ -59,82 +82,43 @@ namespace JinEngine
 			void SetFrameDirty()noexcept override;
 		public:
 			bool IsFrameDirted()const noexcept override;
+			bool IsLastFrameUpdated()const noexcept override;
 		public:
-			void MinusFrameDirty()noexcept override;
 			void OffFrameDirty()noexcept override;
+		public:
+			void BeginUpdate()noexcept override;
+			void EndUpdate()noexcept override;
 		};
+
 		class JFrameDirty : public JFrameDirtyBase
 		{
 		private:
-			int frameDirty = 0; 
+			int frameDirty = 0;
+			bool isLastFrameUpdated = false;
 		public:
 			int GetFrameDirty()const noexcept override;
 			int GetFrameDirtyMax()const noexcept override;
 		public:
-			void SetFrameDirty()noexcept override; 
+			void SetFrameDirty()noexcept override;
 		public:
-			bool IsFrameDirted()const noexcept override; 
+			bool IsFrameDirted()const noexcept override;
+			bool IsLastFrameUpdated()const noexcept override;
 		public:
-			void MinusFrameDirty()noexcept override;
 			void OffFrameDirty()noexcept override;
-		};
-		 
-		template<typename FrameDirty>
-		class JFrameDirtyChain : public FrameDirty
-		{
-		private:
-			std::vector<JFrameDirtyListener> listener;
 		public:
-			void SetFrameDirty()noexcept final
-			{
-				FrameDirty::SetFrameDirty();
-				const uint listenerCount = (uint)listener.size();
-				for (uint i = 0; i < listenerCount; ++i)
-					static_cast<JFrameUpdateInterface*>((*listener[i].getFrameUserBind)())->GetDirtyBase()->SetFrameDirty();
-			}
-		public:
-			void AddFrameDirtyListener(const JFrameDirtyListener& listener)noexcept
-			{
-				listener.push_back(listener);
-			}
-			void RemoveFrameDirtyListener(const size_t guid)noexcept
-			{
-				uint listenerCount = (uint)listener.size();
-				for (uint i = 0; i < listenerCount; ++i)
-				{
-					if (listener[i].guid == guid)
-					{
-						listener.erase(listener.begin() + i);
-						break;
-					}
-				}
-			}
+			void BeginUpdate()noexcept override;
+			void EndUpdate()noexcept override;
 		};
-		 
+
 		class JFrameUpdateInterface : public JFrameUpdateUserInterface
 		{
-		protected:
-			template<typename T, typename = void>
-			struct DirtyChainDetermine
-			{
-			public:
-				static constexpr bool value = false;
-			};
-			template<typename T>
-			struct DirtyChainDetermine<T, std::void_t<decltype(&T::AddFrameDirtyListener)>>
-			{
-			public:
-				static constexpr bool value = true;
-			};
 		private:
 			using ObjectUpdateBind = JFrameObjectUpdateB;
 			ObjectUpdateBind objectUpdateB;
 		public:
-			bool Register(const JFrameUploadDataCreationDesc& desc);
-			void DeRegister();
-		public:
 			virtual bool Add(const JUserPtr<JFrameUpdateInfo>& newInfo) = 0;
-		public: 
+			virtual JFrameUpdateInfo* Release(const J_FRAME_RESOURCE_UPLOAD_TYPE type) = 0;
+		public:
 			virtual JFrameUpdateInfo* GetFrameInfo(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept = 0;
 			virtual JFrameDirtyBase* GetDirtyBase()const noexcept = 0;
 			int GetNumber(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept override;
@@ -145,10 +129,15 @@ namespace JinEngine
 			void SetFrameDirty()noexcept final;
 		public:
 			bool IsDirted()const noexcept final;
+			bool IsLastUpdated()const noexcept final;
 		public:
 			void OffFrameDirty()noexcept final;
 		public:
 			void TryExecuteObjectUpdateBind();
+		public:
+			bool TryRegisterDirtyListener(JFrameDirtyListener&& listener)final;
+			bool TryRegisterDirtyListener(const JUserPtr<JObject>& obj)final;
+			bool TryDeRegisterDirtyListener(const size_t guid)final;
 		public:
 			bool RegisterObjectUpdateB(JFrameObjectUpdateB&& bind)final;
 			bool DeRegisterObjectUpdateB()final;
@@ -176,7 +165,7 @@ namespace JinEngine
 			{
 				static bool initTrigger = false;
 				if (!initTrigger)
-				{ 
+				{
 					TypeSequence::StuffTypeSequenceOrder(std::make_index_sequence<count>(), order, (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT);
 					initTrigger = true;
 				}
@@ -184,36 +173,57 @@ namespace JinEngine
 		public:
 			bool Add(const JUserPtr<JFrameUpdateInfo>& newInfo)
 			{
-				if (!HasSpace(newInfo->GetType()))
+				const J_FRAME_RESOURCE_UPLOAD_TYPE type = newInfo->GetType();
+				/*
+				if(type == J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT || 
+					type == J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO ||
+					type == J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW)
+				{
+					Develop::JDevelopDebug::PushLog(Core::GetName(type) + " " + std::to_string(GetTypeIndex(type)) + ": Add " + std::to_string(uint64(updateInfo[GetTypeIndex(type)].Get())) + " -> " + std::to_string(uint64(newInfo.Get())));
+					Develop::JDevelopDebug::Write();
+				}
+
+				*/
+				if (!HasSpace(type))
 					return false;
 
-				updateInfo[order[(uint)newInfo->GetType()]] = newInfo;
+				updateInfo[GetTypeIndex(type)] = newInfo;
 				return true;
+			}
+			JFrameUpdateInfo* Release(const J_FRAME_RESOURCE_UPLOAD_TYPE type)
+			{
+				int typeIndex = GetTypeIndex(type);
+				/*
+				if (type == J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT || 
+					type == J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO ||
+					type == J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW)
+				{  
+					Develop::JDevelopDebug::PushLog(Core::GetName(type) + " " + std::to_string(typeIndex) + ": Release " + std::to_string(uint64(updateInfo[typeIndex].Get())));
+					Develop::JDevelopDebug::Write();
+				} 
+				*/
+				return typeIndex != invalidIndex ? updateInfo[typeIndex].Release() : nullptr;
 			}
 		public:
 			JFrameUpdateInfo* GetFrameInfo(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
 			{
-				return order[(uint)type] != invalidIndex ? updateInfo[(uint)type].Get() : nullptr;
-			}
+				int typeIndex = GetTypeIndex(type);
+				return typeIndex != invalidIndex ? updateInfo[typeIndex].Get() : nullptr;
+			} 
 			JFrameDirtyBase* GetDirtyBase()const noexcept final
 			{
 				return isSupportedFrameDirty ? &dirty : nullptr;
 			}
 		public:
-			bool HasSpace(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
+			int GetTypeIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
 			{
-				return order[(uint)type] != invalidIndex && updateInfo[order[(uint)type]] != nullptr;
+				return order[(uint)type];
 			}
 		public:
-			bool TryRegisterDirtyListener(const JFrameDirtyListener& listener)final
+			bool HasSpace(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
 			{
-				if constexpr (DirtyChainDetermine<FrameDirty>::value)
-					dirty.AddFrameDirtyListener(listener);
-			}
-			bool TryDeRegisterDirtyListener(const size_t guid)final
-			{
-				if constexpr (DirtyChainDetermine<FrameDirty>::value)
-					dirty.RemoveFrameDirtyListener(guid);
+				int typeIndex = GetTypeIndex(type);
+				return typeIndex != invalidIndex && updateInfo[typeIndex] == nullptr;
 			}
 		};
 		template<typename FrameDirty, typename TypeSequence>
@@ -229,8 +239,12 @@ namespace JinEngine
 			mutable FrameDirty dirty;
 		public:
 			bool Add(const JUserPtr<JFrameUpdateInfo>& newInfo)
-			{  
+			{
 				return false;
+			}
+			JFrameUpdateInfo* Release(const J_FRAME_RESOURCE_UPLOAD_TYPE type)
+			{
+				return nullptr;
 			}
 		public:
 			int GetNumber(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
@@ -248,7 +262,7 @@ namespace JinEngine
 			JFrameUpdateInfo* GetFrameInfo(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
 			{
 				return nullptr;
-			}
+			} 
 			JFrameDirtyBase* GetDirtyBase()const noexcept final
 			{
 				return &dirty;
@@ -257,17 +271,6 @@ namespace JinEngine
 			bool HasSpace(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
 			{
 				return false;
-			}
-		public:
-			bool TryRegisterDirtyListener(const JFrameDirtyListener& listener)final
-			{
-				if constexpr (DirtyChainDetermine<FrameDirty>::value)
-					dirty.AddFrameDirtyListener(listener);
-			}
-			bool TryDeRegisterDirtyListener(const size_t guid)final
-			{
-				if constexpr (DirtyChainDetermine<FrameDirty>::value)
-					dirty.RemoveFrameDirtyListener(guid);
 			}
 		};
 

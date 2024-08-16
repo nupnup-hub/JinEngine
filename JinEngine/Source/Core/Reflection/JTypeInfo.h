@@ -185,18 +185,18 @@ namespace JinEngine
 					else
 						return false;
 				}
-			};
+			};  
 		private:
 			//name is class Name except namespace and class
 			const std::string name;
 			//typeid(T).name()
 			const std::string fullName;
 			const size_t hashCode;
-			const size_t dataSize;
+			const size_t dataSize; 
 			JTypeInfo* parent; 
 			JTypeInfoGuiOption option;
 			std::unique_ptr<JTypeInstanceData> instanceData;
-			std::unique_ptr<JTypeMemberData> memberData;
+			std::unique_ptr<JTypeMemberData> memberData; 
 		private:
 			CallOnecePtr callOncePtr = nullptr;
 		private:
@@ -217,7 +217,8 @@ namespace JinEngine
 			//typeid name	for guid
 			std::string FullName()const noexcept;
 			//created by fullname 
-			size_t TypeGuid()const noexcept;
+			size_t TypeGuid()const noexcept; 
+			size_t DataSize()const noexcept;
 		public:
 			const PropertyVec GetPropertyVec()const noexcept;
 			const MethodVec GetMethodVec()const noexcept;
@@ -226,7 +227,7 @@ namespace JinEngine
 			JMethodInfo* GetMethod(const std::string& name)const noexcept;
 			JTypeInfoGuiOption* GetOption()noexcept;
 			uint GetInstanceCount()const noexcept;
-			int GetInstanceIndex(IdentifierType iden)const noexcept;
+			int GetInstanceIndex(IdentifierType iden)const noexcept; 
 		public:
 			JTypeBase* GetInstanceRawPtr(IdentifierType iden)const noexcept;
 			JUserPtr<JTypeBase> GetInstanceUserPtr(IdentifierType iden)const noexcept; 
@@ -285,7 +286,7 @@ namespace JinEngine
 			JTypeInfo* GetImplTypeInfo()const noexcept;			//for has impl class
 		public:
 			//is valid until CallOnce 
-			bool SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept;
+			bool SetAllocationCreator(std::unique_ptr<JTypeAllocationCreatorInterface>&& newCreator)noexcept;
 			bool SetAllocationOption(std::unique_ptr<JAllocationDesc>&& newOption)noexcept;
 			bool SetDestructionInfo(std::unique_ptr<JLazyDestructionInfo>&& newDesInfo)noexcept;
 		public:
@@ -358,7 +359,7 @@ namespace JinEngine
 				:name(initializer.name),
 				fullName(initializer.fullName),
 				hashCode(initializer.hashCode),
-				dataSize(sizeof(Type)),
+				dataSize(sizeof(Type)), 
 				parent(initializer.parent),
 				isAbstractType(std::is_abstract_v<Type>)
 			{

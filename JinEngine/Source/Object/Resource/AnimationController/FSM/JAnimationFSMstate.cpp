@@ -85,7 +85,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			IMPL_REALLOC_BIND(JAnimationFSMstate::JAnimationFSMstateImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 

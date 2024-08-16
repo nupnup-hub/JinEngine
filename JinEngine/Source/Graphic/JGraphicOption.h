@@ -195,7 +195,7 @@ namespace JinEngine
 			bool IsOcclusionActivated()const noexcept;  
 			bool IsPostProcessActivated()const noexcept;
 			bool CanUseRtGi()const noexcept;
-			bool CanUsePoseProcess()const noexcept;
+			bool CanUsePostProcess()const noexcept;
 			bool CanUseSSAO()const noexcept; 
 		public:
 			void Load();

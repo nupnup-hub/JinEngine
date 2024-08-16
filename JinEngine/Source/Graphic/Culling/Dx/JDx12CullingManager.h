@@ -41,7 +41,10 @@ namespace JinEngine
 		private:
 			std::vector<Microsoft::WRL::ComPtr<ID3D12QueryHeap>> occQueryHeap;
 		public:
-			~JDx12CullingManager();
+			virtual ~JDx12CullingManager();
+		public:
+			void Initialize(JGraphicDevice* device)final;
+			void Clear()final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 			JDx12CullingResourceHolder* GetDxHolder(const J_CULLING_TYPE type, int index)const noexcept;
@@ -69,10 +72,10 @@ namespace JinEngine
 			void PostDestruction(const J_CULLING_TYPE type, const uint index) final;
 		public:
 			bool TryStreamOutCullingBuffer(JCullingInfo* info, const std::string& logName)final;
-		public:
-			void Clear() final;
 		private:
 			void ClearResource();
+		public:
+			static void RegisterTypeData();
 		};
 
 		class JDx12CullingResourceComputeSet
@@ -87,7 +90,7 @@ namespace JinEngine
 			JDx12CullingResourceComputeSet() = default;
 			JDx12CullingResourceComputeSet(JDx12CullingManager* cm, JCullingInfo* info);
 			JDx12CullingResourceComputeSet(JDx12CullingManager* cm, const JUserPtr<JCullingInfo>&info);
-			JDx12CullingResourceComputeSet(JDx12CullingManager* cm, const JCullingUserInterface& cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget);
+			JDx12CullingResourceComputeSet(JDx12CullingManager* cm, JCullingInterface* cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget);
 		public:
 			bool IsValid()const noexcept;
 		};

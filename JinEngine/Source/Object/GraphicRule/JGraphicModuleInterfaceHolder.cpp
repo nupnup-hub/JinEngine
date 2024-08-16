@@ -30,9 +30,9 @@ namespace JinEngine
 	{
 		JGraphicModuleInterface* JGraphicModuleInterfaceHolder::Get()
 		{
-			return moduleInterface.get();
+			return moduleInterface;
 		}
-		void JGraphicModuleInterfaceHolder::Set(std::unique_ptr<JGraphicModuleInterface>&& newModuleInterface)
+		void JGraphicModuleInterfaceHolder::Set(JGraphicModuleInterface* newModuleInterface)
 		{
 			moduleInterface = std::move(newModuleInterface);
 		}

@@ -157,7 +157,7 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{
 			JIdentifier::RegisterPrivateInterface(JAnimationFSMstateClip::StaticTypeInfo(), cPrivate);
-			IMPL_REALLOC_BIND(JAnimationFSMstateClip::JAnimationFSMstateClipImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 

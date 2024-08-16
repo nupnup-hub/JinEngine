@@ -79,11 +79,12 @@ namespace JinEngine
 			void SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder> optionHolder);
 		public:
 			bool HasOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept final; 
-		public:
+		private:
 			JDx12GraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
 				JDx12GraphicResourceManager* manager,
 				std::unique_ptr<JDx12GraphicResourceHolder>&& resourceHolder, 
 				GetGpuHandlePtr getGpuHandlePtr);
+		public:
 			~JDx12GraphicResourceInfo();
 		};
 	}

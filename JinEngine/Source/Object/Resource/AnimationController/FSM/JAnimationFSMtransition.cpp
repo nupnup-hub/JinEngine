@@ -131,7 +131,7 @@ namespace JinEngine
 		{
 			SET_GUI_FLAG(Core::J_GUI_OPTION_DISPLAY_PARENT);
 			Core::JIdentifier::RegisterPrivateInterface(JAnimationFSMtransition::StaticTypeInfo(), aPrivate);
-			IMPL_REALLOC_BIND(JAnimationFSMtransition::JAnimationFSMtransitionImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 

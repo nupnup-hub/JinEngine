@@ -48,21 +48,22 @@ SOFTWARE.
 #include"../../GameObject/JGameObjectPrivate.h"
 #include"../../Directory/JDirectory.h"
 #include"../../JObjectFileIOHelper.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
 
 #include"../../../Application/Project/JApplicationProject.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
 #include"../../../Core/File/JFileConstant.h"  
-#include"../../../Core/Utility/JCommonUtility.h" 
-#include"../../../Graphic/Frameresource/JFrameUpdate.h" 
+#include"../../../Core/Utility/JCommonUtility.h"  
 #include<DirectXColors.h> 
   
 namespace JinEngine
 {
 	namespace
 	{ 
-		using SetCompCondition = JScenePrivate::CompFrameInterface::SetCompCondition;
+		using SetCompCondition = bool(*)(const JUserPtr<JComponent>&);
 		using CompSortPtr = JScenePrivate::CompRegisterInterface::CompSortPtr;
 		using SceneMangerAccess = JSceneManagerPrivate::SceneAccess; 
 
@@ -82,20 +83,20 @@ namespace JinEngine
 		static JScenePrivate sPrivate;
 	}
  
-	class JScene::JSceneImpl : public Core::JTypeImplBase,
-		public JClearableInterface,
-		public Graphic::JFrameUpdateData
+	class JScene::JSceneImpl : public Core::JTypeImplBase, public JClearableInterface 
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSceneImpl)
 	public: 
-		JWeakPtr<JScene> thisPointer = nullptr;
+		JWeakPtr<JScene> thisPointer;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
-		JUserPtr<JGameObject> root = nullptr;
-		JUserPtr<JGameObject> debugRoot = nullptr;
+		JUserPtr<JGameObject> root;
+		JUserPtr<JGameObject> debugRoot;
 		std::unique_ptr<JSceneAcceleratorStructure> accelerator;
 		std::vector<JUserPtr<JGameObject>> allObjects;
 		std::vector<JUserPtr<JGameObject>> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)Core::J_MESHGEOMETRY_TYPE::COUNT];
-		std::unordered_map<J_COMPONENT_TYPE, std::vector<JUserPtr<JComponent>>> componentCash;
+		std::vector<JUserPtr<JComponent>> componentCash[totalCompVariation];
+		//std::unordered_map<J_COMPONENT_TYPE, std::vector<JUserPtr<JComponent>>> componentCash;
 	public:
 		const size_t debugRootGuid;
 		const J_SCENE_USE_CASE_TYPE useCaseType;
@@ -131,30 +132,26 @@ namespace JinEngine
 		uint GetMeshCount()const noexcept
 		{
 			uint sum = 0;
-			const std::vector<JUserPtr<JComponent>>& rVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
+			const std::vector<JUserPtr<JComponent>>& rVec = componentCash[ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>()];
 			for (const auto& data : rVec)
 				sum += static_cast<JRenderItem*>(data.Get())->GetSubmeshCount();
 			return sum;
 		}
-		const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept
+		const std::vector<JUserPtr<JGameObject>>& GetGameObjectCacheVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept
 		{
 			return objectLayer[(int)rLayer][(int)meshType];
 		}
-		const std::vector<JUserPtr<JComponent>>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept
+		const std::vector<JUserPtr<JComponent>>& GetComponentCacheVec(const UniqueIndex index)const noexcept
 		{
-			auto vec = componentCash.find(cType);
-			if (vec == componentCash.end())
-				return emptyVec;
-			else
-				return vec->second;
+			return componentCash[index]; 
+		} 
+		const std::vector<JUserPtr<JComponent>>& GetComponentCacheVec(const JComponent* comp)const noexcept
+		{
+			return componentCash[ConvertUniqueIndex(comp->GetComponentType(), comp->GetSubTypeIndex())];
 		}
-		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept
+		std::vector<JUserPtr<JComponent>> GetComponentVec(const UniqueIndex index)const noexcept
 		{
-			auto vec = componentCash.find(cType);
-			if (vec == componentCash.end())
-				return std::vector<JUserPtr<JComponent>>{};
-			else
-				return vec->second;
+			return componentCash[index];
 		}
 		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
 		{
@@ -180,7 +177,7 @@ namespace JinEngine
 			else
 			{
 				result = Core::JBBox();
-				auto& vec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
+				auto& vec = GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>());
 				for (const auto& data : vec)
 				{
 					JRenderItem* r = static_cast<JRenderItem*>(data.Get());
@@ -210,7 +207,7 @@ namespace JinEngine
 				newOption.commonOption.debugRoot = debugRoot;
 
 			accelerator->SetOctreeOption(layer, newOption);
-			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
+			SetComponentFrameDirty(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>(), 0, SpaceStructureUseCamCond());
 		}
 		void SetBvhOption(const J_ACCELERATOR_LAYER layer, JBvhOption newOption)noexcept
 		{
@@ -223,7 +220,7 @@ namespace JinEngine
 				newOption.commonOption.debugRoot = debugRoot;
 
 			accelerator->SetBvhOption(layer, newOption);
-			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
+			SetComponentFrameDirty(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>(), 0, SpaceStructureUseCamCond());
 		}
 		void SetKdTreeOption(const J_ACCELERATOR_LAYER layer, JKdTreeOption newOption)noexcept
 		{
@@ -236,7 +233,7 @@ namespace JinEngine
 				newOption.commonOption.debugRoot = debugRoot;
 
 			accelerator->SetKdTreeOption(layer, newOption);
-			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
+			SetComponentFrameDirty(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>(), 0, SpaceStructureUseCamCond());
 		}
 		void SetGpuAcceleratorBuildOption(const JGpuAcceleratorOption& option)
 		{
@@ -244,7 +241,7 @@ namespace JinEngine
 				return;
 
 			accelerator->SetGpuAccelerator(option);
-			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
+			SetComponentFrameDirty(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>(), 0, SpaceStructureUseCamCond());
 		}
 		void SetGpuAcceleratorOnlyOpaque()
 		{ 
@@ -253,8 +250,8 @@ namespace JinEngine
 			  
 			JGpuAcceleratorOption buildOption;
 			buildOption.root = root;
-			buildOption.flag = Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_OPAQUE;
-			//Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE
+			buildOption.flag = J_GPU_ACCELERATOR_BUILD_OPTION_OPAQUE;
+			//J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE
 			SetGpuAcceleratorBuildOption(buildOption);
 		}
 	public:
@@ -266,9 +263,9 @@ namespace JinEngine
 		{
 			return sceneTimer != nullptr ? sceneTimer->IsStop() : true;
 		}
-		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept
+		bool HasComponent(const UniqueIndex index)const noexcept
 		{
-			return componentCash.find(cType) != componentCash.end();
+			return componentCash[index].size() > 0;
 		}
 	public:
 		JUserPtr<JGameObject> FindGameObject(const size_t guid)noexcept
@@ -281,7 +278,7 @@ namespace JinEngine
 		}
 		JUserPtr<JCamera> FindFirstSelectedCamera(const bool allowEditorCam) const noexcept
 		{
-			auto& vec = componentCash.find(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)->second;
+			auto& vec = GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>());
 			for (const auto& data : vec)
 			{ 
 				if (!allowEditorCam && data->GetOwner()->IsEditorObject())
@@ -353,7 +350,7 @@ namespace JinEngine
 				sceneTimer = std::make_unique<Core::JGameTimer>();
 				sceneTimer->Start();
 				sceneTimer->Reset();
-				const std::vector<JUserPtr<JComponent>>& cashVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
+				const std::vector<JUserPtr<JComponent>>& cashVec = GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>());
 				const uint compCount = (uint)cashVec.size();
 				for (uint i = 0; i < compCount; ++i)
 					JAnimatorPrivate::AnimationUpdateInterface::OnAnimationUpdate(Core::ConnectChildUserPtr<JAnimator>(cashVec[i]), sceneTimer.get());
@@ -371,7 +368,7 @@ namespace JinEngine
 		}
 		void DeActivateSceneTime()noexcept
 		{
-			const std::vector<JUserPtr<JComponent>>& cashVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
+			const std::vector<JUserPtr<JComponent>>& cashVec = GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>());
 			const uint compCount = (uint)cashVec.size();
 			for (uint i = 0; i < compCount; ++i)
 				JAnimatorPrivate::AnimationUpdateInterface::OffAnimationUpdate(Core::ConnectChildUserPtr<JAnimator>(cashVec[i]));
@@ -414,33 +411,29 @@ namespace JinEngine
 				return false;
 
 			const J_COMPONENT_TYPE compType = component->GetComponentType();
-			auto cashVec = componentCash.find(compType);
-			if (cashVec == componentCash.end())
-			{
-				componentCash.emplace(compType, std::vector<JUserPtr<JComponent>>());
-				cashVec = componentCash.find(compType);
-			}
+			const UniqueIndex uniqueIndex = ConvertUniqueIndex(component->GetComponentType(), component->GetSubTypeIndex());
+			auto& cashVec = componentCash[uniqueIndex];
 
-			const uint compCount = (uint)cashVec->second.size();
+			const uint compCount = (uint)cashVec.size();
 			const size_t guid = component->GetGuid();
 
 			//for sorting	 
 			int insertIndex = -1;
 			for (uint i = 0; i < compCount; ++i)
 			{
-				if (cashVec->second[i]->GetGuid() == guid)
+				if (cashVec[i]->GetGuid() == guid)
 					return false;
 
-				if (comparePtr != nullptr && insertIndex == -1 && comparePtr(component, cashVec->second[i]))
+				if (comparePtr != nullptr && insertIndex == -1 && comparePtr(component, cashVec[i]))
 					insertIndex = i;
 			}
 
 			if (comparePtr == nullptr || insertIndex == -1)
-				cashVec->second.push_back(component);
+				cashVec.push_back(component);
 			else
-				cashVec->second.insert(cashVec->second.begin() + insertIndex, component);
+				cashVec.insert(cashVec.begin() + insertIndex, component);
 
-			if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+			if (compType == J_COMPONENT_TYPE::ENGINE_RENDERITEM)
 			{
 				JUserPtr<JRenderItem> jRItem = Core::ConnectChildUserPtr<JRenderItem>(component);
 				const J_RENDER_LAYER renderLayer = jRItem->GetRenderLayer();
@@ -450,19 +443,17 @@ namespace JinEngine
 				if (accelerator != nullptr)
 					accelerator->AddGameObject(jRItem);
 			} 
-			else if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT && accelerator != nullptr)
+			else if (compType == J_COMPONENT_TYPE::ENGINE_LIGHT && accelerator != nullptr)
 				accelerator->AddGameObject(Core::ConnectChildUserPtr<JLight>(component));
 			return true;
 		}
 		bool DeRegisterComponent(const JUserPtr<JComponent>& component)noexcept
 		{
 			const J_COMPONENT_TYPE compType = component->GetComponentType();
-			auto cashData = componentCash.find(compType);
-			if (cashData == componentCash.end())
-				return false;
+			const UniqueIndex uniqueIndex = ConvertUniqueIndex(component->GetComponentType(), component->GetSubTypeIndex());
+			auto& cashVec = componentCash[uniqueIndex];
 
-			int hitIndex = -1;
-			std::vector<JUserPtr<JComponent>>& cashVec = cashData->second;
+			int hitIndex = -1; 
 			const uint compCount = (uint)cashVec.size();
 			const size_t guid = component->GetGuid();
 			for (uint i = 0; i < compCount; ++i)
@@ -477,7 +468,7 @@ namespace JinEngine
 			if (hitIndex == -1)
 				return false;
 
-			if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+			if (compType == J_COMPONENT_TYPE::ENGINE_RENDERITEM)
 			{
 				JUserPtr<JRenderItem> jRItem = Core::ConnectChildUserPtr<JRenderItem>(component);
 				JUserPtr<JGameObject> jOwner = jRItem->GetOwner();
@@ -501,7 +492,7 @@ namespace JinEngine
 				if (accelerator != nullptr)
 					accelerator->RemoveGameObject(jRItem);
 			} 
-			else if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT && accelerator != nullptr)
+			else if (compType == J_COMPONENT_TYPE::ENGINE_LIGHT && accelerator != nullptr)
 				accelerator->RemoveGameObject(Core::ConnectChildUserPtr<JLight>(component));
 			cashVec.erase(cashVec.begin() + hitIndex); 
 			return true;
@@ -509,28 +500,23 @@ namespace JinEngine
 	public:
 		void SetAllComponentFrameDirty()noexcept
 		{
-			for (auto& data : componentCash)
-				SetComponentFrameDirty(data.first);
+			for(uint i = 0; i < SIZE_OF_ARRAY(componentCash); ++i)
+				SetComponentFrameDirty(i, 0);
 		}
-		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, JUserPtr< JComponent> stComp = nullptr, SetCompCondition condiiton = nullptr)noexcept
+		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, const uint localIndex, JUserPtr<JComponent> stComp = nullptr, SetCompCondition condiiton = nullptr)noexcept
 		{
 			if (!CTypeCommonCall::GetCTypeHint(cType).hasFrameDirty)
 				return;
-
+			 
+			const UniqueIndex uniuqeIndex = ConvertUniqueIndex(cType, localIndex);
 			if (stComp != nullptr)
-				SetComponentFrameDirty(cType, (uint)JCUtil::GetTypeIndex(GetComponentCashVec(cType), stComp->GetGuid()), condiiton);
+				SetComponentFrameDirty(uniuqeIndex, (uint)JCUtil::GetTypeIndex(GetComponentCacheVec(uniuqeIndex), stComp->GetGuid()), condiiton);
 			else
-				SetComponentFrameDirty(cType, (uint)0, condiiton);
+				SetComponentFrameDirty(uniuqeIndex, (uint)0, condiiton);
 		}
-		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, const uint stIndex, SetCompCondition condiiton = nullptr)noexcept
-		{
-			if (!CTypeCommonCall::GetCTypeHint(cType).hasFrameDirty)
-				return;
-			auto setFrameDirtyCallable = CTypePrivateCall::GetSetFrameDirtyCallable(cType);
-			if (setFrameDirtyCallable == nullptr)
-				return;
-
-			const std::vector<JUserPtr<JComponent>>& cashVec = GetComponentCashVec(cType);
+		void SetComponentFrameDirty(const UniqueIndex typeIndex, const uint stIndex, SetCompCondition condiiton = nullptr)noexcept
+		{ 
+			const std::vector<JUserPtr<JComponent>>& cashVec = GetComponentCacheVec(typeIndex);
 			const uint compCount = (uint)cashVec.size();
 
 			if (condiiton != nullptr)
@@ -538,13 +524,25 @@ namespace JinEngine
 				for (uint i = stIndex; i < compCount; ++i)
 				{
 					if (condiiton(cashVec[i]))
-						(*setFrameDirtyCallable)(nullptr, cashVec[i].Get());
+					{
+						auto fUser = cashVec[i]->ModuleManagedData()->GetFrameUpdateUserInterface();
+						if (fUser == nullptr)
+							continue;
+
+						fUser->SetFrameDirty();
+					} 
 				}
 			}
 			else
 			{
 				for (uint i = stIndex; i < compCount; ++i)
-					(*setFrameDirtyCallable)(nullptr, cashVec[i].Get());
+				{
+					auto fUser = cashVec[i]->ModuleManagedData()->GetFrameUpdateUserInterface();
+					if (fUser == nullptr)
+						continue;
+
+					fUser->SetFrameDirty();
+				}
 			}
 		}
 	public:
@@ -553,12 +551,12 @@ namespace JinEngine
 			return useCaseType == J_SCENE_USE_CASE_TYPE::MAIN;
 		}
 	public:
-		void ViewCulling(const Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& frustum)
+		void ViewCulling(JCullingUserInterface*cullUser, const DirectX::BoundingFrustum& frustum)
 		{
 			JAcceleratorCullingInfo info(cullUser, frustum);
 			accelerator->Culling(info);
 		}
-		void ViewCulling(const Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingBox& bbox)
+		void ViewCulling(JCullingUserInterface*cullUser, const DirectX::BoundingBox& bbox)
 		{
 			JAcceleratorCullingInfo info(cullUser, bbox);
 			accelerator->Culling(info);
@@ -619,25 +617,27 @@ namespace JinEngine
 		}
 	public: 
 		void Activate()
-		{			
+		{			 
 			SceneMangerAccess::RegisterScene(thisPointer);
-			RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, this, thisPointer->GetGuid());
+			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, thisPointer->GetGuid()); 
+			if (accelerator != nullptr)
+				accelerator->Activate(graphicData);
+
 			StuffResource();
 			JGameObjectPrivate::ActivateInterface::Activate(root);
 			JGameObjectPrivate::ActivateInterface::Activate(debugRoot);
 			SetAllComponentFrameDirty();
-			if (accelerator != nullptr)
-				accelerator->Activate(); 
 		}
 		void DeActivate()
-		{  
-			if (accelerator != nullptr)
-				accelerator->DeAcitvate();
+		{  ;
 			JGameObjectPrivate::ActivateInterface::DeActivate(root);
 			JGameObjectPrivate::ActivateInterface::DeActivate(debugRoot);
 			ClearResource();
-			DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, this);
-			SceneMangerAccess::DeRegisterScene(thisPointer); 
+
+			if (accelerator != nullptr)
+				accelerator->DeAcitvate();
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS);
+			SceneMangerAccess::DeRegisterScene(thisPointer);  
 		}
 	public:
 		bool ReadAssetData()
@@ -683,12 +683,10 @@ namespace JinEngine
 		{
 			if (thisPointer->IsValid())
 			{
-				BeginForcedDestroy(root.Get());
-				root = nullptr;
+				BeginForcedDestroy(root.Release()); 
 
 				if (debugRoot != nullptr)
-					BeginForcedDestroy(debugRoot.Get());
-				debugRoot = nullptr;
+					BeginForcedDestroy(debugRoot.Release()); 
 
 				for (int i = 0; i < (int)J_RENDER_LAYER::COUNT; ++i)
 				{
@@ -698,7 +696,9 @@ namespace JinEngine
 						objectLayer[i][j].shrink_to_fit();
 					}
 				}
-				componentCash.clear();
+				for(uint i = 0; i < SIZE_OF_ARRAY(componentCash); ++i)
+					componentCash[i].clear();
+
 				allObjects.clear();
 				allObjects.shrink_to_fit();
 				thisPointer->SetValid(false);
@@ -706,9 +706,7 @@ namespace JinEngine
 		}
 	public:
 		void NotifyReAlloc()
-		{
-			ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS, this);
-			RegisterInterfacePointer();
+		{  
 		}
 	public:
 		void Initialize()
@@ -723,11 +721,6 @@ namespace JinEngine
 		void RegisterThisPointer(JScene* scene)
 		{
 			thisPointer = Core::GetWeakPtr(scene);
-		}
-		void RegisterInterfacePointer()
-		{
-			if (accelerator != nullptr)
-				accelerator->RegisterInterfacePointer();
 		}
 		static void RegisterTypeData()
 		{ 
@@ -753,7 +746,7 @@ namespace JinEngine
 			RegisterRTypeInfo(JScene::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JScene::StaticTypeInfo(), sPrivate);
 
-			IMPL_REALLOC_BIND(JScene::JSceneImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -786,9 +779,13 @@ namespace JinEngine
 	{
 		return sPrivate;
 	}
-	const Graphic::JGpuAcceleratorUserInterface JScene::GpuAcceleratorUserInterface()const noexcept
+	JGraphicModuleManagedDataFrame* JScene::ModuleManagedData()const noexcept
 	{
-		return impl->accelerator != nullptr ? impl->accelerator->GpuAcceleratorUserInterface() : Graphic::JGpuAcceleratorUserInterface{};
+		return impl->graphicData.Get();
+	}
+	uint JScene::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_RESOURCE_TYPE JScene::GetResourceType()const noexcept
 	{
@@ -830,9 +827,9 @@ namespace JinEngine
 			sum += (uint)impl->objectLayer[(uint)layer][i].size();
 		return sum;
 	}
-	uint JScene::GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept
+	uint JScene::GetComponetCount(const UniqueIndex index)const noexcept
 	{
-		return (uint)impl->GetComponentCashVec(cType).size();
+		return (uint)impl->GetComponentCacheVec(index).size();
 	}
 	uint JScene::GetMeshCount()const noexcept
 	{
@@ -850,23 +847,21 @@ namespace JinEngine
 	{
 		return impl->objectLayer[(uint)layer][(uint)mesh];
 	}
-	std::vector<JUserPtr<JComponent>> JScene::GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept
+	const std::vector<JUserPtr<JGameObject>>& JScene::GetGameObjectCacheVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
 	{
-		return impl->GetComponentVec(cType);
+		return impl->GetGameObjectCacheVec(rLayer, meshType);
 	}
-	JUserPtr<JLight> JScene::GetFirstDirectionalLight()const noexcept
+	std::vector<JUserPtr<JComponent>> JScene::GetComponentVec(const UniqueIndex index)const noexcept
 	{
-		const std::vector<JUserPtr<JComponent>>& vec = impl->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
-		for (const auto& data : vec)
-		{
-			if (static_cast<JLight*>(data.Get())->GetLightType() == J_LIGHT_TYPE::DIRECTIONAL)
-				return Core::ConnectChildUserPtr<JLight>(data);
-		}
-		return nullptr;
+		return impl->GetComponentVec(index);
 	}
-	JUserPtr<JComponent> JScene::GetFirstComponent(const J_COMPONENT_TYPE type)const noexcept
+	const std::vector<JUserPtr<JComponent>>& JScene::GetComponentCacheVec(const UniqueIndex index)noexcept
 	{
-		const std::vector<JUserPtr<JComponent>>& vec = impl->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+		return impl->GetComponentCacheVec(index);
+	} 
+	JUserPtr<JComponent> JScene::GetFirstComponent(const UniqueIndex index)const noexcept
+	{
+		const std::vector<JUserPtr<JComponent>>& vec = impl->GetComponentCacheVec(index);
 		return vec.size() > 0 ? vec[0] : nullptr;
 	}
 	JOctreeOption JScene::GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
@@ -921,9 +916,9 @@ namespace JinEngine
 	{
 		return impl->accelerator != nullptr;
 	}
-	bool JScene::HasComponent(const J_COMPONENT_TYPE cType)const noexcept
+	bool JScene::HasComponent(const UniqueIndex index)const noexcept
 	{
-		return impl->HasComponent(cType);
+		return impl->HasComponent(index);
 	}
 	bool JScene::HasCanCullingAccelerator(const J_ACCELERATOR_LAYER layer)const noexcept
 	{
@@ -972,8 +967,31 @@ namespace JinEngine
 	{
 		impl->AlignedObjectF(info, aligned, count);
 	}
+	void JScene::ViewCulling(const JUserPtr<JComponent>& comp)noexcept
+	{
+		const J_COMPONENT_TYPE compType = comp->GetComponentType();
+		if (compType == J_COMPONENT_TYPE::ENGINE_CAMERA)
+		{
+			JCamera* cam = static_cast<JCamera*>(comp.Get());
+			JAcceleratorCullingInfo info(cam->ModuleManagedData()->GetCullingUserInterface(), cam->GetBoundingFrustum());
+
+			ViewCulling(info);
+		}
+		else if (compType == J_COMPONENT_TYPE::ENGINE_LIGHT)
+		{
+			JLight* lit = static_cast<JLight*>(comp.Get());
+			JAcceleratorCullingInfo info(lit->ModuleManagedData()->GetCullingUserInterface(), lit->GetBBox());
+
+			ViewCulling(info);
+		}
+	}
+	void JScene::ViewCulling(JAcceleratorCullingInfo& info)noexcept
+	{
+		impl->ViewCulling(info);
+	}
 	void JScene::DoActivate() noexcept
 	{
+		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JResourceObject::DoActivate();
 		impl->Activate();
 	}
@@ -981,6 +999,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JResourceObject::DoDeActivate();
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);;
 	}
 	JScene::JScene(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JSceneImpl>(initData, this))
@@ -993,15 +1012,11 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JScenePrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JScenePrivate::AssetDataIOInterface;
-	using CashInterface = JScenePrivate::CashInterface;
 	using TimeInterface = JScenePrivate::TimeInterface;
 	using OwnTypeInterface = JScenePrivate::OwnTypeInterface;
 	using CompSettingInterface = JScenePrivate::CompSettingInterface;
 	using CompRegisterInterface = JScenePrivate::CompRegisterInterface;
-	using CompFrameInterface = JScenePrivate::CompFrameInterface;
-	using CullingInterface = JScenePrivate::CullingInterface;
-	using DebugInterface = JScenePrivate::DebugInterface;
-	using FrameIndexInterface = JScenePrivate::FrameIndexInterface;
+	using DebugInterface = JScenePrivate::DebugInterface; 
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -1011,8 +1026,7 @@ namespace JinEngine
 	{
 		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JScene* scene = static_cast<JScene*>(createdPtr);
-		scene->impl->RegisterThisPointer(scene);
-		scene->impl->RegisterInterfacePointer();
+		scene->impl->RegisterThisPointer(scene); 
 		//새로생성된 scene에 경우 기존에 파일을 가져오는게 불가능하므로 request default object creation
 		scene->impl->requestInitialize = !scene->HasFile(); 
 	}
@@ -1184,23 +1198,6 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
-	{
-		return scene->impl->GetGameObjectCashVec(rLayer, meshType);
-	}
-	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
-	{
-		return scene->impl->GetGameObjectCashVec(rLayer, meshType);
-	}
-	const std::vector<JUserPtr<JComponent>>& CashInterface::GetComponentCashVec(JScene* scene, const J_COMPONENT_TYPE cType)noexcept
-	{
-		return scene->impl->GetComponentCashVec(cType);
-	}
-	const std::vector<JUserPtr<JComponent>>& CashInterface::GetComponentCashVec(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType)noexcept
-	{
-		return scene->impl->GetComponentCashVec(cType);
-	}
-
 	void TimeInterface::ActivateSceneTime(const JUserPtr<JScene>& scene)noexcept
 	{
 		scene->impl->ActivateSceneTime();
@@ -1241,49 +1238,12 @@ namespace JinEngine
 		DeRegisterComponent(comp);
 		return RegisterComponent(comp, comparePtr);
 	}
-
-	void CompFrameInterface::SetAllComponentFrameDirty(const JUserPtr<JScene>& scene)noexcept
-	{
-		scene->impl->SetAllComponentFrameDirty();
-	}
-	void CompFrameInterface::SetComponentFrameDirty(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType, JUserPtr<JComponent> stComp, SetCompCondition condiiton)noexcept
-	{
-		scene->impl->SetComponentFrameDirty(cType, stComp, condiiton);
-	}
- 
-	void CullingInterface::ViewCulling(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& comp)noexcept
-	{
-		const J_COMPONENT_TYPE compType = comp->GetComponentType();
-		if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-		{ 
-			JCamera* cam = static_cast<JCamera*>(comp.Get());
-			JAcceleratorCullingInfo info(cam->CullingUserInterface(), cam->GetBoundingFrustum());
-
-			ViewCulling(scene, info); 
-		}
-		else if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-		{
-			JLight* lit = static_cast<JLight*>(comp.Get()); 
-			JAcceleratorCullingInfo info(lit->CullingUserInterface(), lit->GetBBox());
-
-			ViewCulling(scene, info);
-		}
-	}
-	void CullingInterface::ViewCulling(const JUserPtr<JScene>& scene, JAcceleratorCullingInfo& info)noexcept
-	{
-		scene->impl->ViewCulling(info);
-	}
  
 	void DebugInterface::BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept
 	{
 		scene->impl->BuildDebugTree(type, layer, tree);
 	}
-
-	uint FrameIndexInterface::GetFrameIndex(JScene* scene)
-	{
-		return scene->impl->GetFrameIndex();
-	}
-
+	 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JScenePrivate::GetCreateInstanceInterface()const noexcept
 	{
 		static CreateInstanceInterface pI;

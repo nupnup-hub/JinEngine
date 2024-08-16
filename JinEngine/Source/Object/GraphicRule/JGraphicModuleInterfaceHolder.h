@@ -33,11 +33,11 @@ namespace JinEngine
 		class JGraphicModuleInterfaceHolder
 		{
 		private:
-			std::unique_ptr<JGraphicModuleInterface> moduleInterface;
+			JGraphicModuleInterface* moduleInterface;
 		public:
 			JGraphicModuleInterface* Get();
 		public:
-			void Set(std::unique_ptr<JGraphicModuleInterface>&& newModuleInterface);
+			void Set(JGraphicModuleInterface* newModuleInterface);
 		};
 
 	}

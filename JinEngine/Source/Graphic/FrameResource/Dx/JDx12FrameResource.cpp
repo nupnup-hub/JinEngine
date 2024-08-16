@@ -67,7 +67,7 @@ namespace JinEngine::Graphic
 
 	JDx12FrameResource::~JDx12FrameResource()
 	{
-		Clear();
+		ClearResource();
 	}
 	void JDx12FrameResource::Initialize(JGraphicDevice* device)
 	{
@@ -195,32 +195,8 @@ namespace JinEngine::Graphic
 	}
 	void JDx12FrameResource::Clear()
 	{
-		JDx12FrameResource::Clear();
-
-		for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
-			bufferVec[i] = nullptr;
-
-		for (uint i = 0; i < (uint)J_MAIN_THREAD_ORDER::COUNT; ++i)
-		{
-			cmdListAlloc[i] = nullptr;
-			cmdList[i] = nullptr;
-		}
-
-		for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
-		{
-			for (uint j = 0; j < Constants::gMaxFrameThread; ++j)
-			{
-				treadCmdListAlloc[i][j] = nullptr;
-				treadCmdList[i][j] = nullptr;
-				threadCmdBatch[i][j] = nullptr;
-			}
-		}
-		for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
-		{
-			for (uint j = 0; j < framePerThread; ++j)
-				CloseHandle(threadTaskHandle[i][j]);
-		}
-		framePerThread = 0;
+		ClearResource();		
+		JFrameResource::Clear();
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12FrameResource::GetDeviceType()const noexcept
 	{
@@ -266,9 +242,9 @@ namespace JinEngine::Graphic
 	{
 		fence = value;
 	}
-	void JDx12FrameResource::MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint index, const uint range, const uint moveCount)
+	void JDx12FrameResource::MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint index,  const uint moveCount)
 	{
-		bufferVec[(uint)type]->MoveData(index, range, moveCount);
+		bufferVec[(uint)type]->MoveData(index, moveCount);
 	}
 	void JDx12FrameResource::ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)
 	{
@@ -306,4 +282,31 @@ namespace JinEngine::Graphic
 			}
 		}
 	} 
+	void JDx12FrameResource::ClearResource()
+	{
+		for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
+			bufferVec[i] = nullptr;
+
+		for (uint i = 0; i < (uint)J_MAIN_THREAD_ORDER::COUNT; ++i)
+		{
+			cmdListAlloc[i] = nullptr;
+			cmdList[i] = nullptr;
+		}
+
+		for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
+		{
+			for (uint j = 0; j < Constants::gMaxFrameThread; ++j)
+			{
+				treadCmdListAlloc[i][j] = nullptr;
+				treadCmdList[i][j] = nullptr;
+				threadCmdBatch[i][j] = nullptr;
+			}
+		}
+		for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
+		{
+			for (uint j = 0; j < framePerThread; ++j)
+				CloseHandle(threadTaskHandle[i][j]);
+		}
+		framePerThread = 0;
+	}
 }

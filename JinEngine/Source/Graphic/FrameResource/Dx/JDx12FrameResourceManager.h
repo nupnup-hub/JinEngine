@@ -28,22 +28,46 @@ SOFTWARE.
 #include"JDx12FrameUpdateInfo.h"
 #include"../JFrameResourceManager.h"
 
+
 namespace JinEngine
 {
+	class JTexture;
 	namespace Graphic
 	{
 		class JDx12FrameResourceManager final : public JFrameResourceManager
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JDx12FrameResourceManager)
+		public:
+			struct CacheData
+			{
+			public:
+				//used by pass
+				//initialize first update constants buffer after initialize graphic class 
+				//always exist until enigne end
+				JUserPtr<JTexture> missing;
+				JUserPtr<JTexture> bluseNoise;
+				JUserPtr<JTexture> ltcAmp;
+				JUserPtr<JTexture> ltcMat;
+			public:
+				void Initialize();
+				void Clear();
+			public:
+				void Update();
+			};
 		private: 
 			using InfoVec = std::vector<JOwnerPtr<JDx12FrameUpdateInfo>>;
 			using AreaInfoVec = std::vector<std::unique_ptr<JFrameUpdateAreaInfo>>;
-		private:
+			//test
+		public:
 			InfoVec updateInfoVec[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
 			AreaInfoVec areaInfoVec[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
 		private:
 			JDx12FrameResource resource[Constants::gNumFrameResources];
 			int currResourceIndex = 0;  
+		private:
+			CacheData cacheData;
+		public:
+			~JDx12FrameResourceManager();
 		public: 
 			void Initialize(JGraphicDevice* device) final;
 			void Clear() final;
@@ -53,34 +77,38 @@ namespace JinEngine
 			JDx12FrameResource* GetCurrentDxFrameResource() noexcept;
 			JFrameResource* GetFrameResource(const uint index) noexcept final;
 			uint GetCurrentFrameIndex() const noexcept final;
+			uint GetNextFrameIndex()const noexcept  final;
 			uint GetTotalRegistedCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final;
 			uint GetTotalFrameCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final;
 			uint GetAreaRegistedCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept final;
 			//count 0 ~ areaStart
 			uint GetAreaRegistedOffset(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept final;
+			uint GetFrameResourceCapacity(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final;
 		private:
 			const JFrameUpdateAreaInfo* GetAreaInfo(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept;
 			int GetAreaVecIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept;
 			int GetAreaStIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept; 
-			int GetAreaEdIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept;
 			int GetArrayIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, JFrameUpdateInfo* ptr)const noexcept;
 		public:
 			void SetNextFrameResource();
 		public:
 			//areaGuid는 scene별 혹은 다른 object별 frameData를 구분해 정렬시키기 위해 사용된다
 			JUserPtr<JFrameUpdateInfo> Register(const JFrameUploadDataCreationDesc& desc) final;
-			void DeRegister(const JUserPtr<JFrameUpdateInfo>& info) final;  
+			bool DeRegister(JFrameUpdateInfo* info) final;
 		private:
 			//area count == 0 일시
-			bool PushBack(const JFrameUploadDataCreationDesc& desc);
-			bool Insert(const JFrameUploadDataCreationDesc& desc, const int areaIndex);
-			bool Pop(const JUserPtr<JFrameUpdateInfo>& info); 
+			JUserPtr<JFrameUpdateInfo> PushBack(const JFrameUploadDataCreationDesc& desc);
+			JUserPtr<JFrameUpdateInfo> Insert(const JFrameUploadDataCreationDesc& desc, const int areaIndex);
+			bool Pop(JFrameUpdateInfo* info);
 		private:
-			JOwnerPtr<JDx12FrameUpdateInfo> CreateInfo(const JFrameUploadDataCreationDesc& desc, JFrameUpdateAreaInfo* areaInfo)const noexcept;
+			JOwnerPtr<JDx12FrameUpdateInfo> CreateInfo(const JFrameUploadDataCreationDesc& desc, JFrameUpdateAreaInfo* areaInfo);
 		public:
 			void BeginUpdate()final;
 			void Update(JFrameUpdateDataSet& set)final;
 			void EndUpdate()final;
+		private:
+			void BuildResource(JGraphicDevice* device);
+			void ClearResource();
 		public:
 			static void RegisterTypeData();
 		};

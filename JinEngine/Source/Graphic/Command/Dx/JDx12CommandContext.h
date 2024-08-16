@@ -102,16 +102,16 @@ namespace JinEngine
 		public:
 			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceInfo* info);
 			JDx12GraphicResourceComputeSet ComputeSet(const JUserPtr<JGraphicResourceInfo>& info);
-			JDx12GraphicResourceComputeSet ComputeSet(const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType);
-			JDx12GraphicResourceComputeSet ComputeSet(const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
+			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceUserInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType);
+			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceUserInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
 			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceInfo* info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 			JDx12GraphicResourceComputeSet ComputeSet(const JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 		public:
 			JDx12CullingResourceComputeSet ComputeSet(const JUserPtr<JCullingInfo>& info);
-			JDx12CullingResourceComputeSet ComputeSet(const JCullingUserInterface& cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget);
+			JDx12CullingResourceComputeSet ComputeSet(JCullingUserInterface* cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget);
 		public:
 			JDx12AcceleratorResourceComputeSet ComputeSet(const JUserPtr<JGpuAcceleratorInfo>& info);
-			JDx12AcceleratorResourceComputeSet ComputeSet(const JGpuAcceleratorUserInterface& user);
+			JDx12AcceleratorResourceComputeSet ComputeSet(JGpuAcceleratorUserInterface* user);
 		public:
 			//Common 
 			void Transition(JDx12GraphicResourceHolder* holder, const D3D12_RESOURCE_STATES newState, const bool flushImmediate = false);
@@ -171,10 +171,13 @@ namespace JinEngine
 			void SetGraphicsRootDescriptorTable(const uint rootIndex, const uint index);
 			void SetGraphicsRootDescriptorTable(const uint rootIndex, const CD3DX12_GPU_DESCRIPTOR_HANDLE handle);
 			void SetGraphicsRootShaderResourceView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetGraphicsRootShaderResourceView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);
 			void SetGraphicsRootShaderResourceView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset = 0);
 			void SetGraphicsRootShaderResourceView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			void SetGraphicsRootUnorderedAccessView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetGraphicsRootUnorderedAccessView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);
 			void SetGraphicsRootConstantBufferView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset);
+			void SetGraphicsRootConstantBufferView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset= 0);
 			void SetGraphicsRootConstantBufferView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset);
 			void SetGraphicsRootConstantBufferView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			template<typename T>
@@ -222,12 +225,15 @@ namespace JinEngine
 			void SetComputeRootDescriptorTable(const uint rootIndex, const uint index);
 			void SetComputeRootDescriptorTable(const uint rootIndex, const CD3DX12_GPU_DESCRIPTOR_HANDLE handle);
 			void SetComputeRootShaderResourceView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetComputeRootShaderResourceView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);			
 			void SetComputeRootShaderResourceView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset = 0);
 			void SetComputeRootShaderResourceView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			void SetComputeRootUnorderedAccessView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetComputeRootUnorderedAccessView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);		
 			void SetComputeRootUnorderedAccessView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset = 0);
 			void SetComputeRootUnorderedAccessView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			void SetComputeRootConstantBufferView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset);
+			void SetComputeRootConstantBufferView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);			
 			void SetComputeRootConstantBufferView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset);
 			void SetComputeRootConstantBufferView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			template<typename T>

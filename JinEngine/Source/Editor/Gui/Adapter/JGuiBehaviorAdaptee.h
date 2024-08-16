@@ -41,11 +41,7 @@ SOFTWARE.
 #include"../../../Graphic/Gui/JGuiData.h"
 #include<set>
 namespace JinEngine
-{
-	namespace Graphic
-	{
-		class JGraphicResourceUserAccess;
-	}
+{ 
 	namespace Editor
 	{
 		class JDockUpdateHelper;

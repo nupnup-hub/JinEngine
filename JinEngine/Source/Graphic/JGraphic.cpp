@@ -35,6 +35,7 @@ SOFTWARE.
 #include"GraphicResource/JGraphicResourceShareData.h"
 #include"Device/JGraphicDevice.h"
 #include"DataSet/JGraphicSubclassDataSet.h"
+#include"DataSet/JGraphicObjectDataSetManager.h"
 #include"Scene/JSceneDraw.h"
 #include"ShadowMap/JShadowMap.h"
 #include"ShadowMap/JCsmManager.h"
@@ -64,9 +65,9 @@ SOFTWARE.
 #include"Raytracing/Light/Global/JRaytracingGI.h"
 #include"Raytracing/Occlusion/JRaytracingAmbientOcclusion.h" 
 #include"Raytracing/Denoiser/JRaytracingDenoiser.h" 
- 
+
 #include"FrameResource/JFrameResource.h"  
-#include"FrameResource/JFrameIndexAccess.h"
+#include"FrameResource/JFrameResourceManager.h"   
 
 #include"Gui/JGuiBackendInterface.h"
 #include"Gui/JGuiBackendDataAdapter.h"
@@ -85,6 +86,7 @@ SOFTWARE.
 #include"../Core/Unit/JByteUnit.h"	
 #include"../Core/Utility/JCommonUtility.h"  
 #include"../Core/Log/JLogMacro.h" 
+#include"../Core/Math/JMathHelper.h"
 
 #include"../Object/GameObject/JGameObject.h"
 #include"../Object/Component/RenderItem/JRenderItem.h"
@@ -121,6 +123,9 @@ SOFTWARE.
 #include"../Object/Resource/Scene/Preview/JPreviewScene.h"
 #include"../Object/Resource/Texture/JTexture.h" 
 
+#include"../Object/GraphicRule/JGraphicModuleInterface.h"
+#include"../Object/GraphicRule/JGraphicModuleInterfaceHolder.h"
+
 #include"../Window/JWindow.h"
 #include"../Window/JWindowPrivate.h"
 
@@ -150,18 +155,18 @@ namespace JinEngine
 		{
 			graphic->Initialize(device);
 			device->CreateRefResourceObject(JGraphicDeviceInitSet(graphic.get()));
-
-			for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-				frame[i]->Initialize(device);
-			currFrame = frame[info.frame.currIndex].get();
+		
+			culling->Initialize(device);
+			csm->Initialize(device);
+			accelerator->Initialize(device);
+			frame->Initialize(device);  
+			objectData->Initialize(device);
 		}
 		void JResourceManageSubclassSet::Clear()
-		{
-			currFrame = nullptr;
-			for (int i = 0; i < Constants::gNumFrameResources; ++i)
-				frame[i] = nullptr;
-
+		{ 
 			shareData = nullptr;
+			objectData = nullptr;
+			frame = nullptr;
 			accelerator = nullptr;
 			csm = nullptr;
 			culling = nullptr;
@@ -174,9 +179,8 @@ namespace JinEngine
 			outV.push_back(culling.get());
 			outV.push_back(csm.get());
 			outV.push_back(accelerator.get());
-			outV.push_back(shareData.get());
-			for (int i = 0; i < Constants::gNumFrameResources; ++i)
-				outV.push_back(frame[i].get());
+			outV.push_back(frame.get());
+			outV.push_back(shareData.get()); 
 		}
 		void JDrawingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
 		{
@@ -281,14 +285,6 @@ namespace JinEngine
 			outV.push_back(denoiser.get());
 		}
 		 
-		template<size_t ...Is>
-		static void StuffGetElementLam(std::unordered_map<J_FRAME_RESOURCE_UPLOAD_TYPE, JUpdateHelper::GetElementCountT::Ptr>& uGetCountFunc,
-			std::index_sequence<Is...>)
-		{ 
-			using Type = J_FRAME_RESOURCE_UPLOAD_TYPE;
-			((uGetCountFunc.emplace((Type)Is, []() {return JFrameUpdateData::GetTotalFrameCount((Type)Is); })), ...);
-		}
-
 		namespace
 		{
 			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface;
@@ -343,6 +339,8 @@ namespace JinEngine
 				}
 			}
 		}
+
+
 #pragma region Impl
 		class JGraphic::JGraphicImpl : public WindowEventListener, public GraphicEventManager
 		{
@@ -359,12 +357,12 @@ namespace JinEngine
 			JUpdateHelper updateHelper;
 			//전체 opaque object 만큼 할당된 object vec
 			//hard ware occlusion이나 object align이 필요할때 결과를 담을 vector로써 사용된다.
-			JGameObjectBuffer alignedObject; 
-			JFrameIndexAccess frameAccess;
+			JGameObjectBuffer alignedObject;
 		private:
 			std::unique_ptr<JGraphicAdapter> adapter;
+		public:
 			std::unique_ptr<JGraphicDevice> device;
-		private:
+		public:
 			JResourceManageSubclassSet resourceManage;
 			JDrawingSubclassSet drawing;
 			JCullingSubclassSet culling;
@@ -390,7 +388,7 @@ namespace JinEngine
 				guid(guid), thisGraphic(thisGraphic)
 			{
 				IntializeGraphicInfo();
-				InitializeGameObjectBuffer(); 
+				InitializeGameObjectBuffer();
 				workerFunctor = std::make_unique<WorkerThreadF::Functor>(&JGraphicImpl::WorkerThread, this);
 			}
 			~JGraphicImpl()
@@ -453,14 +451,14 @@ namespace JinEngine
 				info = newInfo;
 				auto notifySet = adapter->CreateInfoChangedSet(option.deviceType, preInfo, *drawRefSet);
 				if (isResourceDirty)
-				{ 
+				{
 					notifySet->changedPart = JGraphicInfo::TYPE::RESOURCE;
 					for (const auto& data : infoChangedListener[(uint)JGraphicInfo::TYPE::RESOURCE])
-						data->NotifyGraphicInfoChanged(*notifySet); 
+						data->NotifyGraphicInfoChanged(*notifySet);
 				}
 
 				if (isFrameDirty)
-				{ 
+				{
 					notifySet->changedPart = JGraphicInfo::TYPE::FRAME;
 					for (const auto& data : infoChangedListener[(uint)JGraphicInfo::TYPE::FRAME])
 						data->NotifyGraphicInfoChanged(*notifySet);
@@ -650,94 +648,9 @@ namespace JinEngine
 					option.debugging.requestRecompileRtDenoiseShader = false;
 #endif
 			}
-			bool SetTextureDetail(const JUserPtr<JGraphicResourceInfo>& srcInfo, const JConvertColorDesc& convertDesc)
+			bool SetCustomMipmap(const JUserPtr<JGraphicResourceInfo>& srcInfo, JTextureCreationDesc& creationDesc)
 			{
-				if (srcInfo == nullptr)
-					return false;
-
-				JUserPtr<JGraphicResourceInfo> intermediate00 = nullptr;
-				auto rType = srcInfo->GetGraphicResourceType();
-				if (rType != J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
-					return false;
-
-				auto resourceSize = srcInfo->GetResourceSize();
-				//추가로 custom mipmap이 필요한 J_GRAPHIC_RESOURCE_TYPE이 있을경우 수정필요.				 
-				JGraphicResourceCreationDesc cDesc;
-				cDesc.width = resourceSize.x / 4;
-				cDesc.height = resourceSize.y / 4;
-				cDesc.textureDesc = std::make_unique<JTextureCreationDesc>();
-				cDesc.textureDesc->mipMapDesc.type = J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
-				cDesc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
-				cDesc.bindDesc.useEngineDefinedBindType = false;
-				cDesc.formatHint = std::make_unique<JGraphicFormatHint>();
-				cDesc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32G32B32A32_FLOAT;
-				intermediate00 = resourceManage.graphic->CreateResource(device.get(), cDesc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
-
-				JGraphicConvetColorSettingSet convertSet(srcInfo.Get(), intermediate00.Get(), convertDesc);
-				if (!adapter->BeginConvertColorTask(option.deviceType, *drawRefSet, convertSet))
-				{
-					adapter->EndConvertColorTask(option.deviceType, *drawRefSet);
-					return false;
-				}
-
-				imageProcessing.convertColor->ApplyConvertColor(convertSet.dataSet.get());
-				adapter->EndConvertColorTask(option.deviceType, *drawRefSet);
-
-				device->FlushCommandQueue();
-				device->StartPublicCommand();
-				resourceManage.graphic->CopyResource(device.get(), intermediate00, srcInfo);
-				device->EndPublicCommand();
-				device->FlushCommandQueue();
-
-				resourceManage.graphic->DestroyGraphicTextureResource(device.get(), intermediate00.Release());
-				return true;
-			}
-		public:
-			bool IsRaytracingSupported()const noexcept
-			{
-				return device->IsRaytracingSupported();
-			}
-			bool CanBuildGpuAccelerator()const noexcept
-			{
-				return device->CanBuildGpuAccelerator();
-			}
-		private:
-			bool IsEntryUpdateLoop()
-			{
-				return JApplicationEngine::GetApplicationSubState() == J_APPLICATION_SUB_STATE::UPDATE_LOOP;
-			}
-		private:
-			void AddInnerEvent(std::unique_ptr<Core::JBindHandleBase>&& b)
-			{
-				innerEvent.push_back(std::move(b));
-			}
-		public:
-			JUserPtr<JGraphicResourceInfo> CreateResource(const JGraphicResourceCreationDesc& createDesc, const J_GRAPHIC_RESOURCE_TYPE rType)
-			{
-				auto userPtr = resourceManage.graphic->CreateResource(device.get(), createDesc, rType);
-				if (userPtr == nullptr)
-					return userPtr;
-
-				if (rType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || rType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
-				{
-					if (!createDesc.textureDesc->UseMipmap())
-						userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::NONE);
-					else if (userPtr != nullptr && createDesc.textureDesc->mipMapDesc.type != J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT)
-					{
-						if (!CreateCustomMipmap(userPtr, *createDesc.textureDesc))
-							userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT);
-					}
-				}
-				resourceManage.shareData->NotifyGraphicResourceCreation(device.get(), resourceManage.graphic.get(), userPtr.Get());
-				return userPtr;
-			}
-			bool CreateOption(JUserPtr<JGraphicResourceInfo>& gInfo, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
-			{
-				return resourceManage.graphic->CreateOption(device.get(), gInfo, opType);
-			}
-			bool CreateCustomMipmap(const JUserPtr<JGraphicResourceInfo>& srcInfo, JTextureCreationDesc& createDesc)
-			{
-				if (srcInfo == nullptr || createDesc.mipMapDesc.type == J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT || createDesc.mipMapDesc.type == J_GRAPHIC_MIP_MAP_TYPE::NONE)
+				if (srcInfo == nullptr || creationDesc.mipMapDesc.type == J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT || creationDesc.mipMapDesc.type == J_GRAPHIC_MIP_MAP_TYPE::NONE)
 					return false;
 
 				JUserPtr<JGraphicResourceInfo> intermediate00 = nullptr;
@@ -747,8 +660,9 @@ namespace JinEngine
 					return false;
 
 				auto resourceSize = srcInfo->GetResourceSize();
-				//추가로 custom mipmap이 필요한 J_GRAPHIC_RESOURCE_TYPE이 있을경우 수정필요.				 
-				JGraphicResourceCreationDesc cDesc(std::make_unique<JTextureCreationDesc>(createDesc));
+				//추가로 custom mipmap이 필요한 J_GRAPHIC_RESOURCE_TYPE이 있을경우 수정필요.	
+				const JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON, J_GRAPHIC_TASK_TYPE::UNKNOWN);
+				JGraphicResourceCreationDesc cDesc(typeSet, std::make_unique<JTextureCreationDesc>(creationDesc));
 				cDesc.width = resourceSize.x;
 				cDesc.height = resourceSize.y;
 				cDesc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
@@ -758,8 +672,8 @@ namespace JinEngine
 				if (cDesc.formatHint->format == J_GRAPHIC_RESOURCE_FORMAT::API_SPECIALIZED)
 					return false;
 
-				intermediate00 = resourceManage.graphic->CreateResource(device.get(), cDesc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
-				intermediate01 = resourceManage.graphic->CreateResource(device.get(), cDesc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+				intermediate00 = resourceManage.graphic->CreateResource(device.get(), cDesc);
+				intermediate01 = resourceManage.graphic->CreateResource(device.get(), cDesc);
 				resourceManage.graphic->CopyResource(device.get(), srcInfo, intermediate00);
 				resourceManage.graphic->CopyResource(device.get(), srcInfo, intermediate01);
 
@@ -784,7 +698,7 @@ namespace JinEngine
 				device->StartPublicCommand();
 				if (adapter->BeginMipmapGenerationTask(option.deviceType, *drawRefSet, mipmapSetting))
 				{
-					const JMipmapGenerationDesc& mipmapDesc = createDesc.mipMapDesc;
+					const JMipmapGenerationDesc& mipmapDesc = creationDesc.mipMapDesc;
 					const JDrawHelper helper(info, option, alignedObject);
 
 					imageProcessing.downSampling->ApplyMipmapGeneration(mipmapSetting.dataSet.get(), helper);
@@ -793,17 +707,17 @@ namespace JinEngine
 					std::unique_ptr<JBlurDesc> blurDesc;
 					switch (mipmapDesc.type)
 					{
-					case JinEngine::Graphic::J_GRAPHIC_MIP_MAP_TYPE::BOX:
+					case JinEngine::J_GRAPHIC_MIP_MAP_TYPE::BOX:
 					{
 						blurDesc = std::make_unique<JBoxBlurDesc>(imageSize * 0.5f, mipmapDesc.kernelSize);
 						break;
 					}
-					case JinEngine::Graphic::J_GRAPHIC_MIP_MAP_TYPE::GAUSSIAN:
+					case JinEngine::J_GRAPHIC_MIP_MAP_TYPE::GAUSSIAN:
 					{
 						blurDesc = std::make_unique<JGaussianBlurDesc>(imageSize * 0.5f, mipmapDesc.kernelSize, mipmapDesc.sharpnessFactor);
 						break;
 					}
-					case JinEngine::Graphic::J_GRAPHIC_MIP_MAP_TYPE::KAISER:
+					case JinEngine::J_GRAPHIC_MIP_MAP_TYPE::KAISER:
 					{
 						blurDesc = std::make_unique<JKaiserBlurDesc>(imageSize * 0.5f, mipmapDesc.kernelSize, mipmapDesc.sharpnessFactor);
 						break;
@@ -837,6 +751,92 @@ namespace JinEngine
 				ClearMipmapBind(mipHandle01);
 				return true;
 			}
+			bool SetTextureDetail(const JUserPtr<JGraphicResourceInfo>& srcInfo, const JConvertColorDesc& convertDesc)
+			{
+				if (srcInfo == nullptr)
+					return false;
+
+				JUserPtr<JGraphicResourceInfo> intermediate00 = nullptr;
+				auto rType = srcInfo->GetGraphicResourceType();
+				if (rType != J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
+					return false;
+
+				auto resourceSize = srcInfo->GetResourceSize();
+				//추가로 custom mipmap이 필요한 J_GRAPHIC_RESOURCE_TYPE이 있을경우 수정필요.		
+				const JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON, J_GRAPHIC_TASK_TYPE::UNKNOWN);
+				JGraphicResourceCreationDesc cDesc(typeSet); 
+				cDesc.width = resourceSize.x / 4;
+				cDesc.height = resourceSize.y / 4;
+				cDesc.textureDesc = std::make_unique<JTextureCreationDesc>();
+				cDesc.textureDesc->mipMapDesc.type = J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
+				cDesc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
+				cDesc.bindDesc.useEngineDefinedBindType = false;
+				cDesc.formatHint = std::make_unique<JGraphicFormatHint>();
+				cDesc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32G32B32A32_FLOAT;
+				intermediate00 = resourceManage.graphic->CreateResource(device.get(), cDesc);
+
+				JGraphicConvetColorSettingSet convertSet(srcInfo.Get(), intermediate00.Get(), convertDesc);
+				if (!adapter->BeginConvertColorTask(option.deviceType, *drawRefSet, convertSet))
+				{
+					adapter->EndConvertColorTask(option.deviceType, *drawRefSet);
+					return false;
+				}
+
+				imageProcessing.convertColor->ApplyConvertColor(convertSet.dataSet.get());
+				adapter->EndConvertColorTask(option.deviceType, *drawRefSet);
+
+				device->FlushCommandQueue();
+				device->StartPublicCommand();
+				resourceManage.graphic->CopyResource(device.get(), intermediate00, srcInfo);
+				device->EndPublicCommand();
+				device->FlushCommandQueue();
+
+				resourceManage.graphic->DestroyGraphicTextureResource(device.get(), intermediate00.Release());
+				return true;
+			}	
+		public:
+			bool IsRaytracingSupported()const noexcept
+			{
+				return device->IsRaytracingSupported();
+			}
+			bool CanBuildGpuAccelerator()const noexcept
+			{
+				return device->CanBuildGpuAccelerator();
+			}
+		private:
+			bool IsEntryUpdateLoop()
+			{
+				return JApplicationEngine::GetApplicationSubState() == J_APPLICATION_SUB_STATE::UPDATE_LOOP;
+			}
+		private:
+			void AddInnerEvent(std::unique_ptr<Core::JBindHandleBase>&& b)
+			{
+				innerEvent.push_back(std::move(b));
+			}
+		public:
+			JUserPtr<JGraphicResourceInfo> CreateResource(const JGraphicResourceCreationDesc& creationDesc)
+			{
+				auto userPtr = resourceManage.graphic->CreateResource(device.get(), creationDesc);
+				if (userPtr == nullptr)
+					return userPtr;
+
+				if (creationDesc.type.resouce == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || creationDesc.type.resouce == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
+				{
+					if (!creationDesc.textureDesc->UseMipmap())
+						userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::NONE);
+					else if (userPtr != nullptr && creationDesc.textureDesc->mipMapDesc.type != J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT)
+					{
+						if (!SetCustomMipmap(userPtr, *creationDesc.textureDesc))
+							userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT);
+					}
+				} 
+				resourceManage.shareData->NotifyGraphicResourceCreation(device.get(), resourceManage.graphic.get(), userPtr.Get());
+				return userPtr;
+			}
+			bool CreateOption(JUserPtr<JGraphicResourceInfo>& gInfo, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
+			{
+				return resourceManage.graphic->CreateOption(device.get(), gInfo, opType);
+			}			
 		public:
 			bool DestroyGraphicTextureResource(JGraphicResourceInfo* gInfo)
 			{
@@ -855,7 +855,7 @@ namespace JinEngine
 				return resourceManage.graphic->DestroyGraphicOption(device.get(), gInfo, optype);
 			}
 		public:
-			bool MipmapBindForDebug(const JUserPtr<JGraphicResourceInfo>& gRInfo, _Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)
+			bool MipmapBindForDebug(const JUserPtr<JGraphicResourceInfo>& gRInfo, _Inout_ std::vector<ResourceHandle>& gpuHandle, _Inout_ std::vector<Core::JDataHandle>& dataHandle)
 			{
 				gpuHandle.clear();
 				dataHandle.clear();
@@ -883,7 +883,16 @@ namespace JinEngine
 					resourceManage.graphic->DestroyMPB(device.get(), dataHandle[i]);
 			}
 		public:
-			JUserPtr<JCullingInfo> CreateFrsutumCullingResultBuffer(const J_CULLING_TARGET target, const bool useGpu)
+			JUserPtr<JFrameUpdateInfo> CreateFrameUploadData(const JFrameUploadDataCreationDesc& desc)
+			{
+				return resourceManage.frame->Register(desc);
+			}
+			bool DestroyFrameUploadData(JFrameUpdateInfo* fInfo)
+			{
+				return resourceManage.frame->DeRegister(fInfo);
+			}
+		public:
+			JUserPtr<JCullingInfo> CreateFrsutumCullingResultBuffer(const J_CULLING_TARGET target)
 			{
 				JCullingCreationDesc desc;
 				if (target == J_CULLING_TARGET::RENDERITEM)
@@ -894,7 +903,7 @@ namespace JinEngine
 				//if graphic update전 초기화 단계일경우 update wait에 진입하자마자 info.frame.currIndex + 1이 되므로
 				//미리  info.frame.currIndex + 1값을 할당한다.
 				desc.currFrameIndex = IsEntryUpdateLoop() ? info.frame.currIndex : info.frame.currIndex + 1;
-				desc.useGpu = useGpu;
+				desc.useGpu = target == J_CULLING_TARGET::LIGHT;
 				auto res = resourceManage.culling->CreateFrsutumData(device.get(), desc);
 				if (res != nullptr)
 					alignedObject.aligned.push_back(JGameObjectBuffer::OpaqueVec());
@@ -1011,25 +1020,30 @@ namespace JinEngine
 				resourceManage.accelerator->Remove(device.get(), resourceManage.graphic.get(), info, comp);
 			}
 		public:
-			bool RegisterHandler(JCsmHandlerInterface* handler)
+			JUserPtr<JCsmHandlerInfo> CreateCsmHandler(JCsmHandleCreationDesc& desc)
 			{
-				return resourceManage.csm->RegisterHandler(handler);
+				return resourceManage.csm->CreateHandler(desc);
 			}
-			bool DeRegisterHandler(JCsmHandlerInterface* handler)
+			bool DestroyCsmHandler(JCsmHandlerInfo* handler)
 			{
-				return resourceManage.csm->DeRegisterHandler(handler);
+				return resourceManage.csm->DestroyHandler(handler);
 			}
-			bool RegisterTarget(JCsmTargetInterface* target)
+			JUserPtr<JCsmTargetInfo> CreateCsmTarget(JCsmTargetCreationDesc& desc)
 			{
-				return resourceManage.csm->RegisterTarget(target);
+				return resourceManage.csm->CreateTarget(desc);
 			}
-			bool DeRegisterTarget(JCsmTargetInterface* target)
+			bool DestroyCsmTarget(JCsmTargetInfo* target)
 			{
-				return resourceManage.csm->DeRegisterTarget(target);
+				return resourceManage.csm->DestroyTarget(target);
 			}
 		public:
-			JOwnerPtr<JShaderDataHolder> StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData)
-			{
+			JOwnerPtr<JShaderDataHolder> CreateGraphicShader(const JGraphicShaderInitData& shaderData)
+			{ 
+				const bool isDeferred = shaderData.processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY || 
+					shaderData.processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_SHADING;
+				if (isDeferred && !option.rendering.allowDeferred)
+					return nullptr;
+
 				device->FlushCommandQueue();
 				device->StartPublicCommand();
 				auto result = drawing.scene->CreateShader(JGraphicShaderCompileSet(device.get()), shaderData);
@@ -1037,7 +1051,7 @@ namespace JinEngine
 				device->FlushCommandQueue();
 				return std::move(result);
 			}
-			JOwnerPtr<JShaderDataHolder> StuffComputeShaderPso(const JComputeShaderInitData& shaderData)
+			JOwnerPtr<JShaderDataHolder> CreateComputeShader(const JComputeShaderInitData& shaderData)
 			{
 				JOwnerPtr<JShaderDataHolder> result = nullptr;
 				device->FlushCommandQueue();
@@ -1058,16 +1072,11 @@ namespace JinEngine
 			}
 		public:
 			void ReBuildFrameResource(const J_FRAME_RESOURCE_UPLOAD_TYPE type)
-			{
+			{ 
 				auto& uData = updateHelper.uData[(uint)type];
-				for (int i = 0; i < Constants::gNumFrameResources; ++i)
-					resourceManage.frame[i]->ReBuild(device.get(), type, CalculateCapacity(uData));
+				resourceManage.frame->ReBuild(device.get(), type, CalculateCapacity(uData)); 
 			}
 		public:
-			uint CalNextFrameResourceIndex(const uint currIndex)
-			{
-				return (currIndex + 1) % Constants::gNumFrameResources;
-			}
 			uint CalculateCapacity(const JUpdateHelper::UpdateDataBase& uBase)const noexcept
 			{
 				uint nextCapacity = uBase.capacity;
@@ -1080,7 +1089,7 @@ namespace JinEngine
 				{
 					float result = nextCapacity / uBase.downCapacityFactor;
 					while (result >= uBase.count && result >= info.minCapacity)
-					{
+					{ 
 						nextCapacity = result;
 						result /= uBase.downCapacityFactor;
 					}
@@ -1088,7 +1097,7 @@ namespace JinEngine
 				return nextCapacity;
 			}
 			void OnResize()
-			{
+			{ 
 				const JVector2F clientSize = JWindow::GetClientSize();
 				info.width = clientSize.x;
 				info.height = clientSize.y;
@@ -1116,7 +1125,7 @@ namespace JinEngine
 					resourceManage.graphic.get(),
 					resourceManage.culling.get(),
 					resourceManage.accelerator.get(),
-					resourceManage.currFrame,
+					resourceManage.frame.get(),
 					imageProcessing.debug.get(),
 					drawing.depthTest.get(),
 					imageProcessing.blur.get(),
@@ -1124,15 +1133,15 @@ namespace JinEngine
 					imageProcessing.ssao.get(),
 					imageProcessing.ppEffectSet.get(),
 					resourceManage.shareData.get(),
-					info.frame.currIndex,
-					CalNextFrameResourceIndex(info.frame.currIndex));
+					resourceManage.frame->GetCurrentFrameIndex(),
+					resourceManage.frame->GetNextFrameIndex());
 			}
 		public:
 			void UpdateWait()
-			{
-				info.frame.currIndex = CalNextFrameResourceIndex(info.frame.currIndex);
-				resourceManage.currFrame = resourceManage.frame[info.frame.currIndex].get();
-				device->UpdateWait(resourceManage.currFrame->GetFenceValue());
+			{	 
+				resourceManage.frame->SetNextFrameResource();
+				info.frame.currIndex = resourceManage.frame->GetCurrentFrameIndex(); 
+				device->UpdateWait(resourceManage.frame->GetCurrentFrameResource()->GetFenceValue());
 
 				AllocateRefSet();
 				if (innerEvent.size() > 0)
@@ -1144,26 +1153,29 @@ namespace JinEngine
 
 				adapter->BeginUpdateStart(option.deviceType, *drawRefSet);
 			}
-			void UpdateFrameCapacity()
+			void UpdateFrameBuffer()
 			{
 				updateHelper.Clear();
 				for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
-				{  
-					updateHelper.uData[i].count = JFrameUpdateData::GetTotalFrameCount((J_FRAME_RESOURCE_UPLOAD_TYPE)i);
-					updateHelper.uData[i].capacity = resourceManage.currFrame->GetElementCount((J_FRAME_RESOURCE_UPLOAD_TYPE)i);
+				{ 
+					const J_FRAME_RESOURCE_UPLOAD_TYPE type = (J_FRAME_RESOURCE_UPLOAD_TYPE)i;
+					updateHelper.uData[i].count = resourceManage.frame->GetTotalFrameCount(type);
+					updateHelper.uData[i].capacity = resourceManage.frame->GetFrameResourceCapacity(type);
 					UpdateReAllocCondition(updateHelper.uData[i]);
 					updateHelper.hasUploadDataDirty |= (bool)updateHelper.uData[i].reAllocCondition;
 				}
 				for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 				{
-					updateHelper.bData[i].count = resourceManage.graphic->GetResourceCount((J_GRAPHIC_RESOURCE_TYPE)i);
+					const J_GRAPHIC_RESOURCE_TYPE type = (J_GRAPHIC_RESOURCE_TYPE)i;
+					updateHelper.bData[i].count = resourceManage.graphic->GetResourceCount(type);
+					updateHelper.bData[i].capacity = info.resource.border[i];
 					UpdateReAllocCondition(updateHelper.bData[i]);
 
 					updateHelper.hasBindingDataDirty |= (bool)updateHelper.bData[i].reAllocCondition;
 					if (updateHelper.bData[i].reAllocCondition != J_GRAPHIC_CAPACITY_CONDITION::KEEP)
 						updateHelper.bData[i].capacity = CalculateCapacity(updateHelper.bData[i]);
 				}
-				 
+
 				JGraphicInfo newInfo = info;
 				updateHelper.WriteGraphicInfo(newInfo);
 				if (updateHelper.hasUploadDataDirty)
@@ -1173,12 +1185,12 @@ namespace JinEngine
 					for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
 					{
 						if (updateHelper.uData[i].reAllocCondition != J_GRAPHIC_CAPACITY_CONDITION::KEEP)
-						{ 
-							ReBuildFrameResource((J_FRAME_RESOURCE_UPLOAD_TYPE)i);
-							updateHelper.uData[i].setDirty = Constants::gNumFrameResources;
-							updateHelper.uData[i].capacity = resourceManage.currFrame->GetElementCount((J_FRAME_RESOURCE_UPLOAD_TYPE)i);
+						{
+							const J_FRAME_RESOURCE_UPLOAD_TYPE type = (J_FRAME_RESOURCE_UPLOAD_TYPE)i;
+							ReBuildFrameResource(type); 
+							updateHelper.uData[i].capacity = resourceManage.frame->GetFrameResourceCapacity(type);
 						}
-					} 
+					}
 					//Has sequency dependency
 					updateHelper.WriteGraphicInfo(newInfo);
 					SetGraphicInfo(newInfo, true, updateHelper.hasBindingDataDirty, false);
@@ -1191,30 +1203,52 @@ namespace JinEngine
 				else if (updateHelper.hasBindingDataDirty)
 					SetGraphicInfo(newInfo, false, true, true);
 			}
-			void UpdateFrameBuffer()
-			{
+			void Update()
+			{ 
+				updateHelper.Begin();
+				resourceManage.frame->BeginUpdate();
+
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				//update frame resource and decide something drawing
 				for (uint i = 0; i < drawListCount; ++i)
 				{
-					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					updateHelper.BeginUpdatingDrawTarget();
+					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i); 
 					drawTarget->BeginUpdate();
-					UpdateSceneObjectCB(drawTarget->scene, drawTarget);
-					UpdateSceneAnimationCB(drawTarget->scene, drawTarget);
-					UpdateSceneCameraCB(drawTarget->scene, drawTarget);
-					UpdateSceneLightCB(drawTarget->scene, drawTarget);
+					for(uint j = 0; j < totalCompVariation; ++j) 
+					{ 
+						const JObjectDataSetMetadata meta = resourceManage.objectData->GetMetadata(j);
+						if (!meta.isSupportedFrameResourceUpload)
+							continue;
+						 
+						auto& compVec = drawTarget->scene->GetComponentCacheVec(j);
+						 
+						JFrameUpdateOption option;
+						JFrameUpdateDataSet updateSet(&compVec, meta, option);
+						resourceManage.frame->Update(updateSet);
+
+						drawTarget->updateInfo->updateCount[j] = updateSet.updateLog.updatedCount;
+						drawTarget->updateInfo->hotUpdateCount[j] = updateSet.updateLog.hotUpdatedCount;
+					} 
 					UpdateSceneRequestor(drawTarget);
 					UpdateShadowRequestor(drawTarget);
 					UpdateFrustumCullingRequestor(drawTarget);
 					UpdateOccCullingRequestor(drawTarget);
-					drawTarget->EndUpdate();
+					drawTarget->EndUpdate(); 
+				} 
+				for (uint j = 0; j < totalResourceVariation; ++j)
+				{
+					const uint index = totalCompVariation + j;
+					const JObjectDataSetMetadata meta = resourceManage.objectData->GetMetadata(index); 
+					if (!meta.isSupportedFrameResourceUpload)
+						continue;
 
-					UpdateSceneCB(drawTarget);
-					updateHelper.EndUpdatingDrawTarget();
+					const ObjectDataSetVec& dataVec = resourceManage.objectData->GetDataVec(index);
+					JFrameUpdateOption option;
+					JFrameUpdateDataSet updateSet(&dataVec, meta, option);
+					resourceManage.frame->Update(updateSet);
 				}
-				UpdateMaterialCB();
-
+				resourceManage.frame->EndUpdate();
+				updateHelper.End();
 #ifdef USE_DEBUG
 				//Debug
 				//if(culling.hzb->CanReadBackDebugInfo())
@@ -1251,387 +1285,13 @@ namespace JinEngine
 				else
 					uBase.downCapacityCount = 0;
 			}
-		private:
-			void UpdateSceneObjectCB(_In_ const JUserPtr<JScene>& scene, _Inout_ JGraphicDrawTarget* target)
-			{
-				const bool isUpdateBoundingObj = scene->IsMainScene() && option.culling.isOcclusionQueryActivated;
-				const std::vector<JUserPtr<JComponent>>& jRvec = JScenePrivate::CashInterface::GetComponentCashVec(scene, J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
-				const uint renderItemCount = (uint)jRvec.size();
-
-				auto currObjectCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT);
-				auto currBoundingObjectCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
-				auto currOccObjectBuffer = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT);
-				auto currRefInfoBuffer = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO);
-
-				const bool forcedSetFrameDirty = updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT].setDirty ||
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT].setDirty ||
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].setDirty;
-
-				auto& objSet = contCache.objSet;
-				using FrameUpdateInterface = JRenderItemPrivate::FrameUpdateInterface;
-				auto updateInfo = target->updateInfo.get();
-				for (uint i = 0; i < renderItemCount; ++i)
-				{
-					JRenderItem* renderItem = static_cast<JRenderItem*>(jRvec[i].Get());
-					objSet.Begin();
-					objSet.updateStart = FrameUpdateInterface::UpdateStart(renderItem, forcedSetFrameDirty);
-
-					FrameUpdateInterface::UpdateFrame(renderItem, objSet);
-					if (objSet.isUpdated[ObjectFrameLayer::object])
-						currObjectCB->CopyData(objSet.frameIndex[ObjectFrameLayer::object], objSet.subMeshCount, objSet.object);
-					if (objSet.isUpdated[ObjectFrameLayer::bounding])
-						currBoundingObjectCB->CopyData(objSet.frameIndex[ObjectFrameLayer::bounding], &objSet.bounding);
-					if (objSet.isUpdated[ObjectFrameLayer::hzb])
-						currOccObjectBuffer->CopyData(objSet.frameIndex[ObjectFrameLayer::hzb], &objSet.hzb);
-					if (objSet.isUpdated[ObjectFrameLayer::refInfo])
-						currRefInfoBuffer->CopyData(objSet.frameIndex[ObjectFrameLayer::refInfo], objSet.subMeshCount, objSet.refInfo);
-					if (objSet.updateStart)
-					{
-						FrameUpdateInterface::UpdateEnd(renderItem);
-						if (FrameUpdateInterface::IsLastFrameHotUpdated(renderItem))
-							++updateInfo->hotObjUpdateCount;
-						++updateInfo->objUpdateCount;
-					}
-					updateInfo->hasObjRecopy = objSet.hasCopy;
-				}
-
-				target->updateInfo->thisFrameObjCount = renderItemCount;
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT].uploadCountPerTarget = renderItemCount;
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT].uploadCountPerTarget = renderItemCount;
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].uploadCountPerTarget = renderItemCount;
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT].uploadCountPerTarget = scene->GetMeshCount();
-			}
-			void UpdateMaterialCB()
-			{
-				auto currMaterialBuffer = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL);
-				auto matVec = JMaterial::StaticTypeInfo().GetInstanceRawPtrVec();
-				const uint matCount = matVec.size();
-				const bool forcedSetFrameDirty = updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL].setDirty;
-
-				using FrameUpdateInterface = JMaterialPrivate::FrameUpdateInterface;
-				for (uint i = 0; i < matCount; ++i)
-				{
-					JMaterialConstants materialConstant;
-					JMaterial* material = static_cast<JMaterial*>(matVec[i]);
-
-					if (FrameUpdateInterface::UpdateStart(material, forcedSetFrameDirty))
-					{
-						FrameUpdateInterface::UpdateFrame(material, materialConstant);
-						currMaterialBuffer->CopyData(FrameUpdateInterface::GetMaterialFrameIndex(material), &materialConstant);
-						FrameUpdateInterface::UpdateEnd(material);
-					}
-					else if (FrameUpdateInterface::HasRecopyRequest(material))
-					{
-						FrameUpdateInterface::UpdateFrame(material, materialConstant);
-						currMaterialBuffer->CopyData(FrameUpdateInterface::GetMaterialFrameIndex(material), &materialConstant);
-					}
-				};
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL].uploadCountPerTarget += matCount;
-			}
-			void UpdateSceneCB(JGraphicDrawTarget* drawTarget)
-			{
-				//if (!drawTarget->updateInfo->sceneUpdated)
-				//	return;
-
-				const JUserPtr<JScene>& scene = drawTarget->scene;
-				using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
-				contCache.scenePass.appTotalTime = JEngineTimer::Data().TotalTime();
-				contCache.scenePass.appDeltaTime = JEngineTimer::Data().DeltaTime();
-				if (scene->IsActivatedSceneTime())
-				{
-					contCache.scenePass.sceneTotalTime = scene->GetTotalTime();
-					contCache.scenePass.sceneDeltaTime = scene->GetDeltaTime();
-				}
-				else
-				{
-					contCache.scenePass.sceneTotalTime = 0;
-					contCache.scenePass.sceneDeltaTime = 0;
-				}
-
-				if (contCache.missing == nullptr)
-					contCache.missing = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
-				if (contCache.bluseNoise == nullptr)
-					contCache.bluseNoise = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::BLUE_NOISE);
-
-				auto missingInterface = contCache.missing->GraphicResourceUserInterface();
-				auto blueNoiseInterface = contCache.bluseNoise->GraphicResourceUserInterface();
-
-				contCache.scenePass.missingTextureIndex = missingInterface.GetFirstResourceArrayIndex();
-				contCache.scenePass.bluseNoiseTextureIndex = blueNoiseInterface.GetFirstResourceArrayIndex();
-				contCache.scenePass.bluseNoiseTextureSize = blueNoiseInterface.GetFirstResourceSize();
-				contCache.scenePass.invBluseNoiseTextureSize = blueNoiseInterface.GetFirstResourceInvSize();
-				contCache.scenePass.clusterMinDepth = std::log2(option.culling.clusterNear);
-
-				auto currSceneCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS);
-				currSceneCB->CopyData(SceneFrameIndexInterface::GetFrameIndex(scene.Get()), &contCache.scenePass);
-			}
-			void UpdateSceneAnimationCB(_In_ const JUserPtr<JScene>& scene, _Inout_ JGraphicDrawTarget* target)
-			{
-				const std::vector<JUserPtr<JComponent>>& jAvec = JScenePrivate::CashInterface::GetComponentCashVec(scene, J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
-				const uint animatorCount = (uint)jAvec.size();
-
-				auto currSkinnedCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION);
-
-				const bool forcedSetFrameDirty = updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION].setDirty;
-				using FrameUpdateInterface = JAnimatorPrivate::FrameUpdateInterface;
-
-				auto updateInfo = target->updateInfo.get();
-				if (scene->IsActivatedSceneTime())
-				{
-					for (uint i = 0; i < animatorCount; ++i)
-					{
-						JAnimator* animator = static_cast<JAnimator*>(jAvec[i].Get());
-						if (FrameUpdateInterface::UpdateStart(animator))
-						{
-							FrameUpdateInterface::UpdateFrame(animator, contCache.ani);
-							currSkinnedCB->CopyData(FrameUpdateInterface::GetFrameIndex(animator), &contCache.ani);
-							FrameUpdateInterface::UpdateEnd(animator);
-							++updateInfo->aniUpdateCount;
-						}
-						else if (FrameUpdateInterface::HasRecopyRequest(animator))
-						{
-							FrameUpdateInterface::UpdateFrame(animator, contCache.ani);
-							currSkinnedCB->CopyData(FrameUpdateInterface::GetFrameIndex(animator), &contCache.ani);
-						}
-					}
-				}
-			}
-			void UpdateSceneCameraCB(_In_ const JUserPtr<JScene>& scene, _Inout_ JGraphicDrawTarget* target)
-			{
-				//is same as sceneRequestor 
-				const std::vector<JUserPtr<JComponent>>& jCvec = JScenePrivate::CashInterface::GetComponentCashVec(scene, J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
-				const uint cameraCount = (uint)jCvec.size();
-				const uint hzbOccQueryCount = scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
-				const uint hzbOccQueryOffset = updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].uploadOffset;
-
-				auto currCameraCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA);
-				auto currDepthCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS);
-				auto currHzbOccReqCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS);
-				auto currLitCullCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS);
-				auto currSsaoCB = resourceManage.currFrame->GetGraphicBufferBase(J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS);
-
-				const bool forcedSetFrameDirty = updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA].setDirty ||
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS].setDirty;
-				using FrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
-
-				auto& camSet = contCache.camSet;
-				camSet.hzbQueryCount = hzbOccQueryCount;
-				camSet.hzbQueryOffset = hzbOccQueryOffset;
-
-				auto updateInfo = target->updateInfo.get();
-				for (uint i = 0; i < cameraCount; ++i)
-				{
-					JCamera* camera = static_cast<JCamera*>(jCvec[i].Get());
-					camSet.Begin();
-					camSet.updateStart = FrameUpdateInterface::UpdateStart(camera, forcedSetFrameDirty);
-
-					FrameUpdateInterface::UpdateFrame(camera, camSet);
-					if (camSet.isUpdated[CameraFrameLayer::drawScene])
-						currCameraCB->CopyData(camSet.frameIndex[CameraFrameLayer::drawScene], &camSet.drawScene);
-					if (camSet.isUpdated[CameraFrameLayer::depthTest])
-					{
-						if (camera->AllowHdOcclusionCulling())
-							++updateInfo->hdOccUpdateCount;
-						else if (camera->AllowHzbOcclusionCulling())
-							++updateInfo->hzbOccUpdateCount;
-						currDepthCB->CopyData(camSet.frameIndex[CameraFrameLayer::depthTest], &camSet.depthTest);
-					}
-					if (camSet.isUpdated[CameraFrameLayer::hzb])
-						currHzbOccReqCB->CopyData(camSet.frameIndex[CameraFrameLayer::hzb], &camSet.hzb);
-					if (camSet.isUpdated[CameraFrameLayer::lightCulling])
-						currLitCullCB->CopyData(camSet.frameIndex[CameraFrameLayer::lightCulling], &camSet.lightCulling);
-					if (camSet.isUpdated[CameraFrameLayer::ssao])
-						currSsaoCB->CopyData(camSet.frameIndex[CameraFrameLayer::ssao], &camSet.ssao);
-
-					if (camSet.updateStart)
-					{
-						FrameUpdateInterface::UpdateEnd(camera);
-						if (FrameUpdateInterface::IsLastFrameHotUpdated(camera))
-							++updateInfo->hotCamUpdateCount;
-						++updateInfo->camUpdateCount;
-					}
-				}
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA].uploadCountPerTarget = cameraCount;
-			}
-			void UpdateSceneLightCB(_In_ const JUserPtr<JScene>& scene, _Inout_ JGraphicDrawTarget* target)
-			{
-				const std::vector<JUserPtr<JComponent>>& jLvec = JScenePrivate::CashInterface::GetComponentCashVec(scene, J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
-				const uint lightVecCount = (uint)jLvec.size();
-				const uint hzbOccQueryCount = scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
-				const uint hzbOccQueryOffset = updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT].uploadOffset;
-
-				uint litCount[(uint)J_LIGHT_TYPE::COUNT] = { 0, 0, 0, 0 };
-				static constexpr int minFrameInit = INT_MAX;
-				int minFrameIndex[(uint)J_LIGHT_TYPE::COUNT] = { minFrameInit, minFrameInit, minFrameInit, minFrameInit };
-
-				bool hasLitUpdate = false;
-				const bool hasObjectHotUpdate = target->updateInfo->hotObjUpdateCount;
-				const bool hasCamHotUpdate = target->updateInfo->hotCamUpdateCount;
-
-				const bool forcedSetFrameDirty[(uint)J_LIGHT_TYPE::COUNT]
-				{
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT].setDirty |
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO].setDirty |
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW].setDirty |
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW].setDirty |
-					hasObjectHotUpdate,
-
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT].setDirty |
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW].setDirty |
-					hasObjectHotUpdate,
-
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT].setDirty |
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW].setDirty |
-					hasObjectHotUpdate,
-
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT].setDirty |
-					updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW].setDirty |
-					hasObjectHotUpdate,
-				};
-
-				using LitFrameUpdateInterface = JLightPrivate::FrameUpdateInterface;
-				using DLitFrameUpdateInterface = JDirectionalLightPrivate::FrameUpdateInterface;
-				using PLitFrameUpdateInterface = JPointLightPrivate::FrameUpdateInterface;
-				using SLitFrameUpdateInterface = JSpotLightPrivate::FrameUpdateInterface;
-				using ALitFrameUpdateInterface = JRectLightPrivate::FrameUpdateInterface;
-				using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
-
-				struct LitUpdateHelper
-				{
-				public:
-					JFrameResource& currFrame;
-				public:
-					LitUpdateHelper(JFrameResource* currFrame)
-						:currFrame(*currFrame)
-					{}
-				public:
-					void UpdateLit(JLight* light, JLightPrivate* lp, JGraphicDrawTarget::UpdateInfo* info, JLightConstantsSet& set)
-					{
-						if (!set.isUpdated[LightFrameLayer::light])
-							return;
-
-						auto& frameUpdateInterface = lp->GetFrameUpdateInterface();
-						const int litFrameIndex = frameUpdateInterface.GetFrameIndex(light, LightFrameLayer::light);
-						const J_LIGHT_TYPE litType = light->GetLightType();
-
-						if (litType == J_LIGHT_TYPE::DIRECTIONAL)
-							currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, litFrameIndex, &set.directionalLight);
-						else if (litType == J_LIGHT_TYPE::POINT)
-							currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, litFrameIndex, &set.pointLight);
-						else if (litType == J_LIGHT_TYPE::SPOT)
-							currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, litFrameIndex, &set.spotLight);
-						else if (litType == J_LIGHT_TYPE::RECT)
-							currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, litFrameIndex, &set.rectLight);
-						info->lightUpdateCount += set.updateStart;
-					}
-					void UpdateShadow(JLight* light, JLightPrivate* lp, JGraphicDrawTarget::UpdateInfo* info, JLightConstantsSet& set)
-					{
-						if (!set.isUpdated[LightFrameLayer::shadowMap] &&
-							!set.isUpdated[LightFrameLayer::shadowMapArray] &&
-							!set.isUpdated[LightFrameLayer::shadowMapCube])
-							return;
-
-						auto& frameUpdateInterface = lp->GetFrameUpdateInterface();
-						const uint shadowLayer = frameUpdateInterface.GetShadowFrameLayerIndex(light);
-						const int shadowMapFrameIndex = frameUpdateInterface.GetFrameIndex(light, shadowLayer);
-						const J_LIGHT_TYPE litType = light->GetLightType();
-
-						if (litType == J_LIGHT_TYPE::DIRECTIONAL)
-						{
-							if (shadowLayer == LightFrameLayer::shadowMapArray)
-							{
-								const uint csmTargetCount = frameUpdateInterface.GetFrameIndexSize(light, shadowLayer);
-								currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO, shadowMapFrameIndex, csmTargetCount, set.csm);
-								currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW, shadowMapFrameIndex, csmTargetCount, set.shadowMapArray);
-							}
-							else
-								currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, shadowMapFrameIndex, &set.shadowMap);
-						}
-						else if (litType == J_LIGHT_TYPE::POINT)
-							currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW, shadowMapFrameIndex, &set.shadowMapCube);
-						else if (litType == J_LIGHT_TYPE::SPOT)
-							currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, shadowMapFrameIndex, &set.shadowMap);
-						else if (litType == J_LIGHT_TYPE::RECT)
-							currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, shadowMapFrameIndex, &set.shadowMap);
-						info->shadowMapUpdateCount += set.updateStart;
-					}
-					void UpdateDepthTest(JLight* light, JLightPrivate* lp, JGraphicDrawTarget::UpdateInfo* info, JLightConstantsSet& set)
-					{
-						if (!set.isUpdated[LightFrameLayer::depthTest])
-							return;
-
-						int frameIndex = lp->GetFrameUpdateInterface().GetFrameIndex(light, LightFrameLayer::depthTest);
-						currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS, frameIndex, &set.depthTest);
-					}
-					void UpdateOcc(JLight* light, JLightPrivate* lp, JGraphicDrawTarget::UpdateInfo* info, JLightConstantsSet& set)
-					{
-						if (!set.isUpdated[LightFrameLayer::hzb])
-							return;
-
-						int frameIndex = lp->GetFrameUpdateInterface().GetFrameIndex(light, LightFrameLayer::hzb);
-						currFrame.CopyData(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS, frameIndex, &set.hzb);
-						info->hzbOccUpdateCount += set.updateStart;
-					}
-				};
-
-				auto& litSet = contCache.litSet;
-				litSet.hzbQueryCount = hzbOccQueryCount;
-				litSet.hzbQueryOffset = hzbOccQueryOffset;
-
-				LitUpdateHelper litUpdateHelper(resourceManage.currFrame);
-				auto updateInfo = target->updateInfo.get();
-				for (uint i = 0; i < lightVecCount; ++i)
-				{
-					JLight* light = static_cast<JLight*>(jLvec[i].Get());
-					JLightPrivate* lp = static_cast<JLightPrivate*>(&light->PrivateInterface());
-					auto& frameUpdateInterface = lp->GetFrameUpdateInterface();
-
-					const J_LIGHT_TYPE litType = light->GetLightType();
-					bool forcedSetFrameDirtyValue = forcedSetFrameDirty[(uint)litType];
-					if (light->GetShadowMapType() == J_SHADOW_MAP_TYPE::CSM)
-						forcedSetFrameDirtyValue |= hasCamHotUpdate;
-
-					litSet.Begin();
-					litSet.updateStart = frameUpdateInterface.UpdateStart(light, forcedSetFrameDirtyValue);
-					frameUpdateInterface.UpdateFrame(light, litSet);
-					litUpdateHelper.UpdateLit(light, lp, updateInfo, litSet);
-					litUpdateHelper.UpdateShadow(light, lp, updateInfo, litSet);
-					litUpdateHelper.UpdateDepthTest(light, lp, updateInfo, litSet);
-					litUpdateHelper.UpdateOcc(light, lp, updateInfo, litSet);
-
-					if (litSet.updateStart)
-					{
-						frameUpdateInterface.UpdateEnd(light);
-						if (frameUpdateInterface.IsLastFrameHotUpdated(light))
-							++updateInfo->hotLitghtUpdateCount;
-					}
-					++litCount[(uint)litType];
-					int frameIndex = frameUpdateInterface.GetFrameIndex(light, LightFrameLayer::light);
-					if (frameIndex < minFrameIndex[(uint)litType])
-						minFrameIndex[(uint)litType] = frameIndex;
-				}
-
-				contCache.scenePass.directionalLitSt = minFrameInit != minFrameIndex[(int)J_LIGHT_TYPE::DIRECTIONAL] ? minFrameIndex[(int)J_LIGHT_TYPE::DIRECTIONAL] : 0;
-				contCache.scenePass.directionalLitEd = contCache.scenePass.directionalLitSt + litCount[(uint)J_LIGHT_TYPE::DIRECTIONAL];
-				contCache.scenePass.pointLitSt = minFrameInit != minFrameIndex[(int)J_LIGHT_TYPE::POINT] ? minFrameIndex[(int)J_LIGHT_TYPE::POINT] : 0;
-				contCache.scenePass.pointLitEd = contCache.scenePass.pointLitSt + litCount[(uint)J_LIGHT_TYPE::POINT];
-				contCache.scenePass.spotLitSt = minFrameInit != minFrameIndex[(int)J_LIGHT_TYPE::SPOT] ? minFrameIndex[(int)J_LIGHT_TYPE::SPOT] : 0;
-				contCache.scenePass.spotLitEd = contCache.scenePass.spotLitSt + litCount[(uint)J_LIGHT_TYPE::SPOT];
-				contCache.scenePass.rectLitSt = minFrameInit != minFrameIndex[(int)J_LIGHT_TYPE::RECT] ? minFrameIndex[(int)J_LIGHT_TYPE::RECT] : 0;
-				contCache.scenePass.rectLitEd = contCache.scenePass.rectLitSt + litCount[(uint)J_LIGHT_TYPE::RECT];
-
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::DIRECTIONAL];
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::POINT];
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::SPOT];
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::RECT];
-			}
+		private:   
 			void UpdateSceneRequestor(_Inout_ JGraphicDrawTarget* target)
-			{
-				using FrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
+			{ 
 				for (auto& data : target->sceneRequestor)
-				{
-					JCamera* cam = data->jCamera.Get();
-					if (FrameUpdateInterface::IsLastUpdated(cam))
+				{ 
+					JFrameUpdateInterface* fInterface = static_cast<JFrameUpdateInterface*>(data->jCamera->ModuleManagedData()->GetFrameUpdateUserInterface());
+					if (fInterface->IsLastUpdated())
 						data->isUpdated = true;
 				}
 			}
@@ -1641,42 +1301,27 @@ namespace JinEngine
 					option.culling.isLightCullingActivated &&
 					option.culling.allowLightCluster &&
 					target->shadowRequestor.size() > 0;
-
-				uint litOffset[(uint)J_LIGHT_TYPE::COUNT];
-				std::vector<JCullingUserInterface> cullUserVec;
-				uint userVecCount = 0;
-
-				if (allowLitCluster)
-				{
-					const size_t sceneGuid = target->scene->GetGuid();
-					litOffset[(uint)J_LIGHT_TYPE::POINT] = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
-					litOffset[(uint)J_LIGHT_TYPE::SPOT] = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
-					litOffset[(uint)J_LIGHT_TYPE::RECT] = JFrameUpdateData::GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
-
-					auto camVec = target->scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
-					userVecCount = (uint)camVec.size();
-					cullUserVec.resize(userVecCount);
-
-					for (uint i = 0; i < userVecCount; ++i)
-						cullUserVec[i] = static_cast<JCamera*>(camVec[i].Get())->CullingUserInterface();
-				}
-				using FrameUpdateInterface = JLightPrivate::FrameUpdateInterface;
+				    
 				for (auto& data : target->shadowRequestor)
 				{
-					JLight* lit = data->jLight.Get();
-					JLightPrivate* lp = static_cast<JLightPrivate*>(&lit->PrivateInterface());
-					if (lp->GetFrameUpdateInterface().IsLastUpdated(lit))
+					JLight* lit = data->jLight.Get(); 
+					JFrameUpdateInterface* fInterface = static_cast<JFrameUpdateInterface*>(lit->ModuleManagedData()->GetFrameUpdateUserInterface());
+					if (fInterface->IsLastUpdated())
 						data->isUpdated = true;
+
 					if (allowLitCluster && data->isUpdated)
 					{
-						const J_LIGHT_TYPE litType = lit->GetLightType();
-						const int frameIndex = lp->GetFrameUpdateInterface().GetFrameIndex(lit, LightFrameLayer::light);
+						const J_LIGHT_TYPE litType = lit->GetLightType(); 
 						if (litType != J_LIGHT_TYPE::DIRECTIONAL)
 						{
 							bool isCull = true;
-							for (uint i = 0; i < userVecCount; ++i)
+							auto& camVec = target->scene->GetComponentCacheVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>());
+							const int frameIndex = fInterface->GetFrameIndex(JLightType::LitToFrameR(litType));
+
+							for (const auto& cam : camVec)
 							{
-								isCull &= cullUserVec[i].IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::LIGHT, frameIndex);
+								auto cUser = cam->ModuleManagedData()->GetCullingUserInterface();
+								isCull &= cUser->IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::LIGHT, frameIndex);
 								if (!isCull)
 									break;
 							}
@@ -1687,79 +1332,42 @@ namespace JinEngine
 				}
 			}
 			void UpdateFrustumCullingRequestor(_Inout_ JGraphicDrawTarget* target)
-			{
-				using CamFrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
+			{ 
 				for (auto& data : target->frustumCullingRequestor)
-				{
-					JComponent* comp = data->comp.Get();
-					J_COMPONENT_TYPE cType = comp->GetComponentType();
-					if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					{
-						if (CamFrameUpdateInterface::IsLastUpdated(static_cast<JCamera*>(comp)))
-							data->isUpdated = true;
-					}
-					else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					{
-						JLight* light = static_cast<JLight*>(comp);
-						JLightPrivate* lp = static_cast<JLightPrivate*>(&light->PrivateInterface());
-						if (lp->GetFrameUpdateInterface().IsLastUpdated(light))
-							data->isUpdated = true;
-					}
+				{ 
+					auto fInterface = static_cast<JFrameUpdateInterface*>(data->comp->ModuleManagedData()->GetFrameUpdateUserInterface());
+					if (fInterface->IsLastUpdated())
+						data->isUpdated = true;
 				}
 			}
 			void UpdateOccCullingRequestor(_Inout_ JGraphicDrawTarget* target)
-			{
-				using CamFrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
+			{ 
 				for (auto& data : target->hzbOccCullingRequestor)
 				{
 					JComponent* comp = data->comp.Get();
-					J_COMPONENT_TYPE cType = comp->GetComponentType();
-					JCullingUserInterface cInterface;
-					if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					{
-						if (CamFrameUpdateInterface::IsLastUpdated(static_cast<JCamera*>(comp)))
-							data->isUpdated = true;
-						cInterface = static_cast<JCamera*>(comp)->CullingUserInterface();
-					}
-					else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					{
-						JLight* light = static_cast<JLight*>(comp);
-						JLightPrivate* lp = static_cast<JLightPrivate*>(&light->PrivateInterface());
-						if (lp->GetFrameUpdateInterface().IsLastUpdated(light))
-							data->isUpdated = true;
-						cInterface = static_cast<JLight*>(comp)->CullingUserInterface();
-					}
-					if (!cInterface.IsUpdateEnd(J_CULLING_TYPE::HZB_OCCLUSION))
+					auto fInterface = static_cast<JFrameUpdateInterface*>(comp->ModuleManagedData()->GetFrameUpdateUserInterface());
+					auto cInterface = static_cast<JCullingInterface*>(comp->ModuleManagedData()->GetCullingUserInterface());
+					if (fInterface->IsLastUpdated())
+						data->isUpdated = true;
+
+					if(!cInterface->IsUpdateEnd(J_CULLING_TYPE::HZB_OCCLUSION, J_CULLING_TARGET::RENDERITEM)) 
 						data->isUpdated = true;
 				}
 				for (auto& data : target->hdOccCullingRequestor)
 				{
 					JComponent* comp = data->comp.Get();
-					J_COMPONENT_TYPE cType = comp->GetComponentType();
-					JCullingUserInterface cInterface;
-
-					if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-					{
-						if (CamFrameUpdateInterface::IsLastUpdated(static_cast<JCamera*>(comp)))
-							data->isUpdated = true;
-						cInterface = static_cast<JCamera*>(comp)->CullingUserInterface();
-					}
-					else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-					{
-						JLight* light = static_cast<JLight*>(comp);
-						JLightPrivate* lp = static_cast<JLightPrivate*>(&light->PrivateInterface());
-						if (lp->GetFrameUpdateInterface().IsLastUpdated(light))
-							data->isUpdated = true;
-						cInterface = static_cast<JLight*>(comp)->CullingUserInterface();
-					}
-					if (!cInterface.IsUpdateEnd(J_CULLING_TYPE::HD_OCCLUSION))
+					auto fInterface = static_cast<JFrameUpdateInterface*>(comp->ModuleManagedData()->GetFrameUpdateUserInterface());
+					auto cInterface = static_cast<JCullingInterface*>(comp->ModuleManagedData()->GetCullingUserInterface());
+					if (fInterface->IsLastUpdated())
 						data->isUpdated = true;
+
+					if (!cInterface->IsUpdateEnd(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM))
+						data->isUpdated = true;	 
 				}
-				updateHelper.uData[(int)J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS].uploadCountPerTarget = target->hzbOccCullingRequestor.size();
 			}
 		public:
 			void Draw(const bool allowDrawScene)
-			{ 
+			{
 				if (!canDraw)
 					return;
 				/*
@@ -1779,7 +1387,7 @@ namespace JinEngine
 				}
 				else
 					EndFrame(false);
-				resourceManage.context->End(); 
+				resourceManage.context->End();
 			}
 		private:
 			void DrawUseSingleThread()
@@ -1988,7 +1596,7 @@ namespace JinEngine
 			{
 				BeginFrame();
 				ComputeCpuFrustumCulling();
-				 
+
 				for (uint i = 0; i < info.frame.threadCount; ++i)
 					GraphicThreadInteface::CreateDrawThread(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
 
@@ -2007,6 +1615,8 @@ namespace JinEngine
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
+					helper.SetDrawTarget(drawTarget);
+
 					for (const auto& data : drawTarget->frustumCullingRequestor)
 					{
 						if (!data->canDrawThisFrame)
@@ -2104,7 +1714,7 @@ namespace JinEngine
 			}
 			//for multi thread
 			void BeginFrame()
-			{  
+			{
 				//mostly handle binding resource
 				JGraphicBeginFrameSet dataSet;
 				adapter->SettingBeginFrame(option.deviceType, *drawRefSet, dataSet);
@@ -2137,8 +1747,8 @@ namespace JinEngine
 
 						helper.SetDrawTarget(data->GetOwnerTarget());
 						drawing.scene->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
-					}			 
-				} 
+					}
+				}
 				if (drawing.shadowMap->HasPreprocessing())
 				{
 					for (const auto& data : registeredShadowMapRequestor)
@@ -2149,7 +1759,7 @@ namespace JinEngine
 						helper.SetDrawTarget(data->GetOwnerTarget());
 						drawing.shadowMap->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
 					}
-				} 
+				}
 				if (option.IsOcclusionActivated())
 				{
 					if (culling.hzb->HasPreprocessing())
@@ -2172,7 +1782,7 @@ namespace JinEngine
 
 							helper.SetDrawTarget(data->GetOwnerTarget());
 							culling.hd->BeginDraw(dataSet.bind.get(), JDrawHelper::CreateOccCullingHelper(helper, data->comp));
-						} 
+						}
 					}
 				}
 				adapter->ExecuteBeginFrame(option.deviceType, *drawRefSet);
@@ -2191,7 +1801,7 @@ namespace JinEngine
 				auto& registeredFrustumCullingRequestor = JGraphicDrawList::GetRegisteredFrustumCullingRequestor();
 				auto& registeredHzbOccCullingRequestor = JGraphicDrawList::GetRegisteredHzbOccCullingRequestor();
 				auto& registeredHdOccCullingRequestor = JGraphicDrawList::GetRegisteredHdOccCullingRequestor();
-				
+
 				if (option.CanUseSSAO() || option.CanUseRtGi())
 				{
 					for (const auto& data : registeredSceneRequestor)
@@ -2210,7 +1820,7 @@ namespace JinEngine
 						raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
 						raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
 					}
-				} 
+				}
 				if (option.rendering.allowDeferred)
 				{
 					drawing.scene->BindResource(J_GRAPHIC_RENDERING_PROCESS::DEFERRED_SHADING, dataSet.bind.get());
@@ -2222,11 +1832,11 @@ namespace JinEngine
 
 						drawing.scene->DrawSceneShadeMultiThread(dataSet.sceneDraw.get(), JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
 					}
-				} 
+				}
 
 				drawing.scene->BindResource(J_GRAPHIC_RENDERING_PROCESS::FORWARD, dataSet.bind.get());
 				if (option.IsOcclusionActivated())
-				{ 
+				{
 					if (culling.hzb->HasPostprocessing())
 					{
 						for (const auto& data : registeredHzbOccCullingRequestor)
@@ -2274,7 +1884,7 @@ namespace JinEngine
 						drawing.scene->DrawSceneDebugUIMultiThread(dataSet.sceneDraw.get(), copiedHelper);
 					drawing.scene->EndDraw(dataSet.bind.get(), copiedHelper);
 				}
-				
+
 				//after Scene EndDraw
 				if (option.IsOcclusionActivated())
 				{
@@ -2318,7 +1928,7 @@ namespace JinEngine
 					imageProcessing.debug->ComputeCamDebug(dataSet.debugCompute.get(), copiedHelper);
 					imageProcessing.outline->DrawCamOutline(dataSet.outline.get(), copiedHelper);
 				}
-			
+
 				if (option.debugging.allowDisplayLightCullingResult)
 				{
 					culling.lit->BindDebugResource(dataSet.bind.get());
@@ -2328,7 +1938,7 @@ namespace JinEngine
 							continue;
 
 						culling.lit->ExecuteLightClusterDebug(dataSet.litCullingDebug.get(), JDrawHelper::CreateLitCullingHelper(helper, data->jCamera));
-					} 
+					}
 				}
 				adapter->ExecuteMidFrame(option.deviceType, *drawRefSet);
 			}
@@ -2342,7 +1952,7 @@ namespace JinEngine
 					guiBackendInterface->SettingGuiDrawing();
 					guiBackendInterface->Draw(guiAdapter->CreateDrawData(device.get(),
 						resourceManage.graphic.get(),
-						resourceManage.currFrame,
+						resourceManage.frame.get(),
 						option,
 						guiBackendInterface->GetGuiIdentification()));
 				}
@@ -2352,7 +1962,7 @@ namespace JinEngine
 			void Initialize(std::unique_ptr<JGraphicAdapter>&& newAdpter,
 				std::unique_ptr<JGuiBackendDataAdapter> newGuiAdapter,
 				JGuiBackendInterface* newGuiBackendInterface)
-			{
+			{ 
 				const JVector2F clientSize = JWindow::GetClientSize();
 				info.width = clientSize.x;
 				info.height = clientSize.y;
@@ -2362,7 +1972,7 @@ namespace JinEngine
 				guiBackendInterface = newGuiBackendInterface;
 
 				auto pushEvLam = [](std::unique_ptr<Core::JBindHandleBase>&& b) {_JGraphic::Instance().impl->AddInnerEvent(std::move(b)); };
-				JGraphicSubClassShareData shareData(&frameAccess, pushEvLam);
+				JGraphicSubClassShareData shareData(pushEvLam);
 				device = adapter->CreateDevice(option.deviceType, shareData);
 				adapter->CreateResourceManageSubclass(option.deviceType, shareData, resourceManage);
 				adapter->CreateDrawSubclass(option.deviceType, shareData, drawing);
@@ -2420,7 +2030,7 @@ namespace JinEngine
 
 				drawRefSet = nullptr;
 				updateHelper.Clear();
-				device->FlushCommandQueue(); 
+				device->FlushCommandQueue();
 				device->StartPublicCommand();
 
 				for (uint i = 0; i < SIZE_OF_ARRAY(infoChangedListener); ++i)
@@ -2497,8 +2107,8 @@ namespace JinEngine
 
 					if (firstCam != nullptr)
 					{
-						auto gUser = firstCam->GraphicResourceUserInterface();
-						const int index = gUser.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
+						auto gUser = firstCam->ModuleManagedData()->GetGraphicResourceUserInterface();
+						const int index = gUser->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
 						resourceManage.graphic->StoreTexture(device.get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, index, opendInfo->lastRsPath());
 					}
 				}
@@ -2541,6 +2151,457 @@ namespace JinEngine
 				GraphicEventManager::NotifyEvent(guid, evType, evStruct.get());
 			}
 		};
+		class JGraphic::JGraphicModuleImpl : public Rule::JGraphicModuleInterface
+		{
+		private:
+			JGraphicImpl* impl = nullptr;
+		public:
+			JGraphicModuleImpl(JGraphic::JGraphicImpl* impl)
+				:impl(impl)
+			{
+
+			}
+		public:
+			JUserPtr<JGraphicModuleManagedDataFrame> Allocate(const JUserPtr<JObject>& object) final
+			{
+				return impl->resourceManage.objectData->Add(object);
+			}
+			void DeAllocate(JUserPtr<JGraphicModuleManagedDataFrame>& data)final
+			{
+				impl->resourceManage.objectData->Remove(data);
+			}
+		public:
+			bool RegisterScene(JGraphicModuleManagedDataFrame* data, const JGraphicSceneRegisterDesc& desc)final
+			{
+				if (data == nullptr)
+					return false;
+
+				JUserPtr<JScene> scene = Core::ConnectChildUserPtr<JScene>(data->Object());
+				if (scene == nullptr)
+					return false;
+
+				return JGraphicDrawList::AddDrawList(scene);
+			}
+			bool DeRegisterScene(JGraphicModuleManagedDataFrame* data) final
+			{
+				if (data == nullptr)
+					return false;
+
+				JUserPtr<JScene> scene = Core::ConnectChildUserPtr<JScene>(data->Object());
+				if (scene == nullptr)
+					return false;
+
+				return JGraphicDrawList::PopDrawList(scene);
+			}
+		public:
+			//Owner scene had to register before request
+			bool RequestExecutableGraphicFeature(JGraphicModuleManagedDataFrame* data, const JGraphicRequestCreationDesc& desc)final
+			{
+				if (data == nullptr)
+					return false;
+
+				JUserPtr<JComponent> comp = Core::ConnectChildUserPtr<JComponent>(data->Object());
+				if (comp == nullptr)
+					return false;
+
+				JUserPtr<JScene> scene = comp->GetOwner()->GetOwnerScene();
+				switch (desc.type)
+				{
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::DRAW_SCENE:
+					return JGraphicDrawList::AddDrawSceneRequest(scene, Core::ConnectChildUserPtr<JCamera>(comp), desc.frequency);
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP:
+					return JGraphicDrawList::AddDrawShadowRequest(scene, Core::ConnectChildUserPtr<JLight>(comp));
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::FRUSTUM_CULLING:
+					return JGraphicDrawList::AddFrustumCullingRequest(scene, comp, desc.frequency);
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::HZB_OCCLUSION_CULLING:
+					return JGraphicDrawList::AddHzbOccCullingRequest(scene, comp, desc.frequency);
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::HARD_WARE_OCCLUSION_CULLING:
+					return JGraphicDrawList::AddHdOccCullingRequest(scene, comp, desc.frequency);
+				default:
+					break;
+				}
+				return false;
+			}
+			bool CancelExecutableGraphicFeature(JGraphicModuleManagedDataFrame* data, J_GRAPHIC_REQUEST_TYPE type) final
+			{
+				if (data == nullptr)
+					return false;
+
+				JUserPtr<JComponent> comp = Core::ConnectChildUserPtr<JComponent>(data->Object());
+				if (comp == nullptr)
+					return false;
+
+				JUserPtr<JScene> scene = comp->GetOwner()->GetOwnerScene();
+				switch (type)
+				{
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::DRAW_SCENE:
+					return JGraphicDrawList::PopDrawSceneRequest(scene, Core::ConnectChildUserPtr<JCamera>(comp));
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP:
+					return JGraphicDrawList::PopDrawShadowRequest(scene, Core::ConnectChildUserPtr<JLight>(comp));
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::FRUSTUM_CULLING:
+					return JGraphicDrawList::PopFrustumCullingRequest(scene, comp);
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::HZB_OCCLUSION_CULLING:
+					return JGraphicDrawList::PopHzbOccCullingRequest(scene, comp);
+				case JinEngine::J_GRAPHIC_REQUEST_TYPE::HARD_WARE_OCCLUSION_CULLING:
+					return JGraphicDrawList::PopHdOccCullingRequest(scene, comp);
+				default:
+					break;
+				}
+				return false;
+			}
+		public:
+			bool CreateGraphicResource(JGraphicModuleManagedDataFrame* data, const JGraphicResourceCreationDesc& desc, const uint count = 1)final
+			{
+				JGraphicObjectDataSetBase* base = static_cast<JGraphicObjectDataSetBase*>(data);
+				if (count == 0 || base == nullptr)
+					return false;
+
+				auto gInterface = static_cast<JGraphicResourceInterface*>(base->GetGraphicResourceInterface());
+				if (gInterface == nullptr)
+					return false;
+
+				uint successCount = 0;
+				for (uint i = 0; i < count; ++i)
+				{
+					int nextIndex = gInterface->NextResourceIndex(desc.type.resouce, desc.type.task);
+					if (nextIndex == invalidIndex)
+						continue;
+
+					JUserPtr<JGraphicResourceInfo> newInfo = impl->CreateResource(desc);
+					if (newInfo == nullptr)
+						continue;
+					  
+					//objectData->NotifyGraphicResourceCreation()
+					gInterface->AddInfo(newInfo, nextIndex);
+					++successCount;
+
+					impl->resourceManage.objectData->NotifyGraphicResourceCreation(base, newInfo, desc.type.task);
+				}
+				return successCount > 0;
+			}
+			bool DestroyGraphicResource(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint localIndex = 0, const uint count = 1)final
+			{
+				if (count == 0)
+					return false;
+
+				auto gInterface = static_cast<JGraphicResourceInterface*>(data->GetGraphicResourceUserInterface());
+				if (gInterface == nullptr)
+					return false;
+
+				JGraphicResourceInterface::DestoryInfoF destroyF = CreateDestroyGraphicResourceF();
+				gInterface->RemoveInfo(destroyF, typeSet.resouce, typeSet.task, localIndex);
+				return true;
+			}
+			bool DestroyAllGraphicsResourcesOfType(JGraphicModuleManagedDataFrame* data, const J_GRAPHIC_RESOURCE_TYPE type) final
+			{
+				auto gInterface = static_cast<JGraphicResourceInterface*>(data->GetGraphicResourceUserInterface());
+				if (gInterface == nullptr)
+					return false;
+
+				JGraphicResourceInterface::DestoryInfoF destroyF = CreateDestroyGraphicResourceF();
+				gInterface->RemoveInfoOfType(destroyF, type);
+				return true;
+			}
+			bool DestroyAllGraphicsResources(JGraphicModuleManagedDataFrame* data) final
+			{
+				auto gInterface = static_cast<JGraphicResourceInterface*>(data->GetGraphicResourceUserInterface());
+				if (gInterface == nullptr)
+					return false;
+
+				JGraphicResourceInterface::DestoryInfoF destroyF = CreateDestroyGraphicResourceF();
+				gInterface->RemoveInfoAll(destroyF);
+				return true;
+			}
+		public:
+			bool CreateGraphicResourceOption(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint localIndex = 0) final
+			{
+				JUserPtr<JGraphicResourceInfo> existInfo = GetGraphicResourceInfo(data, typeSet, localIndex);
+				return existInfo != nullptr ? impl->CreateOption(existInfo, typeSet.option) : false;
+			}
+			bool DestroyGraphicResourceOption(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint localIndex = 0) final
+			{
+				JUserPtr<JGraphicResourceInfo> existInfo = GetGraphicResourceInfo(data, typeSet, localIndex);
+				return existInfo != nullptr ? impl->DestroyGraphicOption(existInfo, typeSet.option) : false;
+			}
+		public:
+			bool CreateFrameUploadData(JGraphicModuleManagedDataFrame* data, const JFrameUploadDataCreationDesc& desc) final
+			{
+				auto fInterface = static_cast<JFrameUpdateInterface*>(data->GetFrameUpdateUserInterface());
+				if (fInterface == nullptr || !fInterface->HasSpace(desc.type))
+					return false;
+
+				auto newUser = _JGraphic::Instance().impl->CreateFrameUploadData(desc);
+				if (newUser == nullptr)
+					return false;
+
+				return fInterface->Add(newUser);
+			}
+			bool DestroyFrameUploadData(JGraphicModuleManagedDataFrame* data, const J_FRAME_RESOURCE_UPLOAD_TYPE type) final
+			{
+				auto fInterface = static_cast<JFrameUpdateInterface*>(data->GetFrameUpdateUserInterface());
+				if (fInterface == nullptr)
+					return false;
+
+				auto existUser = fInterface->Release(type);
+				if (existUser == nullptr)
+					return false;
+
+				return 	_JGraphic::Instance().impl->DestroyFrameUploadData(existUser);
+			}
+		public:
+			bool CreateCullingData(JGraphicModuleManagedDataFrame* data, const JCullingTypeSet& typeSet) final
+			{
+				auto cInterface = static_cast<JCullingInterface*>(data->GetCullingUserInterface());
+				if (cInterface == nullptr || !cInterface->HasSpace(typeSet.type, typeSet.target))
+					return false;
+
+				JUserPtr<JCullingInfo> info;
+				switch (typeSet.type)
+				{
+				case JinEngine::J_CULLING_TYPE::FRUSTUM:
+				{
+					info = _JGraphic::Instance().impl->CreateFrsutumCullingResultBuffer(typeSet.target);
+					break;
+				}
+				case JinEngine::J_CULLING_TYPE::HZB_OCCLUSION:
+				{
+					if (typeSet.target != J_CULLING_TARGET::RENDERITEM)
+						return false;
+
+					info = _JGraphic::Instance().impl->CreateHzbCullingResultBuffer();
+					break;
+				}
+				case JinEngine::J_CULLING_TYPE::HD_OCCLUSION:
+				{
+					if (typeSet.target != J_CULLING_TARGET::RENDERITEM)
+						return false;
+
+					info = _JGraphic::Instance().impl->CreateHdCullingResultBuffer();
+					break;
+				}
+				default:
+					return false;
+				}
+				cInterface->AddInfo(info);
+				return true;
+			}
+			bool DestroyCullingData(JGraphicModuleManagedDataFrame* data, const JCullingTypeSet& typeSet) final
+			{
+				auto cInterface = static_cast<JCullingInterface*>(data->GetCullingUserInterface());
+				if (cInterface == nullptr)
+					return false;
+				 
+				JCullingInterface::DestoryInfoF destroyF = CreateDestroyCullingF();
+				cInterface->RemoveInfo(destroyF, typeSet.type, typeSet.target);
+				return true;
+			}
+			bool DestroyAllCullingDataOfType(JGraphicModuleManagedDataFrame* data, const J_CULLING_TYPE type)final
+			{
+				auto cInterface = static_cast<JCullingInterface*>(data->GetCullingUserInterface());
+				if (cInterface == nullptr)
+					return false;
+
+				JCullingInterface::DestoryInfoF destroyF = CreateDestroyCullingF();
+				cInterface->RemoveInfoOfType(destroyF, type);
+				return true;
+			}
+			bool DestroyAllCullingData(JGraphicModuleManagedDataFrame* data) final
+			{
+				auto cInterface = static_cast<JCullingInterface*>(data->GetCullingUserInterface());
+				if (cInterface == nullptr)
+					return false;
+
+				JCullingInterface::DestoryInfoF destroyF = CreateDestroyCullingF();
+				cInterface->RemoveInfoAll(destroyF);
+				return true;
+			}
+		public:
+			bool CreateGpuAccelerator(JGraphicModuleManagedDataFrame* data, const JGpuAcceleratorBuildDesc& desc) final
+			{
+				auto gInterface = static_cast<JGpuAcceleratorInterface*>(data->GetGpuAcceleratorUserInterface());
+				if (gInterface == nullptr)
+					return false;
+
+				auto info = _JGraphic::Instance().impl->CreateGpuAccelerator(desc);
+				if (info == nullptr)
+					return false;
+
+				gInterface->AddInfo(info);
+				return true;
+			}
+			bool DestroyGpuAccelerator(JGraphicModuleManagedDataFrame* data) final
+			{
+				auto gInterface = static_cast<JGpuAcceleratorInterface*>(data->GetGpuAcceleratorUserInterface());
+				if (gInterface == nullptr)
+					return false;
+
+				auto existInfo = gInterface->ReleaseInfo();
+				return _JGraphic::Instance().impl->DestroyGpuAccelerator(existInfo);
+			}
+		public:
+			bool CreateCsmHandler(JGraphicModuleManagedDataFrame* data, JCsmHandleCreationDesc& desc) final
+			{
+				auto cInterface = static_cast<JCsmHandlerInterface*>(data->GetCsmHandleUserInterface());
+				if (cInterface == nullptr)
+					return false;
+
+				auto info = _JGraphic::Instance().impl->CreateCsmHandler(desc);
+				if (info == nullptr)
+					return false;
+
+				cInterface->AddInfo(info);
+				return true;
+			}
+			bool CreateCsmTarget(JGraphicModuleManagedDataFrame* data, JCsmTargetCreationDesc& desc) final
+			{
+				auto cInterface = static_cast<JCsmTargetInterface*>(data->GetCsmTargetUserInterface());
+				if (cInterface == nullptr)
+					return false;
+
+				auto info = _JGraphic::Instance().impl->CreateCsmTarget(desc);
+				if (info == nullptr)
+					return false;
+
+				cInterface->AddInfo(info);
+				return true;
+			}
+			bool DestroyCsmHandler(JGraphicModuleManagedDataFrame* data) final
+			{
+				auto cInterface = static_cast<JCsmHandlerInterface*>(data->GetCsmHandleUserInterface());
+				if (cInterface == nullptr)
+					return false;
+
+				return _JGraphic::Instance().impl->DestroyCsmHandler(cInterface->Release());
+			}
+			bool DestroyCsmTarget(JGraphicModuleManagedDataFrame* data) final
+			{
+				auto cInterface = static_cast<JCsmTargetInterface*>(data->GetCsmTargetUserInterface());
+				if (cInterface == nullptr)
+					return false;
+				 
+				return _JGraphic::Instance().impl->DestroyCsmTarget(cInterface->Release());
+			}
+		public:
+			//Shader isn't use interface 
+			//because less features to be provided as an interface 
+			JOwnerPtr<JShaderDataHolder> CreateGraphicShader(const JGraphicShaderInitData& initData) final
+			{
+				return _JGraphic::Instance().impl->CreateGraphicShader(initData);
+			}
+			JOwnerPtr<JShaderDataHolder> CreateComputeShader(const JComputeShaderInitData& initData) final
+			{
+				return _JGraphic::Instance().impl->CreateComputeShader(initData);
+			} 
+		public:
+			bool SetMipmap(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint dataIndex, JTextureCreationDesc& creationDesc)final
+			{
+				auto impl = _JGraphic::Instance().impl.get();
+				auto info = GetGraphicResourceInfo(data, typeSet, dataIndex);
+				return info != nullptr ? impl->SetCustomMipmap(info, creationDesc) : false;
+			}
+			bool SetTextureDetail(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint dataIndex, const JConvertColorDesc& convertDesc)final
+			{
+				auto impl = _JGraphic::Instance().impl.get();
+				auto info = GetGraphicResourceInfo(data, typeSet, dataIndex);
+				return info != nullptr ? impl->SetTextureDetail(info, convertDesc) : false;
+			}
+			bool TryFirstGraphicResourceMipmapBind(JGraphicModuleManagedDataFrame* data, _Inout_ std::vector<ResourceHandle>& gpuHandle, _Inout_ std::vector<Core::JDataHandle>& dataHandle)const final
+			{ 
+				auto gInterface = static_cast<JGraphicResourceInterface*>(data->GetGraphicResourceUserInterface());
+				if (gInterface == nullptr)
+					return false;
+#ifdef DEVELOP 
+				return _JGraphic::Instance().impl->MipmapBindForDebug(gInterface->GetFirstGraphicInfo(), gpuHandle, dataHandle);
+#else
+				return false;
+#endif
+			}
+			void ClearFirstGraphicResourceMipmapBind(JGraphicModuleManagedDataFrame* data, _Inout_ std::vector<Core::JDataHandle>& dataHandle)
+			{
+				auto gInterface = static_cast<JGraphicResourceInterface*>(data->GetGraphicResourceUserInterface());
+				if (gInterface == nullptr)
+					return;
+
+				_JGraphic::Instance().impl->ClearMipmapBind(dataHandle);
+			}
+		public:
+			void UpdateTransform(JGpuAcceleratorUserInterface* gUser, const JUserPtr<JComponent>& comp)noexcept
+			{
+				auto info = static_cast<JGpuAcceleratorInterface*>(gUser)->GetInfo();
+				if (info == nullptr)
+					return;
+
+				_JGraphic::Instance().impl->UpdateTransform(info.Get(), comp);
+			}
+			void AddComponent(JGpuAcceleratorUserInterface* gUser, const JUserPtr<JComponent>& newComp)noexcept
+			{
+				auto info = static_cast<JGpuAcceleratorInterface*>(gUser)->GetInfo();
+				if (info == nullptr)
+					return;
+
+				_JGraphic::Instance().impl->AddComponent(info.Get(), newComp);
+			}
+			void RemoveComponent(JGpuAcceleratorUserInterface* gUser, const JUserPtr<JComponent>& comp)noexcept
+			{
+				auto info = static_cast<JGpuAcceleratorInterface*>(gUser)->GetInfo();
+				if (info == nullptr)
+					return;
+
+				_JGraphic::Instance().impl->RemoveComponent(info.Get(), comp);
+			}
+		public:
+			bool IsActivatedDeferredRendering()const noexcept
+			{
+				return impl->option.rendering.allowDeferred;
+			}
+			bool IsActivatedRaytracing()const noexcept final
+			{
+				return impl->option.rendering.allowRaytracing;
+			}
+			bool IsActivatedRaytracingGI()const noexcept final
+			{
+				return impl->option.CanUseRtGi();
+			}
+			bool IsActivatedPostprocessing()const noexcept final
+			{
+				return impl->option.CanUsePostProcess();
+			}
+		private:
+			JUserPtr<JGraphicResourceInfo> GetGraphicResourceInfo(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint localIndex)
+			{
+				if (data == nullptr)
+					return nullptr;
+
+				auto gInterface = static_cast<JGraphicResourceInterface*>(data->GetGraphicResourceUserInterface());
+				if (gInterface == nullptr)
+					return nullptr;
+
+				return gInterface->GetGraphicInfo(typeSet.resouce, typeSet.task, localIndex);
+			}
+			JGraphicResourceInterface::DestoryInfoF CreateDestroyGraphicResourceF()
+			{
+				auto destroyLam = [](JGraphicResourceInfo* info)
+				{
+					if (info == nullptr)
+						return;
+
+					_JGraphic::Instance().impl->DestroyGraphicTextureResource(info);
+				};
+				return JGraphicResourceInterface::DestoryInfoF(destroyLam);
+			}
+			JCullingInterface::DestoryInfoF CreateDestroyCullingF()
+			{
+				auto destroyLam = [](JCullingInfo* info)
+				{
+					if (info == nullptr)
+						return;
+
+					_JGraphic::Instance().impl->DestroyCullignData(info);
+				};
+				return JCullingInterface::DestoryInfoF(destroyLam);
+			}
+		};
+			   
 #pragma endregion
 
 
@@ -2587,116 +2648,21 @@ namespace JinEngine
 			return impl->EvInterface();
 		}
 		JGraphic::JGraphic()
-			:impl(std::make_unique<JGraphicImpl>(Core::MakeGuid(), this))
-		{}
+			:impl(std::make_unique<JGraphicImpl>(Core::MakeGuid(), this)),
+			moduleImpl(std::make_unique<JGraphicModuleImpl>(impl.get()))
+		{
+			JGraphicModuleInterfaceHolder::Instance().Set(moduleImpl.get());
+		}
 		JGraphic::~JGraphic()
 		{
+			JGraphicModuleInterfaceHolder::Instance().Set(nullptr);
 			impl.reset();
+			moduleImpl.reset();
 		}
-
-		using ResourceInterface = JGraphicPrivate::ResourceInterface;
-		using CullingInterface = JGraphicPrivate::CullingInterface;
-		using AcceleratorInterface = JGraphicPrivate::AcceleratorInterface;
-		using CsmInterface = JGraphicPrivate::CsmInterface;
+		 
 		using DebugInterface = JGraphicPrivate::DebugInterface;
 		using MainAccess = JGraphicPrivate::MainAccess;
-
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateResource(const JGraphicResourceCreationDesc& createDesc, const J_GRAPHIC_RESOURCE_TYPE rType)
-		{
-			return JinEngine::JGraphic::Instance().impl->CreateResource(createDesc, rType);
-		}
-		bool ResourceInterface::CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
-		{
-			return JinEngine::JGraphic::Instance().impl->CreateOption(info, opType);
-		}
-		bool ResourceInterface::DestroyGraphicTextureResource(JGraphicResourceInfo* info)
-		{
-			return JinEngine::JGraphic::Instance().impl->DestroyGraphicTextureResource(info);
-		}
-		bool ResourceInterface::DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype)
-		{
-			return JinEngine::JGraphic::Instance().impl->DestroyGraphicOption(info, optype);
-		}
-		bool ResourceInterface::SetMipmap(const JUserPtr<JGraphicResourceInfo>& info, JTextureCreationDesc createDesc)
-		{
-			return JinEngine::JGraphic::Instance().impl->CreateCustomMipmap(info, createDesc);
-		}
-		bool ResourceInterface::SetTextureDetail(const JUserPtr<JGraphicResourceInfo>& info, const JConvertColorDesc& convertDesc)
-		{
-			return JinEngine::JGraphic::Instance().impl->SetTextureDetail(info, convertDesc);
-		}
-		JOwnerPtr<JShaderDataHolder> ResourceInterface::StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData)
-		{
-			return JinEngine::JGraphic::Instance().impl->StuffGraphicShaderPso(shaderData);
-		}
-		JOwnerPtr<JShaderDataHolder> ResourceInterface::StuffComputeShaderPso(const JComputeShaderInitData& shaderData)
-		{
-			return JinEngine::JGraphic::Instance().impl->StuffComputeShaderPso(shaderData);
-		}
-		bool ResourceInterface::MipmapBindForDebug(const JUserPtr<JGraphicResourceInfo>& info, _Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)
-		{
-			return JinEngine::JGraphic::Instance().impl->MipmapBindForDebug(info, gpuHandle, dataHandle);
-		}
-		void ResourceInterface::ClearMipmapBind(_In_ std::vector<Core::JDataHandle>& dataHandle)
-		{
-			JinEngine::JGraphic::Instance().impl->ClearMipmapBind(dataHandle);
-		}
-
-		JUserPtr<JCullingInfo> CullingInterface::CreateFrsutumCullingResultBuffer(const J_CULLING_TARGET target, const bool useGpu)
-		{
-			return JinEngine::JGraphic::Instance().impl->CreateFrsutumCullingResultBuffer(target, useGpu);
-		}
-		JUserPtr<JCullingInfo> CullingInterface::CreateHzbOccCullingResultBuffer()
-		{
-			return JinEngine::JGraphic::Instance().impl->CreateHzbCullingResultBuffer();
-		}
-		JUserPtr<JCullingInfo> CullingInterface::CreateHdOccCullingResultBuffer()
-		{
-			return JinEngine::JGraphic::Instance().impl->CreateHdCullingResultBuffer();
-		}
-		bool CullingInterface::DestroyCullignData(JCullingInfo* cullingInfo)
-		{
-			return JinEngine::JGraphic::Instance().impl->DestroyCullignData(cullingInfo);
-		}
-
-		JUserPtr<JGpuAcceleratorInfo> AcceleratorInterface::CreateGpuAccelerator(const JGpuAcceleratorBuildDesc& desc)
-		{
-			return JinEngine::JGraphic::Instance().impl->CreateGpuAccelerator(desc);
-		}
-		bool AcceleratorInterface::DestroyGpuAccelerator(JGpuAcceleratorInfo* info)
-		{
-			return JinEngine::JGraphic::Instance().impl->DestroyGpuAccelerator(info);
-		}
-		void AcceleratorInterface::UpdateTransform(JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp)
-		{
-			JinEngine::JGraphic::Instance().impl->UpdateTransform(info, comp);
-		}
-		void AcceleratorInterface::AddComponent(JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp)
-		{
-			JinEngine::JGraphic::Instance().impl->AddComponent(info, comp);
-		}
-		void AcceleratorInterface::RemoveComponent(JGpuAcceleratorInfo* info, const JUserPtr<JComponent>& comp)
-		{
-			JinEngine::JGraphic::Instance().impl->RemoveComponent(info, comp);
-		}
-
-		bool CsmInterface::RegisterHandler(JCsmHandlerInterface* handler)
-		{
-			return JinEngine::JGraphic::Instance().impl->RegisterHandler(handler);
-		}
-		bool CsmInterface::DeRegisterHandler(JCsmHandlerInterface* handler)
-		{
-			return JinEngine::JGraphic::Instance().impl->DeRegisterHandler(handler);
-		}
-		bool CsmInterface::RegisterTarget(JCsmTargetInterface* target)
-		{
-			return JinEngine::JGraphic::Instance().impl->RegisterTarget(target);
-		}
-		bool CsmInterface::DeRegisterTarget(JCsmTargetInterface* target)
-		{
-			return JinEngine::JGraphic::Instance().impl->DeRegisterTarget(target);
-		}
-
+   
 		JGraphicResourceManager* DebugInterface::GetGraphicResourceManager()noexcept
 		{
 			return JinEngine::JGraphic::Instance().impl->GetGraphicResourceManager();
@@ -2722,11 +2688,11 @@ namespace JinEngine
 		}
 		void MainAccess::UpdateFrame()
 		{
-			JinEngine::JGraphic::Instance().impl->UpdateFrameCapacity();
 			JinEngine::JGraphic::Instance().impl->UpdateFrameBuffer();
+			JinEngine::JGraphic::Instance().impl->Update();
 		}
 		void MainAccess::Draw(const bool allowDrawScene)
-		{ 
+		{
 			JinEngine::JGraphic::Instance().impl->Draw(allowDrawScene);
 		}
 		void MainAccess::FlushCommandQueue()
@@ -2738,5 +2704,5 @@ namespace JinEngine
 			JinEngine::JGraphic::Instance().impl->WriteLastRsTexture();
 		}
 #pragma endregion
+		}
 	}
-}

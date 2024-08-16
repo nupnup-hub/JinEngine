@@ -27,7 +27,7 @@ SOFTWARE.
 #include"JPropertyInfo.h"    
 #include"JMethodInfo.h"   
 #include"JTypeBase.h"   
-#include"../Utility/JCommonUtility.h"    
+#include"../Utility/JCommonUtility.h"     
 
 namespace JinEngine
 {
@@ -63,8 +63,11 @@ namespace JinEngine
 		size_t JTypeInfo::TypeGuid()const noexcept
 		{
 			return hashCode;
+		} 		
+		size_t JTypeInfo::DataSize()const noexcept
+		{
+			return dataSize;
 		}
-
 		const PropertyVec JTypeInfo::GetPropertyVec()const noexcept
 		{ 
 			return memberData != nullptr ? memberData->propertyInfoVec : PropertyVec{};
@@ -108,7 +111,7 @@ namespace JinEngine
 		int JTypeInfo::GetInstanceIndex(IdentifierType iden)const noexcept
 		{
 			return instanceData != nullptr ? JCUtil::GetTypeIndex(instanceData->classInstanceVec, iden) : -1;
- 		}
+ 		} 
 		JTypeBase* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)const noexcept
 		{
 			if (instanceData == nullptr)
@@ -396,7 +399,7 @@ namespace JinEngine
 
 			if (extraInitInfo->allocInitInfo->option == nullptr)
 				RegisterEngineDefaultAllocationOption();
-			 
+
 			bool useDefaultAllocation = extraInitInfo->allocInitInfo->option->allocationType == J_ALLOCATION_TYPE::DEFAULT;
 			if (allocationInterface != nullptr || useDefaultAllocation)
 				return;
@@ -421,7 +424,7 @@ namespace JinEngine
 					auto typeInfo = static_cast<JTypeInfo*>(receiver); 
 					auto iden = static_cast<JTypeBase*>(movedPtr);
 					auto& ownerPtr = typeInfo->instanceData->classInstanceMap.find(iden->GetGuid())->second;
-					ownerPtr.SetValidPointer(iden);
+					ownerPtr.Swap(iden);
 
 					int vecIndex = JCUtil::GetTypeIndex(typeInfo->instanceData->classInstanceVec, ownerPtr->GetGuid());
 					typeInfo->instanceData->classInstanceVec[vecIndex] = ownerPtr.Get();
@@ -434,8 +437,7 @@ namespace JinEngine
 				extraInitInfo->allocInitInfo->option->dataCount = JAllocationDesc::initDataCount;
 			if (extraInitInfo->allocInitInfo->option->dataSize < dataSize)
 				extraInitInfo->allocInitInfo->option->dataSize = dataSize;
-
-			//Debug
+			 
 			extraInitInfo->allocInitInfo->option->name = Name();
 			allocationInterface = extraInitInfo->allocInitInfo->creator->CreateAlloc(extraInitInfo->allocInitInfo->option.get());
 			allocationInterface->Initialize(std::move(*extraInitInfo->allocInitInfo->option));

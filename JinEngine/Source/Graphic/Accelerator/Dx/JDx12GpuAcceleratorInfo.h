@@ -37,8 +37,11 @@ namespace JinEngine
 			friend class JDx12GpuAcceleratorManager;
 		private:
 			JDx12GpuAcceleratorManager* manager;
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		private: 
 			JDx12GpuAcceleratorInfo(const J_GPU_ACCELERATOR_BUILD_OPTION buildOptionFlag, std::unique_ptr<JGpuAcceleratorHolder>&& holder, JDx12GpuAcceleratorManager* manager);
+		public:
 			~JDx12GpuAcceleratorInfo();
 		};
 	}

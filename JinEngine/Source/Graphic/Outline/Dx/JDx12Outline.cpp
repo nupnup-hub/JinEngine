@@ -30,6 +30,7 @@ SOFTWARE.
 #include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"  
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
+#include"../../GraphicResource/JGraphicResourceInterface.h"
 #include"../../Utility/Dx/JDx12Utility.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
@@ -112,7 +113,7 @@ namespace JinEngine
 			const JDx12GraphicOutlineDrawSet* dx12Set = static_cast<const JDx12GraphicOutlineDrawSet*>(drawSet);
 			JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12Set->context);
  
-			auto gRInterface = helper.cam->GraphicResourceUserInterface();
+			auto gRInterface = helper.GetResourceInterface();
 			auto rtSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 			auto dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
   

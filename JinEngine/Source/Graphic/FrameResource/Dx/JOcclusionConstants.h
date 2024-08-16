@@ -24,8 +24,8 @@ SOFTWARE.
 
 
 #pragma once
-#include"../../Core/JCoreEssential.h"   
-#include"../../Core/Math/JMatrix.h"
+#include"../../../Core/JCoreEssential.h"   
+#include"../../../Core/Math/JMatrix.h"
 
 namespace JinEngine
 {

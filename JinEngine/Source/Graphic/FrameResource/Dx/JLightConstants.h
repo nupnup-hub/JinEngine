@@ -26,10 +26,10 @@ SOFTWARE.
 #pragma once 
 #include"JOcclusionConstants.h" 
 #include"JFrameConstantsSet.h"
-#include"../JGraphicConstants.h" 
-#include"../../Core/Math/JMathHelper.h" 
-#include"../../Core/Utility/JCommonUtility.h"
-#include"../../Object/GraphicRule/Csm/JGraphicModuleCsmOption.h"
+#include"../../JGraphicConstants.h" 
+#include"../../../Core/Math/JMathHelper.h" 
+#include"../../../Core/Utility/JCommonUtility.h"
+#include"../../../Object/GraphicRule/Csm/JGraphicModuleCsmOption.h"
 #include<DirectXMath.h> 
 
 namespace JinEngine

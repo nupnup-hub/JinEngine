@@ -47,7 +47,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			IMPL_REALLOC_BIND(JObject::JObjectImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 

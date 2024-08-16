@@ -25,7 +25,7 @@ SOFTWARE.
 
 #pragma once
 #include"JOcclusionConstants.h" 
-#include"../../Core/Utility/JCommonUtility.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {

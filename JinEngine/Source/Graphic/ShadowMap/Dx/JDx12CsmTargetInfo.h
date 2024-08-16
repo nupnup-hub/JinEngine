@@ -30,9 +30,20 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		class JDx12CsmTargetInfo : public JCsmTargetInfo
+		class JDx12CsmManager;
+		class JDx12CsmTargetInfo final: public JCsmTargetInfo
 		{
-
+			REGISTER_CLASS_USE_ALLOCATOR(JDx12CsmTargetInfo)
+		private:
+			friend class JDx12CsmManager;
+		private:
+			JDx12CsmManager* manager = nullptr;
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		private:
+			JDx12CsmTargetInfo(JDx12CsmManager* manager,
+				JCsmAreaInfo* areaInfo,
+				GetCsmTargetBoundingFrustumBindPtr&& getBoundingFrustumB);
 		};
 	}
 }

@@ -27,12 +27,6 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 {
-	JCsmTargetInfo::JCsmTargetInfo(JCsmAreaInfo* areaInfo, GetCsmTargetBoundingFrustumBindPtr&& getBoundingFrustumB)
-	{
-		SetFrustumPtr(std::move(getBoundingFrustumB));
-	}
-	JCsmTargetInfo::~JCsmTargetInfo()
-	{} 
 	int JCsmTargetInfo::GetIndex()const noexcept
 	{
 		return index;
@@ -57,4 +51,11 @@ namespace JinEngine::Graphic
 	{
 		return true;
 	}
+	JCsmTargetInfo::JCsmTargetInfo(JCsmAreaInfo* areaInfo, GetCsmTargetBoundingFrustumBindPtr&& getBoundingFrustumB)
+		:areaInfo(areaInfo)
+	{
+		SetFrustumPtr(std::move(getBoundingFrustumB));
+	}
+	JCsmTargetInfo::~JCsmTargetInfo()
+	{}
 }

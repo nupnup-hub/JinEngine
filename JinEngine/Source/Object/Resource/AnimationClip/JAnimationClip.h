@@ -80,6 +80,8 @@ namespace JinEngine
 		std::unique_ptr<JAnimationClipImpl> impl;
 	public:  
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		JUserPtr<JSkeletonAsset> GetClipSkeletonAsset()const noexcept;
 		float GetUpdateFPS()const noexcept;
 		uint GetSampleCount()const noexcept;

@@ -335,7 +335,7 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{
 			JIdentifier::RegisterPrivateInterface(JAnimationFSMdiagram::StaticTypeInfo(), aPrivate);
-			IMPL_REALLOC_BIND(JAnimationFSMdiagram::JAnimationFSMdiagramImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 

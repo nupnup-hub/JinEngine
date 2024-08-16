@@ -852,7 +852,7 @@ namespace JinEngine
 			if (targetSpot != nullptr)
 			{
 				transform = targetSpot->GetOwner()->GetTransform();
-				dirction = targetSpot->GetDirection();
+				dirction = targetSpot->GetWorldDirection();
 				range = targetSpot->GetRange();
 				outAngle = targetSpot->GetOuterConeAngle();
 			}
@@ -1046,7 +1046,7 @@ namespace JinEngine
 		{
 			for (const auto& data : idenVec)
 			{
-				auto litVec = data->GetComponents(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+				auto litVec = data->GetComponents(J_COMPONENT_TYPE::ENGINE_LIGHT);
 				for (const auto& litData : litVec)
 				{
 					J_LIGHT_TYPE litType = static_cast<JLight*>(litData.Get())->GetLightType();

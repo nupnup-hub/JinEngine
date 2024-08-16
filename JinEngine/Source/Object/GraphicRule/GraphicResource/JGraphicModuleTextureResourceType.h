@@ -257,20 +257,22 @@ namespace JinEngine
 	public:
 		J_GRAPHIC_RESOURCE_TYPE resouce = (J_GRAPHIC_RESOURCE_TYPE)-1;
 		J_GRAPHIC_RESOURCE_OPTION_TYPE option = (J_GRAPHIC_RESOURCE_OPTION_TYPE)-1;
+		//option: use indexing resource by interface(resource user holder)
 		J_GRAPHIC_TASK_TYPE task = (J_GRAPHIC_TASK_TYPE)-1;
 	public:
 		JGraphicResourceTypeSet() = default;
-		JGraphicResourceTypeSet(const J_GRAPHIC_RESOURCE_TYPE resouce, const J_GRAPHIC_TASK_TYPE task)
+		JGraphicResourceTypeSet(const J_GRAPHIC_RESOURCE_TYPE resouce, const J_GRAPHIC_TASK_TYPE task = J_GRAPHIC_TASK_TYPE::UNKNOWN)
 			:resouce(resouce), task(task)
-		{
-
-		}
+		{}
 		JGraphicResourceTypeSet(const J_GRAPHIC_RESOURCE_TYPE resouce,
 			const J_GRAPHIC_RESOURCE_OPTION_TYPE option,
 			const J_GRAPHIC_TASK_TYPE task)
 			:resouce(resouce), option(option), task(task)
+		{}
+	public:
+		bool IsSame(const J_GRAPHIC_RESOURCE_TYPE _resouce, const J_GRAPHIC_TASK_TYPE _task = J_GRAPHIC_TASK_TYPE::UNKNOWN)const noexcept
 		{
-
+			return resouce == _resouce && task == _task;
 		}
 	};
 	struct JGraphicResourceCreationDesc

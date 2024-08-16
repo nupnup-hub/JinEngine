@@ -25,7 +25,7 @@ SOFTWARE.
 
 #include"JDx12GraphicResourceManager.h"  
 #include"JDx12GraphicResourceInfo.h"
-#include"JDx12GraphicResourceCreation.h" 
+#include"JDx12GraphicResourceCreation.h"  
 #include"JLoadTextureFromFile.h"
 #include"../Dx/JDx12GraphicResourceHolder.h"
 #include"../JGraphicResourceInterface.h"
@@ -567,9 +567,9 @@ namespace JinEngine::Graphic
 
 			switch (opType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP: 
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP: 
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
 			{
 				switch (bType)
 				{
@@ -585,7 +585,7 @@ namespace JinEngine::Graphic
 					return 0;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
 			{
 				switch (bType)
 				{
@@ -601,7 +601,7 @@ namespace JinEngine::Graphic
 					return 0;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
 			{
 				switch (bType)
 				{
@@ -617,7 +617,7 @@ namespace JinEngine::Graphic
 					return 0;
 				}
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
 			{
 				switch (bType)
 				{
@@ -678,7 +678,7 @@ namespace JinEngine::Graphic
 		{
 			switch (opType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
 				return true;
 			default:
 				return false;
@@ -771,7 +771,7 @@ namespace JinEngine::Graphic
 			{
 				switch (opType)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
+				case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
 					return false;
 				default:
 					break;
@@ -832,6 +832,7 @@ namespace JinEngine::Graphic
 		if (!IsSameDevice(device))
 			return;
 
+		JGraphicResourceManager::Initialize(device);
 		BuildResource(device);
 		//Debug
 		/*
@@ -862,6 +863,7 @@ namespace JinEngine::Graphic
 	void JDx12GraphicResourceManager::Clear()
 	{
 		ClearResource();
+		JGraphicResourceManager::Clear();
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceManager::GetDeviceType()const noexcept
 	{
@@ -985,7 +987,7 @@ namespace JinEngine::Graphic
 	}
 	D3D12_VERTEX_BUFFER_VIEW JDx12GraphicResourceManager::VertexBufferView(const JUserPtr<JMeshGeometry>& mesh)const noexcept
 	{
-		const int arrayIndex = mesh->GraphicResourceUserInterface().GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::VERTEX, 0);
+		const int arrayIndex = mesh->ModuleManagedData()->GetGraphicResourceUserInterface()->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::VERTEX, 0);
 		D3D12_VERTEX_BUFFER_VIEW vbv;
 		vbv.BufferLocation = GetResource(J_GRAPHIC_RESOURCE_TYPE::VERTEX, arrayIndex)->GetGPUVirtualAddress();
 		vbv.StrideInBytes = mesh->GetVertexByteSize();
@@ -994,7 +996,7 @@ namespace JinEngine::Graphic
 	}
 	D3D12_INDEX_BUFFER_VIEW JDx12GraphicResourceManager::IndexBufferView(const JUserPtr<JMeshGeometry>& mesh)const noexcept
 	{
-		const int arrayIndex = mesh->GraphicResourceUserInterface().GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::INDEX, 0);
+		const int arrayIndex = mesh->ModuleManagedData()->GetGraphicResourceUserInterface()->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::INDEX, 0);
 		D3D12_INDEX_BUFFER_VIEW ibv;
 		ibv.BufferLocation = GetResource(J_GRAPHIC_RESOURCE_TYPE::INDEX, arrayIndex)->GetGPUVirtualAddress();
 		ibv.Format = mesh->GetIndexByteSize() == sizeof(uint32) ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
@@ -1153,19 +1155,24 @@ namespace JinEngine::Graphic
 			return false;
 	}
 	void JDx12GraphicResourceManager::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
-	{
+	{ 
+		static constexpr uint pointIndex = (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT;
+		static constexpr uint spotIndex = (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT;
+		static constexpr uint rectIndex = (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT;
+
 		auto dx12Set = static_cast<const JDx12GraphicInfoChangedSet&>(set);
-		if (dx12Set.preInfo.frame.upPLightCapacity != dx12Set.newInfo.frame.upPLightCapacity ||
-			dx12Set.preInfo.frame.upSLightCapacity != dx12Set.newInfo.frame.upSLightCapacity ||
-			dx12Set.preInfo.frame.upRLightCapacity != dx12Set.newInfo.frame.upRLightCapacity)
+		if (dx12Set.preInfo.frame.capacity[pointIndex] != dx12Set.newInfo.frame.capacity[pointIndex] ||
+			dx12Set.preInfo.frame.capacity[spotIndex] != dx12Set.newInfo.frame.capacity[spotIndex] ||
+			dx12Set.preInfo.frame.capacity[rectIndex] != dx12Set.newInfo.frame.capacity[rectIndex])
 		{
 			const JGraphicOption& gOption = GetGraphicOption();
-			JGraphicResourceCreationDesc lightRtDesc;
+			JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+			JGraphicResourceCreationDesc lightRtDesc(typeSet);
 			lightRtDesc.width = gOption.GetClusterXCount();
 			lightRtDesc.height = gOption.GetClusterYCount();
-			lightRtDesc.arraySize = max(max(dx12Set.newInfo.frame.upPLightCapacity, dx12Set.newInfo.frame.upSLightCapacity), dx12Set.newInfo.frame.upRLightCapacity);
+			lightRtDesc.arraySize = max(max(dx12Set.newInfo.frame.capacity[pointIndex], dx12Set.newInfo.frame.capacity[spotIndex]), dx12Set.newInfo.frame.capacity[rectIndex]);
 
-			ReAllocTypePerAllResource(dx12Set.device, lightRtDesc, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING);
+			ReAllocTypePerAllResource(dx12Set.device, lightRtDesc);
 		}
 	}
 	void JDx12GraphicResourceManager::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
@@ -1177,23 +1184,28 @@ namespace JinEngine::Graphic
 			set.preOption.culling.clusterZIndex != set.newOption.culling.clusterZIndex &&
 			set.preOption.culling.lightPerClusterIndex != set.newOption.culling.lightPerClusterIndex &&
 			set.preOption.culling.clusterNear != set.newOption.culling.clusterNear)
-		{ 
+		{
+			static constexpr uint pointIndex = (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT;
+			static constexpr uint spotIndex = (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT;
+			static constexpr uint rectIndex = (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT;
+
 			const JGraphicInfo& gInfo = GetGraphicInfo();
-			JGraphicResourceCreationDesc lightRtDesc;
+			JGraphicResourceTypeSet lightRtTypeSet(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+			JGraphicResourceCreationDesc lightRtDesc(lightRtTypeSet);
 			lightRtDesc.width = set.newOption.GetClusterXCount();
-			lightRtDesc.height = set.newOption.GetClusterYCount();
-			lightRtDesc.arraySize = max(max(gInfo.frame.upPLightCapacity, gInfo.frame.upSLightCapacity), gInfo.frame.upRLightCapacity);
-
-			ReAllocTypePerAllResource(dx12Set.device, lightRtDesc, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_LIGHT_CULLING);
-
-			JGraphicResourceCreationDesc linkedDesc;
+			lightRtDesc.height = set.newOption.GetClusterYCount(); 
+			lightRtDesc.arraySize = max(max(gInfo.frame.capacity[pointIndex], gInfo.frame.capacity[spotIndex]), gInfo.frame.capacity[rectIndex]);
+			ReAllocTypePerAllResource(dx12Set.device, lightRtDesc);
+	 
+			JGraphicResourceTypeSet linkedTypeSet(J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+			JGraphicResourceCreationDesc linkedDesc(linkedTypeSet);
 			linkedDesc.width = set.newOption.GetClusterIndexCount();
-
-			JGraphicResourceCreationDesc offsetDesc;
+			ReAllocTypePerAllResource(dx12Set.device, linkedDesc);
+			
+			JGraphicResourceTypeSet offsetTypeSet(J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);;
+			JGraphicResourceCreationDesc offsetDesc(offsetTypeSet);
 			offsetDesc.width = set.newOption.GetClusterTotalCount();
-
-			ReAllocTypePerAllResource(dx12Set.device, linkedDesc, J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST);
-			ReAllocTypePerAllResource(dx12Set.device, offsetDesc, J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET);
+			ReAllocTypePerAllResource(dx12Set.device, offsetDesc);
 		}
 		else if (set.changedPart == JGraphicOption::TYPE::RENDERING && 
 			set.preOption.rendering.renderTargetFormat != set.newOption.rendering.renderTargetFormat)
@@ -1223,12 +1235,12 @@ namespace JinEngine::Graphic
 			CreationClass::Bind(bindDesc);
 		}
 	}
-	JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType)
+	JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc)
 	{ 
 		if (device == nullptr || !creationDesc.IsValid())
 			return nullptr;
-
-		switch (rType)
+		 
+		switch (creationDesc.type.resouce)
 		{
 		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 			return nullptr;			//invalid call  
@@ -1239,7 +1251,7 @@ namespace JinEngine::Graphic
 		case JinEngine::J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST:
 			return CreateLightLinkedList(device, creationDesc);
 		default:
-			return CommonCreationProcess(device, creationDesc, rType);
+			return CommonCreationProcess(device, creationDesc);
 		}
 	}
 	bool JDx12GraphicResourceManager::CreateOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo> info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
@@ -1331,11 +1343,11 @@ namespace JinEngine::Graphic
 		device->EndPublicCommandSet(data.startCommandThisCreation);
 		return true;
 	}
-	JUserPtr<JDx12GraphicResourceInfo> JDx12GraphicResourceManager::CommonCreationProcess(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType, const ExtraOption& extraOption)
+	JUserPtr<JDx12GraphicResourceInfo> JDx12GraphicResourceManager::CommonCreationProcess(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const ExtraOption& extraOption)
 	{
-		if (!CanCreateResource(rType, device))
+		if (!CanCreateResource(creationDesc.type.resouce, device))
 		{
-			J_LOG_PRINT_OUT("Fail create graphic resouce", Core::GetName(rType));
+			J_LOG_PRINT_OUT("Fail create graphic resouce", Core::GetName(creationDesc.type.resouce));
 			return nullptr;
 		}
 		 
@@ -1344,14 +1356,14 @@ namespace JinEngine::Graphic
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
-		JDx12GraphicResourceHolderDesc result = CreationClass::Create(data, creationDesc, rType);
+		JDx12GraphicResourceHolderDesc result = CreationClass::Create(data, creationDesc);
 		if (result.IsValid())
 		{
-			if (JDx12TypeAttribute::IsBuffer(rType) && creationDesc.uploadBufferDesc != nullptr)
+			if (JDx12TypeAttribute::IsBuffer(creationDesc.type.resouce) && creationDesc.uploadBufferDesc != nullptr)
 			{
 				bool canUpload = true;
 				if (creationDesc.uploadBufferDesc->useEngineDefine)
-					canUpload = JDx12TypeAttribute::TrySetInitBufferPointer(rType, creationDesc.uploadBufferDesc.get());
+					canUpload = JDx12TypeAttribute::TrySetInitBufferPointer(creationDesc.type.resouce, creationDesc.uploadBufferDesc.get());
 
 				canUpload &= creationDesc.uploadBufferDesc->data != nullptr;
 				if (canUpload)
@@ -1367,8 +1379,8 @@ namespace JinEngine::Graphic
 						1);
 				}
 			}
-			userPtr = CreateResourceInfo(rType, std::move(result));
-			if (CreationClass::CanBind(rType) && !extraOption.bindResourceManually)
+			userPtr = CreateResourceInfo(creationDesc.type.resouce, std::move(result));
+			if (CreationClass::CanBind(creationDesc.type.resouce) && !extraOption.bindResourceManually)
 			{
 				auto getNextViewIndexLam = GetNextViewIndexLam;
 				auto addViewIndexLam = AddViewIndexLam;
@@ -1400,7 +1412,7 @@ namespace JinEngine::Graphic
 		if (creationDesc.textureDesc->creationType == JTextureCreationDesc::CREATION_TYPE::LOAD)
 		{
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource = nullptr;
-			res = CreationClass::Load(data, creationDesc, rType, newResource, uploadBuffer, uploadBatch);
+			res = CreationClass::Load(data, creationDesc, newResource, uploadBuffer, uploadBatch);
 			if(res)
 			{
 				userPtr = CreateResourceInfo(rType, JDx12GraphicResourceHolderDesc(std::move(newResource), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
@@ -1412,7 +1424,7 @@ namespace JinEngine::Graphic
 		}
 		else
 		{ 
-			JDx12GraphicResourceHolderDesc holder = CreationClass::Create(data, creationDesc, rType);
+			JDx12GraphicResourceHolderDesc holder = CreationClass::Create(data, creationDesc);
 			auto desc = holder.resource->GetDesc();
 			const size_t resourceSize = holder.elementSize * desc.Width * desc.Height;
 
@@ -1463,7 +1475,7 @@ namespace JinEngine::Graphic
 		std::unique_ptr<DirectX::ResourceUploadBatch> uploadBatch;
 
 		uint heapIndex = GetHeapIndex(rType, J_GRAPHIC_BIND_TYPE::SRV); 
-		bool res = CreationClass::Load(data, creationDesc, rType, newResource, uploadBuffer, uploadBatch, false);
+		bool res = CreationClass::Load(data, creationDesc, newResource, uploadBuffer, uploadBatch, false);
  
 		if (res)
 		{
@@ -1491,7 +1503,7 @@ namespace JinEngine::Graphic
 		ExtraOption extraOption;
 		extraOption.bindResourceManually = true;
 
-		auto user = CommonCreationProcess(device, creationDesc, J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, extraOption);
+		auto user = CommonCreationProcess(device, creationDesc, extraOption);
 		if (user != nullptr)
 		{
 			if (CreateOption(device, user, J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER))
@@ -1635,7 +1647,8 @@ namespace JinEngine::Graphic
 		for (const auto& gInfo : vec)
 		{
 			auto existDesc = gInfo->resourceHolder->GetResource()->GetDesc();
-			JGraphicResourceCreationDesc creationDesc;
+			JGraphicResourceTypeSet typeSet(rType, J_GRAPHIC_TASK_TYPE::UNKNOWN);
+			JGraphicResourceCreationDesc creationDesc(typeSet);
 			creationDesc.width = existDesc.Width;
 			creationDesc.height = existDesc.Height;
 			creationDesc.arraySize = existDesc.DepthOrArraySize;
@@ -1652,7 +1665,7 @@ namespace JinEngine::Graphic
 				}
 			}
 
-			auto dx12Holder = std::make_unique<JDx12GraphicResourceHolder>(CreationClass::Create(data, creationDesc, rType));
+			auto dx12Holder = std::make_unique<JDx12GraphicResourceHolder>(CreationClass::Create(data, creationDesc));
 			gInfo->resourceHolder = std::move(dx12Holder);
 			gInfo->SetPrivateName();
 		}
@@ -1661,23 +1674,23 @@ namespace JinEngine::Graphic
 		device->EndPublicCommandSet(data.startCommandThisCreation);
 		return true;
 	}
-	bool JDx12GraphicResourceManager::ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType)
+	bool JDx12GraphicResourceManager::ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc)
 	{
-		if (!IsSameDevice(device) || !JDx12TypeAttribute::CanReAlloc(rType))
+		if (!IsSameDevice(device) || !JDx12TypeAttribute::CanReAlloc(creationDesc.type.resouce))
 			return false;
 
 		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
 		device->StartPublicCommandSet(data.startCommandThisCreation);
 
-		auto& vec = resource[(uint)rType];
+		auto& vec = resource[(uint)creationDesc.type.resouce];
 		for (const auto& gInfo : vec)
 		{
-			auto dx12Holder = std::make_unique<JDx12GraphicResourceHolder>(CreationClass::Create(data, creationDesc, rType));
+			auto dx12Holder = std::make_unique<JDx12GraphicResourceHolder>(CreationClass::Create(data, creationDesc));
 			gInfo->resourceHolder = std::move(dx12Holder);
 			gInfo->SetPrivateName();
 		}
 
-		ReBind(data.device, rType, 0);
+		ReBind(data.device, creationDesc.type.resouce, 0);
 		device->EndPublicCommandSet(data.startCommandThisCreation);
 		return true;
 	}
@@ -1933,8 +1946,9 @@ namespace JinEngine::Graphic
 			DestroyGraphicTextureResource(device, defaultSceneDsInfo.Release());
 
 		auto graphicInfo = GetGraphicInfo();
-		JGraphicResourceCreationDesc desc(graphicInfo.width, graphicInfo.height);
-		defaultSceneDsInfo = CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL);
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::UNKNOWN);
+		JGraphicResourceCreationDesc desc(typeSet, graphicInfo.width, graphicInfo.height);
+		defaultSceneDsInfo = CreateResource(device, desc);
 		defaultSceneDsInfo->SetPrivateName(L"EndFrameDs");
 	}
 	void JDx12GraphicResourceManager::StoreTexture(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType, const int index, const std::wstring& path)
@@ -1978,9 +1992,9 @@ namespace JinEngine::Graphic
 
 			//Release를 먼저하지않으면 Reset시 유효한 pointer를 소유하므로 pointer 파괴를 시도하며
 			//현재 alloc class에서 메모리를 재배치하는 과정에서 에러를 일으킬수 있으므로
-			//Release() 한다음 Reset()을 호출해야한다.
-			manager->resource[(int)movedInfo->GetGraphicResourceType()][movedInfo->GetArrayIndex()].Release();
-			manager->resource[(int)movedInfo->GetGraphicResourceType()][movedInfo->GetArrayIndex()].Reset(movedInfo);
+			//Release() 한다음 Reset()을 호출해야한다. 
+			//2024-08-15 수정 포인터만 변경하는 Swap 사용 
+			manager->resource[(int)movedInfo->GetGraphicResourceType()][movedInfo->GetArrayIndex()].Swap(movedInfo);
 		};
 		auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);
 		std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();
@@ -2003,19 +2017,19 @@ namespace JinEngine::Graphic
 		resource(holder != nullptr ? holder->GetResource() : nullptr)
 	{
 	}
-	JDx12GraphicResourceComputeSet::JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)
+	JDx12GraphicResourceComputeSet::JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, JGraphicResourceInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)
 		: gm(gm),
-		info(gm->GetDxInfo(rType, gInterface.GetResourceArrayIndex(rType, gInterface.GetResourceIndex(rType, taskType)))),
+		info(gm->GetDxInfo(rType, gInterface->GetResourceArrayIndex(rType, taskType))),
 		holder(info != nullptr ? gm->GetDxHolder(info->GetGraphicResourceType(), info->GetArrayIndex()) : nullptr),
 		resource(holder != nullptr ? holder->GetResource() : nullptr)
 	{
 	}
-	JDx12GraphicResourceComputeSet::JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)
+	JDx12GraphicResourceComputeSet::JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, JGraphicResourceInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)
 		: gm(gm),
-		info(gm->GetDxInfo(rType, gInterface.GetResourceArrayIndex(rType, dataIndex))),
+		info(gm->GetDxInfo(rType, gInterface->GetResourceArrayIndex(rType, dataIndex))),
 		holder(info != nullptr ? gm->GetDxHolder(info->GetGraphicResourceType(), info->GetArrayIndex()) : nullptr),
 		resource(holder != nullptr ? holder->GetResource() : nullptr)
-	{
+	{ 
 	}
 	JDx12GraphicResourceComputeSet::JDx12GraphicResourceComputeSet(JDx12GraphicResourceManager* gm, JGraphicResourceInfo* gInfo, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
 		: gm(gm),

@@ -34,8 +34,7 @@ namespace JinEngine
 	class JComponent;
 	class JGameObject;
 	using GetCTypeInfoCallable = Core::JStaticCallable<Core::JTypeInfo&>; 
-	using IsAvailableOverlapCallable = Core::JStaticCallable<bool>;
-	using SetCFrameDirtyCallable = Core::JStaticCallable<void, JComponent*>; 
+	using IsAvailableOverlapCallable = Core::JStaticCallable<bool>; 
  
 	//parent comp child is chid comp
 	//child comp에 파생 class가 존재할시( ex) JBehavior) const Core::JTypeInfo& parameter로 식별한다
@@ -74,16 +73,10 @@ namespace JinEngine
 	};
 
 	struct CTypePrivateFunc
-	{ 
-	private:
-		SetCFrameDirtyCallable* setFrameDirtyCallable = nullptr; 
+	{   
 	public:
-		CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable);
-		CTypePrivateFunc() = default;
+		CTypePrivateFunc(); 
 		~CTypePrivateFunc();
-	public:
-		void CallSetFrameDirty(JComponent* jComp); 
-		SetCFrameDirtyCallable* GetSetFrameDirtyCallable(); 
 	};
 
 	class CTypeRegister
@@ -113,15 +106,5 @@ namespace JinEngine
 		static J_COMPONENT_TYPE ConvertCompType(const Core::JTypeInfo& info);
 	public:
 		static bool NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept; 
-	};
-
-	class CTypePrivateCall
-	{
-	private:
-		friend class JGameObject;	//conp owner type
-		friend class JScene;		//game obj owner type
-	private:
-		static void CallSetFrameDirty(JComponent* jComp); 
-		static SetCFrameDirtyCallable* GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType); 
 	};
 }

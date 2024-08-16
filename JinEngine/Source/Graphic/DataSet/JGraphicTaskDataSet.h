@@ -48,10 +48,9 @@ namespace JinEngine
 		*/
 		/**
 		* DataSet은 API마다 사용되는 객체를 전방선언한다.
-		*/   
-		class JCullingUserInterface; 
+		*/    
 		class JShareDataHolderInterface;
-		class JCommandContext;
+		class JCommandContext; 
 
 		struct JGraphicDeviceInitSet
 		{ 
@@ -97,7 +96,7 @@ namespace JinEngine
 			JCullingManager* cullingM;
 			JGpuAcceleratorManager* acceleratorM;
 		public:
-			JFrameResource* currFrame;
+			JFrameResourceManager* frameResourceM;
 		public:
 			JGraphicDebug* depthDebug;
 			JDepthTest* depthTest;
@@ -118,7 +117,7 @@ namespace JinEngine
 				JGraphicResourceManager* graphicResourceM,
 				JCullingManager* cullingM,
 				JGpuAcceleratorManager* acceleratorM,
-				JFrameResource* currFrame,
+				JFrameResourceManager* frameResourceM,
 				JGraphicDebug* depthDebug,
 				JDepthTest* depthTest,
 				JBlur* blur,
@@ -405,15 +404,13 @@ namespace JinEngine
 		};
  
 		using PushGraphicEventPtr = void(*)(std::unique_ptr<Core::JBindHandleBase>&&);
-		class JFrameIndexAccess;
 		//can refer any subclass
 		struct JGraphicSubClassShareData
 		{  
 		public:
-			JFrameIndexAccess* frameIndexAccess;
 			PushGraphicEventPtr pushGraphicEventPtr;
 		public:
-			JGraphicSubClassShareData(JFrameIndexAccess* frameIndexAccess, PushGraphicEventPtr pushGraphicEventPtr);
+			JGraphicSubClassShareData(PushGraphicEventPtr pushGraphicEventPtr);
 		};
 
 		struct JGraphicInfoChangedSet : public JGraphicDeviceUser, public Core::JValidInterface

@@ -28,8 +28,5 @@ namespace JinEngine::Graphic
 {
 	JDx12FrameUpdateInfo::JDx12FrameUpdateInfo(const J_FRAME_RESOURCE_UPLOAD_TYPE type, JFrameUpdateAreaInfo* areaInfo, JDx12FrameResourceManager* manager)
 		:JFrameUpdateInfo(type, areaInfo), manager(manager)
-	{}
-	JDx12FrameUpdateInfo::~JDx12FrameUpdateInfo()
-	{ 
-	}
+	{} 
 }

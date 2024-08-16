@@ -29,6 +29,8 @@ SOFTWARE.
 #include"../Material/JMaterial.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h" 
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h" 
@@ -39,27 +41,31 @@ namespace JinEngine
 {
 	using namespace DirectX;
 
-	namespace
+	namespace Private
 	{
-		static JStaticMeshGeometryPrivate sPrivate;
+		static JStaticMeshGeometryPrivate instance;
 	}
- 
+
 	class JStaticMeshGeometry::JStaticMeshGeometryImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JStaticMeshGeometryImpl)
 	public:
-		JWeakPtr<JStaticMeshGeometry> thisPointer = nullptr;
+		JWeakPtr<JStaticMeshGeometry> thisPointer;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		JStaticMeshGeometryImpl(const InitData& initData)
-		{}
-		~JStaticMeshGeometryImpl(){} 
+		{ 
+		}
+		~JStaticMeshGeometryImpl()
+		{ 
+		}
 	public:
 		static std::unique_ptr<Core::JMeshGroup> ReadAssetData(const std::wstring& path)
 		{
 			JFileIOTool tool;
 			if (!tool.Begin(path, JFileIOTool::TYPE::INPUT_STREAM))
 				return nullptr;
-			 
+
 			std::unique_ptr<Core::JStaticMeshGroup> meshGroup = std::make_unique<Core::JStaticMeshGroup>();
 
 			uint meshCount = 0;
@@ -68,7 +74,7 @@ namespace JinEngine
 			JObjectFileIOHelper::LoadAtomicData(tool, meshCount, "MeshCount:");
 			JObjectFileIOHelper::LoadAtomicData(tool, totalVertexCount, "TotalVertexCount:");
 			JObjectFileIOHelper::LoadAtomicData(tool, totalIndexCount, "TotalIndexCount:");
-			 
+
 			tool.PushExistStack("MeshData");
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -95,7 +101,7 @@ namespace JinEngine
 					JObjectFileIOHelper::LoadVector3(tool, vertices[i].position, "P:");
 					JObjectFileIOHelper::LoadVector3(tool, vertices[i].normal, "N:");
 					JObjectFileIOHelper::LoadVector2(tool, vertices[i].texC, "U:");
-					JObjectFileIOHelper::LoadVector3(tool, vertices[i].tangentU, "T:"); 
+					JObjectFileIOHelper::LoadVector3(tool, vertices[i].tangentU, "T:");
 					tool.PopStack();
 				}
 				tool.PopStack();
@@ -113,8 +119,8 @@ namespace JinEngine
 				JObjectFileIOHelper::LoadAtomicData(tool, hasUV, "HasUV:");
 				JObjectFileIOHelper::LoadAtomicData(tool, hasNormal, "HasNormal:");
 				tool.PopStack();
-				meshGroup->AddMeshData(std::make_unique< Core::JStaticMeshData>(name , guid, std::move(indices),hasUV, hasNormal, std::move(vertices)));
-			} 
+				meshGroup->AddMeshData(std::make_unique< Core::JStaticMeshData>(name, guid, std::move(indices), hasUV, hasNormal, std::move(vertices)));
+			}
 			tool.PopStack();
 			tool.PushExistStack("MaterialData");
 			for (uint i = 0; i < meshCount; ++i)
@@ -128,7 +134,7 @@ namespace JinEngine
 		}
 		static bool WriteAssetData(const std::wstring& path, Core::JMeshGroup* meshGroup)
 		{
-			if(meshGroup == nullptr)
+			if (meshGroup == nullptr)
 				return false;
 
 			JFileIOTool tool;
@@ -149,7 +155,7 @@ namespace JinEngine
 				tool.PushArrayMember();
 				JObjectFileIOHelper::StoreJString(tool, staticData->GetName(), "Name:");
 				JObjectFileIOHelper::StoreAtomicData(tool, staticData->GetGuid(), Core::JFileConstant::GetHasObjGuidSymbol());
- 
+
 				const uint vertexCount = staticData->GetVertexCount();
 				const uint indexCount = staticData->GetIndexCount();
 
@@ -165,8 +171,8 @@ namespace JinEngine
 					JObjectFileIOHelper::StoreVector3(tool, vertices.position, "P:");
 					JObjectFileIOHelper::StoreVector3(tool, vertices.normal, "N:");
 					JObjectFileIOHelper::StoreVector2(tool, vertices.texC, "U:");
-					JObjectFileIOHelper::StoreVector3(tool, vertices.tangentU, "T:"); 
-					tool.PopStack(); 
+					JObjectFileIOHelper::StoreVector3(tool, vertices.tangentU, "T:");
+					tool.PopStack();
 				}
 				tool.PopStack();
 				JObjectFileIOHelper::StoreAtomicDataVec(tool, staticData->GetIndexVector(), 8, "Index:");
@@ -191,24 +197,34 @@ namespace JinEngine
 				JObjectFileIOHelper::_StoreHasIden(tool, Core::ConnectChildUserPtr<JMaterial>(meshGroup->GetMeshData(i)->GetMaterial()).Get(), std::to_string(i));
 				//tool.PopStack();
 			}
-			tool.PopStack(); 
+			tool.PopStack();
 			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
-		} 
+		}
 	public:
 		static std::unique_ptr<InitData> CreateInitData(const std::wstring& name, const std::wstring& path, LoadMetadata* meta)
 		{
 			return std::make_unique<InitData>(name, meta->guid, meta->flag, meta->formatIndex, meta->directory, ReadAssetData(path));
 		}
 	public:
+		void Activate()noexcept
+		{ 
+		}
+		void DeActivate()noexcept
+		{ 
+		}
+	public:
+		void Initialize()
+		{ 
+		}
 		void RegisterThisPointer(JStaticMeshGeometry* mesh)
 		{
 			thisPointer = Core::GetWeakPtr(mesh);
 		}
 		static void RegisterTypeData()
 		{
-			Core::JIdentifier::RegisterPrivateInterface(JStaticMeshGeometry::StaticTypeInfo(), sPrivate);
-			IMPL_REALLOC_BIND(JStaticMeshGeometry::JStaticMeshGeometryImpl, thisPointer);
+			Core::JIdentifier::RegisterPrivateInterface(JStaticMeshGeometry::StaticTypeInfo(), Private::instance);
+			IMPL_REALLOC_BIND();
 			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
 		}
 	};
@@ -237,12 +253,30 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JStaticMeshGeometry::PrivateInterface()const noexcept
 	{
-		return sPrivate;
+		return Private::instance;
 	}
+	JGraphicModuleManagedDataFrame* JStaticMeshGeometry::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	} 
 	Core::J_MESHGEOMETRY_TYPE JStaticMeshGeometry::GetMeshGeometryType()const noexcept
 	{
 		return Core::J_MESHGEOMETRY_TYPE::STATIC;
 	}
+	void JStaticMeshGeometry::DoActivate()noexcept
+	{ 
+		if (impl->graphicData == nullptr)
+			impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		JMeshGeometry::DoActivate();
+		impl->Activate();
+	}
+	void JStaticMeshGeometry::DoDeActivate()noexcept
+	{
+		impl->DeActivate();
+		JMeshGeometry::DoDeActivate(); 
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+	}
+
 	JStaticMeshGeometry::JStaticMeshGeometry(InitData& initData)
 		: JMeshGeometry(initData), impl(std::make_unique<JStaticMeshGeometryImpl>(initData))
 	{ }
@@ -252,17 +286,20 @@ namespace JinEngine
 	}
 
 	using CreateInstanceInterface = JStaticMeshGeometryPrivate::CreateInstanceInterface;
-	using AssetDataIOInterface = JStaticMeshGeometryPrivate::AssetDataIOInterface; 
+	using AssetDataIOInterface = JStaticMeshGeometryPrivate::AssetDataIOInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
-	{ 
+	{
 		return Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGeometry>(*static_cast<JStaticMeshGeometry::InitData*>(initData));
 	}
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
-		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JStaticMeshGeometry* mesh = static_cast<JStaticMeshGeometry*>(createdPtr);
 		mesh->impl->RegisterThisPointer(mesh);
+		mesh->impl->graphicData = GraphicModuleInterface()->Allocate(mesh->impl->thisPointer);
+
+		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		mesh->impl->Initialize();
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
@@ -274,7 +311,7 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JStaticMeshGeometry::LoadData::StaticTypeInfo()))
 			return nullptr;
-  
+
 		auto loadData = static_cast<JStaticMeshGeometry::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
@@ -290,10 +327,10 @@ namespace JinEngine
 		if (newMesh == nullptr)
 		{
 			using Impl = JStaticMeshGeometry::JStaticMeshGeometryImpl;
-			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &sPrivate);
+			auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &Private::instance);
 			newMesh.ConnnectChild(idenUser);
-		} 
-		   
+		}
+
 		return newMesh;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -331,7 +368,7 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JStaticMeshGeometry::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		auto storeData = static_cast<JStaticMeshGeometry::StoreData*>(data); 
+		auto storeData = static_cast<JStaticMeshGeometry::StoreData*>(data);
 		JUserPtr<JStaticMeshGeometry>mesh;
 		mesh.ConnnectChild(storeData->obj);
 

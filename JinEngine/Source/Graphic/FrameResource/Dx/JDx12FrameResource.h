@@ -128,12 +128,14 @@ namespace JinEngine
 		public:
 			void SetFenceValue(const GraphicFence value)noexcept;
 		public:
-			void MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint index, const uint range, const uint moveCount)final;
+			void MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint index, const uint moveCount)final;
 		public:
 			void ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)final;
 		public:
 			void ResetCmd(const J_MAIN_THREAD_ORDER type);	//reset specific cmd
 			void ResetCmd(const uint useThreadCount);
+		private:
+			void ClearResource();
 		};
 	}
 }

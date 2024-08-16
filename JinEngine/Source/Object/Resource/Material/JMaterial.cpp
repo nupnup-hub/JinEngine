@@ -33,29 +33,21 @@ SOFTWARE.
 #include"../JResourceObjectEventDesc.h"
 #include"../../Directory/JDirectory.h"
 #include"../../JObjectFileIOHelper.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Math/JMathHelper.h" 
-#include"../../../Application/Project/JApplicationProject.h"
-#include"../../../Graphic/JGraphicConstants.h"
-#include"../../../Graphic/Frameresource/JMaterialConstants.h"
-#include"../../../Graphic/Frameresource/JFrameUpdate.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
+#include"../../../Application/Project/JApplicationProject.h" 
 #include<fstream> 
 namespace JinEngine
 {
-	namespace
+	namespace  Private
 	{
-		using MaterialFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder1<
-			Graphic::JFrameUpdateInterface<Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, Graphic::JMaterialConstants&>>,
-			Graphic::JFrameDirty>;
+		static JMaterialPrivate instance;
 	}
-	namespace
-	{
-		static JMaterialPrivate mPrivate;
-	}
-			
+
 	enum class MATERIAL_TEXTURE
 	{
 		ALBEDO,
@@ -66,67 +58,64 @@ namespace JinEngine
 		AMBIENT,
 		COUNT
 	};
-	class JMaterial::JMaterialImpl : public Core::JTypeImplBase,
-		public MaterialFrameUpdate,
-		public JResourceObjectUserInterface
+	class JMaterial::JMaterialImpl : public Core::JTypeImplBase, public JResourceObjectUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JMaterialImpl)
 	public:
-		using MaterialFrame = JFrameInterface1;
+		JWeakPtr<JMaterial> thisPointer;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
-		JWeakPtr<JMaterial> thisPointer = nullptr;
-	public:
-		JUserPtr<JShader> shader = nullptr;
+		JUserPtr<JShader> shader;
 	public:
 		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0.0f, 1.0f))
-		float metallic = Core::JMaterialParameter::InitMetalic();
+			float metallic = Core::JMaterialParameter::InitMetalic();
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0.0f, 1.0f))
-		float roughness = Core::JMaterialParameter::InitRoughness();
+			float roughness = Core::JMaterialParameter::InitRoughness();
 		REGISTER_PROPERTY_EX(specularFactor, GetSpecular, SetSpecular, GUI_SLIDER(0.0f, 1.0f))
-		float specularFactor = Core::JMaterialParameter::InitSpecularFactor();
+			float specularFactor = Core::JMaterialParameter::InitSpecularFactor();
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-		JVector4<float> albedoColor = Core::JMaterialParameter::InitAlbedoColor();
+			JVector4<float> albedoColor = Core::JMaterialParameter::InitAlbedoColor();
 		JMatrix4x4 matTransform = JMatrix4x4::Identity();
 	public:
 		//Texture
 		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-		JUserPtr<JTexture> albedoMap;
+			JUserPtr<JTexture> albedoMap;
 		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-		JUserPtr<JTexture> normalMap;
+			JUserPtr<JTexture> normalMap;
 		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-		JUserPtr<JTexture> heightMap;
+			JUserPtr<JTexture> heightMap;
 		REGISTER_PROPERTY_EX(metallicMap, GetMetallicMap, SetMetallicMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-		JUserPtr<JTexture>metallicMap;
+			JUserPtr<JTexture>metallicMap;
 		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-		JUserPtr<JTexture>roughnessMap;
+			JUserPtr<JTexture>roughnessMap;
 		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-		JUserPtr<JTexture> ambientOcclusionMap;
+			JUserPtr<JTexture> ambientOcclusionMap;
 		REGISTER_PROPERTY_EX(specularMap, GetSpecularMap, SetSpecularMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-		JUserPtr<JTexture> specularMap;
+			JUserPtr<JTexture> specularMap;
 	public:
 		//Shader function option
 		//수정필요
 		//isDebug
 		REGISTER_PROPERTY_EX(shadow, OnShadow, SetShadow, GUI_CHECKBOX())
-		bool shadow = false;
+			bool shadow = false;
 		REGISTER_PROPERTY_EX(light, OnLight, SetLight, GUI_CHECKBOX())
-		bool light = false;
+			bool light = false;
 		REGISTER_PROPERTY_EX(albedoMapOnly, OnAlbedoOnly, SetAlbedoMapOnly, GUI_CHECKBOX())
-		bool albedoMapOnly = false; 
+			bool albedoMapOnly = false;
 		REGISTER_PROPERTY_EX(skyMaterial, IsSkyMaterial, SetSkyMaterial, GUI_CHECKBOX())
-		bool skyMaterial = false;
+			bool skyMaterial = false;
 		bool isDebugMaterial = false;
 		bool alphaClip = false;
 	public:
 		bool canUpdateShader = true;		//데이터 로드할때 마지막에 쉐이더 업데이트하기 위한 용도
 	public:
-		JGraphicShaderCondition shaderCond;  
+		JGraphicShaderCondition shaderCond;
 	public:
 		JMaterialImpl(const InitData& initData, JMaterial* thisMatRaw)
-		{ 
+		{
 		}
 		~JMaterialImpl()
-		{ 
+		{
 		}
 	public:
 		float GetMetallic() const noexcept
@@ -178,7 +167,7 @@ namespace JinEngine
 			return specularMap;
 		}
 		J_GRAPHIC_SHADER_FUNCTION GetShaderGFunctionFlag()const noexcept
-		{ 
+		{
 			J_GRAPHIC_SHADER_FUNCTION gFunction = SHADER_FUNCTION_NONE;
 			if (albedoMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALBEDO_MAP);
 			if (specularMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SPECULAR_MAP);
@@ -200,37 +189,37 @@ namespace JinEngine
 			return shaderCond;
 		}
 		int TryGetResourceArrayIndex(const JUserPtr<JTexture>& texture, const int failReturn = invalidIndex)const noexcept
-		{ 
-			return texture != nullptr ? texture->GraphicResourceUserInterface().GetFirstResourceArrayIndex() : failReturn;
+		{
+			return texture != nullptr ? texture->ModuleManagedData()->GetGraphicResourceUserInterface()->GetFirstResourceArrayIndex() : failReturn;
 		}
 	public:
 		void SetMetallic(const float value) noexcept
 		{
 			metallic = std::clamp(value, 0.0f, 1.0f);
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetRoughness(const float value) noexcept
 		{
 			roughness = std::clamp(value, 0.0f, 1.0f);
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetSpecular(const float value) noexcept
 		{
 			specularFactor = std::clamp(value, 0.0f, 1.0f);
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetAlbedoColor(const JVector4<float>& value)noexcept
 		{
 			albedoColor = value;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetMatTransform(const JMatrix4x4& value)noexcept
 		{
 			matTransform = value;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetAlbedoMap(JUserPtr<JTexture> newTexture) noexcept
-		{ 
+		{
 			SetTexture(albedoMap, newTexture, SHADER_FUNCTION_ALBEDO_MAP);
 		}
 		void SetSpecularMap(JUserPtr<JTexture> newTexture) noexcept
@@ -256,7 +245,7 @@ namespace JinEngine
 		void SetAmbientOcclusionMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(ambientOcclusionMap, newTexture, SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP);
-		} 
+		}
 		void SetTexture(JUserPtr<JTexture>& existingTexture,
 			JUserPtr<JTexture> newTexture,
 			const J_GRAPHIC_SHADER_FUNCTION shaderFunction)
@@ -267,8 +256,8 @@ namespace JinEngine
 			if (thisPointer->IsActivated())
 				CallOnResourceReference(existingTexture.Get());
 
-			SetFrameDirty();	
-			SetNewFunctionFlag(GetShaderGFunctionFlag()); 
+			JGMUtil::SetFrameDirty(graphicData.Get());
+			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}
 		void SetShadow(const bool value)noexcept
 		{
@@ -276,7 +265,7 @@ namespace JinEngine
 				return;
 
 			shadow = value;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}
 		void SetLight(const bool value)noexcept
@@ -285,7 +274,7 @@ namespace JinEngine
 				return;
 
 			light = value;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}
 		void SetAlbedoMapOnly(const bool value)noexcept
@@ -294,9 +283,9 @@ namespace JinEngine
 				return;
 
 			albedoMapOnly = value;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
-		}	 
+		}
 		void SetSkyMaterial(const bool value)noexcept
 		{
 			if (skyMaterial == value)
@@ -306,7 +295,7 @@ namespace JinEngine
 			SetNonCulling(true);
 			SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
 
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}
 		void SetDebugMaterial(const bool value)noexcept
@@ -315,7 +304,7 @@ namespace JinEngine
 				return;
 
 			isDebugMaterial = value;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}
 		void SetAlphaClip(const bool value)noexcept
@@ -324,7 +313,7 @@ namespace JinEngine
 				return;
 
 			alphaClip = value;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}
 		void SetNonCulling(const bool value)noexcept
@@ -338,7 +327,7 @@ namespace JinEngine
 			else
 				shaderCond.cullModeCondition = J_SHADER_APPLIY_CONDITION::NOT;
 			shaderCond.isCullModeNone = value;
-			SetFrameDirty(); 
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewOption(GetShaderCondition());
 		}
 		void SetPrimitiveType(const J_SHADER_PRIMITIVE_TYPE value)noexcept
@@ -351,7 +340,7 @@ namespace JinEngine
 				shaderCond.primitiveCondition = J_SHADER_APPLIY_CONDITION::APPLY;
 			else
 				shaderCond.primitiveCondition = J_SHADER_APPLIY_CONDITION::NOT;
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewOption(GetShaderCondition());
 		}
 		void SetDepthCompareFunc(const J_SHADER_DEPTH_COMPARISON_FUNC value)noexcept
@@ -364,7 +353,7 @@ namespace JinEngine
 				shaderCond.depthCompareCondition = J_SHADER_APPLIY_CONDITION::APPLY;
 			else
 				shaderCond.depthCompareCondition = J_SHADER_APPLIY_CONDITION::NOT;
-			SetFrameDirty(); 
+			JGMUtil::SetFrameDirty(graphicData.Get());
 			SetNewOption(GetShaderCondition());
 		}
 		void SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc)
@@ -377,12 +366,12 @@ namespace JinEngine
 
 			JGraphicShaderCondition subPos;
 			if (shader != nullptr)
-				subPos = shader->GetShaderCondition(); 
+				subPos = shader->GetShaderCondition();
 
 			JUserPtr<JShader> newShader = JShader::FindShader(newFunc, subPos);
 			if (newShader == nullptr)
 				newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, newFunc, subPos);
-			 
+
 			SetShader(newShader);
 		}
 		void SetNewOption(const JGraphicShaderCondition newPso)
@@ -402,7 +391,7 @@ namespace JinEngine
 			}
 			else
 				newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, SHADER_FUNCTION_NONE, newPso);
-			 
+
 			SetShader(newShader);
 		}
 		void SetShader(JUserPtr<JShader> newShader)noexcept
@@ -411,7 +400,7 @@ namespace JinEngine
 			JShader* preShader = shader.Get();
 			shader = newShader;
 			CallOnResourceReference(shader.Get());
-			 
+
 			//if (preShader != nullptr && CallGetResourceReferenceCount(preShader) == 0)
 			//	BeginDestroy(preShader);
 		}
@@ -477,25 +466,48 @@ namespace JinEngine
 			else
 				SetShader(JICI::Create<JShader>(OBJECT_FLAG_NONE, GetShaderGFunctionFlag(), GetShaderCondition()));
 		}
-		void PopTexture(JTexture* texture)noexcept
+		bool PopTexture(JTexture* texture)noexcept
 		{
 			const size_t tarGuid = texture->GetGuid();
+			bool result = false;
 			if (HasAlbedoMapTexture() && albedoMap->GetGuid() == tarGuid)
+			{
 				SetAlbedoMap(JUserPtr<JTexture>{});
+				result = true;
+			}
 			if (HasSpecularMapTexture() && specularMap->GetGuid() == tarGuid)
+			{
 				SetSpecularMap(JUserPtr<JTexture>{});
+				result = true;
+			}
 			if (HasNormalMapTexture() && normalMap->GetGuid() == tarGuid)
+			{
 				SetNormalMap(JUserPtr<JTexture>{});
+				result = true;
+			}
 			if (HasHeightMapTexture() && heightMap->GetGuid() == tarGuid)
+			{
 				SetHeightMap(JUserPtr<JTexture>{});
+				result = true;
+			}
 			if (HasMetallicMapTexture() && metallicMap->GetGuid() == tarGuid)
+			{
 				SetMetallicMap(JUserPtr<JTexture>{});
+				result = true;
+			}
 			if (HasRoughnessMapTexture() && roughnessMap->GetGuid() == tarGuid)
+			{
 				SetRoughnessMap(JUserPtr<JTexture>{});
+				result = true;
+			}
 			if (HasAmbientOcclusionMapTexture() && ambientOcclusionMap->GetGuid() == tarGuid)
+			{
 				SetAmbientOcclusionMap(JUserPtr<JTexture>{});
+				result = true;
+			}
+			return result;
 		}
-	public:
+	private:
 		void OnResourceRef()
 		{
 			CallOnResourceReference(albedoMap.Get());
@@ -522,21 +534,12 @@ namespace JinEngine
 
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 			{
-				const size_t objGuid = jRobj->GetGuid(); 
+				const size_t objGuid = jRobj->GetGuid();
 				if (jRobj->GetResourceType() == J_RESOURCE_TYPE::TEXTURE)
 				{
-					JTexture* texture = static_cast<JTexture*>(jRobj);
-					const int arrayIndex = texture->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
-
-					PopTexture(texture);
-					if (!IsFrameDirted() && (TryGetResourceArrayIndex(albedoMap) >= arrayIndex ||
-						TryGetResourceArrayIndex(normalMap) >= arrayIndex ||
-						TryGetResourceArrayIndex(heightMap) >= arrayIndex ||
-						TryGetResourceArrayIndex(metallicMap) >= arrayIndex ||
-						TryGetResourceArrayIndex(roughnessMap) >= arrayIndex ||
-						TryGetResourceArrayIndex(ambientOcclusionMap) >= arrayIndex ||
-						TryGetResourceArrayIndex(specularMap) >= arrayIndex))
-						SetFrameDirty();
+					JTexture* texture = static_cast<JTexture*>(jRobj); 
+					if (PopTexture(texture))
+						JGMUtil::SetFrameDirty(graphicData.Get());
 				}
 				else if (shader != nullptr && shader->GetGuid() == objGuid)
 					SetShader(nullptr);
@@ -544,23 +547,24 @@ namespace JinEngine
 			else if (eventType == J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE &&
 				jRobj->GetResourceType() == J_RESOURCE_TYPE::TEXTURE &&
 				desc != nullptr)
-			{ 
-				JResourceUpdateEvDesc* evDesc = static_cast<JResourceUpdateEvDesc*>(desc);			 
+			{
+				JResourceUpdateEvDesc* evDesc = static_cast<JResourceUpdateEvDesc*>(desc);
 				switch (evDesc->action)
 				{
 				case JinEngine::JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_ONLY:
 				{
-					SetFrameDirty();
+					JGMUtil::SetFrameDirty(graphicData.Get());
 					break;
 				}
 				case JinEngine::JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER:
 				{
-					const int frameIndex = GetFrameIndex();
+					const int frameIndex = graphicData->GetFrameUpdateUserInterface()->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL);
 					auto rawVec = thisPointer->GetTypeInfo().GetInstanceRawPtrVec();
 					for (const auto& data : rawVec)
 					{
-						if (static_cast<JMaterial*>(data)->impl->GetFrameIndex() > frameIndex)
-							static_cast<JMaterial*>(data)->impl->SetFrameDirty();
+						auto fUser = static_cast<JMaterial*>(data)->impl->graphicData->GetFrameUpdateUserInterface();
+						if (fUser->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL) > frameIndex)
+							fUser->SetFrameDirty();
 					}
 					break;
 				}
@@ -568,25 +572,6 @@ namespace JinEngine
 					break;
 				}
 			}
-		}
-	public:
-		void UpdateFrame(Graphic::JMaterialConstants& constant)noexcept final
-		{    
-			static constexpr uint missingIndex = Graphic::Constants::missingIndex;
-
-			constant.albedoColor = albedoColor;
-			constant.metallic = metallic;
-			constant.roughness = roughness;
-			constant.specularFactor = specularFactor;
-			constant.matTransform.StoreXM(XMMatrixTranspose(matTransform.LoadXM()));
-			constant.albedoMapIndex = TryGetResourceArrayIndex(albedoMap, missingIndex);
-			constant.normalMapIndex = TryGetResourceArrayIndex(normalMap, missingIndex);
-			constant.heightMapIndex = TryGetResourceArrayIndex(heightMap, missingIndex);
-			constant.metallicMapIndex = TryGetResourceArrayIndex(metallicMap, missingIndex);
-			constant.roughnessMapIndex = TryGetResourceArrayIndex(roughnessMap, missingIndex);
-			constant.ambientOcclusionMapIndex = TryGetResourceArrayIndex(ambientOcclusionMap, missingIndex);
-			constant.specularMapIndex = TryGetResourceArrayIndex(specularMap, missingIndex);		 
-			MaterialFrame::MinusMovedDirty();
 		}
 	public:
 		bool ReadAssetData()
@@ -597,7 +582,7 @@ namespace JinEngine
 
 			bool sShadow = false;
 			bool sLight = false;
-			bool sAlbedoOnly = false; 
+			bool sAlbedoOnly = false;
 			bool sIsSkyMateral = false;
 			bool sIsDebugMaterial = false;
 			bool sAlphaclip = false;
@@ -627,11 +612,11 @@ namespace JinEngine
 
 			JObjectFileIOHelper::LoadVector4(tool, sAlbedoColor, "AlbedoColor");
 			JObjectFileIOHelper::LoadMatrix4x4(tool, sMatTransform, "Matransform");
- 
+
 			JUserPtr<JTexture> sAlbedoMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "AlbedoMap");
 			JUserPtr<JTexture> sNormalMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "NormalMap");
 			JUserPtr<JTexture> sHeightMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "HeightMap");
-			JUserPtr<JTexture> sMetallicMap =  JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "MetallicMap");
+			JUserPtr<JTexture> sMetallicMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "MetallicMap");
 			JUserPtr<JTexture> sRoughnessMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "RoughnessMap");
 			JUserPtr<JTexture> sAmbientOcclusionMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "AmbientOcclusionMap");
 			JUserPtr<JTexture> sSpecularMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "SpecularMap");
@@ -641,7 +626,7 @@ namespace JinEngine
 			SetShadow(sShadow);
 			SetLight(sLight);
 			SetAlbedoMapOnly(sAlbedoOnly);
-			SetNonCulling(sNonCulling); 
+			SetNonCulling(sNonCulling);
 			SetSkyMaterial(sIsSkyMateral);
 			SetDebugMaterial(sIsDebugMaterial);
 			SetAlphaClip(sAlphaclip);
@@ -663,7 +648,7 @@ namespace JinEngine
 			SetAmbientOcclusionMap(sAmbientOcclusionMap);
 			SetSpecularMap(sSpecularMap);
 			canUpdateShader = true;
-			 
+
 			TryUpdateShader();
 			return true;
 		}
@@ -683,7 +668,7 @@ namespace JinEngine
 			JObjectFileIOHelper::StoreAtomicData(tool, shaderCond.isCullModeNone, "NonCulling");
 			JObjectFileIOHelper::StoreEnumData(tool, shaderCond.primitiveType, "PrimitiveType");
 			JObjectFileIOHelper::StoreEnumData(tool, shaderCond.depthCompareFunc, "DepthComparesionFunc");
-			 
+
 			JObjectFileIOHelper::StoreAtomicData(tool, metallic, "Metallic");
 			JObjectFileIOHelper::StoreAtomicData(tool, roughness, "Roughness");
 			JObjectFileIOHelper::StoreAtomicData(tool, specularFactor, "Specular");
@@ -698,44 +683,49 @@ namespace JinEngine
 			JObjectFileIOHelper::_StoreHasIden(tool, roughnessMap.Get(), "RoughnessMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, ambientOcclusionMap.Get(), "AmbientOcclusionMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, specularMap.Get(), "SpecularMap");
-			 
+
 			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
 		}
 	public:
-		void NotifyReAlloc()
+		void Activate()
 		{
-			MaterialFrame::ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, (MaterialFrame*)this);
+			//all material belong same area
+			static constexpr size_t materialArea = 0;
+			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, materialArea);
+			OnResourceRef();
+
+			thisPointer->SetValid(true);
+			JGMUtil::SetFrameDirty(graphicData.Get());
+		}
+		void DeActivate()
+		{
+			thisPointer->SetValid(false);
+			OffResourceRef();
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL);
+		}
+	public:
+		void NotifyReAlloc()
+		{ 
 			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 	public:
 		void Initialize(InitData* initData)
 		{
 			SetNewFunctionFlag(SHADER_FUNCTION_NONE);
-			SetFrameDirty();
 		}
 		void RegisterThisPointer(JMaterial* mat)
 		{
 			thisPointer = Core::GetWeakPtr(mat);
 		}
 		void RegisterPostCreation()
-		{ 
-			auto vec = {J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE , J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE };
+		{
+			auto vec = { J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE , J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE };
 			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), vec);
 		}
 		void DeRegisterPreDestruction()
 		{
 			RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
-		}
-		void RegisterRItemFrameData()
-		{
-			//all material belong same area
-			static constexpr size_t materialArea = 0;
-			MaterialFrame::RegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, (MaterialFrame*)this, materialArea);
-		}
-		void DeRegisterRItemFrameData()
-		{
-			MaterialFrame::DeRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL, (MaterialFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
@@ -745,20 +735,14 @@ namespace JinEngine
 			static GetAvailableFormatCallable getAvailableFormatCallable{ &JMaterial::GetAvailableFormat };
 			static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
-			static auto setFrameLam = [](JResourceObject* jRobj)
-			{
-				static_cast<JMaterial*>(jRobj)->impl->SetFrameDirty();
-			};
-			static SetRFrameDirtyCallable setFrameDirtyCallable{ setFrameLam }; 
-
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SHADER}, false, true, true, false };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
-			static RTypePrivateFunc rTypeiFunc{ &setFrameDirtyCallable};
+			static RTypePrivateFunc rTypeiFunc{};
 
 			RegisterRTypeInfo(JMaterial::StaticTypeInfo(), rTypeHint, rTypeCFunc, rTypeiFunc);
-			Core::JIdentifier::RegisterPrivateInterface(JMaterial::StaticTypeInfo(), mPrivate);
+			Core::JIdentifier::RegisterPrivateInterface(JMaterial::StaticTypeInfo(), Private::instance);
 
-			IMPL_REALLOC_BIND(JMaterial::JMaterialImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -767,7 +751,7 @@ namespace JinEngine
 	{}
 
 	JMaterial::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory)
-		:JResourceObject::InitData(JMaterial::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory)
+		: JResourceObject::InitData(JMaterial::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory)
 	{}
 	JMaterial::InitData::InitData(const size_t guid, const uint8 formatIndex, const JUserPtr<JDirectory>& directory)
 		: JResourceObject::InitData(JMaterial::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory)
@@ -782,10 +766,18 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JMaterial::PrivateInterface()const noexcept
 	{
-		return mPrivate;
-	} 
+		return Private::instance;
+	}
+	JGraphicModuleManagedDataFrame* JMaterial::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JMaterial::GetSubTypeIndex()const noexcept
+	{
+		return 0;
+	}
 	J_RESOURCE_TYPE JMaterial::GetResourceType()const noexcept
-	{  
+	{
 		return GetStaticResourceType();
 	}
 	std::wstring JMaterial::GetFormat()const noexcept
@@ -912,7 +904,7 @@ namespace JinEngine
 	void JMaterial::SetAmbientOcclusionMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetAmbientOcclusionMap(texture);
-	} 
+	}
 	void JMaterial::SetShadow(const bool value)noexcept
 	{
 		impl->SetShadow(value);
@@ -924,7 +916,7 @@ namespace JinEngine
 	void JMaterial::SetAlbedoMapOnly(const bool value)noexcept
 	{
 		impl->SetAlbedoMapOnly(value);
-	} 
+	}
 	void JMaterial::SetSkyMaterial(const bool value)noexcept
 	{
 		impl->SetSkyMaterial(value);
@@ -964,10 +956,6 @@ namespace JinEngine
 	bool JMaterial::OnNonCulling()const noexcept
 	{
 		return impl->OnNonCulling();
-	} 
-	bool JMaterial::IsFrameDirted()const noexcept
-	{
-		return impl->IsFrameDirted();
 	}
 	bool JMaterial::IsSkyMaterial()const noexcept
 	{
@@ -1014,32 +1002,28 @@ namespace JinEngine
 	}
 	void JMaterial::DoActivate() noexcept
 	{
+		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JResourceObject::DoActivate();
-		SetValid(true);
-		impl->SetFrameDirty(); 
-		impl->OnResourceRef();
+		impl->Activate();
 	}
 	void JMaterial::DoDeActivate()noexcept
 	{
-		SetValid(false);
-		impl->OffFrameDirty();
-		impl->OffResourceRef();
+		impl->DeActivate();
 		JResourceObject::DoDeActivate();
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	}
 	JMaterial::JMaterial(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JMaterialImpl>(initData, this))
-	{		
+	{
 	}
 	JMaterial::~JMaterial()
-	{ 
+	{
 		impl.reset();
 	}
 
 	using CreateInstanceInterface = JMaterialPrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JMaterialPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JMaterialPrivate::AssetDataIOInterface;
-	using FrameUpdateInterface = JMaterialPrivate::FrameUpdateInterface;
-	using FrameIndexInterface = JMaterialPrivate::FrameIndexInterface; 
 	using UpdateShaderInterface = JMaterialPrivate::UpdateShaderInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
@@ -1052,7 +1036,6 @@ namespace JinEngine
 		JMaterial* mat = static_cast<JMaterial*>(createdPtr);
 		mat->impl->RegisterThisPointer(mat);
 		mat->impl->RegisterPostCreation();
-		mat->impl->RegisterRItemFrameData();
 		mat->impl->Initialize(static_cast<JMaterial::InitData*>(initData));
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
@@ -1062,9 +1045,8 @@ namespace JinEngine
 	}
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
-	{ 
+	{
 		static_cast<JMaterial*>(ptr)->impl->DeRegisterPreDestruction();
-		static_cast<JMaterial*>(ptr)->impl->DeRegisterRItemFrameData();
 		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
@@ -1072,7 +1054,7 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JMaterial::LoadData::StaticTypeInfo()))
 			return nullptr;
- 
+
 		auto loadData = static_cast<JMaterial::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
@@ -1088,7 +1070,7 @@ namespace JinEngine
 		if (newMat == nullptr)
 		{
 			initData->name = pathData.name;
-			auto idenUser = mPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &mPrivate);
+			auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::move(initData), &Private::instance);
 			newMat.ConnnectChild(idenUser);
 		}
 		newMat->impl->ReadAssetData();
@@ -1143,44 +1125,6 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	bool FrameUpdateInterface::UpdateStart(JMaterial* mat, const bool isUpdateForced)noexcept
-	{
-		if (isUpdateForced)
-			mat->impl->SetFrameDirty();
-
-		mat->impl->SetLastFrameUpdatedTrigger(false);
-		mat->impl->SetLastFrameHotUpdatedTrigger(false);
-		return mat->impl->IsFrameDirted();
-	}
-	void FrameUpdateInterface::UpdateFrame(JMaterial* mat, Graphic::JMaterialConstants& constants)noexcept
-	{
-		mat->impl->UpdateFrame(constants);
-	}
-	void FrameUpdateInterface::UpdateEnd(JMaterial* mat)noexcept
-	{
-		if (mat->impl->IsFrameHotDirted())
-			mat->impl->SetLastFrameHotUpdatedTrigger(true);
-		mat->impl->SetLastFrameUpdatedTrigger(true);
-		mat->impl->UpdateFrameEnd();
-	}
-	uint FrameUpdateInterface::GetMaterialFrameIndex(JMaterial* mat)noexcept
-	{
-		return mat->impl->MaterialFrame::GetFrameIndex();
-	}
-	bool FrameUpdateInterface::IsLastFrameUpdated(JMaterial* mat)
-	{
-		return mat->impl->IsLastFrameUpdated();
-	}
-	bool FrameUpdateInterface::HasRecopyRequest(JMaterial* mat)noexcept
-	{
-		return mat->impl->MaterialFrame::HasMovedDirty();
-	}
-
-	uint FrameIndexInterface::GetMaterialFrameIndex(JMaterial* mat)noexcept
-	{
-		return mat->impl->MaterialFrame::GetFrameIndex();
-	}
- 
 	void UpdateShaderInterface::OnUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept
 	{
 		mat->impl->canUpdateShader = true;
@@ -1190,7 +1134,7 @@ namespace JinEngine
 		mat->impl->canUpdateShader = false;
 	}
 	void UpdateShaderInterface::UpdateShader(const JUserPtr<JMaterial>& mat)noexcept
-	{ 
+	{
 		mat->impl->TryUpdateShader();
 	}
 

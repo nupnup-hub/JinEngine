@@ -114,8 +114,8 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface();
-		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		auto gInterface = helper.GetResourceInterface();
+		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		JDx12GraphicResourceComputeSet dstSet = context->ComputeSet(imageShare->GetUpdateWaitIntermediate());
 	 
 		const JVector2F dstSize = dstSet.info->GetResourceSize();
@@ -146,10 +146,10 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface();
+		auto gInterface = helper.GetResourceInterface();
 		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
-		JDx12GraphicResourceComputeSet dstSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
-		JDx12GraphicResourceComputeSet oriSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		JDx12GraphicResourceComputeSet dstSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
+		JDx12GraphicResourceComputeSet oriSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
   
 		const JVector2F dstSize = dstSet.info->GetResourceSize();
 		const JVector2F dstInvSize = 1.0f / dstSize;

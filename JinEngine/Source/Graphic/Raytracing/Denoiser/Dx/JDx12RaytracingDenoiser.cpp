@@ -92,8 +92,8 @@ namespace JinEngine::Graphic
 	ROOT_INDEX_CREATOR(AntiFirefly, passCBIndex, srcColorHistoryIndex, destColorHistoryIndex)
 	ROOT_INDEX_CREATOR(HOT, passCBIndex, srcColorHistoryIndex, momentHistoryIndex, histroyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex)
 
-	//ROOT_INDEX_CREATOR(DownSampling, passCBIndex, srcMapIndex, mipmap00Index, mipmap01Index, mipmap02Index, mipmap03Index)
-	//ROOT_INDEX_CREATOR(Reconstruct, passCBIndex, mipmapIndex, viewZMapIndex, depthDerivativeMapIndex, targetIndex)
+		//ROOT_INDEX_CREATOR(DownSampling, passCBIndex, srcMapIndex, mipmap00Index, mipmap01Index, mipmap02Index, mipmap03Index)
+		//ROOT_INDEX_CREATOR(Reconstruct, passCBIndex, mipmapIndex, viewZMapIndex, depthDerivativeMapIndex, targetIndex)
 	ROOT_INDEX_CREATOR(Stabilization, passCBIndex, colorHistoryIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, colorMapIndex)
 
 	ROOT_INDEX_CREATOR(Atorus, passCBIndex, atrousCBIndex, srcColorHistoryIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, destColorHistoryIndex)
@@ -129,9 +129,9 @@ namespace JinEngine::Graphic
 	{
 		for (uint i = 0; i < historyCount; ++i)
 		{
-			JGraphicResourceInfo::Destroy(colorHistory[i].Release());
-			JGraphicResourceInfo::Destroy(fastColorHistory[i].Release());
-			JGraphicResourceInfo::Destroy(historyLength[i].Release());
+			gm->DestroyGraphicTextureResource(device, colorHistory[i].Release());
+			gm->DestroyGraphicTextureResource(device, fastColorHistory[i].Release());
+			gm->DestroyGraphicTextureResource(device, historyLength[i].Release());
 		}
 		frameBuffer.Clear();
 	}
@@ -186,8 +186,8 @@ namespace JinEngine::Graphic
 		gm = static_cast<JDx12GraphicResourceManager*>(set->gm);
 		cam = helper.cam;
 
-		auto gInterface = helper.cam->GraphicResourceUserInterface();
-		auto aInterface = helper.scene->GpuAcceleratorUserInterface();
+		auto gInterface = helper.GetResourceInterface();
+		auto aInterface = helper.GetGpuAcceleratorInterface();
 
 		rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		dsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
@@ -202,7 +202,7 @@ namespace JinEngine::Graphic
 
 		auto preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 		preDepthSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
-		
+
 		preLightPropSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 		preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 
@@ -219,7 +219,7 @@ namespace JinEngine::Graphic
 		preViewZSet = context->ComputeSet(sharedata->preViewZ);
 
 		colorHistoryIntermediateSet00 = context->ComputeSet(sharedata->restirColorHistoryIntermediate00);
-		colorHistoryIntermediateSet01 = context->ComputeSet(sharedata->restirColorHistoryIntermediate01); 
+		colorHistoryIntermediateSet01 = context->ComputeSet(sharedata->restirColorHistoryIntermediate01);
 
 		depthDerivative = context->ComputeSet(sharedata->restirDepthDerivative);
 		for (uint i = 0; i < SIZE_OF_ARRAY(denoiseMipmapSet); ++i)
@@ -265,7 +265,7 @@ namespace JinEngine::Graphic
 
 	JDx12RaytracingDenoiser::RestirDenoiser::~RestirDenoiser()
 	{
-		ClearResource(); 
+		ClearResource();
 	}
 	void JDx12RaytracingDenoiser::RestirDenoiser::BuildRootSignature(JDx12GraphicDevice* device)
 	{
@@ -515,7 +515,7 @@ namespace JinEngine::Graphic
 	{
 		set.context->Transition(set.intermediate01->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.viewZSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		set.context->Transition(set.normalSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE); 
+		set.context->Transition(set.normalSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.preViewZSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.preNormalSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.depthDerivative.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -596,7 +596,7 @@ namespace JinEngine::Graphic
 		set.context->SetComputeRootDescriptorTable(Clamp::destFastColorHistoryIndex, set.fastColorHistory->GetGpuUavHandle());
 
 		set.context->SetPipelineState(historyClampingShader.get());
-		set.context->Dispatch2D(set.resolution, historyClampingShader->dispatchInfo.threadDim.XY()); 
+		set.context->Dispatch2D(set.resolution, historyClampingShader->dispatchInfo.threadDim.XY());
 	}
 	void JDx12RaytracingDenoiser::RestirDenoiser::AnitiFirefly(const DenoiseDataSet& set, const JDrawHelper& helper)
 	{
@@ -631,7 +631,7 @@ namespace JinEngine::Graphic
 
 		JDx12GraphicResourceComputeSet* srcSet = set.intermediate00;
 		JDx12GraphicResourceComputeSet* destSet = set.intermediate01;
-		 
+
 		for (uint i = 0; i < stepCount; ++i)
 		{
 			uint stepSize = 1 << i;
@@ -641,7 +641,7 @@ namespace JinEngine::Graphic
 			set.context->Dispatch2D(set.resolution, atorusShader->dispatchInfo.threadDim.XY());
 			if (i == 1)
 				set.context->CopyResource(destSet->holder, set.colorHistory->holder);
-			
+
 			JDx12GraphicResourceComputeSet* temp = srcSet;
 			srcSet = destSet;
 			destSet = temp;
@@ -649,7 +649,7 @@ namespace JinEngine::Graphic
 		}
 	}
 	void JDx12RaytracingDenoiser::RestirDenoiser::HistoryStabilization(const DenoiseDataSet& set, const JDrawHelper& helper)
-	{ 
+	{
 		set.context->Transition(set.intermediate00->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.destColor->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->InsertUAVBarrier(set.intermediate00->holder);
@@ -718,7 +718,7 @@ namespace JinEngine::Graphic
 			After
 			restirDenoiser.TemporalAccumulation(set, helper);
 			restirDenoiser.HistoryFix(set, helper);	out color: intermediate00, fast color: intermediate01
-		*/ 
+		*/
 		set.srcColor = set.intermediate00;
 		set.destColor = &set.colorHistoryIntermediateSet01;
 		set.colorHistory = &set.colorHistorySet;
@@ -733,10 +733,10 @@ namespace JinEngine::Graphic
 		/*
 			After
 			restirDenoiser.TemporalAccumulation(set, helper);
-			restirDenoiser.HistoryFix(set, helper);	 
+			restirDenoiser.HistoryFix(set, helper);
 			restirDenoiser.HistoryClamping(set, helper);
-			restirDenoiser.AnitiFirefly(set, helper);	out color: intermediate00 
-		*/ 
+			restirDenoiser.AnitiFirefly(set, helper);	out color: intermediate00
+		*/
 		//set.context->CopyResource(set.intermediate00->holder, set.color->holder);
 		set.srcColor = &set.colorHistoryIntermediateSet01;
 		set.destColor = &set.colorSet;
@@ -748,7 +748,7 @@ namespace JinEngine::Graphic
 		set.intermediate01 = &set.colorHistoryIntermediateSet01;
 	}
 
-	JDx12RaytracingDenoiser::ReCurrentDenoiser::~ReCurrentDenoiser(){}
+	JDx12RaytracingDenoiser::ReCurrentDenoiser::~ReCurrentDenoiser() {}
 	void JDx12RaytracingDenoiser::ReCurrentDenoiser::BuildRootSignature(JDx12GraphicDevice* device)
 	{
 
@@ -840,7 +840,7 @@ namespace JinEngine::Graphic
 
 				restirDenoiser.SettingFirstLoop(set, helper);
 				restirDenoiser.Prepare(set, helper);
-				restirDenoiser.PreBlur(set, helper); 
+				restirDenoiser.PreBlur(set, helper);
 				restirDenoiser.TemporalAccumulation(set, helper);
 				restirDenoiser.HistoryFix(set, helper);
 				restirDenoiser.HistoryClamping(set, helper);
@@ -942,7 +942,8 @@ namespace JinEngine::Graphic
 	}
 	void JDx12RaytracingDenoiser::CreateDependencyData(JGraphicDevice* device, JGraphicResourceManager* gm, UserPrivateData* userPrivate, JVector2<uint> rtSize)
 	{
-		JGraphicResourceCreationDesc desc;
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON, J_GRAPHIC_TASK_TYPE::UNKNOWN);
+		JGraphicResourceCreationDesc desc(typeSet);
 		desc.width = rtSize.x;
 		desc.height = rtSize.y;
 		desc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
@@ -953,16 +954,22 @@ namespace JinEngine::Graphic
 		desc.formatHint = std::make_unique<JGraphicFormatHint>();
 
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
 		for (uint i = 0; i < userPrivate->historyCount; ++i)
-			userPrivate->colorHistory[i] = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+			userPrivate->colorHistory[i] = gm->CreateResource(device, desc);
 
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
 		for (uint i = 0; i < userPrivate->historyCount; ++i)
-			userPrivate->fastColorHistory[i] = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+			userPrivate->fastColorHistory[i] = gm->CreateResource(device, desc);
 
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_UINT;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
 		for (uint i = 0; i < userPrivate->historyCount; ++i)
-			userPrivate->historyLength[i] = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+			userPrivate->historyLength[i] = gm->CreateResource(device, desc);
+	
+		userPrivate->device = device;
+		userPrivate->gm = gm;
 	}
 	void JDx12RaytracingDenoiser::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM)
 	{

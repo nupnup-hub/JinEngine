@@ -34,13 +34,7 @@ SOFTWARE.
 #include"../../Culling/JCullingInterface.h"
 #include"../../Culling/JCullingInfo.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
-#include"../../FrameResource/Dx/JDx12FrameResource.h"
-#include"../../FrameResource/JObjectConstants.h" 
-#include"../../FrameResource/JAnimationConstants.h" 
-#include"../../FrameResource/JMaterialConstants.h" 
-#include"../../FrameResource/JSceneConstants.h" 
-#include"../../FrameResource/JCameraConstants.h" 
-#include"../../FrameResource/JLightConstants.h"      
+#include"../../FrameResource/Dx/JDx12FrameResource.h"      
 #include"../../Utility/Dx/JDx12Utility.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"
 #include"../../../Core/Exception/JExceptionMacro.h"
@@ -574,20 +568,20 @@ namespace JinEngine::Graphic
 
 	JDx12SceneDraw::ResourceDataSet::ResourceDataSet(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
-		gRInterface = helper.cam->GraphicResourceUserInterface();
-		auto cInterface = helper.GetCullInterface();
+		gInterface = helper.GetResourceInterface();
+		auto cInterface = helper.GetCullInterface(); 
 
 		sceneCBIndex = helper.option.rendering.allowDeferred ? Deferred::Geometry::sceneCBIndex : Forward::sceneCBIndex;
 		camCBIndex = helper.option.rendering.allowDeferred ? Deferred::Geometry::camCBIndex : Forward::camCBIndex;
 
-		camFrameIndex = helper.GetCamFrameIndex(CameraFrameLayer::drawScene);
-		sceneFrameIndex = helper.GetSceneFrameIndex();
-
-		rtSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		dsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-
+		camFrameIndex = helper.GetCamFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA);
+		sceneFrameIndex = helper.GetSceneFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS);
+		 
+		rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		dsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+ 
 		if (helper.option.rendering.allowDeferred)
-		{
+		{ 
 			gBufferSet[Constants::gBufferAlbedoLayer] = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP);
 			gBufferSet[Constants::gBufferLightPropertyLayer] = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 			gBufferSet[Constants::gBufferNormalAndTangentLayer] = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
@@ -597,33 +591,32 @@ namespace JinEngine::Graphic
 		if (helper.allowTemporalProcess)
 		{
 			velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
-			preRsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
-			preDsSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+			preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+			preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 			preLightPropSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 			preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 			preVelocitySet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 		}
 
-		aoSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
+		aoSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
 
 		canUseAo = aoSet.IsValid();
 		canUseLightCulling = helper.cam->AllowLightCulling() && helper.option.culling.allowLightCluster;
 		canUseLightCluster = canUseLightCulling && helper.option.culling.allowLightCluster;
-		canUseGi = helper.option.rendering.allowRaytracing && helper.cam->AllowRaytracingGI();
+		canUseGi = helper.allowRtGi;
 	}
 	void JDx12SceneDraw::ResourceDataSet::SettingCluster(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
-		clusterOffsetSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
-		clusterListSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+		clusterOffsetSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
+		clusterListSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, J_GRAPHIC_TASK_TYPE::LIGHT_CULLING);
 	}
 	void JDx12SceneDraw::ResourceDataSet::SettingGi(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
-		giColorSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		giColorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 	}
 	void JDx12SceneDraw::ResourceDataSet::SettingDebugging(JDx12CommandContext* context, const JDrawHelper& helper)
-	{
-		auto gRInterface = helper.cam->GraphicResourceUserInterface();
-		debugSet = context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+	{ 
+		debugSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 	}
 	JDx12SceneDraw::INNER_DEFERRED_SHADER_TYPE JDx12SceneDraw::ResourceDataSet::GetDeferredType()const noexcept
 	{
@@ -873,10 +866,10 @@ namespace JinEngine::Graphic
 	}
 	void JDx12SceneDraw::DrawSceneGameObject(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
-		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
-		const std::vector<JUserPtr<JGameObject>>& objVec02 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec03 = helper.GetGameObjectCashVec(J_RENDER_LAYER::SKY, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+		const std::vector<JUserPtr<JGameObject>>& objVec02 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::DEBUG_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec03 = helper.GetGameObjectCacheVec(J_RENDER_LAYER::SKY, Core::J_MESHGEOMETRY_TYPE::STATIC);
 
 		DrawGameObject(context, objVec00, helper, JDrawCondition(helper, false, true, helper.allowDrawDebugObject), helper.option.rendering.allowDeferred);
 		DrawGameObject(context, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebugObject), helper.option.rendering.allowDeferred);
@@ -1047,7 +1040,7 @@ namespace JinEngine::Graphic
 		BindCommonCB(context, rSet, helper);
 		BindViewPortAndRect(context, rSet);
 
-		const std::vector<JUserPtr<JGameObject>>& objVec = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec = helper.GetGameObjectCacheVec(J_RENDER_LAYER::DEBUG_UI, Core::J_MESHGEOMETRY_TYPE::STATIC);
 		DrawGameObject(context, objVec, helper, JDrawCondition(), false);
 
 		//context->Transition(rSet.debugSet.holder, D3D12_RESOURCE_STATE_DEPTH_READ);
@@ -1073,7 +1066,7 @@ namespace JinEngine::Graphic
 		BindCommonCB(context, rSet, helper);
 		BindViewPortAndRect(context, rSet);
 
-		const std::vector<JUserPtr<JGameObject>>& objVec = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec = helper.GetGameObjectCacheVec(J_RENDER_LAYER::DEBUG_UI, Core::J_MESHGEOMETRY_TYPE::STATIC);
 		DrawGameObject(context, objVec, helper, JDrawCondition(), false);
 
 		//context->Transition(rSet.debugSet.holder, D3D12_RESOURCE_STATE_DEPTH_READ);
@@ -1172,17 +1165,19 @@ namespace JinEngine::Graphic
 		const J_GRAPHIC_SHADER_TYPE shaderType = useCase == J_SCENE_USE_CASE_TYPE::MAIN ?
 			J_GRAPHIC_SHADER_TYPE::STANDARD : J_GRAPHIC_SHADER_TYPE::PREVIEW;
 
-		auto cullUser = helper.GetCullInterface();
+		auto cInterface = helper.GetCullInterface(); 
 
 		uint st, ed = 0;
 		helper.DispatchWorkIndex((uint)gameObject.size(), st, ed);
 		for (uint i = st; i < ed; ++i)
 		{
 			JUserPtr<JRenderItem> renderItem = gameObject[i]->GetRenderItem();
-			const uint objFrameIndex = helper.GetObjectFrameIndex(renderItem.Get());
-			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem.Get());
+			auto rItemFInterface = static_cast<JFrameUpdateInterface*>(renderItem->ModuleManagedData()->GetFrameUpdateUserInterface());
 
-			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cullUser.IsCulled(J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
+			const uint objFrameIndex = rItemFInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT);
+			const uint boundFrameIndex = rItemFInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
+			    
+			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cInterface->IsCulled(J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
 				continue;
 
 			if (condition.allowAllCullingResult && helper.RefelectOtherCamCullig(boundFrameIndex))
@@ -1194,13 +1189,15 @@ namespace JinEngine::Graphic
 			const bool onSkinned = animator != nullptr && condition.allowAnimation && mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::SKINNED;
 			const Core::J_MESHGEOMETRY_TYPE meshType = onSkinned ? Core::J_MESHGEOMETRY_TYPE::SKINNED : Core::J_MESHGEOMETRY_TYPE::STATIC;
 			const J_GRAPHIC_SHADER_VERTEX_LAYOUT shaderLayout = JShaderType::ConvertToVertexLayout(meshType);
-
+			 
 			context->SetMeshGeometryData(renderItem);
 			if (condition.allowOutline && gameObject[i]->IsSelected())
 				context->SetStencilRef(Constants::outlineStencilRef);
 			if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
-				context->SetGraphicsRootConstantBufferView(skinCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, helper.GetAnimationFrameIndex(animator.Get()));
-
+			{
+				auto animatorFInterface = static_cast<JFrameUpdateInterface*>(animator->ModuleManagedData()->GetFrameUpdateUserInterface());
+				context->SetGraphicsRootConstantBufferView(skinCBIndex, animatorFInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, 0); 
+			}
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
 
 			for (uint j = 0; j < submeshCount; ++j)
@@ -1258,7 +1255,7 @@ namespace JinEngine::Graphic
 			psoBuildData.deferredType = Core::AddSQValueEnum(psoBuildData.deferredType, INNER_DEFERRED_SHADER_LIGHT_CULLING);
 		if (Core::HasSQValueEnum(initData.privateFlag, SHADER_FUNCTION_PRIVATE_GLOBAL_ILLUMINATION))
 			psoBuildData.deferredType = Core::AddSQValueEnum(psoBuildData.deferredType, INNER_DEFERRED_SHADER_GI);
-
+  
 		Private::StuffMacro(initData, gInfo, gOption);
 		CompileShader(holder.Get(), initData);
 		StuffInputLayout(holder->inputLayout, initData.layoutType);

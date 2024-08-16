@@ -30,7 +30,7 @@ SOFTWARE.
 
 #ifdef DEVELOP
 #define USE_DEBUG
-#define USE_PIX
+//#define USE_PIX
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif

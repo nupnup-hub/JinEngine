@@ -36,7 +36,8 @@ SOFTWARE.
 #include"../Graphic/Gui/JGuiBackendDataAdapter.h" 
 #include"../Graphic/JGraphicPrivate.h" 
 #include"../Object/Resource/JResourceManager.h"  
-#include"../Object/Resource/JResourceManagerPrivate.h"  
+#include"../Object/Resource/JResourceManagerPrivate.h" 
+#include"../Object/GraphicRule/JGraphicModuleInterfaceHolder.h" 
 #include"../Core/Reflection/JReflectionInfoPrivate.h"
 #include"../Core/Identity/JIdentifier.h"
 #include"../Core/Time/JGameTimer.h"  
@@ -113,6 +114,8 @@ namespace JinEngine
 			auto setAppStateF = std::make_unique<SetAppStateF>(&JApplicationEnginePrivate::MainAccess::SetApplicationState);
 			ProjectMainAccess::RegisterFunctor(std::move(setAppStateF));
 			WindowMainAccess::Initialize(hInstance, std::make_unique<WindowMainAccess::CloseConfirmF>(&JMainImpl::CloseAppProcess, this));
+			
+			
 		}
 		~JMainImpl()
 		{

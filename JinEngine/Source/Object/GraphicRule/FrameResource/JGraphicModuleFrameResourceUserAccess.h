@@ -57,14 +57,18 @@ namespace JinEngine
 		virtual void SetFrameDirty()noexcept = 0;
 	public:
 		virtual bool IsDirted()const noexcept = 0;
-		virtual bool HasSpace(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept = 0;
+		virtual bool IsLastUpdated()const noexcept = 0;
+		virtual bool HasSpace(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept = 0; 
 	public:
 		virtual void OffFrameDirty()noexcept = 0;
 	public:
-		virtual bool TryRegisterDirtyListener(const JFrameDirtyListener& listener) = 0;
+		virtual bool TryRegisterDirtyListener(JFrameDirtyListener&& listener) = 0;
+		virtual bool TryRegisterDirtyListener(const JUserPtr<JObject>& obj) = 0;
 		virtual bool TryDeRegisterDirtyListener(const size_t guid) = 0;
 	public:
 		virtual bool RegisterObjectUpdateB(JFrameObjectUpdateB&& bind) = 0;
 		virtual bool DeRegisterObjectUpdateB() = 0;
 	};
+	 
+
 }

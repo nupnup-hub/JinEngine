@@ -48,9 +48,9 @@ namespace JinEngine::Graphic
 	}
 	uint JGraphicInfo::FrameResourceInfo::GetLocalLightCapacity()const noexcept
 	{
-		return count[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT] +
-			count[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT] +
-			count[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT];
+		return capacity[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT] +
+			capacity[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT] +
+			capacity[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT];
 	} 
 
 	JGraphicInfo::GraphicResourceInfo::GraphicResourceInfo()

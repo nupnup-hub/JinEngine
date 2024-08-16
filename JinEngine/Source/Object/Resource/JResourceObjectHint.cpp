@@ -76,21 +76,10 @@ namespace JinEngine
 		return (*getFormatIndex)(nullptr, format);
 	}
 
-	RTypePrivateFunc::RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable)
-		:setFrameDirtyCallable(setFrameDirtyCallable)
+	RTypePrivateFunc::RTypePrivateFunc()
 	{}
 	RTypePrivateFunc::~RTypePrivateFunc()
-	{
-		setFrameDirtyCallable = nullptr;
-	}
-	SetRFrameDirtyCallable RTypePrivateFunc::GetSetFrameDirtyCallable()
-	{
-		return *setFrameDirtyCallable;
-	} 
-	void RTypePrivateFunc::CallSetFrameDirty(JResourceObject* jRobj)
-	{
-		(*setFrameDirtyCallable)(nullptr, jRobj);
-	} 
+	{ }
 
 	struct RTypeInfoData
 	{
@@ -282,13 +271,4 @@ namespace JinEngine
 		else
 			return data->second;
 	}
-
-	SetRFrameDirtyCallable RTypePrivateCall::GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type)
-	{
-		return RTypeInfo::Instance().pFuncStorage[(int)type].GetSetFrameDirtyCallable();
-	} 
-	void RTypePrivateCall::CallSetFrameDirty(JResourceObject* jRobj)
-	{
-		RTypeInfo::Instance().pFuncStorage[(int)jRobj->GetResourceType()].CallSetFrameDirty(jRobj);
-	} 
 }

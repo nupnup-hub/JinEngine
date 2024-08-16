@@ -75,13 +75,14 @@ namespace JinEngine
 		{
 			return count < capacity;
 		}
-		JGraphicResourceInfo* JGraphicResourceManager::GetInfo(JGraphicResourceUserAccess* access, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE task)const noexcept
-		{
-			if (access == nullptr)
-				return nullptr;
 
-			const int arrayIndex = access->GraphicResourceUserInterface().GetResourceArrayIndex(rType, task);
-			return arrayIndex != invalidIndex ? GetInfo(rType, arrayIndex) : nullptr;
+		void JGraphicResourceManager::Initialize(JGraphicDevice* device)
+		{
+
+		}
+		void JGraphicResourceManager::Clear()
+		{
+
 		}
 		HWND JGraphicResourceManager::GetWindowHandle()noexcept
 		{

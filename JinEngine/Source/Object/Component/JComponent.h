@@ -37,6 +37,9 @@ namespace JinEngine
 	struct CTypeCommonFunc;
 	struct CTypePrivateFunc;
 
+	/*
+	* GameObject에 장착되어 Rendering에 있어서 다양한 기능을 제공한다.
+	*/
 	class JComponent : public JObject, public JGraphicModuleUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JComponent)

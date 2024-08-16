@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Core/Math/JVectorExtend.h"
+#include"../../../Core/Time/JGameTimer.h"
 
 #include"../../../Object/Component/RenderItem/JRenderItem.h" 
 #include"../../../Object/Component/Transform/JTransform.h"
@@ -45,50 +46,15 @@ SOFTWARE.
 #include"../../../Object/Resource/AnimationClip/JAnimationClip.h" 
 #include"../../../Object/Resource/Texture/JTexture.h" 
 
-#include"../../../Object/GameObject/JGameObject.h"
+#include"../../../Object/GameObject/JGameObject.h" 
+#include"../../../Develop/Debug/JDevelopDebug.h"
+
 using namespace DirectX;
 namespace JinEngine::Graphic
 {
 	//Update per object
 	namespace
 	{
-		class JConstantCache
-		{
-		public:
-			JObjectConstantsSet objectSet;
-			JCameraConstantsSet cameraSet;
-			JLightConstantsSet lightSet;
-		public:
-			//used by pass
-			//initialize first update constants buffer after initialize graphic class 
-			//always exist until enigne end
-			JUserPtr<JTexture> missing;
-			JUserPtr<JTexture> bluseNoise;
-		public:
-			void Clear();
-		}; 
-
-		struct CacheSet
-		{
-		public:
-			//used by pass
-			//initialize first update constants buffer after initialize graphic class 
-			//always exist until enigne end
-			JUserPtr<JTexture> missing;
-			JUserPtr<JTexture> bluseNoise;
-		public:
-			void Initialize()
-			{
-				missing = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
-				bluseNoise = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::BLUE_NOISE);
-			}
-			void Clear()
-			{
-				missing = nullptr;
-				bluseNoise = nullptr;
-			}
-		};
-
 		struct UpdateFrameBufferSet
 		{
 		public:
@@ -98,12 +64,17 @@ namespace JinEngine::Graphic
 			JDx12FrameResourceManager* fm;
 			JDx12FrameResource* frame;
 		public:
+			JDx12FrameResourceManager::CacheData* cacheData; 
+		public:
 			//Per object
 			JObject* obj;
 			JFrameUpdateInterface* updateInterface;
 		public:
-			UpdateFrameBufferSet(const JGraphicInfo& info, const JGraphicOption& option, JDx12FrameResourceManager* fm)
-				:info(info), option(option), fm(fm)
+			UpdateFrameBufferSet(const JGraphicInfo& info,
+				const JGraphicOption& option,
+				JDx12FrameResourceManager* fm,
+				JDx12FrameResourceManager::CacheData* cacheData)
+				:info(info), option(option), fm(fm), cacheData(cacheData)
 			{
 				frame = fm->GetCurrentDxFrameResource();
 			}
@@ -111,11 +82,71 @@ namespace JinEngine::Graphic
 			template<J_FRAME_RESOURCE_UPLOAD_TYPE type, typename Type>
 			void CopyData(Type* constants)const
 			{
+				//if (type == J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO ||
+				//	type == J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW)
+				/*
+							{
+					Develop::JDevelopDebug::PushLog(obj->GetTypeInfo().Name() + " " + std::to_string(obj->GetGuid()));
+					Develop::JDevelopDebug::PushLog(Core::GetName(type));
+					for (uint i = 0; i < fm->updateInfoVec[(uint)type].size(); ++i)
+					{
+						Develop::JDevelopDebug::PushLog(std::to_string(i) + " " +
+							std::to_string(fm->updateInfoVec[(uint)type][i]->GetNumber()) + " " +
+							std::to_string(fm->updateInfoVec[(uint)type][i]->GetFrameIndex()) + " " +
+							std::to_string(uint64(fm->updateInfoVec[(uint)type][i].Get())) + " " +
+							std::to_string(uint64(&fm->updateInfoVec[(uint)type][i])));
+					}
+					Develop::JDevelopDebug::Write();
+				}
+				*/
+
 				frame->CopyData(type, updateInterface->GetFrameIndex(type), constants);
 			}
+			template<J_FRAME_RESOURCE_UPLOAD_TYPE type, typename Type>
+			void CopyData(const std::vector<Type>& constants, const int count)const
+			{
+				//if (type == J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO ||
+				//	type == J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW)
+				/*
+								{
+					Develop::JDevelopDebug::PushLog(obj->GetTypeInfo().Name() + " " + std::to_string(obj->GetGuid()));
+					Develop::JDevelopDebug::PushLog(Core::GetName(type));
+					for (uint i = 0; i < fm->updateInfoVec[(uint)type].size(); ++i)
+					{
+						Develop::JDevelopDebug::PushLog(std::to_string(i) + " " +
+							std::to_string(fm->updateInfoVec[(uint)type][i]->GetNumber()) + " " +
+							std::to_string(fm->updateInfoVec[(uint)type][i]->GetFrameIndex()) + " " +
+							std::to_string(uint64(fm->updateInfoVec[(uint)type][i].Get())) + " " +
+							std::to_string(uint64(&fm->updateInfoVec[(uint)type][i])));
+					}
+					Develop::JDevelopDebug::Write();
+				}
+				*/
+				frame->CopyData(type, updateInterface->GetFrameIndex(type), count, constants);
+			}
 		};
-		using UpdateFrameBufferFunc = JinEngine::Core::JSFunctorType<void, const UpdateFrameBufferSet&>;
+		struct UpdateFrmaeFuncSet
+		{
+		public:
+			using UpdateF = JinEngine::Core::JSFunctorType<void, const UpdateFrameBufferSet&>::Ptr;
+			using IsForcedUpdateF = JinEngine::Core::JSFunctorType<bool, JDx12FrameResourceManager*>::Ptr;
+		public:
+			UpdateF updateF = nullptr;
+			IsForcedUpdateF isForcedUpdateF = nullptr;
+		public:
+			UpdateFrmaeFuncSet()
+				:updateF(nullptr), isForcedUpdateF(nullptr)
+			{
 
+			}
+		};
+
+		template<typename T>
+		static void ControlStaticConstantsSize(std::vector<T>& vec, const uint updateCount, const float resizeRate = 2.0f)
+		{
+			if (vec.size() < updateCount || vec.size() > (updateCount * resizeRate))
+				vec.resize(updateCount);
+		}
 		/**
 		* Caution!
 		* Constants set은 256 byte단위로 Gpu에 upload되며
@@ -160,7 +191,9 @@ namespace JinEngine::Graphic
 		template<int threadIndex>
 		static void UpdateCamera(const UpdateFrameBufferSet& set)
 		{
-			JCamera* camera = static_cast<JCamera*>(set.obj);		  
+			JCamera* camera = static_cast<JCamera*>(set.obj);
+			auto gUser = camera->ModuleManagedData()->GetGraphicResourceUserInterface();
+
 			static JDrawSceneCameraConstants drawScene;
 			static JDepthTestConstants depthTest;
 			static JHzbOccComputeConstants hzb;
@@ -168,11 +201,11 @@ namespace JinEngine::Graphic
 			static JLightCullingCameraConstants lightCulling;
 			static JGIConstants gi;
 			static JGIDenoiserPassConstants denoise;
-			   
+
 			const size_t sceneGuid = camera->GetOwner()->GetOwnerGuid();
 			const XMMATRIX view = camera->GetView();
 			const XMMATRIX proj = camera->GetProj();
-			const XMMATRIX invView = camera->GetInvView(); 
+			const XMMATRIX invView = camera->GetInvView();
 			const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 			const XMMATRIX preViewProj = camera->GetPreViewProj();
 			const JVector2F rtSize = camera->GetRenderTargetSize();
@@ -188,7 +221,7 @@ namespace JinEngine::Graphic
 
 			//DrawScene
 			{
-				drawScene.invView.StoreXM(XMMatrixTranspose(XMMatrixInverse(nullptr, view)));
+				drawScene.invView.StoreXM(XMMatrixTranspose(invView));
 				drawScene.viewProj.StoreXM(XMMatrixTranspose(viewProj));
 				drawScene.preViewProj.StoreXM(XMMatrixTranspose(preViewProj));
 				drawScene.renderTargetSize = rtSize;
@@ -198,19 +231,19 @@ namespace JinEngine::Graphic
 				drawScene.eyePosW = posW;
 				drawScene.nearZ = camNear;
 				drawScene.farZ = camFar;
-				drawScene.csmLocalIndex = camera->GetModuleManagedData()->GetCsmTargetUserInterface()->GetTargetIndex();
+				drawScene.csmLocalIndex = camera->ModuleManagedData()->GetCsmTargetUserInterface()->GetTargetIndex();
 				drawScene.hasAoTexture = camera->AllowSsao() && set.option.CanUseSSAO();
-				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA>(&drawScene); 
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA>(&drawScene);
 			}
 			//DepthTest
 			if (camera->AllowHdOcclusionCulling() || camera->AllowHzbOcclusionCulling())
 			{
 				depthTest.viewProj = drawScene.viewProj;
-				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS>(&depthTest); 
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS>(&depthTest);
 			}
 			//HzbOccCompute
 			if (camera->AllowHzbOcclusionCulling())
-			{ 
+			{
 				hzb.view.StoreXM(XMMatrixTranspose(view));
 				hzb.proj.StoreXM(XMMatrixTranspose(proj));
 
@@ -227,11 +260,13 @@ namespace JinEngine::Graphic
 				hzb.camNear = camNear;
 				hzb.camFar = camFar;
 				hzb.validQueryCount = set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT, sceneGuid);
-				hzb.occMapCount = set.info.resource.occlusionMapCount;
+				hzb.occMapCount = gUser->GetViewCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, J_GRAPHIC_BIND_TYPE::SRV, J_GRAPHIC_TASK_TYPE::HZB_CULLING);
+				//gUser->GetMipmapCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP);
+				//set.info.resource.occlusionMapCount;
 				hzb.occIndexOffset = JMathHelper::Log2Int(set.info.resource.occlusionMinSize);
 				hzb.correctFailTrigger = (int)set.option.culling.allowHZBCorrectFail;
-				hzb.usePerspective = true; 
-				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT>(&hzb);
+				hzb.usePerspective = true;
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS>(&hzb);
 			}
 			if (camera->AllowSsao() && set.option.CanUseSSAO())
 			{
@@ -290,20 +325,19 @@ namespace JinEngine::Graphic
 			if (camera->AllowLightCulling() && set.option.culling.allowLightCluster)
 			{
 				lightCulling.camView.StoreXM(XMMatrixTranspose(view));
-				lightCulling.camProj.StoreXM(XMMatrixTranspose(proj)); 
+				lightCulling.camProj.StoreXM(XMMatrixTranspose(proj));
 				lightCulling.camRenderTargetSize = drawScene.renderTargetSize;
 				lightCulling.camInvRenderTargetSize = drawScene.invRenderTargetSize;
 				lightCulling.camNearZ = camNear;
-				lightCulling.camFarZ = camFar; 
+				lightCulling.camFarZ = camFar;
 				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS>(&lightCulling);
 			}
-			
+
 			//나중에 수정
 			//Camera관련 data를 pass용 data를 분리하거나 지금처럼 subclass에서 자체적으로 upload할것.
-			/*
-			if (camera->AllowRaytracingGI() && set.option.CanUseRtGi())
-			{ 
-				const JVector2F camHalfRtSize = rtSize * 0.5f; 
+			/*if (camera->AllowRaytracingGI() && set.option.CanUseRtGi())
+			{
+				const JVector2F camHalfRtSize = rtSize * 0.5f;
 
 				const uint directionalLitCount = set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
 				const uint pointLitCount = set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
@@ -315,10 +349,10 @@ namespace JinEngine::Graphic
 				const uint pointLitOffset = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
 				const uint spotLitOffset = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
 				const uint rectLitOffset = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
-				 
+
 				gi.camInvView.StoreXM(DirectX::XMMatrixTranspose(invView));
 				gi.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(preViewProj));
-				gi.camNearFar = JVector2F(camNear, camFar); 
+				gi.camNearFar = JVector2F(camNear, camFar);
 				gi.uvToViewA = uvToViewA;
 				gi.uvToViewB = uvToViewB;
 				gi.rtSize = camHalfRtSize;
@@ -329,8 +363,8 @@ namespace JinEngine::Graphic
 				gi.totalNumPixels = camHalfRtSize.x * camHalfRtSize.y;
 
 				gi.camPosW = posW;
-				gi.camNearMulFar = gi.camNearFar.x * gi.camNearFar.y; 
-				 
+				gi.camNearMulFar = gi.camNearFar.x * gi.camNearFar.y;
+
 				gi.directionalLightRange = directionalLitCount;
 				gi.pointLightRange = gi.directionalLightRange + pointLitCount;
 				gi.spotLightRange = gi.pointLightRange + spotLitCount;
@@ -342,203 +376,610 @@ namespace JinEngine::Graphic
 				gi.rectLightOffset = rectLitOffset;
 
 				gi.totalLightCount = lightSum;
-				gi.invTotalLightCount = 1.0f / (float)gi.totalLightCount; 
+				gi.invTotalLightCount = 1.0f / (float)gi.totalLightCount;
 				//constants.rectLightVerticesIndex = rectLitShape->GraphicResourceUserInterface().GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::VERTEX, J_GRAPHIC_BIND_TYPE::SRV, 0);
 				//constants.rectLightIndiciesIndex = rectLitShape->GraphicResourceUserInterface().GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::INDEX, J_GRAPHIC_BIND_TYPE::SRV, 0);
-			
-				denoise.camInvView.StoreXM(DirectX::XMMatrixTranspose(camInvView));
+
+				denoise.camInvView = drawScene.invView;
 				denoise.camPreInvView.StoreXM(DirectX::XMMatrixTranspose(camPreInvView.LoadXM()));
-				denoise.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj()));
-				denoise.rtSize = camRtSize;
-				denoise.invRtSize = 1.0f / camRtSize;
+				denoise.camPreViewProj = drawScene.preViewProj;
+				denoise.rtSize = drawScene.renderTargetSize;
+				denoise.invRtSize = drawScene.invRenderTargetSize;
 				denoise.uvToViewA = uvToViewA;
 				denoise.uvToViewB = uvToViewB;
 				denoise.preUvToViewA = preUvToViewA;
 				denoise.preUvToViewB = preUvToViewB;
-				denoise.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
-				denoise.camNearMulFar = constants.camNearFar.x * constants.camNearFar.y;
-				denoise.denoiseRange = Common::denoiseRange;
-				denoise.baseRadius = Common::baseRadius;
-				denoise.radiusRange = Common::radiusRange;
-				++denoise.sampleNumber;
-				if (denoise.sampleNumber >= Common::sampleNumberMax)
-					denoise.sampleNumber = 0;
-
-				frameBuffer.CopyData(helper.info.frame.currIndex, constants);
-				camPreInvView.StoreXM(camInvView);
-				preUvToViewA = constants.uvToViewA;
-				preUvToViewB = constants.uvToViewB;
-			}
- 
-			*/
+				denoise.camNearFar = JVector2F(camNear, camFar);
+				denoise.camNearMulFar = denoise.camNearFar.x * denoise.camNearFar.y;
+				//denoise.denoiseRange = Common::denoiseRange;
+				//denoise.baseRadius = Common::baseRadius;
+				//denoise.radiusRange = Common::radiusRange;
+				//++denoise.sampleNumber;
+				//if (denoise.sampleNumber >= Common::sampleNumberMax)
+				//	denoise.sampleNumber = 0;
+			}*/
 		}
 		template<int threadIndex>
 		static void UpdateDirctionalLight(const UpdateFrameBufferSet& set)
 		{
-			/*
-					void UpdateFrame(Graphic::JDirectionalLightConstants& constant) noexcept final
-		{
-			const XMMATRIX viewM = view.LoadXM();
-			const XMMATRIX projM = proj.LoadXM();
+			JDirectionalLight* light = static_cast<JDirectionalLight*>(set.obj);
+			auto gUser = light->ModuleManagedData()->GetGraphicResourceUserInterface();
+			auto csmUser = light->ModuleManagedData()->GetCsmHandleUserInterface();
 
-			constant.view.StoreXM(XMMatrixTranspose(viewM));
-			constant.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
-			if (CanAllocateCsm())
+			static JDirectionalLightConstants litConstants;
+			static std::vector<JCsmConstants> csm;
+			static JShadowMapDrawConstants shadowMapDraw;
+			static std::vector<JShadowMapArrayDrawConstants> shadowMapArrayDraw;
+			static JDepthTestConstants depthTest;
+			static JHzbOccComputeConstants hzb;
+
+			const size_t sceneGuid = light->GetOwner()->GetOwnerGuid();
+
+			const XMMATRIX viewM = light->GetView().LoadXM();
+			const XMMATRIX projM = light->GetProj().LoadXM();
+
+			const JVector3F frustumMinP = light->GetFrustumMinPoint();
+			const JVector3F frustumMaxP = light->GetFrustumMaxPoint();
+			const JVector2F frustumSize(abs(frustumMaxP.x - frustumMinP.x), abs(frustumMaxP.y - frustumMinP.y));
+
+			const bool isCsmActivated = light->IsCsmActivated();
+			const bool isShadowMapActivated = light->IsShadowActivated();
+
+			litConstants.view.StoreXM(XMMatrixTranspose(viewM));
+			litConstants.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
+			if (isCsmActivated)
 			{
-				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
+				litConstants.shadowMapTransform.StoreXM(XMMatrixTranspose(light->GetShadowMapTransform()));
 				//constant.shadowMapTransform.StoreXM(XMMatrixTranspose(viewM));
-				constant.shadowMapIndex = GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, 0);
-				constant.csmDataIndex = CsmInfoFrame::GetFrameIndex();
+				litConstants.shadowMapIndex = gUser->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, 0);
+				litConstants.csmDataIndex = set.updateInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO);
 			}
-			else if (thisPointer->IsShadowActivated())
+			else if (isShadowMapActivated)
 			{
-				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
-				constant.shadowMapIndex = GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0);
+				litConstants.shadowMapTransform.StoreXM(XMMatrixTranspose(light->GetShadowMapTransform()));
+				litConstants.shadowMapIndex = gUser->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0);
 			}
 
-			constant.shadowMapType = (uint)GetShadowMapType();
-			constant.color = thisPointer->GetColor();
-			constant.power = thisPointer->GetPower();
-			constant.direction = direction;
-			constant.frustumSize = JVector2F(abs(vSceneBBoxMaxF.x - vSceneBBoxMinF.x), abs(vSceneBBoxMaxF.y - vSceneBBoxMinF.y));
-			constant.frustumNear = vSceneBBoxMinF.z;
-			constant.frustumFar = vSceneBBoxMaxF.z;
-			constant.penumbraScale = thisPointer->GetPenumbraWidth();
-			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
-			constant.shadowMapSize = thisPointer->GetShadowMapSize();
-			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
-			constant.tanAngle = XMVectorGetX(DirectX::XMVector3AngleBetweenNormals(constant.direction.ToXmV(), Private::GetInitDir()));
-			constant.bias = thisPointer->GetBias();
-			if (constant.direction == Private::GetInitDir())
-				constant.bias -= Private::initDirBias;
-			DirLitFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JCsmConstants& constant, const uint index)noexcept final
-		{
-			const auto& result = GetCsmComputeResult(index);
-			for (uint i = 0; i < result.subFrustumCount; ++i)
+			litConstants.shadowMapType = (uint)light->GetShadowMapType();
+			litConstants.color = light->GetColor();
+			litConstants.power = light->GetPower();
+			litConstants.direction = light->GetCachedWorldDirection();
+			litConstants.frustumSize = frustumSize;
+			litConstants.frustumNear = frustumMinP.z;
+			litConstants.frustumFar = frustumMaxP.z;
+			litConstants.penumbraScale = light->GetPenumbraWidth();
+			litConstants.penumbraBlockerScale = light->GetPenumbraBlockerWidth();
+			litConstants.shadowMapSize = light->GetShadowMapSize();
+			litConstants.shadowMapInvSize = 1.0f / litConstants.shadowMapSize;
+			litConstants.tanAngle = light->GetTanAngle();
+			litConstants.bias = light->GetBias();
+
+			static constexpr float initDirBias = 0.0025f;
+			if (litConstants.direction == light->GetInitWorldDirection())
+				litConstants.bias -= initDirBias;
+
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT>(&litConstants);
+
+			if (isCsmActivated)
 			{
-				constant.scale[i] = result.scale[i];
-				constant.posOffset[i] = result.posOffset[i];
-				constant.frustumNear[i] = result.fNear[i];
-				constant.frustumFar[i] = result.fFar[i];
+				const uint targetCount = csmUser->GetTargetCount();
+				ControlStaticConstantsSize(csm, targetCount);
+				ControlStaticConstantsSize(shadowMapArrayDraw, targetCount);
+
+				for (uint i = 0; i < targetCount; ++i)
+				{
+					const auto& result = csmUser->GetComputeResult(i);
+					for (uint j = 0; j < result.subFrustumCount; ++j)
+					{
+						csm[i].scale[j] = result.scale[j];
+						csm[i].posOffset[j] = result.posOffset[j];
+						csm[i].frustumNear[j] = result.fNear[j];
+						csm[i].frustumFar[j] = result.fFar[j];
+					}
+					csm[i].mapMinBorder = (float)(1.0f / (float)light->GetShadowMapSize());
+					csm[i].mapMaxBorder = (float)(((float)light->GetShadowMapSize() - 1.0f) / (float)light->GetShadowMapSize());
+					csm[i].levelBlendRate = csmUser->GetOption().GetLevelBlendRate();
+					csm[i].count = result.subFrustumCount;
+
+					for (uint j = 0; j < result.subFrustumCount; ++j)
+					{
+						shadowMapArrayDraw[i].shadowMapTransform[j].StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM,
+							result.shadowProjM[j].LoadXM())));
+					}
+				}
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO>(csm, targetCount);
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW>(shadowMapArrayDraw, targetCount);
 			}
-			constant.mapMinBorder = (float)(1.0f / (float)thisPointer->GetShadowMapSize());
-			constant.mapMaxBorder = (float)(((float)thisPointer->GetShadowMapSize() - 1.0f) / (float)thisPointer->GetShadowMapSize());
-			constant.levelBlendRate = GetCsmOptionRef().GetLevelBlendRate();
-			constant.count = result.subFrustumCount;
-			CsmInfoFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JShadowMapArrayDrawConstants& constant, const uint index)noexcept final
-		{
-			const auto& result = GetCsmComputeResult(index);
-			const XMMATRIX viewM = view.LoadXM();
-			for (uint i = 0; i < result.subFrustumCount; ++i)
+			else if (isShadowMapActivated)
 			{
-				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM,
-					result.shadowProjM[i].LoadXM())));
+				shadowMapDraw.shadowMapTransform.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW>(&shadowMapDraw);
 			}
-			CsmDrawFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JShadowMapDrawConstants& constant)noexcept final
-		{
-			//for draw shadow map
-			constant.shadowMapTransform.StoreXM(XMMatrixTranspose(XMMatrixMultiply(view.LoadXM(), proj.LoadXM())));
-			ShadowMapNormalDrawFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JDepthTestConstants& constants)noexcept final
-		{
-			//for draw depth map
-			constants.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(view.LoadXM(), proj.LoadXM())));
-			DepthTestFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JHzbOccComputeConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
-		{
-			//only directional light  can execute occ
-			auto info = JGraphic::Instance().GetGraphicInfo();
-			auto option = JGraphic::Instance().GetGraphicOption();
 
-			const XMMATRIX viewM = view.LoadXM();
-			const XMMATRIX projM = proj.LoadXM();
+			if (light->AllowHzbOcclusionCulling())
+			{
+				depthTest.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
 
-			constant.view.StoreXM(XMMatrixTranspose(viewM));
-			constant.proj.StoreXM(XMMatrixTranspose(projM)); 
+				hzb.view.StoreXM(XMMatrixTranspose(viewM));
+				hzb.proj.StoreXM(XMMatrixTranspose(projM));
 
-			constant.viewWidth = vSceneBBoxMaxF.x - vSceneBBoxMinF.x;
-			constant.viewHeight = vSceneBBoxMaxF.y - vSceneBBoxMinF.y;
-			constant.camNear = vSceneBBoxMinF.z;
-			constant.camFar = vSceneBBoxMaxF.z;
-			constant.validQueryCount = queryCount;
-			constant.validQueryOffset = queryOffset;
-			constant.occMapCount = info.resource.occlusionMapCount;
-			constant.occIndexOffset = JMathHelper::Log2Int(info.resource.occlusionMinSize);
-			constant.correctFailTrigger = (int)option.culling.allowHZBCorrectFail;
-			constant.usePerspective = false;	//use ortho
-			HzbOccComputeFrame::MinusMovedDirty();
-		}
-			*/
+				hzb.viewWidth = frustumMaxP.x - frustumMinP.x;
+				hzb.viewHeight = frustumMaxP.y - frustumMinP.y;
+				hzb.camNear = frustumMinP.z;
+				hzb.camFar = frustumMaxP.z;
+				hzb.validQueryCount = set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT, sceneGuid);
+				hzb.occMapCount = gUser->GetViewCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, J_GRAPHIC_BIND_TYPE::SRV, J_GRAPHIC_TASK_TYPE::HZB_CULLING);
+				hzb.occIndexOffset = JMathHelper::Log2Int(set.info.resource.occlusionMinSize);
+				hzb.correctFailTrigger = (int)set.option.culling.allowHZBCorrectFail;
+				hzb.usePerspective = false;
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS>(&hzb);
+			}
 		}
 		template<int threadIndex>
 		static void UpdatePointLight(const UpdateFrameBufferSet& set)
 		{
+			JPointLight* light = static_cast<JPointLight*>(set.obj);
+			auto gUser = light->ModuleManagedData()->GetGraphicResourceUserInterface();
 
+			static JPointLightConstants litConstants;
+			static JShadowMapCubeDrawConstants shadowMapDraw;
+
+			const XMMATRIX proj = light->GetProj().LoadXM();
+
+			//shadow map index에 대한 변수가 있으므로
+			//shadow map update시 JPointLightConstants와 JShadowMapCubeDrawConstants를 동시에
+			//update해줘야한다. 
+			const XMMATRIX ndcM = JMatrix4x4::NdcToTextureSpaceXM();
+			for (uint i = 0; i < Graphic::Constants::cubeMapPlaneCount; ++i)
+			{
+				const XMMATRIX viewProj = XMMatrixMultiply(light->GetView(i).LoadXM(), proj);
+				litConstants.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewProj, ndcM)));
+				shadowMapDraw.shadowMapTransform[i].StoreXM(XMMatrixTranspose(viewProj));
+			}
+
+			litConstants.midPosition = light->GetOwner()->GetTransform()->GetWorldPosition();
+			light->GetSidePosition(litConstants.sidePosition[0], litConstants.sidePosition[1]);
+
+			litConstants.color = light->GetColor();
+			litConstants.power = light->GetPower();
+			litConstants.frustumNear = light->GetFrustumNear();
+			litConstants.frustumFar = light->GetFrustumFar();
+			litConstants.radius = light->GetRadius();
+			litConstants.penumbraScale = light->GetPenumbraWidth();
+			litConstants.penumbraBlockerScale = light->GetPenumbraBlockerWidth();
+			litConstants.shadowMapIndex = light->IsShadowActivated() ? gUser->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE, 0) : 0;
+			litConstants.hasShadowMap = light->IsShadowActivated();
+			litConstants.shadowMapSize = light->GetShadowMapSize();
+			litConstants.shadowMapInvSize = 1.0f / litConstants.shadowMapSize;
+			litConstants.bias = light->GetBias();
+
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT>(&litConstants);
+			if (light->IsShadowActivated())
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW>(&shadowMapDraw);
 		}
 		template<int threadIndex>
 		static void UpdateSpotLight(const UpdateFrameBufferSet& set)
 		{
+			JSpotLight* light = static_cast<JSpotLight*>(set.obj);
+			auto gUser = light->ModuleManagedData()->GetGraphicResourceUserInterface();
 
+			static JSpotLightConstants litConstants;
+			static JShadowMapDrawConstants shadowMapDraw;
+
+			const XMMATRIX view = light->GetView().LoadXM();
+			const XMMATRIX proj = light->GetProj().LoadXM();
+
+			if (light->IsShadowActivated())
+			{
+				const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+				litConstants.shadowMapTransform.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewProj, JMatrix4x4::NdcToTextureSpaceXM())));
+				shadowMapDraw.shadowMapTransform.StoreXM(XMMatrixTranspose(viewProj));
+			}
+
+			litConstants.color = light->GetColor();
+			litConstants.power = light->GetPower();
+			litConstants.position = light->GetWorldPosition();
+
+			litConstants.frustumNear = light->GetFrustumNear();
+			litConstants.direction = light->GetCachedWorldDirection();
+			litConstants.frustumFar = light->GetFrustumFar();
+			litConstants.innerConeCosAngle = cos(light->GetInnerConeAngle());
+			litConstants.outerConeCosAngle = cos(light->GetOuterConeAngle());
+			litConstants.outerConeAngle = light->GetOuterConeAngle();
+			litConstants.penumbraScale = light->GetPenumbraWidth();
+			litConstants.penumbraBlockerScale = light->GetPenumbraBlockerWidth();
+			litConstants.shadowMapIndex = light->IsShadowActivated() ? gUser->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
+			litConstants.hasShadowMap = light->IsShadowActivated();
+			litConstants.shadowMapSize = light->GetShadowMapSize();
+			litConstants.shadowMapInvSize = 1.0f / litConstants.shadowMapSize;
+			litConstants.bias = light->GetBias();
+
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT>(&litConstants);
+			if (light->IsShadowActivated())
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW>(&shadowMapDraw);
 		}
 		template<int threadIndex>
 		static void UpdateRectLight(const UpdateFrameBufferSet& set)
 		{
+			JRectLight* light = static_cast<JRectLight*>(set.obj);
+			auto gUser = light->ModuleManagedData()->GetGraphicResourceUserInterface();
 
+			static JRectLightConstants litConstants;
+			static JShadowMapDrawConstants shadowMapDraw;
+
+			const XMMATRIX view = light->GetView().LoadXM();
+			const XMMATRIX proj = light->GetProj().LoadXM(); ;
+			const JUserPtr<JTexture> sourceTexture = light->GetSourceTexture();
+
+			static constexpr uint missingIndex = Graphic::Constants::missingIndex;
+			if (light->IsShadowActivated())
+			{
+				const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+				litConstants.shadowMapTransform.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewProj, JMatrix4x4::NdcToTextureSpaceXM())));
+				shadowMapDraw.shadowMapTransform.StoreXM(XMMatrixTranspose(viewProj));
+			}
+
+			litConstants.origin = light->GetOwner()->GetTransform()->GetWorldPosition();
+			litConstants.extents = light->GetAreaSize() * 0.5f;
+			light->GetWorldAxis(litConstants.axis[0], litConstants.axis[1], litConstants.axis[2]);
+
+			litConstants.direction = light->GetCachedWorldDirection();
+			litConstants.color = light->GetColor();
+			litConstants.power = light->GetPower();
+			litConstants.frustumNear = light->GetFrustumNear();
+			litConstants.frustumFar = light->GetFrustumFar();
+			litConstants.barndoorLength = light->GetBarndoorLength();
+			litConstants.barndoorCosAngle = std::cos(JMathHelper::DegToRad * light->GetBarndoorAngle());
+			//constant.isTwoSide = isTwoSide;
+			litConstants.shadowMapIndex = light->IsShadowActivated() ? gUser->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
+			litConstants.hasShadowMap = light->IsShadowActivated();
+			litConstants.sourceTextureIndex = sourceTexture != nullptr ?
+				sourceTexture->ModuleManagedData()->GetGraphicResourceUserInterface()->GetFirstResourceArrayIndex() :
+				missingIndex;
+
+			JUserPtr<JTexture>& ltcMat = set.cacheData->ltcMat;
+			JUserPtr<JTexture>& ltcAmp = set.cacheData->ltcAmp;
+
+			litConstants.ltcMatTextureIndex = ltcMat != nullptr ? ltcMat->ModuleManagedData()->GetGraphicResourceUserInterface()->GetFirstResourceArrayIndex() : invalidIndex;
+			litConstants.ltcAmpTextureIndex = ltcAmp != nullptr ? ltcAmp->ModuleManagedData()->GetGraphicResourceUserInterface()->GetFirstResourceArrayIndex() : invalidIndex;
+
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT>(&litConstants);
+			if (light->IsShadowActivated())
+				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW>(&shadowMapDraw);
 		}
 		template<int threadIndex>
 		static void UpdateRenderItem(const UpdateFrameBufferSet& set)
 		{
+			JRenderItem* rItem = static_cast<JRenderItem*>(set.obj);
+			JTransform* transform = rItem->GetOwner()->GetTransform().Get();
+			auto gUser = rItem->ModuleManagedData()->GetGraphicResourceUserInterface();
 
+			static std::vector<JObjectCpuConstants> object;
+			static JBoundingObjectConstants bounding;
+			static JHzbOccObjectConstants hzb;
+			static std::vector<JObjectRefereneceInfoConstants> refInfo;
+
+			const uint subMeshCount = rItem->GetSubmeshCount();
+			ControlStaticConstantsSize(object, subMeshCount);
+			ControlStaticConstantsSize(refInfo, subMeshCount);
+
+			const JMatrix4x4 textureTransform = rItem->GetTextransform();
+			for (uint i = 0; i < subMeshCount; ++i)
+			{
+				const JUserPtr<JMaterial>& material = rItem->GetValidMaterial(i);
+				object[i].world.StoreXM(XMMatrixTranspose(transform->GetWorldMatrix().LoadXM()));
+				object[i].texTransform.StoreXM(XMMatrixTranspose(textureTransform.LoadXM()));
+				object[i].materialIndex = material->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL);
+
+				const JUserPtr<JMeshGeometry>& mesh = rItem->GetMesh();
+				auto meshGUser = mesh->ModuleManagedData()->GetGraphicResourceUserInterface();
+				refInfo[i].materialIndex = object[i].materialIndex;
+				refInfo[i].verticesIndex = meshGUser->GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::VERTEX, J_GRAPHIC_BIND_TYPE::SRV, 0);
+				refInfo[i].indicesIndex = meshGUser->GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::INDEX, J_GRAPHIC_BIND_TYPE::SRV, 0);
+				refInfo[i].verticesOffset = mesh->GetSubmeshBaseVertexLocation(i);
+				refInfo[i].indicesOffset = mesh->GetSubmeshStartIndexLocation(i);
+				refInfo[i].verticesType = (uint)mesh->GetMeshGeometryType();
+				refInfo[i].indicesType = mesh->GetIndexByteSize() == sizeof(uint16) ? 0 : 1;
+			}
+			bounding.boundWorld.StoreXM(XMMatrixTranspose(rItem->GetBBoxWorldMaxtrix()));
+
+			const DirectX::BoundingOrientedBox bbox = rItem->GetOrientedBoundingBox();
+			bbox.GetCorners(hzb.coners);
+			hzb.center = bbox.Center;
+			hzb.extents = bbox.Extents;
+			hzb.isValid = rItem->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT;
+			hzb.queryResultIndex = set.updateInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT);
+
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT>(object, subMeshCount);
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO>(refInfo, subMeshCount);
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT>(&bounding);
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT>(&hzb);
 		}
 		template<int threadIndex>
 		static void UpdateMaterial(const UpdateFrameBufferSet& set)
 		{
+			JMaterial* mat = static_cast<JMaterial*>(set.obj);
 
+			static JMaterialConstants matConstants;
+			static constexpr uint missingIndex = Graphic::Constants::missingIndex;
+
+			auto TryGetResourceArrayIndex = [](const JUserPtr<JTexture>& texture, const int failReturn = invalidIndex)
+			{
+				return texture != nullptr ? texture->ModuleManagedData()->GetGraphicResourceUserInterface()->GetFirstResourceArrayIndex() : failReturn;
+			};
+
+			matConstants.albedoColor = mat->GetAlbedoColor();
+			matConstants.metallic = mat->GetMetallic();
+			matConstants.roughness = mat->GetRoughness();
+			matConstants.specularFactor = mat->GetSpecularFactor();
+			matConstants.matTransform.StoreXM(XMMatrixTranspose(mat->GetMatTransform().LoadXM()));
+			matConstants.albedoMapIndex = TryGetResourceArrayIndex(mat->GetAlbedoMap(), missingIndex);
+			matConstants.normalMapIndex = TryGetResourceArrayIndex(mat->GetNormalMap(), missingIndex);
+			matConstants.heightMapIndex = TryGetResourceArrayIndex(mat->GetHeightMap(), missingIndex);
+			matConstants.metallicMapIndex = TryGetResourceArrayIndex(mat->GetMetallicMap(), missingIndex);
+			matConstants.roughnessMapIndex = TryGetResourceArrayIndex(mat->GetRoughnessMap(), missingIndex);
+			matConstants.ambientOcclusionMapIndex = TryGetResourceArrayIndex(mat->GetAmbientOcclusionMap(), missingIndex);
+			matConstants.specularMapIndex = TryGetResourceArrayIndex(mat->GetSpecularMap(), missingIndex);
+
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL>(&matConstants);
 		}
 		template<int threadIndex>
 		static void UpdateScene(const UpdateFrameBufferSet& set)
 		{
-			static JScenePassConstants scene;
-		}
+			JScene* scene = static_cast<JScene*>(set.obj);
+			const size_t sceneGuid = scene->GetGuid();
+			static JScenePassConstants constants;
 
-		static UpdateFrameBufferFunc::Ptr GetStuffConstantsFunc(const JObjectDataSetMetadata& metadata)
-		{
-			if (metadata.IsComponentType())
+			constants.appTotalTime = JEngineTimer::Data().TotalTime();
+			constants.appDeltaTime = JEngineTimer::Data().DeltaTime();
+			if (scene->IsActivatedSceneTime())
 			{
-
-			}
-			else if (metadata.IsResourceType())
-			{
-
+				constants.sceneTotalTime = scene->GetTotalTime();
+				constants.sceneDeltaTime = scene->GetDeltaTime();
 			}
 			else
-				return;
-		}
-	} 
+			{
+				constants.sceneTotalTime = 0;
+				constants.sceneDeltaTime = 0;
+			}
 
+			constants.directionalLitSt = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
+			constants.directionalLitEd = constants.directionalLitSt + set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, sceneGuid);
+			constants.pointLitSt = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+			constants.pointLitEd = constants.pointLitSt + set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT, sceneGuid);
+
+			constants.spotLitSt = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+			constants.spotLitEd = constants.spotLitSt + set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
+			constants.rectLitSt = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
+			constants.rectLitEd = constants.rectLitSt + set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
+	 
+			auto missingInterface = set.cacheData->missing->ModuleManagedData()->GetGraphicResourceUserInterface();
+			auto blueNoiseInterface = set.cacheData->bluseNoise->ModuleManagedData()->GetGraphicResourceUserInterface();
+
+			constants.missingTextureIndex = missingInterface->GetFirstResourceArrayIndex();
+			constants.bluseNoiseTextureIndex = blueNoiseInterface->GetFirstResourceArrayIndex();
+			constants.bluseNoiseTextureSize = blueNoiseInterface->GetFirstResourceSize();
+			constants.invBluseNoiseTextureSize = blueNoiseInterface->GetFirstResourceInvSize();
+			constants.clusterMinDepth = std::log2(set.option.culling.clusterNear);
+
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS>(&constants);
+		}
+
+		/*
+		*
+		*/
+		static UpdateFrmaeFuncSet CreateUpdateFuncSet(const JObjectDataSetMetadata& metadata)
+		{
+			static UpdateFrmaeFuncSet set[totalCompVariation + totalResourceVariation];
+			static bool isInit = false;
+			if (!isInit)
+			{
+				for (uint i = 0; i < totalCompVariation; ++i)
+				{
+					switch (i)
+					{
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::USER_BEHAVIOR>():
+					{
+						set[i].updateF = &UpdateBehavior<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return false; };
+						break;
+					}
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>():
+					{
+						//항상 Update되며 Update중에 사용되는 데이터는 독립적이므로
+						//thread로 병렬 처리가능
+						set[i].updateF = &UpdateAnimator<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION); };
+						break;
+					}
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>():
+					{
+						set[i].updateF = &UpdateCamera<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+						{
+							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS);
+						};
+						break;
+					}
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL):
+					{
+						set[i].updateF = &UpdateDirctionalLight<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+						{
+							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
+						};
+						break;
+					}
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::POINT):
+					{
+						set[i].updateF = &UpdatePointLight<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+						{
+							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW);
+						};
+						break;
+					}
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::SPOT):
+					{
+						set[i].updateF = &UpdateSpotLight<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+						{
+							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
+						};
+						break;
+					}
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::RECT):
+					{
+						set[i].updateF = &UpdateRectLight<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+						{
+							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
+						};
+						break;
+					}
+					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>():
+					{
+						set[i].updateF = &UpdateRenderItem<0>;
+						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+						{
+							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT) ||
+								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT);
+						};
+						break;
+					}
+					default:
+						break;
+					}
+				}
+				for (uint i = 0; i < totalResourceVariation; ++i)
+				{
+					UniqueIndex index = i + totalCompVariation;
+					switch (i)
+					{
+					case ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MATERIAL>():
+					{
+						set[index].updateF = &UpdateMaterial<0>;
+						set[index].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL); };
+						break;
+					}
+					case ConvertResourceUniqueIndex<J_RESOURCE_TYPE::SCENE>():
+					{
+						set[index].updateF = &UpdateScene<0>;
+						set[index].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return true; };
+						//set.isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS); };
+						break;
+					}
+					default:
+						break;
+					}
+				}
+				isInit = true;
+			}
+			return set[metadata.uniqueIndex];
+		}
+		template<typename ObjectStucture>
+		static void DoUpdate(JDx12FrameResourceManager* fm,
+			JFrameUpdateDataSet& set,
+			UpdateFrameBufferSet& updateFrameBufferSet)
+		{
+			UpdateFrmaeFuncSet funcSet = CreateUpdateFuncSet(set.metadata);
+			if (funcSet.updateF == nullptr)
+				return;
+
+			const bool isForcedUpdate = funcSet.isForcedUpdateF(fm);
+			const uint count = (uint)set.GetDataStorageCount();
+
+			for (uint i = 0; i < count; ++i)
+			{
+				JFrameUpdateInterface* frameInterface = nullptr;
+				JObject* obj = nullptr;
+				if constexpr (std::is_same_v<ObjectStucture, JFrameUpdateDataSet::CompVec>)
+				{
+					JComponent* comp = (*set.compVec)[i].Get();
+					frameInterface = static_cast<JFrameUpdateInterface*>(comp->ModuleManagedData()->GetFrameUpdateUserInterface());
+					obj = comp; 
+				}
+				else
+				{
+					JGraphicObjectDataSetBase* objSet = set.objDataVec->Get(i)->Get();
+					frameInterface = objSet->GetFrameUpdateInterface();
+					obj = objSet->Object().Get(); 
+				}
+
+				JFrameDirtyBase* frameDirty = frameInterface->GetDirtyBase();
+				frameDirty->BeginUpdate();
+
+				if (isForcedUpdate)
+					frameInterface->SetFrameDirty();
+
+				if (frameInterface->IsDirted())
+				{
+					if (frameDirty->IsFrameHotDirted())
+					{
+						frameInterface->TryExecuteObjectUpdateBind();
+						++set.updateLog.hotUpdatedCount;
+					}
+					++set.updateLog.updatedCount;
+
+					updateFrameBufferSet.obj = obj;
+					updateFrameBufferSet.updateInterface = frameInterface;
+					funcSet.updateF(updateFrameBufferSet);
+				}
+				frameDirty->EndUpdate();
+			}
+		}
+	}
+
+	void JDx12FrameResourceManager::CacheData::Initialize()
+	{
+		missing = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
+		bluseNoise = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::BLUE_NOISE);
+		ltcAmp = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_AMP);
+		ltcMat = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_MAT);
+	}
+	void JDx12FrameResourceManager::CacheData::Clear()
+	{
+		missing = nullptr;
+		bluseNoise = nullptr;
+		ltcAmp = nullptr;
+		ltcMat = nullptr;
+	}
+	void JDx12FrameResourceManager::CacheData::Update()
+	{
+		if (missing == nullptr)
+			missing = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
+		if (bluseNoise == nullptr)
+			bluseNoise = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::BLUE_NOISE);
+		if (ltcAmp == nullptr)
+			ltcAmp = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_AMP);
+		if (ltcMat == nullptr)
+			ltcMat = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_MAT);
+	}
+
+	JDx12FrameResourceManager::~JDx12FrameResourceManager()
+	{
+		ClearResource();
+	}
 	void JDx12FrameResourceManager::Initialize(JGraphicDevice* device)
 	{
-		for (uint i = 0; i < SIZE_OF_ARRAY(resource); ++i)
-			resource[i].Initialize(device);
-		currResourceIndex = 0;
+		if (!IsSameDevice(device))
+			return;
+
+		JFrameResourceManager::Initialize(device);
+		BuildResource(device);
 	}
 	void JDx12FrameResourceManager::Clear()
 	{
-		for (uint i = 0; i < SIZE_OF_ARRAY(resource); ++i)
-			resource[i].Clear();
-		currResourceIndex = 0;
-
-		for (uint i = 0; i < SIZE_OF_ARRAY(updateInfoVec); ++i)
-			updateInfoVec[i].clear();
-		cache.Clear();
+		ClearResource();
+		JFrameResourceManager::Clear();
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12FrameResourceManager::GetDeviceType()const noexcept
 	{
@@ -559,6 +1000,10 @@ namespace JinEngine::Graphic
 	uint JDx12FrameResourceManager::GetCurrentFrameIndex() const noexcept
 	{
 		return currResourceIndex;
+	}
+	uint JDx12FrameResourceManager::GetNextFrameIndex()const noexcept
+	{
+		return (currResourceIndex + 1) % Constants::gNumFrameResources;
 	}
 	uint JDx12FrameResourceManager::GetTotalRegistedCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
 	{
@@ -588,6 +1033,10 @@ namespace JinEngine::Graphic
 		int result = GetAreaStIndex(type, areaGuid);
 		return result == invalidIndex ? 0 : result;
 	}
+	uint JDx12FrameResourceManager::GetFrameResourceCapacity(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
+	{
+		return resource[currResourceIndex].GetElementCount(type);
+	}
 	int JDx12FrameResourceManager::GetAreaVecIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid) const noexcept
 	{
 		const AreaInfoVec& vec = areaInfoVec[(uint)type];
@@ -608,12 +1057,7 @@ namespace JinEngine::Graphic
 	{
 		const JFrameUpdateAreaInfo* areaInfo = GetAreaInfo(type, areaGuid);
 		return areaInfo != nullptr ? areaInfo->GetStIndex() : invalidIndex;
-	}
-	int JDx12FrameResourceManager::GetAreaEdIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept
-	{
-		const JFrameUpdateAreaInfo* areaInfo = GetAreaInfo(type, areaGuid);
-		return areaInfo != nullptr ? areaInfo->GetEdIndex() : invalidIndex;
-	}
+	} 
 	int JDx12FrameResourceManager::GetArrayIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, JFrameUpdateInfo* ptr)const noexcept
 	{
 		const InfoVec& vec = updateInfoVec[(uint)type];
@@ -627,36 +1071,41 @@ namespace JinEngine::Graphic
 	}
 	void JDx12FrameResourceManager::SetNextFrameResource()
 	{
-		++currResourceIndex;
-		if (currResourceIndex >= Constants::gNumFrameResources)
-			currResourceIndex = 0;
+		currResourceIndex = GetNextFrameIndex();
 	}
 	JUserPtr<JFrameUpdateInfo> JDx12FrameResourceManager::Register(const JFrameUploadDataCreationDesc& desc)
 	{
 		const int areaIndex = GetAreaVecIndex(desc.type, desc.areaGuid);
 		if (areaIndex == invalidIndex)
-			PushBack(desc);
+			return PushBack(desc);
 		else
-			Insert(desc, areaIndex);
+			return Insert(desc, areaIndex);
 	}
-	void JDx12FrameResourceManager::DeRegister(const JUserPtr<JFrameUpdateInfo>& info)
+	bool JDx12FrameResourceManager::DeRegister(JFrameUpdateInfo* info)
 	{
 		if (info == nullptr || !info->HasValidFrameIndex())
-			return;
+			return false;
 
 		JFrameResourceManager::DeRegister(info);
-		Pop(info);
+		return Pop(info);
 	}
-	bool JDx12FrameResourceManager::PushBack(const JFrameUploadDataCreationDesc& desc)
+	JUserPtr<JFrameUpdateInfo> JDx12FrameResourceManager::PushBack(const JFrameUploadDataCreationDesc& desc)
 	{
 		InfoVec& vec = updateInfoVec[(uint)desc.type];
 		AreaInfoVec& areaVec = areaInfoVec[(uint)desc.type];
 		const int count = vec.size();
 
-		JFrameUpdateAreaInfo* beforeArea = areaVec[areaVec.size() - 1].get();
-		std::unique_ptr<JFrameUpdateAreaInfo> newAreaInfo = std::make_unique<JFrameUpdateAreaInfo>(desc.areaGuid, beforeArea->edIndex + 1, beforeArea->edIndex + 2);
-		JOwnerPtr<JDx12FrameUpdateInfo> newInfo = CreateInfo(desc, newAreaInfo.get());
+		JFrameUpdateAreaInfo* beforeArea = nullptr;
+		std::unique_ptr<JFrameUpdateAreaInfo> newAreaInfo = nullptr;
+		if (areaVec.size() > 0)
+		{
+			beforeArea = areaVec[areaVec.size() - 1].get();
+			newAreaInfo = std::make_unique<JFrameUpdateAreaInfo>(desc.areaGuid, beforeArea->GetEdIndex(), 1);
+		}
+		else
+			newAreaInfo = std::make_unique<JFrameUpdateAreaInfo>(desc.areaGuid, 0, 1);
 
+		JOwnerPtr<JDx12FrameUpdateInfo> newInfo = CreateInfo(desc, newAreaInfo.get());
 		if (count == 0)
 		{
 			newInfo->SetFrameIndex(0);
@@ -669,11 +1118,12 @@ namespace JinEngine::Graphic
 			newInfo->SetNumber(before->GetNumber() + 1);
 		}
 
+		JUserPtr<JFrameUpdateInfo> result = newInfo;
 		areaVec.push_back(std::move(newAreaInfo));
 		vec.push_back(std::move(newInfo));
-		return true;
+		return result;
 	}
-	bool JDx12FrameResourceManager::Insert(const JFrameUploadDataCreationDesc& desc, const int areaIndex)
+	JUserPtr<JFrameUpdateInfo> JDx12FrameResourceManager::Insert(const JFrameUploadDataCreationDesc& desc, const int areaIndex)
 	{
 		InfoVec& uVec = updateInfoVec[(uint)desc.type];
 		AreaInfoVec& aVec = areaInfoVec[(uint)desc.type];
@@ -683,11 +1133,11 @@ namespace JinEngine::Graphic
 		int areaStIndex = areaInfo->GetStIndex();
 		int areaEdIndex = areaInfo->GetEdIndex();
 
-		int8 sortOrder = newInfo->GetSortOrder();
+		uint8 sortOrder = newInfo->GetSortOrder();
 		int insertIndex = -1;
 		if (sortOrder != UCHAR_MAX)
 		{
-			for (int i = areaStIndex; i <= areaEdIndex; ++i)
+			for (int i = areaStIndex; i < areaEdIndex; ++i)
 			{
 				if (uVec[i]->GetSortOrder() > sortOrder)
 				{
@@ -698,28 +1148,29 @@ namespace JinEngine::Graphic
 		}
 		//holder->sortOrder == -1 or holder->sortOrder is last
 		if (insertIndex == invalidIndex)
-			insertIndex = areaEdIndex + 1;
+			insertIndex = areaEdIndex;
 
 		JFrameUpdateInfo* before = uVec[insertIndex - 1].Get();
 		newInfo->SetFrameIndex(before->GetFrameIndex() + before->GetFrameIndexSize());
 		newInfo->SetNumber(before->GetNumber() + 1);
-		areaInfo->IncreaseEdIndex();
 
+		areaInfo->IncreaseCount();
 		const uint aVecCount = (uint)aVec.size();
 		for (uint i = areaIndex + 1; i < aVecCount; ++i)
-			aVec[i]->Increase();
+			aVec[i]->IncreaseStIndex();
 
 		const uint indexSize = newInfo->GetFrameIndexSize();
 		const uint uVecCount = (uint)uVec.size();
-		for (int i = insertIndex + 1; i < uVecCount; ++i)
+		for (int i = insertIndex; i < uVecCount; ++i)
 		{
 			uVec[i]->SetFrameIndex(uVec[i]->GetFrameIndex() + indexSize);
 			uVec[i]->SetNumber(uVec[i]->GetNumber() + 1);
 		}
+		JUserPtr<JFrameUpdateInfo> result = newInfo;
 		uVec.insert(uVec.begin() + insertIndex, std::move(newInfo));
-		return true;
+		return result;
 	}
-	bool JDx12FrameResourceManager::Pop(const JUserPtr<JFrameUpdateInfo>& info)
+	bool JDx12FrameResourceManager::Pop(JFrameUpdateInfo* info)
 	{
 		//const int arrayIndex = GetArrayIndex(type, holder); 
 		InfoVec& uVec = updateInfoVec[(uint)info->GetType()];
@@ -731,16 +1182,6 @@ namespace JinEngine::Graphic
 		const int uVecIndex = info->GetNumber();
 		const int aVecIndex = GetAreaVecIndex(info->GetType(), areaGuid);
 
-		uVec.erase(uVec.begin() + uVecIndex);
-		areaInfo->DecreaseEdIndex();
-
-		const uint aVecCount = (uint)aVec.size();
-		for (uint i = aVecIndex + 1; i < aVecCount; ++i)
-			aVec[i]->Decrease();
-
-		if (areaInfo->GetInfoCount() <= 0)
-			aVec.erase(aVec.begin() + aVecIndex);
-
 		const uint indexSize = info->GetFrameIndexSize();
 		const uint uVecCount = (int)uVec.size();
 		for (uint i = uVecIndex + 1; i < uVecCount; ++i)
@@ -749,57 +1190,59 @@ namespace JinEngine::Graphic
 			uVec[i]->SetNumber(uVec[i]->GetNumber() - 1);
 		}
 		uVec.erase(uVec.begin() + uVecIndex);
+
+		areaInfo->DecreaseCount();
+		const uint aVecCount = (uint)aVec.size();
+		for (uint i = aVecIndex + 1; i < aVecCount; ++i)
+			aVec[i]->DecreaseStIndex();
+
+		if (areaInfo->GetInfoCount() <= 0)
+			aVec.erase(aVec.begin() + aVecIndex);
 		return true;
 	}
-	JOwnerPtr<JDx12FrameUpdateInfo> JDx12FrameResourceManager::CreateInfo(const JFrameUploadDataCreationDesc& desc, JFrameUpdateAreaInfo* areaInfo)const noexcept
+	JOwnerPtr<JDx12FrameUpdateInfo> JDx12FrameResourceManager::CreateInfo(const JFrameUploadDataCreationDesc& desc, JFrameUpdateAreaInfo* areaInfo)
 	{
 		JOwnerPtr<JDx12FrameUpdateInfo> newInfo = Core::JPtrUtil::MakeOwnerPtr<JDx12FrameUpdateInfo>(desc.type, areaInfo, this);
 		newInfo->SetFrameIndexSize(desc.indexSize);
 		newInfo->SetSordOrder(desc.sortOrder);
+		return std::move(newInfo);
 	}
 	void JDx12FrameResourceManager::BeginUpdate()
 	{
-		JFrameResourceManager::BeginUpdate(); 
+		JFrameResourceManager::BeginUpdate();
+		cacheData.Update();
 	}
 	void JDx12FrameResourceManager::Update(JFrameUpdateDataSet& set)
 	{
 		if (!set.metadata.isSupportedFrameResourceUpload)
 			return;
 
-		UpdateFrameBufferFunc::Ptr updateFrameBufferFunc = GetStuffConstantsFunc(set.metadata);
-		if (updateFrameBufferFunc == nullptr)
-			return;
-		 
-		UpdateFrameBufferSet updateFrameBufferSet(GetGraphicInfo(), GetGraphicOption(), this); 
-
-		const uint count = set.objDataVec->Count();
-		for (uint i = 0; i < count; ++i)
-		{
-			JOwnerPtr<JGraphicObjectDataSetBase>& objSet = *set.objDataVec->Get(i);
-			auto frameInterface = objSet->GetFrameUpdateInterface();
-
-			if (set.option.forcedUpdateTrigger)
-				frameInterface->SetFrameDirty();
-
-			if (frameInterface->IsDirted())
-			{
-				if (frameInterface->GetDirtyBase()->IsFrameHotDirted())
-					frameInterface->TryExecuteObjectUpdateBind();
-
-				updateFrameBufferSet.obj = objSet->Object().Get();
-				updateFrameBufferSet.updateInterface = frameInterface;
-				updateFrameBufferFunc(updateFrameBufferSet);
-
-				frameInterface->GetDirtyBase()->MinusFrameDirty();
-				if (frameInterface->GetDirtyBase()->IsLastFrameHotUpdated())
-					++set.updateLog.hotUpdatedCount;
-				++set.updateLog.updatedCount;
-			}
-		}
+		UpdateFrameBufferSet updateFrameBufferSet(GetGraphicInfo(), GetGraphicOption(), this, &cacheData);
+		if (set.objDataVec != nullptr)
+			DoUpdate<ObjectDataSetVec>(this, set, updateFrameBufferSet);
+		else
+			DoUpdate<JFrameUpdateDataSet::CompVec>(this, set, updateFrameBufferSet);
 	}
 	void JDx12FrameResourceManager::EndUpdate()
 	{
 		JFrameResourceManager::EndUpdate();
+	}
+	void JDx12FrameResourceManager::BuildResource(JGraphicDevice* device)
+	{
+		for (uint i = 0; i < SIZE_OF_ARRAY(resource); ++i)
+			resource[i].Initialize(device);
+		currResourceIndex = 0;
+		cacheData.Initialize();
+	}
+	void JDx12FrameResourceManager::ClearResource()
+	{
+		for (uint i = 0; i < SIZE_OF_ARRAY(resource); ++i)
+			resource[i].Clear();
+		currResourceIndex = 0;
+
+		for (uint i = 0; i < SIZE_OF_ARRAY(updateInfoVec); ++i)
+			updateInfoVec[i].clear();
+		cacheData.Clear();
 	}
 	void JDx12FrameResourceManager::RegisterTypeData()
 	{
@@ -818,8 +1261,8 @@ namespace JinEngine::Graphic
 			//Release를 먼저하지않으면 Reset시 유효한 pointer를 소유하므로 pointer 파괴를 시도하며
 			//현재 alloc class에서 메모리를 재배치하는 과정에서 에러를 일으킬수 있으므로
 			//Release() 한다음 Reset()을 호출해야한다.
-			manager->updateInfoVec[(uint)movedInfo->GetType()][movedInfo->GetNumber()].Release();
-			manager->updateInfoVec[(uint)movedInfo->GetType()][movedInfo->GetNumber()].Reset(movedInfo);
+			//2024-08-15 수정 포인터만 변경하는 Swap 사용 
+			manager->updateInfoVec[(uint)movedInfo->GetType()][movedInfo->GetNumber()].Swap(movedInfo);
 		};
 		auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);
 		std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();

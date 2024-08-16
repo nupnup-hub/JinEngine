@@ -65,7 +65,11 @@ namespace JinEngine
 		std::unique_ptr<JStaticMeshGeometryImpl> impl;
 	public: 
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final; 
 		Core::J_MESHGEOMETRY_TYPE GetMeshGeometryType()const noexcept final;
+	public:
+		void DoActivate()noexcept final;
+		void DoDeActivate()noexcept final;
 	private: 
 		JStaticMeshGeometry(InitData& initData);
 		~JStaticMeshGeometry();

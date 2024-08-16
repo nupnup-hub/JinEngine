@@ -48,7 +48,7 @@ namespace JinEngine::Graphic
 		JGraphicResourceManager* graphicResourceM,
 		JCullingManager* cullingM,
 		JGpuAcceleratorManager* acceleratorM,
-		JFrameResource* currFrame,
+		JFrameResourceManager* frameResourceM,
 		JGraphicDebug* depthDebug,
 		JDepthTest* depthTest,
 		JBlur* blur,
@@ -64,7 +64,7 @@ namespace JinEngine::Graphic
 		graphicResourceM(graphicResourceM),
 		cullingM(cullingM),
 		acceleratorM(acceleratorM),
-		currFrame(currFrame),
+		frameResourceM(frameResourceM),
 		depthDebug(depthDebug),
 		depthTest(depthTest),
 		blur(blur),
@@ -75,7 +75,7 @@ namespace JinEngine::Graphic
 		currFrameIndex(currFrameIndex),
 		nextFrameIndex(nextFrameIndex)
 	{
-		if (device != nullptr && graphicResourceM != nullptr && cullingM != nullptr && currFrame != nullptr &&
+		if (device != nullptr && graphicResourceM != nullptr && cullingM != nullptr && frameResourceM != nullptr &&
 			depthDebug != nullptr && depthTest != nullptr && blur != nullptr && downSample != nullptr && ssao != nullptr && 
 			postSet->IsValid())
 			SetValid(true);
@@ -181,8 +181,8 @@ namespace JinEngine::Graphic
 		:isSceneDrawn(isSceneDrawn)
 	{}
  
-	JGraphicSubClassShareData::JGraphicSubClassShareData(JFrameIndexAccess* frameIndexAccess, PushGraphicEventPtr pushGraphicEventPtr)
-		: frameIndexAccess(frameIndexAccess), pushGraphicEventPtr(pushGraphicEventPtr)
+	JGraphicSubClassShareData::JGraphicSubClassShareData(PushGraphicEventPtr pushGraphicEventPtr)
+		: pushGraphicEventPtr(pushGraphicEventPtr)
 	{}
 
 	JGraphicInfoChangedSet::JGraphicInfoChangedSet(const JGraphicInfo& preInfo, const JGraphicInfo& newInfo)

@@ -27,15 +27,17 @@ SOFTWARE.
 
 namespace JinEngine
 {
+	class JComponent;
 	class JGpuAcceleratorUserInterface
 	{ 
 	public:
 		JGpuAcceleratorUserInterface() = default; 
-		virtual ~JGpuAcceleratorUserInterface() = default;
+		virtual ~JGpuAcceleratorUserInterface() = default; 
 	public:
 		virtual int GetArrayIndex()const noexcept = 0;
 		virtual J_GPU_ACCELERATOR_BUILD_OPTION GetBuildOption()const noexcept = 0;
 	public:
 		virtual bool HasInfo()const noexcept = 0;
+		virtual bool CanBuild()const noexcept = 0;
 	};
 }

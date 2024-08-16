@@ -26,6 +26,10 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 {
+	J_GRAPHIC_DEVICE_TYPE JDx12GpuAcceleratorInfo::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
 	JDx12GpuAcceleratorInfo::JDx12GpuAcceleratorInfo(const J_GPU_ACCELERATOR_BUILD_OPTION buildOptionFlag, std::unique_ptr<JGpuAcceleratorHolder>&& holder, JDx12GpuAcceleratorManager* manager)
 		:JGpuAcceleratorInfo(buildOptionFlag, std::move(holder)), manager(manager)
 	{}

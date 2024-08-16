@@ -67,8 +67,8 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface();
-		exposureSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
+		auto gInterface = helper.GetResourceInterface();
+		exposureSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
 		srcSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
 		lumaSet = context->ComputeSet(imageShare->lumaLowResolutionUint);
  

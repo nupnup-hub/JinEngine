@@ -37,10 +37,14 @@ namespace JinEngine
 		{ 
 		private:  
 			JUserPtr<JCsmHandlerInfo> info;
+		public: 
+			void AddInfo(const JUserPtr<JCsmHandlerInfo>& newInfo);
+			JCsmHandlerInfo* Release();
 		public:
 			JCsmOption GetOption()const noexcept final;
 			uint GetTargetCount()const noexcept final; 
 			const JCsmComputeResult& GetComputeResult(const uint index)const noexcept final;
+			JCsmHandlerInfo* GetInfo()const noexcept;
 		public:
 			void SetOption(const JCsmOption& newOption)noexcept;   
 		public: 

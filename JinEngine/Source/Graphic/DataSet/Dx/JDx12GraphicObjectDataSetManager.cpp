@@ -29,49 +29,79 @@ SOFTWARE.
 #include"../../../Object/Component/JComponentHint.h"
 #include"../../../Object/Component/JComponent.h" 
 #include"../../../Object/Component/Light/JLight.h" 
+#include"../../../Object/Component/Camera/JCamera.h"
 #include"../../../Object/Resource/JResourceObjectHint.h" 
-#include"../../../Object/Resource/JResourceObject.h"  
+#include"../../../Object/Resource/JResourceObject.h" 
+#include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
+#include"../../../Object/GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../../Object/JObjectTypeStatistics.h"
+
 #include"../../../Core/Utility/JTypeSequence.h"
+#include"../../../Core/Log/JLogMacro.h" 
+
+#define REGISTER_ALLOC_OPTION(type)														\
+public:																					\
+static void RegisterTypeData()															\
+{																						\
+	using JAllocationDesc = JinEngine::Core::JAllocationDesc;							\
+	using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;						\
+	using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;					\
+	using ReceiverPtr = JAllocationDesc::ReceiverPtr;									\
+	using ReAllocatedPtr = JAllocationDesc::ReAllocatedPtr;								\
+	using MemIndex = JAllocationDesc::MemIndex;											\
+																						\
+	NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)	\
+	{																								\
+		CorrectType* movedInfo = static_cast<CorrectType*>(movedPtr);	\
+		JGraphicObjectDataSetManager* manager = movedInfo->manager;									\
+																									\
+		auto obj = movedInfo->Object();																\
+		const J_OBJECT_TYPE objType = obj->GetObjectType();											\
+		const JDx12GraphicObjectDataSetManager::DataVec* dataVec = nullptr;							\
+																									\
+		if (objType == J_OBJECT_TYPE::COMPONENT_OBJECT)												\
+			dataVec = &manager->GetDataVec(GetUniqueIndex(obj));									\
+		else if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)											\
+			dataVec = &manager->GetDataVec(GetUniqueIndex(obj));									\
+		else                                                                                        \
+		{																							\
+			J_LOG_PRINT_OUT("ReAllocError in" + type::StaticTypeInfo().Name(), "Invalid type: " + Core::GetName(objType));				\
+			return;																					\
+		}																							\
+																									\
+																									\
+		(*dataVec).Get(index)->Swap(movedInfo);														\
+	};																								\
+	auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);			\
+	std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();					\
+	desc->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);\
+	type::StaticTypeInfo().SetAllocationOption(std::move(desc));									\
+}\
+
+
 
 namespace JinEngine::Graphic
-{    
+{       
+	//Helper structure
 	namespace
 	{
-		using TYPE_PER_INDEX = JDx12GraphicObjectDataSetManager::TYPE_PER_INDEX;
-		static constexpr TYPE_PER_INDEX ConvertT(const J_COMPONENT_TYPE type)
-		{
-			return (TYPE_PER_INDEX)type;
-		}
-		static constexpr TYPE_PER_INDEX ConvertT(const J_RESOURCE_TYPE type)
-		{
-			return (TYPE_PER_INDEX)((uint)type + (uint)TYPE_PER_INDEX::RESOURCE_BEGIN);
-		}
-		static constexpr uint ConvertU(const J_COMPONENT_TYPE type)
-		{
-			return (uint)type;
-		}
-		static constexpr uint ConvertU(const J_RESOURCE_TYPE type)
-		{
-			return (uint)((uint)type + (uint)TYPE_PER_INDEX::RESOURCE_BEGIN);
-		}
-		static constexpr J_COMPONENT_TYPE ConvertC(const TYPE_PER_INDEX type)
-		{
-			return (J_COMPONENT_TYPE)type;
-		}
-		static constexpr J_RESOURCE_TYPE ConvertR(const TYPE_PER_INDEX type)
-		{
-			return (J_RESOURCE_TYPE)((uint)type - (uint)TYPE_PER_INDEX::RESOURCE_BEGIN);
-		}
-		static constexpr bool IsComponentType(const TYPE_PER_INDEX type)
-		{
-			return type < TYPE_PER_INDEX::RESOURCE_BEGIN;
-		}
-		static constexpr bool IsResourceType(const TYPE_PER_INDEX type)
-		{
-			return type > TYPE_PER_INDEX::COMP_END;
+		static UniqueIndex GetUniqueIndex(const JUserPtr<JObject>& obj)
+		{  
+			const J_OBJECT_TYPE objType = obj->GetObjectType(); 
+			if (objType == J_OBJECT_TYPE::COMPONENT_OBJECT)
+			{
+				const J_COMPONENT_TYPE compType = Core::ConnectChildUserPtr<JComponent>(obj)->GetComponentType();
+				return ConvertUniqueIndex(compType, obj->GetSubTypeIndex());
+			}
+			else if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
+			{
+				const J_RESOURCE_TYPE resourceType = Core::ConnectChildUserPtr<JResourceObject>(obj)->GetResourceType();
+				return ConvertUniqueIndex(resourceType, obj->GetSubTypeIndex()) + totalCompVariation;
+			}
+			else
+				return invalidIndex;
 		}
 	}
-	//Helper structure
 	namespace
 	{
 		//Graphic resource interface define type helper class
@@ -89,7 +119,10 @@ namespace JinEngine::Graphic
 		 
 		//Metadata creation helper
 		//Set parameter automatically by interface property
-		template<typename CullingInterface, typename FrameInterface, typename GpuAcceleratorInterface, typename GraphicResourceInterface, TYPE_PER_INDEX _typePerIndex>
+		template<typename CullingInterface, 
+			typename FrameInterface, 
+			typename GpuAcceleratorInterface, 
+			typename GraphicResourceInterface>
 		struct JTypePerInterfaceMetadata
 		{
 		private:
@@ -123,25 +156,13 @@ namespace JinEngine::Graphic
 			static constexpr bool hasFrameInterface = !std::is_same_v<FrameInterface, Core::JEmptyType>;
 			static constexpr bool hasGpuAcceleratorInterface = !std::is_same_v<GpuAcceleratorInterface, Core::JEmptyType>;
 			static constexpr bool hasGraphicResourceInterface = !std::is_same_v<GraphicResourceInterface, Core::JEmptyType>;
-			static constexpr TYPE_PER_INDEX typePerIndex = _typePerIndex;
 		public:
 			//detail  
 			static constexpr bool isSupportedFrameUpload = hasFrameInterface && HasFrameUploadHint<FrameInterface>::value;
 			static constexpr bool isSupportedFrameDirty = hasFrameInterface && HasFrameDirtyHint<FrameInterface>::value;
-		public:
+		protected:
 			static void Register(JObjectDataSetMetadata& data)
-			{
-				if (IsComponentType(typePerIndex))
-				{
-					data.typeGuid = CTypeCommonCall::CallGetTypeInfo(ConvertC(typePerIndex)).TypeGuid();
-					data.componentTypeValue = (uint)ConvertC(typePerIndex);
-				}
-				else
-				{
-					data.typeGuid = RTypeCommonCall::CallGetTypeInfo(ConvertR(typePerIndex)).TypeGuid();
-					data.resourceTypeValue = (uint)ConvertR(typePerIndex);
-				}
-				 
+			{			 
 				data.isSupportedCulling = hasCullingInterface;
 				data.isSupportedGpuAccelerator = hasGpuAcceleratorInterface;
 				data.isSupportedGraphicResource = hasGraphicResourceInterface;
@@ -150,44 +171,53 @@ namespace JinEngine::Graphic
 				data.isSupportedFrameResourceUpload = isSupportedFrameUpload;
 			}
 		}; 
-  
-		//Set data manually
-		template<bool _hasCullingInterface, bool _hasFrameInterface, bool _hasGpuAcceleratorInterface, bool _hasGraphicResourceInterface, TYPE_PER_INDEX _typePerIndex>
-		struct JTypePerInterfaceMetadata2
+		
+		template<J_COMPONENT_TYPE compType,
+			uint localTypeIndex,
+			typename CullingInterface,
+			typename FrameInterface,
+			typename GpuAcceleratorInterface,
+			typename GraphicResourceInterface>
+			struct JCompTypePerInterfaceMetadata :  public JTypePerInterfaceMetadata<CullingInterface,
+			FrameInterface,
+			GpuAcceleratorInterface,
+			GpuAcceleratorInterface>
 		{
+		private:
+			using Parent = JTypePerInterfaceMetadata<CullingInterface, FrameInterface, GpuAcceleratorInterface, GpuAcceleratorInterface>;
 		public:
-			//basicalliy
-			static constexpr bool hasCullingInterface = _hasCullingInterface;
-			static constexpr bool hasFrameInterface = _hasFrameInterface;
-			static constexpr bool hasGpuAcceleratorInterface = _hasGpuAcceleratorInterface;
-			static constexpr bool hasGraphicResourceInterface = _hasGraphicResourceInterface; 
-			static constexpr TYPE_PER_INDEX typePerIndex = _typePerIndex;
-		public:
-			//detail
-			static constexpr bool isSupportedFrameUpload = hasFrameInterface;
-			static constexpr bool isSupportedFrameDirty= hasFrameInterface;
-		public:
-			static void Register(JObjectDataSetMetadata& data)
+			static void Register(JObjectDataSetMetadata* dataArray)
 			{
-				if (IsComponentType(typePerIndex))
-				{
-					data.typeGuid = CTypeCommonCall::CallGetTypeInfo(ConvertC(typePerIndex)).TypeGuid();
-					data.componentTypeValue = (uint)ConvertC(typePerIndex);
-				}
-				else
-				{
-					data.typeGuid = RTypeCommonCall::CallGetTypeInfo(ConvertR(typePerIndex)).TypeGuid();
-					data.resourceTypeValue = (uint)ConvertR(typePerIndex);
-				}
-				 
-				data.isSupportedCulling = hasCullingInterface;
-				data.isSupportedGpuAccelerator = hasGpuAcceleratorInterface;
-				data.isSupportedGraphicResource = hasGraphicResourceInterface;
-
-				data.isSupportedFrameDirty = isSupportedFrameDirty;
-				data.isSupportedFrameResourceUpload = isSupportedFrameUpload;
+				UniqueIndex uniqueIndex = ConvertCompUniqueIndex<compType>(localTypeIndex);
+				JObjectDataSetMetadata& data = dataArray[uniqueIndex];
+				Parent::Register(data);
+				data.uniqueIndex = uniqueIndex;
+				data.tag = Core::GetName(compType) + " " + std::to_string(data.uniqueIndex);
 			}
 		};
+		template<J_RESOURCE_TYPE resourceType,
+			uint localTypeIndex,
+			typename CullingInterface,
+			typename FrameInterface,
+			typename GpuAcceleratorInterface,
+			typename GraphicResourceInterface>
+			struct JResourceTypePerInterfaceMetadata : public JTypePerInterfaceMetadata<CullingInterface,
+			FrameInterface,
+			GpuAcceleratorInterface,
+			GpuAcceleratorInterface>
+		{
+		private:
+			using Parent = JTypePerInterfaceMetadata<CullingInterface, FrameInterface, GpuAcceleratorInterface, GpuAcceleratorInterface>;
+		public:
+			static void Register(JObjectDataSetMetadata* dataArray)
+			{
+			    UniqueIndex uniqueIndex = ConvertResourceUniqueIndex<resourceType>(localTypeIndex) + totalCompVariation;
+				JObjectDataSetMetadata& data = dataArray[uniqueIndex];
+				Parent::Register(data);
+				data.uniqueIndex = uniqueIndex;
+				data.tag = Core::GetName(resourceType) + " " + std::to_string(data.uniqueIndex);
+			}
+		}; 	 
 	}
 	//CompInterfaceType
 	namespace
@@ -232,15 +262,15 @@ namespace JinEngine::Graphic
 			static constexpr uint debugCount = 6;
 			static constexpr uint reserviorCount = 4;
 
-			using FrameUpload = Core::JDefinedTypeSequence< J_FRAME_RESOURCE_UPLOAD_TYPE,
+			using FrameUpload = Core::JDefinedTypeSequence<J_FRAME_RESOURCE_UPLOAD_TYPE,
 				J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA,
 				J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS,
 				J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS,
 				J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS,
-				J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS,
-				J_FRAME_RESOURCE_UPLOAD_TYPE::RAYTRACING_GI,
-				J_FRAME_RESOURCE_UPLOAD_TYPE::RAYTRACING_SHADOW,
-				J_FRAME_RESOURCE_UPLOAD_TYPE::RAYTRACING_DENOISE>;
+				J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS>;
+				//J_FRAME_RESOURCE_UPLOAD_TYPE::RAYTRACING_GI,
+				//J_FRAME_RESOURCE_UPLOAD_TYPE::RAYTRACING_SHADOW,
+				//J_FRAME_RESOURCE_UPLOAD_TYPE::RAYTRACING_DENOISE>;
 
 			class CameraFrameDirty final : public JFrameDirty
 			{
@@ -265,7 +295,7 @@ namespace JinEngine::Graphic
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING, 1>,
-				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA, 1>,
+				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, reserviorCount>>;
 			 
@@ -335,14 +365,15 @@ namespace JinEngine::Graphic
 						return 1;
 					case J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
 						return 1;
+					case J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+						return 1;
 					case J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
 						return 4;
 					default:
 						return 0;
 					}
 				}
-			public:
-				int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final
+				int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final
 				{ 
 					switch (rType)
 					{
@@ -405,6 +436,8 @@ namespace JinEngine::Graphic
 						return 0;
 					case J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA:
 						return 0;
+					case J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE:
+						return 0;
 					case J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR:
 					{
 						if (taskType == J_GRAPHIC_TASK_TYPE::RAYTRACING_GI)
@@ -451,7 +484,7 @@ namespace JinEngine::Graphic
 					true>
 				{
 				public:
-					int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final
+					int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final
 					{
 						switch (rType)
 						{
@@ -492,7 +525,7 @@ namespace JinEngine::Graphic
 				class GraphucResourceInterafce : public Graphic::JGraphicWideSingleResourceHolder<GraphicResource>
 				{
 				public:
-					int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+					int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 					{
 						/*
 						*switch (rType)
@@ -526,7 +559,7 @@ namespace JinEngine::Graphic
 				class GraphucResourceInterafce : public Graphic::JGraphicWideSingleResourceHolder<GraphicResource>
 				{
 				public:
-					int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+					int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 					{
 						/*
 						*switch (rType)
@@ -560,7 +593,7 @@ namespace JinEngine::Graphic
 				class GraphucResourceInterafce : public Graphic::JGraphicWideSingleResourceHolder<GraphicResource>
 				{
 				public:
-					int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+					int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 					{
 						/*
 						*switch (rType)
@@ -592,7 +625,7 @@ namespace JinEngine::Graphic
 		} 
 		namespace Transform
 		{
-			using FrameInterface = JFrameUpdateOnlyDirty<JFrameDirtyChain<JFrameDirtyTrigger>>;
+			using FrameInterface = JFrameUpdateOnlyDirty<JFrameDirtyTrigger>;
 		}
 	} 
 	//ResourceInterfaceType
@@ -605,12 +638,47 @@ namespace JinEngine::Graphic
 
 			using FrameInterface = JFrameUpdateTypePerSingleHolder<JFrameDirty, FrameUpload>;
 		}
+		namespace Mesh
+		{
+			namespace Static
+			{
+				using GraphicResource = Core::JDefinedTypeSequence<J_GRAPHIC_RESOURCE_TYPE,
+					J_GRAPHIC_RESOURCE_TYPE::VERTEX,
+					J_GRAPHIC_RESOURCE_TYPE::INDEX>;
+
+				class GraphucResourceInterafce : public Graphic::JGraphicWideSingleResourceHolder<GraphicResource>
+				{
+				public:
+					int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+					{ 
+						return (rType == J_GRAPHIC_RESOURCE_TYPE::VERTEX || rType == J_GRAPHIC_RESOURCE_TYPE::INDEX) ? 0 : invalidIndex;
+					}
+				};
+			}
+			namespace Skinned
+			{
+				using GraphicResource = Core::JDefinedTypeSequence<J_GRAPHIC_RESOURCE_TYPE,
+					J_GRAPHIC_RESOURCE_TYPE::VERTEX,
+					J_GRAPHIC_RESOURCE_TYPE::INDEX>;
+
+				class GraphucResourceInterafce : public Graphic::JGraphicWideSingleResourceHolder<GraphicResource>
+				{
+				public:
+					int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+					{
+						return (rType == J_GRAPHIC_RESOURCE_TYPE::VERTEX || rType == J_GRAPHIC_RESOURCE_TYPE::INDEX) ? 0 : invalidIndex;
+					}
+				};
+			}
+		}
 		namespace Scene
 		{
-			using FrameUpload = Core::JDefinedTypeSequence< J_FRAME_RESOURCE_UPLOAD_TYPE,
+			using FrameUpload = Core::JDefinedTypeSequence<J_FRAME_RESOURCE_UPLOAD_TYPE,
 				J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS>;
 
 			using FrameInterface = JFrameUpdateTypePerSingleHolder<JFrameDirty, FrameUpload>;
+
+			using GpuAcceleratorInterface = JGpuAcceleratorInterface;
 		}
 		namespace Texture
 		{
@@ -619,10 +687,10 @@ namespace JinEngine::Graphic
 			public: 
 				uint GetAllocableResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final
 				{
-					int index = GetResourceIndex(rType, taskType);
+					int index = GetResourceIndexOffset(rType, taskType);
 					return index != invalidIndex ? 1 : 0;
 				}
-				int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+				int GetResourceIndexOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 				{  
 					/*
 					switch (rType)
@@ -644,23 +712,174 @@ namespace JinEngine::Graphic
 	//CompSetType
 	namespace
 	{
-		using AnimatorDataSet = JGraphicObjectDataOneSocket<Animator::FrameInterface>;
-		using CameraDataSet = JGraphicObjectDataQuadrupleSocket<Camera::CsmTargetInterface, Camera::CullingInterface, Camera::FrameInterface, Camera::GraphicResourceInterface>;
-		using DirectionalLightDataSet = JGraphicObjectDataQuadrupleSocket< Light::Directional::CsmHandlerInterface, Light::Directional::CullingInterface, Light::Directional::FrameInterface, Light::Directional::GraphucResourceInterafce>;
-		using PointLightDataSet = JGraphicObjectDataTripleSocket<Light::Point::CullingInterface, Light::Point::FrameInterface, Light::Point::GraphucResourceInterafce>;
-		using SpotLightDataSet = JGraphicObjectDataTripleSocket<Light::Spot::CullingInterface, Light::Spot::FrameInterface, Light::Spot::GraphucResourceInterafce>;
-		using RectLightDataSet = JGraphicObjectDataTripleSocket<Light::Rect::CullingInterface, Light::Rect::FrameInterface, Light::Rect::GraphucResourceInterafce>;
-		using RenderItemDataSet = JGraphicObjectDataOneSocket<RenderItem::FrameInterface>;
-		using TransformDataSet = JGraphicObjectDataOneSocket<Transform::FrameInterface>;
+		template<typename Type>
+		class JDx12GraphicObjectDataOneSocket : public JGraphicObjectDataOneSocket<Type>
+		{
+		private:
+			using CorrectType = JDx12GraphicObjectDataOneSocket<Type>;
+		private:
+			REGISTER_ALLOC_OPTION(JDx12GraphicObjectDataOneSocket)
+			REGISTER_CLASS_USE_ALLOCATOR(JDx12GraphicObjectDataOneSocket)
+		private:
+			JDx12GraphicObjectDataSetManager* manager;
+		public:
+			JDx12GraphicObjectDataOneSocket(const JUserPtr<JObject>& object,
+				std::unique_ptr<Type>&& firstInterface,
+				JDx12GraphicObjectDataSetManager* manager)
+				:JGraphicObjectDataOneSocket<Type>(object, std::move(firstInterface)), manager(manager)
+			{  
+			}
+		};
+		template<typename FirstType, typename SecondType>
+		class JDx12GraphicObjectDataDoubleSocket : public JGraphicObjectDataDoubleSocket<FirstType, SecondType>
+		{
+		private:
+			using CorrectType = JDx12GraphicObjectDataDoubleSocket<FirstType, SecondType>;
+		private:
+			REGISTER_ALLOC_OPTION(JDx12GraphicObjectDataDoubleSocket)
+			REGISTER_CLASS_USE_ALLOCATOR(JDx12GraphicObjectDataDoubleSocket)
+		private:
+			JDx12GraphicObjectDataSetManager* manager;
+		public:
+			JDx12GraphicObjectDataDoubleSocket(const JUserPtr<JObject>& object,
+				std::unique_ptr<FirstType>&& firstInterface,
+				std::unique_ptr<SecondType>&& secondInterface,
+				JDx12GraphicObjectDataSetManager* manager)
+				:JGraphicObjectDataDoubleSocket<FirstType, SecondType>(object,
+					std::move(firstInterface),
+					std::move(secondInterface)), manager(manager)
+			{}
+		};
+		template<typename FirstType, typename SecondType, typename ThirdType>
+		class JDx12GraphicObjectDataTripleSocket : public JGraphicObjectDataTripleSocket<FirstType, SecondType, ThirdType>
+		{
+		private:
+			using CorrectType = JDx12GraphicObjectDataTripleSocket<FirstType, SecondType, ThirdType>;
+		private:
+			REGISTER_ALLOC_OPTION(JDx12GraphicObjectDataTripleSocket)
+			REGISTER_CLASS_USE_ALLOCATOR(JDx12GraphicObjectDataTripleSocket)
+		private:
+			JDx12GraphicObjectDataSetManager* manager;
+		public:
+			JDx12GraphicObjectDataTripleSocket(const JUserPtr<JObject>& object,
+				std::unique_ptr<FirstType>&& firstInterface,
+				std::unique_ptr<SecondType>&& secondInterface,
+				std::unique_ptr<ThirdType>&& thirdInterface,
+				JDx12GraphicObjectDataSetManager* manager)
+				:JGraphicObjectDataTripleSocket<FirstType, SecondType, ThirdType>(object,
+					std::move(firstInterface),
+					std::move(secondInterface),
+					std::move(thirdInterface)), manager(manager)
+			{}
+		};
+		template<typename FirstType, typename SecondType, typename ThirdType, typename ForthType>
+		class JDx12GraphicObjectDataQuadrupleSocket : public JGraphicObjectDataQuadrupleSocket<FirstType, SecondType, ThirdType, ForthType>
+		{
+		private:
+			using CorrectType = JDx12GraphicObjectDataQuadrupleSocket<FirstType, SecondType, ThirdType, ForthType>;
+		private:
+			REGISTER_ALLOC_OPTION(JDx12GraphicObjectDataQuadrupleSocket)
+			REGISTER_CLASS_USE_ALLOCATOR(JDx12GraphicObjectDataQuadrupleSocket)
+		private:
+			JDx12GraphicObjectDataSetManager* manager;
+		public:
+			JDx12GraphicObjectDataQuadrupleSocket(const JUserPtr<JObject>& object,
+				std::unique_ptr<FirstType>&& firstInterface,
+				std::unique_ptr<SecondType>&& secondInterface,
+				std::unique_ptr<ThirdType>&& thirdInterface,
+				std::unique_ptr<ForthType>&& forthInterface,
+				JDx12GraphicObjectDataSetManager* manager)
+				:JGraphicObjectDataQuadrupleSocket<FirstType, SecondType, ThirdType, ForthType>(object,
+					std::move(firstInterface),
+					std::move(secondInterface),
+					std::move(thirdInterface),
+					std::move(forthInterface)), manager(manager)
+			{}
+		};
+
+		using AnimatorDataSet = JDx12GraphicObjectDataOneSocket<Animator::FrameInterface>;
+		using CameraDataSet = JDx12GraphicObjectDataQuadrupleSocket<Camera::CsmTargetInterface, Camera::CullingInterface, Camera::FrameInterface, Camera::GraphicResourceInterface>;
+		using DirectionalLightDataSet = JDx12GraphicObjectDataQuadrupleSocket<Light::Directional::CsmHandlerInterface, Light::Directional::CullingInterface, Light::Directional::FrameInterface, Light::Directional::GraphucResourceInterafce>;
+		using PointLightDataSet = JDx12GraphicObjectDataTripleSocket<Light::Point::CullingInterface, Light::Point::FrameInterface, Light::Point::GraphucResourceInterafce>;
+		using SpotLightDataSet = JDx12GraphicObjectDataTripleSocket<Light::Spot::CullingInterface, Light::Spot::FrameInterface, Light::Spot::GraphucResourceInterafce>;
+		using RectLightDataSet = JDx12GraphicObjectDataTripleSocket<Light::Rect::CullingInterface, Light::Rect::FrameInterface, Light::Rect::GraphucResourceInterafce>;
+		using RenderItemDataSet = JDx12GraphicObjectDataOneSocket<RenderItem::FrameInterface>;
+		using TransformDataSet = JDx12GraphicObjectDataOneSocket<Transform::FrameInterface>;
 	}
 	//ResourceSetType
 	namespace
 	{
-		using MaterialDataSet = JGraphicObjectDataOneSocket<Material::FrameInterface>;
-		using SceneDataSet = JGraphicObjectDataOneSocket<Scene::FrameInterface>;
-		using TextureDataSet = JGraphicObjectDataOneSocket<Texture::GraphucResourceInterafce>;
+		using MaterialDataSet = JDx12GraphicObjectDataOneSocket<Material::FrameInterface>;
+		using StaticMeshDataSet = JDx12GraphicObjectDataOneSocket<Mesh::Static::GraphucResourceInterafce>;
+		using SkinnedMeshDataSet = JDx12GraphicObjectDataOneSocket<Mesh::Skinned::GraphucResourceInterafce>;
+		using SceneDataSet = JDx12GraphicObjectDataDoubleSocket<Scene::FrameInterface, Scene::GpuAcceleratorInterface>;
+		using TextureDataSet = JDx12GraphicObjectDataOneSocket<Texture::GraphucResourceInterafce>;
 	} 
  
+	//Additional execution with grahic reosurce creation
+	namespace
+	{
+		void ApplyDeferred(JCamera* cam, const bool isAct)
+		{ 
+			auto graphicData = cam->ModuleManagedData();
+
+			JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+			const int resourceIndex = graphicData->GetGraphicResourceUserInterface()->GetResourceIndexOffset(typeSet.resouce, typeSet.task);
+			if (!graphicData->GetGraphicResourceUserInterface()->IsValidHandle(typeSet.resouce, resourceIndex))
+				return;
+
+			if (isAct)
+			{
+				//typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP;
+				//if (graphicData->GetGraphicResourceUserInterface()->HasOption(typeSet.resouce, typeSet.option, resourceIndex))
+				//	continue;
+
+				typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP;
+				GMI()->CreateGraphicResourceOption(graphicData, typeSet);
+
+				typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY;
+				GMI()->CreateGraphicResourceOption(graphicData, typeSet);
+
+				typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
+				GMI()->CreateGraphicResourceOption(graphicData, typeSet);
+			}
+			else
+			{
+				typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
+				GMI()->DestroyGraphicResourceOption(graphicData, typeSet);
+
+				typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY;
+				GMI()->DestroyGraphicResourceOption(graphicData, typeSet);
+
+				typeSet.option = J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP;
+				GMI()->DestroyGraphicResourceOption(graphicData, typeSet);
+			}
+			graphicData->GetFrameUpdateUserInterface()->SetFrameDirty();
+		}
+		void ApplyDeferred(const JGraphicOptionChangedSet& set, const ObjectDataSetVec& camVec)
+		{
+			if (set.preOption.rendering.allowDeferred == set.newOption.rendering.allowDeferred ||
+				set.preOption.rendering.allowRaytracing == set.newOption.rendering.allowRaytracing)
+				return;
+
+			const bool isAct = set.newOption.rendering.allowDeferred || set.newOption.rendering.allowRaytracing;
+			const uint count = camVec.Count();
+			for (uint i = 0; i < count; ++i)
+			{
+				JOwnerPtr<JGraphicObjectDataSetBase>& objSet = *camVec.Get(i);
+				JCamera* cam = static_cast<JCamera*>(objSet->Object().Get());
+				ApplyDeferred(cam, isAct);
+			}
+		}
+		namespace Camera
+		{
+			void AdditionalExecution(JCamera* cam, const JGraphicOption& option)
+			{
+				ApplyDeferred(cam, option.rendering.allowDeferred || option.rendering.allowRaytracing);
+			}
+		}
+	}
+
 	void JDx12GraphicObjectDataSetManager::Initialize(JGraphicDevice* device)
 	{
 		BuildResource(device);
@@ -670,85 +889,104 @@ namespace JinEngine::Graphic
 	{
 		ClearResource();
 	}
-	const JDx12GraphicObjectDataSetManager::DataVec& JDx12GraphicObjectDataSetManager::GetDataVec(const J_COMPONENT_TYPE type)const noexcept
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicObjectDataSetManager::GetDeviceType()const noexcept
 	{
-		return set[ConvertU(type)];
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
-	const JDx12GraphicObjectDataSetManager::DataVec& JDx12GraphicObjectDataSetManager::GetDataVec(const J_RESOURCE_TYPE type)const noexcept
+	const JDx12GraphicObjectDataSetManager::DataVec& JDx12GraphicObjectDataSetManager::GetDataVec(const UniqueIndex index)const noexcept
 	{
-		return set[ConvertU(type)];
+		return set[index];
 	}
-	JObjectDataSetMetadata JDx12GraphicObjectDataSetManager::GetMetadata(const J_COMPONENT_TYPE type)const noexcept
+	JObjectDataSetMetadata JDx12GraphicObjectDataSetManager::GetMetadata(const UniqueIndex index)const noexcept
 	{
-		return metadata[ConvertU(type)];
+		return metadata[index];
+	} 
+	bool JDx12GraphicObjectDataSetManager::HasDependency(const JGraphicOption::TYPE type)const noexcept
+	{
+		if (type == JGraphicOption::TYPE::RENDERING)
+			return true;
+		else
+			return false;
 	}
-	JObjectDataSetMetadata JDx12GraphicObjectDataSetManager::GetMetadata(const J_RESOURCE_TYPE type)const noexcept
+	JUserPtr<JGraphicModuleManagedDataFrame> JDx12GraphicObjectDataSetManager::Add(const JUserPtr<JObject>& obj)
 	{
-		return metadata[ConvertU(type)];
-	}
-	bool JDx12GraphicObjectDataSetManager::Add(const JUserPtr<JObject>& obj)
-	{
+		JOwnerPtr<JGraphicObjectDataSetBase> newOwner;
+		JUserPtr<JGraphicObjectDataSetBase> result;
+
 		const J_OBJECT_TYPE objType = obj->GetObjectType();
+		UniqueIndex index = invalidIndex;
+
 		if (objType == J_OBJECT_TYPE::COMPONENT_OBJECT)
 		{
 			const J_COMPONENT_TYPE compType = Core::ConnectChildUserPtr<JComponent>(obj)->GetComponentType();
 			switch (compType)
 			{
-			case JinEngine::J_COMPONENT_TYPE::USER_DEFIENED_BEHAVIOR:
+			case JinEngine::J_COMPONENT_TYPE::USER_BEHAVIOR:
 			{
 				//추가필요
 				break;
 			}
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR:
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_ANIMATOR:
 			{
-				set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<AnimatorDataSet>(obj, std::make_unique<Animator::FrameInterface>()));
+				newOwner = Core::JPtrUtil::MakeOwnerPtr<AnimatorDataSet>(obj, std::make_unique<Animator::FrameInterface>(), this);
+				index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>();
 				break;
 			}
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA:
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_CAMERA:
 			{
-				set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<CameraDataSet>(obj,
+				newOwner = Core::JPtrUtil::MakeOwnerPtr<CameraDataSet>(obj,
 					std::make_unique<Camera::CsmTargetInterface>(),
 					std::make_unique<Camera::CullingInterface>(),
 					std::make_unique<Camera::FrameInterface>(),
-					std::make_unique<Camera::GraphicResourceInterface>()));
+					std::make_unique<Camera::GraphicResourceInterface>(),
+					this);
+				index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>();
 				break;
 			}
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT:
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_LIGHT:
 			{
 				const J_LIGHT_TYPE litType = Core::ConnectChildUserPtr<JLight>(obj)->GetLightType();
 				switch (litType)
 				{
 				case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
 				{
-					set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<DirectionalLightDataSet>(obj,
+					newOwner = Core::JPtrUtil::MakeOwnerPtr<DirectionalLightDataSet>(obj, 
 						std::make_unique<Light::Directional::CsmHandlerInterface>(),
 						std::make_unique<Light::Directional::CullingInterface>(),
 						std::make_unique<Light::Directional::FrameInterface>(),
-						std::make_unique<Light::Directional::GraphucResourceInterafce>()));
+						std::make_unique<Light::Directional::GraphucResourceInterafce>(),
+						this);
+					index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL);
 					break;
 				}
 				case JinEngine::J_LIGHT_TYPE::POINT:
 				{
-					set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<PointLightDataSet>(obj,
+					newOwner = Core::JPtrUtil::MakeOwnerPtr<PointLightDataSet>(obj, 
 						std::make_unique<Light::Point::CullingInterface>(),
 						std::make_unique<Light::Point::FrameInterface>(),
-						std::make_unique<Light::Point::GraphucResourceInterafce>()));
+						std::make_unique<Light::Point::GraphucResourceInterafce>(),
+						this);
+					index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::POINT);
 					break;
 				}
 				case JinEngine::J_LIGHT_TYPE::SPOT:
 				{
-					set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<SpotLightDataSet>(obj,
+					newOwner = Core::JPtrUtil::MakeOwnerPtr<SpotLightDataSet>(obj, 
 						std::make_unique<Light::Spot::CullingInterface>(),
 						std::make_unique<Light::Spot::FrameInterface>(),
-						std::make_unique<Light::Spot::GraphucResourceInterafce>()));
+						std::make_unique<Light::Spot::GraphucResourceInterafce>(),
+						this);
+					index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::SPOT);
 					break;
 				}
 				case JinEngine::J_LIGHT_TYPE::RECT:
 				{
-					set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<RectLightDataSet>(obj,
+					newOwner = Core::JPtrUtil::MakeOwnerPtr<RectLightDataSet>(obj, 
 						std::make_unique<Light::Rect::CullingInterface>(),
 						std::make_unique<Light::Rect::FrameInterface>(),
-						std::make_unique<Light::Rect::GraphucResourceInterafce>()));
+						std::make_unique<Light::Rect::GraphucResourceInterafce>(),
+						this);
+					index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::RECT);
 					break;
 				}
 				default:
@@ -756,20 +994,24 @@ namespace JinEngine::Graphic
 				}
 				break;
 			}
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM:
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_RENDERITEM:
 			{
-				set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<RenderItemDataSet>(obj, std::make_unique<RenderItem::FrameInterface>()));
+				newOwner = Core::JPtrUtil::MakeOwnerPtr<RenderItemDataSet>(obj, std::make_unique<RenderItem::FrameInterface>(), this);
+				index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>();
 				break;
 			}
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM:
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_TRANSFORM:
 			{
-				set[ConvertU(compType)].Add(Core::JPtrUtil::MakeOwnerPtr<TransformDataSet>(obj, std::make_unique<Transform::FrameInterface>()));
+				newOwner = Core::JPtrUtil::MakeOwnerPtr<TransformDataSet>(obj, std::make_unique<Transform::FrameInterface>(), this);
+				index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_TRANSFORM>();
 				break;
 			}
 			default:
 				break;
-			}
-			return true;
+			} 
+			result = newOwner;
+			if (newOwner != nullptr)
+				set[index].Add(std::move(newOwner));
 		}
 		else if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
 		{
@@ -778,17 +1020,38 @@ namespace JinEngine::Graphic
 			{
 			case JinEngine::J_RESOURCE_TYPE::MATERIAL:
 			{
-				set[ConvertU(resourceType)].Add(Core::JPtrUtil::MakeOwnerPtr<MaterialDataSet>(obj, std::make_unique<Material::FrameInterface>()));
+				newOwner = Core::JPtrUtil::MakeOwnerPtr<MaterialDataSet>(obj, std::make_unique<Material::FrameInterface>(), this);
+				index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MATERIAL>();
+				break;
+			}
+			case JinEngine::J_RESOURCE_TYPE::MESH:
+			{
+				const Core::J_MESHGEOMETRY_TYPE meshType = Core::ConnectChildUserPtr<JMeshGeometry>(obj)->GetMeshGeometryType();
+				if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
+				{
+					newOwner = Core::JPtrUtil::MakeOwnerPtr<StaticMeshDataSet>(obj, std::make_unique<Mesh::Static::GraphucResourceInterafce>(), this);
+					index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MESH>(Core::J_MESHGEOMETRY_TYPE::STATIC);
+				}
+				else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
+				{
+					newOwner = Core::JPtrUtil::MakeOwnerPtr<SkinnedMeshDataSet>(obj, std::make_unique<Mesh::Skinned::GraphucResourceInterafce>(), this);
+					index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MESH>(Core::J_MESHGEOMETRY_TYPE::SKINNED);
+				}
 				break;
 			}
 			case JinEngine::J_RESOURCE_TYPE::TEXTURE:
 			{
-				set[ConvertU(resourceType)].Add(Core::JPtrUtil::MakeOwnerPtr<TextureDataSet>(obj, std::make_unique<Texture::GraphucResourceInterafce>()));
+				newOwner = Core::JPtrUtil::MakeOwnerPtr<TextureDataSet>(obj, std::make_unique<Texture::GraphucResourceInterafce>(), this);
+				index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::TEXTURE>();
 				break;
 			}
 			case JinEngine::J_RESOURCE_TYPE::SCENE:
 			{
-				set[ConvertU(resourceType)].Add(Core::JPtrUtil::MakeOwnerPtr<SceneDataSet>(obj, std::make_unique<Scene::FrameInterface>()));
+				newOwner = Core::JPtrUtil::MakeOwnerPtr<SceneDataSet>(obj, 
+					std::make_unique<Scene::FrameInterface>(),
+					std::make_unique<Scene::GpuAcceleratorInterface>(),
+					this);
+				index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::SCENE>();
 				break;
 			}
 			case JinEngine::J_RESOURCE_TYPE::SHADER:
@@ -799,16 +1062,21 @@ namespace JinEngine::Graphic
 			default:
 				break;
 			}
-			return true;
-		}
-		else
-		{
-			//not supported
-			return false;
-		}
+			result = newOwner;
+			if (newOwner != nullptr)
+				set[index + totalCompVariation].Add(std::move(newOwner));
+		} 
+
+		//Develop::JDevelopDebug::PushLog(obj->GetTypeInfo().Name() + " Add");
+		//Develop::JDevelopDebug::Write();
+
+		return result;
 	}
 	bool JDx12GraphicObjectDataSetManager::Remove(JUserPtr<JGraphicModuleManagedDataFrame>& data)
 	{
+		if (data == nullptr)
+			return false;
+
 		auto removeLam = [](JOwnerPtr<JGraphicObjectDataSetBase>* owner, const size_t guid)
 		{
 			return (*owner)->Object()->GetGuid() == guid;
@@ -817,27 +1085,51 @@ namespace JinEngine::Graphic
 
 		const JWeakPtr<JObject> obj = data->Object();
 		const J_OBJECT_TYPE objType = obj->GetObjectType();
-
 		data.Release();
+	 
+		//Develop::JDevelopDebug::PushLog(obj->GetTypeInfo().Name() + " Remove");
+		//Develop::JDevelopDebug::Write();
+
+		const UniqueIndex typeIndex = GetUniqueIndex(obj);  
+		return set[typeIndex].Remove(set[typeIndex].GetIndex(removePtr, obj->GetGuid()));
+	}
+	void JDx12GraphicObjectDataSetManager::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
+	{
+		if (set.preOption.rendering.allowDeferred != set.newOption.rendering.allowDeferred)
+			ApplyDeferred(set, GetDataVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>()));
+		else if (set.preOption.rendering.allowRaytracing != set.newOption.rendering.allowRaytracing)
+			ApplyDeferred(set, GetDataVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>()));
+	}
+	void JDx12GraphicObjectDataSetManager::NotifyGraphicResourceCreation(JGraphicObjectDataSetBase* base, const JUserPtr<JGraphicResourceInfo>& newInfo, const J_GRAPHIC_TASK_TYPE task)
+	{
+		auto obj = base->Object();
+		const J_OBJECT_TYPE objType = obj->GetObjectType();
 		if (objType == J_OBJECT_TYPE::COMPONENT_OBJECT)
 		{
-			const J_COMPONENT_TYPE compType = Core::ConnectChildUserPtr<JComponent>(obj)->GetComponentType();
-			const int index = set[ConvertU(compType)].GetIndex(removePtr, obj->GetGuid());
-			set[ConvertU(compType)].Remove(index);
-			return true;
+			const J_COMPONENT_TYPE compType = static_cast<JComponent*>(obj.Get())->GetComponentType();
+			switch (compType)
+			{
+			case JinEngine::J_COMPONENT_TYPE::USER_BEHAVIOR:
+				break;
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_ANIMATOR:
+				break;
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_CAMERA:
+			{ 
+				if(task == J_GRAPHIC_TASK_TYPE::SCENE_DRAW && newInfo->GetGraphicResourceType() == J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON)
+					Camera::AdditionalExecution(static_cast<JCamera*>(obj.Get()), GetGraphicOption());
+				break;
+			}
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_LIGHT:
+				break;
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_RENDERITEM:
+				break;
+			case JinEngine::J_COMPONENT_TYPE::ENGINE_TRANSFORM:
+				break; 
+			default:
+				break;
+			}
 		}
-		else if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
-		{
-			const J_RESOURCE_TYPE resourceType = Core::ConnectChildUserPtr<JResourceObject>(obj)->GetResourceType();
-			const int index = set[ConvertU(resourceType)].GetIndex(removePtr, obj->GetGuid());
-			set[ConvertU(resourceType)].Remove(index);
-			return true;
-		}
-		else
-		{
-			//not supported
-			return false;
-		}
+		 
 	}
 	void JDx12GraphicObjectDataSetManager::BuildResource(JGraphicDevice* device)
 	{
@@ -845,29 +1137,41 @@ namespace JinEngine::Graphic
 	}
 	void JDx12GraphicObjectDataSetManager::CreateMetadata()
 	{  
-		using AnimatorMetadata = JTypePerInterfaceMetadata<Core::JEmptyType, Animator::FrameInterface, Core::JEmptyType, Core::JEmptyType, ConvertT(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)>;
-		using BehaviorMetadata = JTypePerInterfaceMetadata2<true, true, true, true, ConvertT(J_COMPONENT_TYPE::USER_DEFIENED_BEHAVIOR)>;
-		using CameraMetadata = JTypePerInterfaceMetadata<Camera::CullingInterface, Camera::FrameInterface, Core::JEmptyType, Camera::GraphicResourceInterface, ConvertT(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)>;
-		using LightMetadata = JTypePerInterfaceMetadata2<true, true, false, true, ConvertT(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)>;
-		using RenderItemMetadata = JTypePerInterfaceMetadata<Core::JEmptyType, RenderItem::FrameInterface, Core::JEmptyType, Core::JEmptyType, ConvertT(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)>;
-		using TransformMetadata = JTypePerInterfaceMetadata<Core::JEmptyType, Transform::FrameInterface, Core::JEmptyType, Core::JEmptyType, ConvertT(J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)>;
+		using AnimatorMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_ANIMATOR, 0, Core::JEmptyType, Animator::FrameInterface, Core::JEmptyType, Core::JEmptyType>;
+		using BehaviorMetadata = JCompTypePerInterfaceMetadata< J_COMPONENT_TYPE::USER_BEHAVIOR, 0, Core::JEmptyType, Core::JEmptyType, Core::JEmptyType, Core::JEmptyType>;
+		using CameraMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_CAMERA, 0, Camera::CullingInterface, Camera::FrameInterface, Core::JEmptyType, Camera::GraphicResourceInterface>;
+		using DLightMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_LIGHT, (uint)J_LIGHT_TYPE::DIRECTIONAL, Light::Directional::CullingInterface, Light::Directional::FrameInterface, Core::JEmptyType, Light::Directional::GraphucResourceInterafce>;
+		using PLightMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_LIGHT, (uint)J_LIGHT_TYPE::POINT, Light::Point::CullingInterface, Light::Point::FrameInterface, Core::JEmptyType, Light::Point::GraphucResourceInterafce>;
+		using SLightMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_LIGHT, (uint)J_LIGHT_TYPE::SPOT, Light::Spot::CullingInterface, Light::Spot::FrameInterface, Core::JEmptyType, Light::Spot::GraphucResourceInterafce>;
+		using RLightMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_LIGHT, (uint)J_LIGHT_TYPE::RECT, Light::Rect::CullingInterface, Light::Rect::FrameInterface, Core::JEmptyType, Light::Rect::GraphucResourceInterafce>;
+		using RenderItemMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_RENDERITEM, 0, Core::JEmptyType, RenderItem::FrameInterface, Core::JEmptyType, Core::JEmptyType>;
+		using TransformMetadata = JCompTypePerInterfaceMetadata<J_COMPONENT_TYPE::ENGINE_TRANSFORM, 0, Core::JEmptyType, Transform::FrameInterface, Core::JEmptyType, Core::JEmptyType>;
 
-		using MaterialMetadata = JTypePerInterfaceMetadata<Core::JEmptyType, Material::FrameInterface, Core::JEmptyType, Core::JEmptyType, ConvertT(J_RESOURCE_TYPE::MATERIAL)>;
-		using SceneMetadata = JTypePerInterfaceMetadata<Core::JEmptyType, Scene::FrameInterface, Core::JEmptyType, Core::JEmptyType, ConvertT(J_RESOURCE_TYPE::SCENE)>;
-		using TextureMetadata = JTypePerInterfaceMetadata<Core::JEmptyType, Core::JEmptyType, Core::JEmptyType, Texture::GraphucResourceInterafce, ConvertT(J_RESOURCE_TYPE::TEXTURE)>;
-		  
-		AnimatorMetadata::Register(metadata[ConvertU(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)]);
-		BehaviorMetadata::Register(metadata[ConvertU(J_COMPONENT_TYPE::USER_DEFIENED_BEHAVIOR)]);
-		CameraMetadata::Register(metadata[ConvertU(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)]);
-		LightMetadata::Register(metadata[ConvertU(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)]);
-		RenderItemMetadata::Register(metadata[ConvertU(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)]);
-		TransformMetadata::Register(metadata[ConvertU(J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)]);
-		MaterialMetadata::Register(metadata[ConvertU(J_RESOURCE_TYPE::MATERIAL)]);
-		SceneMetadata::Register(metadata[ConvertU(J_RESOURCE_TYPE::SCENE)]);
-		TextureMetadata::Register(metadata[ConvertU(J_RESOURCE_TYPE::TEXTURE)]);
+		using MaterialMetadata = JResourceTypePerInterfaceMetadata<J_RESOURCE_TYPE::MATERIAL, 0, Core::JEmptyType, Material::FrameInterface, Core::JEmptyType, Core::JEmptyType>;
+		using StaticMeshMetadata = JResourceTypePerInterfaceMetadata<J_RESOURCE_TYPE::MESH, (uint)Core::J_MESHGEOMETRY_TYPE::STATIC, Core::JEmptyType, Core::JEmptyType, Core::JEmptyType, Mesh::Static::GraphucResourceInterafce>;
+		using SkinnedMeshMetadata = JResourceTypePerInterfaceMetadata<J_RESOURCE_TYPE::MESH, (uint)Core::J_MESHGEOMETRY_TYPE::SKINNED, Core::JEmptyType, Core::JEmptyType, Core::JEmptyType, Mesh::Skinned::GraphucResourceInterafce>;
+
+		using SceneMetadata = JResourceTypePerInterfaceMetadata<J_RESOURCE_TYPE::SCENE, 0, Core::JEmptyType, Scene::FrameInterface, Core::JEmptyType, Core::JEmptyType>;
+		using TextureMetadata = JResourceTypePerInterfaceMetadata<J_RESOURCE_TYPE::TEXTURE, 0, Core::JEmptyType, Core::JEmptyType, Core::JEmptyType, Texture::GraphucResourceInterafce>;
+	 
+		AnimatorMetadata::Register(metadata);
+		BehaviorMetadata::Register(metadata);
+		CameraMetadata::Register(metadata);
+		DLightMetadata::Register(metadata);
+		PLightMetadata::Register(metadata);
+		SLightMetadata::Register(metadata);
+		RLightMetadata::Register(metadata);
+		RenderItemMetadata::Register(metadata);
+		TransformMetadata::Register(metadata);
+
+		MaterialMetadata::Register(metadata);
+		StaticMeshMetadata::Register(metadata);
+		SkinnedMeshMetadata::Register(metadata);
+		SceneMetadata::Register(metadata);
+		TextureMetadata::Register(metadata);
 	}
 	void JDx12GraphicObjectDataSetManager::ClearResource()
-	{
+	{     
 		for (uint i = 0; i < SIZE_OF_ARRAY(set); ++i)
 			set[i].Clear(); 
 	}

@@ -28,14 +28,7 @@ SOFTWARE.
 #include"../JComponentPrivate.h"
  
 namespace JinEngine
-{
-	namespace Graphic
-	{ 
-		struct JCameraConstantsSet;
-		struct JDrawCondition; 
-		class JFrameIndexAccess;
-		class JGraphic; 
-	}
+{ 
 	namespace Editor
 	{
 		class JSceneObserver;
@@ -70,13 +63,11 @@ namespace JinEngine
 		};
 		class EditorSettingInterface final
 		{
-		private:
-			friend struct Graphic::JDrawCondition;
-			friend class Graphic::JGraphic; 
+		private: 
 			friend class Editor::JSceneObserver;
 		private:
-			static void SetAllowAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept;
-			static bool AllowAllCullingResult(const JUserPtr<JCamera>& cam)noexcept;
+			static void SetReflectAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept;
+			static bool AllowReflectAllCullingResult(const JUserPtr<JCamera>& cam)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

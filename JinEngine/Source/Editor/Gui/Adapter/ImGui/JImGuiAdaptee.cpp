@@ -37,7 +37,7 @@ SOFTWARE.
 #include"../../../../Application/Project/JApplicationProject.h" 
 #include"../../../../Graphic/Gui/JGuiBackendInterface.h" 
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"  
-#include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"   
+#include"../../../../Graphic/GraphicResource/JGraphicResourceManager.h"   
 #include"../../../../../ThirdParty/imgui/imgui.h"
 #include"../../../../../ThirdParty/imgui/imgui_internal.h" 
 
@@ -565,10 +565,10 @@ namespace JinEngine::Editor
 				if (info.handle != nullptr)
 					return info.handle;
 				else
-					return info.gUserAccess->GraphicResourceUserInterface().GetFirstGpuHandle(info.bType);
+					return info.gUser->GetFirstGpuHandle(info.bType);
 			}
 			else
-				return info.gUserAccess->GraphicResourceUserInterface().GetGpuHandle(info.rType, info.bType, info.bIndex, info.dataIndex);
+				return info.gUser->GetGpuHandle(info.rType, info.bType, info.bIndex, info.dataIndex);
 		}
 		static bool StuffWindowInfo(ImGuiWindow* wnd, _Out_ JGuiWindowInfo& info)
 		{

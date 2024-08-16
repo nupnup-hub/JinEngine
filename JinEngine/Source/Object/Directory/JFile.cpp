@@ -45,6 +45,11 @@ namespace JinEngine
 		JFileActData(const JWeakPtr<JResourceObject>& resource)
 			: resource(resource)
 		{}
+		~JFileActData()
+		{
+			//if (resource != nullptr)
+			//	Core::JIdentifier::BeginForcedDestroy(resource.Release());
+		}
 	public:
 		bool IsActData()const noexcept
 		{
@@ -123,6 +128,10 @@ namespace JinEngine
 			formatIndex(initData.formatIndex),
 			name(initData.name)
 		{}
+		~JFileDeActData()
+		{
+
+		}
 	public:
 		bool IsActData()const noexcept
 		{
@@ -168,7 +177,7 @@ namespace JinEngine
 		}
 		std::wstring GetCacheFilePath()const noexcept
 		{
-			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rGuid) + Core::JFileConstant::GetCacheFileFormatW();
+			return Core::JFileConstant::MakeCacheFilePath(JApplicationProject::ModResourceCachePath(), rGuid);
 		}
 		JUserPtr<JDirectory> GetOwnerDirectory()const noexcept
 		{

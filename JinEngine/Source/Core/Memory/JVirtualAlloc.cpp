@@ -30,7 +30,7 @@ SOFTWARE.
 #include<assert.h> 
 #include<Windows.h>  
 #include<fstream>
-  
+ 
 namespace JinEngine
 {
 	namespace Core
@@ -89,14 +89,14 @@ namespace JinEngine
 		{
 			desc = std::move(newDesc);
 			reservedBlockCount = desc.dataCount;
-			 
+
 			oriBlockSize = desc.dataSize;
 			allocBlockSize = oriBlockSize;
 
-			CalculatePageFitAllocationData(allocBlockSize, 
+			CalculatePageFitAllocationData(allocBlockSize,
 				reservedBlockCount,
-				pageSize, 
-				reservedPageCount, 
+				pageSize,
+				reservedPageCount,
 				totalAllocSize,
 				desc.useDataAlign,
 				desc.fitAllocationGranularity);
@@ -122,14 +122,14 @@ namespace JinEngine
 				return false;
 		}
 		void* JVirtualAlloc::Allocate(const size_t reqSize)
-		{  
+		{
 			if (reqSize < oriBlockSize)
 				return nullptr;
-  
+
 			const uint reqBlockCount = (uint)(reqSize / oriBlockSize);
 			if (!CanAllocate(reqBlockCount))
-			{	 
-				if(CompactUnuseMemory(false))
+			{
+				if (CompactUnuseMemory(false))
 					return Allocate(reqSize);
 				else if (desc.canReAlloc && desc.notifyReAllocB != nullptr && Extend())
 					return Allocate(reqSize);
@@ -155,7 +155,7 @@ namespace JinEngine
 						CommitEmptyPage();
 				}
 				return startP;
-			}	 
+			}
 		}
 		void JVirtualAlloc::DeAllocate(void* p)
 		{
@@ -206,11 +206,11 @@ namespace JinEngine
 
 			allocBlockSize = pageSize = committedPageCount = useBlockCount = reservedBlockCount = reservedPageCount = 0;
 			lastAllocPageIndex = 0;
-		} 
+		}
 		bool JVirtualAlloc::CanAllocate(const uint blockCount)const noexcept
 		{
-			return allocableBlockHead != nullptr || committedPageCount < reservedPageCount; 
-		} 
+			return allocableBlockHead != nullptr || committedPageCount < reservedPageCount;
+		}
 		bool JVirtualAlloc::CanCompactMemory(const bool allowCompareBorder)const noexcept
 		{
 			if (allowCompareBorder)
@@ -224,7 +224,7 @@ namespace JinEngine
 				return false;
 
 			return CalPageSize(pageIndex) % allocBlockSize > 0;
-		} 
+		}
 		uint JVirtualAlloc::GetBlockIndex(void* p)const noexcept
 		{
 			return ((std::intptr_t)p - (std::intptr_t)pData) / allocBlockSize;
@@ -314,7 +314,7 @@ namespace JinEngine
 			}
 			if (ed >= reservedBlockCount)
 				ed = reservedBlockCount - 1;
-		} 
+		}
 		JVirtualAlloc::DataPointer JVirtualAlloc::UsePage(const uint pageIndex)noexcept
 		{
 			++committedPageCount;
@@ -362,8 +362,8 @@ namespace JinEngine
 			return CalPtrLocation(blockIndex);
 		}
 		void JVirtualAlloc::UnUseBlock(const uint pageIndex, const uint blockIndex)noexcept
-		{ 
-			--useBlockCount; 
+		{
+			--useBlockCount;
 			isUseBlock[blockIndex] = false;
 
 			if (!desc.useMemoryCompaction)
@@ -372,7 +372,7 @@ namespace JinEngine
 				newBlockInfo->next = allocableBlockHead;
 				allocableBlockHead = newBlockInfo;
 			}
-		} 
+		}
 		void JVirtualAlloc::UnUseBlock(void* p)noexcept
 		{
 			const uint blockIndex = GetBlockIndex(p);
@@ -382,7 +382,7 @@ namespace JinEngine
 		{
 			if (allocableBlockHead == nullptr)
 				return nullptr;
-			  
+
 			return UseBlock(allocableBlockHead->pageIndex, allocableBlockHead->blockIndex);
 		}
 		JVirtualAlloc::DataPointer JVirtualAlloc::CommitEmptyPage()
@@ -402,18 +402,18 @@ namespace JinEngine
 			}
 
 			if (apiInterface->Allocate((PVOID)((std::intptr_t)pData + CalPageSize(allocablePaegHead->pageIndex)), pageSize) == NULL)
-				return nullptr;  
+				return nullptr;
 
 			return UsePage(allocablePaegHead->pageIndex);
 		}
 		bool JVirtualAlloc::CompactUnuseMemory(const bool allowCompareBorder)
-		{ 
+		{
 			if (!CanCompactMemory(allowCompareBorder))
 				return false;
-
+			 
 			const uint allocatedBlockCount = GetAllocatedBlockCount();
 			for (uint i = 0; i < allocatedBlockCount; ++i)
-			{ 
+			{
 				if (!isUseBlock[i])
 				{
 					bool findUseBlock = false;
@@ -433,14 +433,14 @@ namespace JinEngine
 
 					DataPointer emptyPtr = CalPtrLocation(i);
 					DataPointer movedPtr = CalPtrLocation(movedBlockIndex);
-					memcpy(emptyPtr, movedPtr, allocBlockSize); 
- 
+					memmove(emptyPtr, movedPtr, allocBlockSize);
+
 					isUseBlock[i] = true;
 					isUseBlock[movedBlockIndex] = false;
 					 
 					if (desc.notifyReAllocB != nullptr)
 						(*desc.notifyReAllocB)(emptyPtr, movedBlockIndex);
-					 
+
 					//if (desc.notifyDebugB != nullptr)
 					//	(*desc.notifyDebugB)(movedPtr, emptyPtr, i);
 				}
@@ -496,7 +496,7 @@ namespace JinEngine
 					//VirtualFree((PVOID)((std::intptr_t)pData + CalPageSize(i)), pageSize, MEM_DECOMMIT);
 					UnUsePage(i);
 				}
-			}
+			} 
 		}
 		bool JVirtualAlloc::Extend()
 		{ 
@@ -514,7 +514,7 @@ namespace JinEngine
 				apiInterface->ReleaseVirtualMemory(exPData);
 				return false;
 			}
- 
+
 			for (uint i = 0; i < useBlockCount; ++i)
 			{
 				DataPointer oldBlockSt = &pData[i * allocBlockSize];
@@ -536,17 +536,17 @@ namespace JinEngine
 			reservedPageCount = totalAllocSize / pageSize;
 			reservedBlockCount = (reservedPageCount * pageSize) / allocBlockSize;
 
-			delete isUsePage;
+			delete[] isUsePage;
 			isUsePage = new bool[reservedPageCount]();
 			memset(isUsePage, 1, preReservePageCount);
 
-			delete isUseBlock;
+			delete[] isUseBlock;
 			isUseBlock = new bool[reservedBlockCount]();
 			memset(isUseBlock, 1, preReserveBlockCount);
 
 			allocablePaegHead = new PageInfo();
 			allocablePaegHead->pageIndex = preReservePageCount;
-			  
+
 			return true;
 		}
 	};

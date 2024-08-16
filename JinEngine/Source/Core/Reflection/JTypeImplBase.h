@@ -120,10 +120,14 @@ namespace JinEngine
 			}
 		};
 
+
+		//Impl macro
+		//Rule: interface pointer name is thisPointer
+
 		//Caution
 		//Impl은 자기자신을 소유하는 Interface pointer를 소유해야한다.
 		//CallNotifyReAlloc로 추가적인 처리를 하는 함수를 호출할수있다.
-#define IMPL_REALLOC_BIND(implTypeName, thisPointerName)										\
+#define IMPL_REALLOC_BIND()														\
 																								\
 			using JAllocationDesc = JinEngine::Core::JAllocationDesc;							\
 			using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;						\
@@ -134,12 +138,12 @@ namespace JinEngine
 																								\
 			 NotifyReAllocPtr notifyPtr = [] (ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)\
 			{																									\
-				implTypeName* movedImpl = static_cast<implTypeName*>(movedPtr);									\
-				auto& thisPtr = movedImpl->thisPointerName;														\
+				ThisType* movedImpl = static_cast<ThisType*>(movedPtr);										\
+				auto& thisPtr = movedImpl->thisPointer;															\
 				thisPtr->impl.release();																		\
 				thisPtr->impl.reset(movedImpl);																	\
-				if constexpr(JinEngine::Core::HasNotifyReAlloc<implTypeName>::value)							\
-					JinEngine::Core::HasNotifyReAlloc<implTypeName>::CallNotifyReAlloc(movedImpl);				\
+				if constexpr(JinEngine::Core::HasNotifyReAlloc<ThisType>::value)							\
+					JinEngine::Core::HasNotifyReAlloc<ThisType>::CallNotifyReAlloc(movedImpl);				\
 			};																									\
 			auto reAllocF = std::make_unique<NotifyReAllocF>(notifyPtr);										\
 																												\
@@ -148,30 +152,48 @@ namespace JinEngine
 			typeInfo.SetAllocationOption(std::move(desc));																\
 
 
-#define IMPL_REGISTER_TRANFORM_FRAME_DRITY_LISTENER()			\
+#define IMPL_REGISTER_TRANFORM_FRAME_DRITY_LISTENER()							\
 																				\
 		auto listenerLam = [](JUserPtr<JObject> obj)							\
-		{																									\
-			return static_cast<ThisInterfaceType*>(obj.Get())->impl->graphicData.Get()->GetFrameUpdateUserInterface();\
+		{	 																								\
+			return static_cast<ThisInterfaceType*>(obj.Get())->ModuleManagedData()->GetFrameUpdateUserInterface();\
 		};																\
 																		\
 		JFrameDirtyListener listener;									\
 		listener.getFrameUserBind = Core::UniqueBind(std::make_unique<JFrameDirtyListener::GetListenerF>(listenerLam), JUserPtr<JObject>(thisPointer));	\
 		listener.guid = thisPointer->GetGuid();																											\
 																																						\
-		auto tFInterface = thisPointer->GetOwner()->GetTransform()->GetModuleManagedData()->GetFrameUpdateUserInterface();								\
-		tFInterface->TryRegisterDirtyListener(listener);																								\
+		auto transform = thisPointer->GetOwner()->GetTransform();																						\
+		if(transform == nullptr || !transform->IsActivated())																														\
+			return;																																		\
+																																						\
+		auto tFInterface = transform->ModuleManagedData()->GetFrameUpdateUserInterface();																\
+		tFInterface->TryRegisterDirtyListener(std::move(listener));																						\
 
 
-#define IMPL_DEREGISTER_TRANFORM_FRAME_DRITY_LISTENER()			\
+#define IMPL_DEREGISTER_TRANFORM_FRAME_DRITY_LISTENER()							\
 																				\
 		auto transform = thisPointer->GetOwner()->GetTransform();				\
-		if (transform == nullptr)												\
+		if (transform == nullptr || !transform->IsActivated())					\
 			return;																\
 																				\
-		auto tFInterface = transform->GetModuleManagedData()->GetFrameUpdateUserInterface();\
+		auto tFInterface = transform->ModuleManagedData()->GetFrameUpdateUserInterface();\
 		tFInterface->TryDeRegisterDirtyListener(thisPointer->GetGuid());					\
 
+
+		//Rule: function name is Update
+#define IMPL_REGISTER_FRAME_UPDATE_ACTION()										\
+																				\
+		auto updateLam = [](JUserPtr<JObject> obj)								\
+		{																		\
+			static_cast<ThisInterfaceType*>(obj.Get())->impl->Update();				\
+		};																			\
+																					\
+		auto bind = JFrameObjectUpdateF::CreateCompletelyBind(updateLam, JUserPtr<JObject>(thisPointer));	\
+		graphicData->GetFrameUpdateUserInterface()->RegisterObjectUpdateB(std::move(bind));					\
+																											\
+
+#define  IMPL_DEREGISTER_FRAME_UPDATE_ACTION() graphicData->GetFrameUpdateUserInterface()->DeRegisterObjectUpdateB();					
 
 
 

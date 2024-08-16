@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once  
 #include"JOcclusionConstants.h"  
 #include"JFrameConstantsSet.h"
-#include"../../Core/Utility/JCommonUtility.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -58,40 +58,50 @@ namespace JinEngine
 		* 복수의 data를 CopyData할시에는 Gpu에 upload되는 크기와 같은
 		* structure을 할당하거나(권장), 하나씩 CopyData를 해야한다(비권장 너무느림)
 		*/
-		//144(real data) + 112(empty)
+		//132(real data) + 124(empty)
 		struct JObjectCpuConstants
 		{
 			JMatrix4x4 world = JMatrix4x4::Identity();
-			JMatrix4x4 texTransform = JMatrix4x4::Identity();
-			uint objectIndex = 0;
+			JMatrix4x4 texTransform = JMatrix4x4::Identity(); 
 			uint materialIndex = 0;
 			uint objPad00 = 0;
 			uint objPad01 = 0;
 			uint objPad02 = 0;
+
 			uint objPad03 = 0;
 			uint objPad04 = 0;
 			uint objPad05 = 0;
 			uint objPad06 = 0;
+
 			uint objPad07 = 0;
 			uint objPad08 = 0;
 			uint objPad09 = 0;
 			uint objPad10 = 0;
+
 			uint objPad11 = 0;
 			uint objPad12 = 0;
 			uint objPad13 = 0;
 			uint objPad14 = 0;
+
 			uint objPad15 = 0;
 			uint objPad16 = 0;
 			uint objPad17 = 0;
 			uint objPad18 = 0;
+
 			uint objPad19 = 0;
 			uint objPad20 = 0;
 			uint objPad21 = 0;
 			uint objPad22 = 0;
+
 			uint objPad23 = 0;
 			uint objPad24 = 0;
 			uint objPad25 = 0;
 			uint objPad26 = 0; 
+
+			uint objPad27 = 0;
+			uint objPad28 = 0;
+			uint objPad29 = 0;
+			uint objPad30 = 0;
 		};
 
 		struct JBoundingObjectConstants

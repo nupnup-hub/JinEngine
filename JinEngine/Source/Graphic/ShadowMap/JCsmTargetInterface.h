@@ -41,8 +41,8 @@ namespace JinEngine
 		public:
 			//managed by JCsmManager
 			//2024-08-01 ¼öÁ¤ protected -> public 
-			void AddCsmTargetInfo(const JUserPtr<JCsmTargetInfo>& newInfo);
-			void RemoveCsmTargetInfo(); 
+			void AddInfo(const JUserPtr<JCsmTargetInfo>& newInfo);
+			JCsmTargetInfo* Release();
 		public:
 			/**
 			* @brief aligned by registed time
@@ -50,7 +50,6 @@ namespace JinEngine
 			*/
 			int GetTargetIndex()const noexcept final; 
 			DirectX::BoundingFrustum GetBoundingFrustum()const noexcept final;
-		private:
 			JUserPtr<JCsmTargetInfo> GetTargetInfo()const noexcept; 
 		public:
 			bool HasTargetInfo()const noexcept final;

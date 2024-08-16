@@ -25,6 +25,7 @@ SOFTWARE.
 
 #pragma once  
 #include"JGpuAcceleratorType.h"
+#include"../Device/JGraphicDeviceUser.h"
 #include"../../Core/JCoreEssential.h"   
 #include"../../Core/Reflection/JReflection.h" 
 
@@ -33,9 +34,12 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGpuAcceleratorHolder; 
-		class JGpuAcceleratorInfo
+		class JGpuAcceleratorManager;
+		class JGpuAcceleratorInfo : public JGraphicDeviceUser
 		{
 			REGISTER_CLASS_USE_ALLOCATOR(JGpuAcceleratorInfo) 
+		private:
+			friend class JGpuAcceleratorManager;
 		private:
 			std::unique_ptr<JGpuAcceleratorHolder> holder = nullptr;
 		private:
@@ -48,7 +52,7 @@ namespace JinEngine
 			void SetArrayIndex(const int newValue)noexcept;  
 		protected:
 			JGpuAcceleratorInfo(const J_GPU_ACCELERATOR_BUILD_OPTION buildOptionFlag, std::unique_ptr<JGpuAcceleratorHolder>&& holder);
-			~JGpuAcceleratorInfo();
+			virtual ~JGpuAcceleratorInfo();
 		};
 	}
 }

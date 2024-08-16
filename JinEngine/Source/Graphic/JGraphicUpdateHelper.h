@@ -26,11 +26,11 @@ SOFTWARE.
 #pragma once 
 #include"GraphicResource/JGraphicResourceType.h" 
 #include"GraphicResource/JGraphicResourceInterface.h" 
-#include"Culling/JCullingInterface.h"   
-#include"Culling/JCullingUserAccess.h"   
-#include"FrameResource/JFrameIndexAccess.h"
+#include"Culling/JCullingInterface.h"      
 #include"DataSet/JGraphicObjectDataSet.h"
+#include"FrameResource/JFrameResourceType.h"
 #include"../Object/Component/JComponentType.h"
+#include"../Object/Component/Light/JLightType.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h" 
 #include"../Core/Geometry/Mesh/JMeshType.h" 
 
@@ -92,11 +92,7 @@ namespace JinEngine
 				J_GRAPHIC_CAPACITY_CONDITION reAllocCondition;
 			};
 			struct UploadUpdateData : public UpdateDataBase
-			{ 
-			public: 
-				uint uploadCountPerTarget = 0;
-				uint uploadOffset = 0;
-				uint setDirty = 0; 
+			{  
 			};
 			struct BindingTextureData : public UpdateDataBase
 			{  
@@ -109,8 +105,8 @@ namespace JinEngine
 		public: 
 			//std::vector<std::unique_ptr<GetElementMultiCountT::Callable>> getElementMultiCount;
 		public:
-			void BeginUpdatingDrawTarget();
-			void EndUpdatingDrawTarget();
+			void Begin();
+			void End();
 		public:
 			void Clear(); 
 			//void RegisterCallable(GetElementMultiCountT::Ptr getMultiCountPtr);
@@ -128,7 +124,7 @@ namespace JinEngine
 			void ClearAlignedVecElement();
 		};
 		//draw data
-		class JDrawHelper : public JFrameIndexAccess
+		class JDrawHelper  
 		{
 		private:
 			friend class JGraphic;
@@ -148,11 +144,20 @@ namespace JinEngine
 		public:
 			JGraphicDrawTarget* drawTarget = nullptr;  
 		public:
+			/*
+			* Camera 혹은 Light는 Render target 그리고 Depth map이 될 수 있는 GraphicResource를
+			* 소유할 수 있으며 패러미터를 조정해서 결과값에 반영할 수 있는 Component이다.
+			* 따라서 Rasterize방식의 렌더링시 두 개의 컴포넌트중 하나가 반드시 필요하다.
+			* (Light는 그 밖에 Shading연산에 사용되며 Render target 그리고 Depth map이 되는 경우는
+			* 주로 Shadow map이나 Light culling시 필요한 Shape drawing pass이다)
+			*/
 			JWeakPtr<JScene> scene = nullptr;
 			//can single occ(one cam)
 			JWeakPtr<JCamera> cam = nullptr;
 			//can multi occ(multi cam * one dirctional light)
-			JWeakPtr<JLight> lit = nullptr;    
+			JWeakPtr<JLight> lit = nullptr;  
+		private:
+			JComponent* comp = nullptr;
 		public:
 			int threadCount = -1;
 			int threadIndex = -1; 
@@ -178,17 +183,30 @@ namespace JinEngine
 		public:
 			bool RefelectOtherCamCullig(const uint rItemIndex)const noexcept;  
 		public:
-			JGraphicResourceUserInterface GetOccGResourceInterface()const noexcept;
-			JCullingUserInterface GetCullInterface()const noexcept;
-			JCullingUserAccess* GetCullingUserAccess()const noexcept;
+			/**
+			* @return cam or lit ResourceInterface
+			*/
+			JGraphicResourceInterface* GetResourceInterface()const noexcept;
+			/**
+			* @return cam or lit CullInterface
+			*/
+			JCullingInterface* GetCullInterface()const noexcept;
+			/**
+			* @return cam or lit FrameInterface
+			*/
+			JFrameUpdateInterface* GetFrameInterface()const noexcept;
+			/**
+			* @return cam or lit GpuAcceleatorInterface
+			*/
+			JGpuAcceleratorInterface* GetGpuAcceleratorInterface()const noexcept;
 			JGraphicObjectDataSetBase* GetObjectDataSet()const noexcept;
 			DRAW_TYPE GetDrawType()const noexcept;
 		public:
-			int GetSceneFrameIndex()const noexcept;
-			int GetCamFrameIndex(const uint frameLayerIndex)const noexcept;
-			int GetLitFrameIndex(const uint frameLayerIndex)const noexcept;
-			int GetLitShadowFrameIndex()const noexcept;
-			const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept;
+			int GetSceneFrameIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+			int GetCamFrameIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+			int GetLitFrameIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+			int GetLitShadowFrameIndex(const J_SHADOW_MAP_TYPE smType)const noexcept;
+			const std::vector<JUserPtr<JGameObject>>& GetGameObjectCacheVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept;
 		public:
 			void SetDrawTarget(JGraphicDrawTarget* drawTarget)noexcept;
 			void SetTheadInfo(const uint threadCount, const uint threadIndex)noexcept;
@@ -199,6 +217,9 @@ namespace JinEngine
 			void SettingFrustumCulling(const JWeakPtr<JComponent>& comp)noexcept;
 			void SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept;
 			void SettingLightCulling(const JWeakPtr<JCamera>& cam);
+		private:
+			void SetCamera(const JWeakPtr<JCamera>& newCam)noexcept;
+			void SetLight(const JWeakPtr<JLight>& newLit)noexcept;
 		public:  
 			bool CanDispatchWorkIndex()const noexcept; 
 			bool UsePerspectiveProjection()const noexcept;

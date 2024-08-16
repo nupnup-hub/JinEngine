@@ -25,42 +25,39 @@ SOFTWARE.
 #pragma once 
 #include"../JGraphicObjectDataSetManager.h"
 #include"JDx12GraphicObjectDataSet.h"
+#include"JDx12GraphicTaskDataSet.h"
 
 namespace JinEngine
-{
+{ 
 	namespace Graphic
 	{
 		class JDx12GraphicObjectDataSetManager : public JGraphicObjectDataSetManager
 		{
-		public: 
-			enum class TYPE_PER_INDEX
-			{
-				COMP_BEHAVIOR = 0, 
-				COMP_END = (uint)J_COMPONENT_TYPE::COUNT - 1,
-				RESOURCE_BEGIN = (uint)J_COMPONENT_TYPE::COUNT,
-				RESOURCE_END = RESOURCE_BEGIN + (uint)J_RESOURCE_TYPE::COUNT - 1,
-				COUNT
-			}; 
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JDx12GraphicObjectDataSetManager)
 		public:
 			using DataVec = JGraphicObjectDataSetManager::DataVec;
 		private:
-			DataVec set[(uint)TYPE_PER_INDEX::COUNT];
-			JObjectDataSetMetadata metadata[(uint)TYPE_PER_INDEX::COUNT];
+			DataVec set[totalCompAndResourceVariation];
+			JObjectDataSetMetadata metadata[totalCompAndResourceVariation];
 		public:
 			void Initialize(JGraphicDevice* device) final;
 			void Clear() final;
-		public: 
-			const DataVec& GetDataVec(const J_COMPONENT_TYPE type)const noexcept final;
-			const DataVec& GetDataVec(const J_RESOURCE_TYPE type)const noexcept final;
-			JObjectDataSetMetadata GetMetadata(const J_COMPONENT_TYPE type)const noexcept final;
-			JObjectDataSetMetadata GetMetadata(const J_RESOURCE_TYPE type)const noexcept final;
 		public:
-			bool Add(const JUserPtr<JObject>& obj) final;
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final; 
+			const DataVec& GetDataVec(const UniqueIndex index)const noexcept final;
+			JObjectDataSetMetadata GetMetadata(const UniqueIndex index)const noexcept final; 
+		private:
+			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final; 
+		public:
+			JUserPtr<JGraphicModuleManagedDataFrame> Add(const JUserPtr<JObject>& obj) final;
 			bool Remove(JUserPtr<JGraphicModuleManagedDataFrame>& data)final;
+		private:
+			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;
+			void NotifyGraphicResourceCreation(JGraphicObjectDataSetBase* base, const JUserPtr<JGraphicResourceInfo>& newInfo, const J_GRAPHIC_TASK_TYPE task)final;
 		private:
 			void BuildResource(JGraphicDevice* device);
 			void CreateMetadata();
-			void ClearResource();  
+			void ClearResource();   
 		};
 	}
 }

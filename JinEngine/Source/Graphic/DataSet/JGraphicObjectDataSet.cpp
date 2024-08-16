@@ -23,6 +23,7 @@ SOFTWARE.
 ****************************************************************************************/
 
 #include"JGraphicObjectDataSet.h"
+#include"../../Object/JObjectTypeStatistics.h"
 
 namespace JinEngine::Graphic
 { 
@@ -43,15 +44,15 @@ namespace JinEngine::Graphic
 	}
 	JFrameUpdateUserInterface* JGraphicObjectDataSetBase::GetFrameUpdateUserInterface()const noexcept
 	{
-		return GetFrameUpdateUserInterface();
+		return GetFrameUpdateInterface();
 	}
 	JGpuAcceleratorUserInterface* JGraphicObjectDataSetBase::GetGpuAcceleratorUserInterface()const noexcept
 	{
-		return GetGpuAcceleratorUserInterface();
+		return GetGpuAcceleratorInterface();
 	}
 	JGraphicResourceUserInterface* JGraphicObjectDataSetBase::GetGraphicResourceUserInterface()const noexcept
 	{
-		return GetGraphicResourceUserInterface();
+		return GetGraphicResourceInterface();
 	}
 
 	/*
@@ -86,10 +87,10 @@ namespace JinEngine::Graphic
 
 	bool JObjectDataSetMetadata::IsComponentType()const noexcept
 	{
-		return componentTypeValue != invalidType;
+		return uniqueIndex < totalCompVariation;
 	}
 	bool JObjectDataSetMetadata::IsResourceType()const noexcept
 	{
-		return resourceTypeValue != invalidType;
+		return uniqueIndex >= totalCompVariation;
 	}
 }

@@ -28,35 +28,36 @@ SOFTWARE.
 #include"JCsmHandlerInfo.h"
 #include"JCsmTargetInfo.h"
 #include"../JGraphicSubClassInterface.h"
+#include"../Device/JGraphicDeviceUser.h"
 #include"../../Object/GraphicRule/Csm/JGraphicModuleCsmType.h"
 
 namespace JinEngine
 {
 	namespace Graphic
-	{ 
+	{
 		class JCsmHandlerInterface;
-		class JCsmTargetInterface; 
+		class JCsmTargetInterface;
 
 		using JCsmHandlerPointer = JCsmHandlerInterface*;
 		using JCsmTargetInterfacePointer = JCsmHandlerPointer*;
 
 		/**
-		* 
+		*
 		* Handler와 Target은 객체가 유효한 상태가되면 포인터를  Manager에 등록하며 Manager는 각각
 		* Handler이 등록된경우 해당하는 Area(Scene)에 속하는 Target들을 Handler에 캐싱하며
 		* Target이 등록된경우 해당하는 Area에 속하는 Handler들은 Target을 자신의 객체 내부에 캐싱한다
 		* 이는 하나의 Scene에서 관리되는 Handler들은 같은 Target들을 Rendering한다는 점에서 채택된 구현사항이다
-		
+
 		* 각각에 Handler, Target들은 수동으로도 객체를 추가/제거가 불가능하다
 			-> 수정 2024-08-01 Object 모듈에 User class에 따라 생성과 파괴가 수행된다.
 		*/
-		class JCsmManager : public JGraphicSubClassInterface
+		class JCsmManager : public JGraphicSubClassInterface, public JGraphicDeviceUser
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCsmManager)
 		private:
 			using CsmHandlerInfoVec = std::vector<JOwnerPtr<JCsmHandlerInfo>>;
 			using CsmTargetInfoVec = std::vector<JOwnerPtr<JCsmTargetInfo>>;
-		private:
+		protected:
 			struct AreaData
 			{
 			public:
@@ -68,18 +69,26 @@ namespace JinEngine
 				AreaData(const size_t guid);
 			};
 		private:
-			std::unordered_map<size_t, AreaData> areaData; 
+			std::unordered_map<size_t, AreaData> areaData;
 		public:
-			~JCsmManager(); 
+			virtual ~JCsmManager();
 		public:
-			JUserPtr<JCsmHandlerInfo> CreateHandler(const JCsmHandleCreationDesc& desc);
-			JUserPtr<JCsmTargetInfo> CreateTarget(const JCsmTargetCreationDesc& desc);
-			bool DestroyHandler(JUserPtr<JCsmHandlerInfo>& handle);
-			bool DestroyTarget(JUserPtr<JCsmTargetInfo>& target); 
+			virtual void Initialize(JGraphicDevice* device);
+			virtual void Clear();
+		protected:
+			AreaData* GetAreaDataPointer(const size_t guid)noexcept;
+		public:
+			JUserPtr<JCsmHandlerInfo> CreateHandler(JCsmHandleCreationDesc& desc);
+			JUserPtr<JCsmTargetInfo> CreateTarget(JCsmTargetCreationDesc& desc);
+			bool DestroyHandler(JCsmHandlerInfo* handle);
+			bool DestroyTarget(JCsmTargetInfo* target);
+		protected:
+			virtual JOwnerPtr<JCsmHandlerInfo> _CreateHandler(JCsmHandleCreationDesc& desc, JCsmAreaInfo* areInfo) = 0;
+			virtual JOwnerPtr<JCsmTargetInfo> _CreateTarget(JCsmTargetCreationDesc& desc, JCsmAreaInfo* areInfo) = 0;
 		private:
 			void CreateAreaData(const size_t guid);
-		public:
-			void Clear();
+		private:
+			void ClearResource();
 		};
 	}
 }

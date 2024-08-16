@@ -38,11 +38,23 @@ namespace JinEngine::Graphic
 
 	JCsmManager::~JCsmManager()
 	{
-		Clear();
-	}
-	JUserPtr<JCsmHandlerInfo> JCsmManager::CreateHandler(const JCsmHandleCreationDesc& desc)
+		ClearResource();
+	} 
+	void JCsmManager::Initialize(JGraphicDevice* device)
 	{
-		auto newHandle = Core::JPtrUtil::MakeOwnerPtr<JCsmHandlerInfo>(std::move(desc.notifyAddCsmTargetB), std::move(desc.notifySubtractCsmTargetB));
+
+	}
+	void JCsmManager::Clear()
+	{
+		ClearResource();
+	}
+	JCsmManager::AreaData* JCsmManager::GetAreaDataPointer(const size_t guid)noexcept
+	{
+		auto data = areaData.find(guid);
+		return data != areaData.end() ? &data->second : nullptr;
+	}
+	JUserPtr<JCsmHandlerInfo> JCsmManager::CreateHandler(JCsmHandleCreationDesc& desc)
+	{ 
 		auto area = areaData.find(desc.areaGuid);
 		if (area == areaData.end())
 		{
@@ -52,7 +64,8 @@ namespace JinEngine::Graphic
 
 		CsmHandlerInfoVec& handlerVec = area->second.handler;
 		CsmTargetInfoVec& targetVec = area->second.target;
-
+		
+		auto newHandle = _CreateHandler(desc, &area->second.areaInfo);
 		newHandle->SetIndex(handlerVec.size());
  
 		const uint existTargetCount = (uint)targetVec.size();
@@ -63,9 +76,8 @@ namespace JinEngine::Graphic
 		handlerVec.push_back(std::move(newHandle));
 		return result;
 	}
-	JUserPtr<JCsmTargetInfo> JCsmManager::CreateTarget(const JCsmTargetCreationDesc& desc)
-	{
-		auto newTarget = Core::JPtrUtil::MakeOwnerPtr<JCsmTargetInfo>(std::move(desc.getBoundingFrustumB));
+	JUserPtr<JCsmTargetInfo> JCsmManager::CreateTarget(JCsmTargetCreationDesc& desc)
+	{ 
 		auto area = areaData.find(desc.areaGuid);
 		if (area == areaData.end())
 		{
@@ -76,6 +88,7 @@ namespace JinEngine::Graphic
 		CsmHandlerInfoVec& handlerVec = area->second.handler;
 		CsmTargetInfoVec& targetVec = area->second.target;
 
+		auto newTarget = _CreateTarget(desc, &area->second.areaInfo);
 		newTarget->SetIndex(targetVec.size());
 
 		const uint existHandleCount = (uint)handlerVec.size();
@@ -86,8 +99,11 @@ namespace JinEngine::Graphic
 		targetVec.push_back(std::move(newTarget));
 		return result;
 	}
-	bool JCsmManager::DestroyHandler(JUserPtr<JCsmHandlerInfo>& data)
+	bool JCsmManager::DestroyHandler(JCsmHandlerInfo* data)
 	{
+		if (data == nullptr)
+			return false;
+
 		const size_t areaGuid = data->GetAreaInfo()->GetGuid();
 		auto area = areaData.find(areaGuid);
 		if (area == areaData.end())
@@ -104,16 +120,18 @@ namespace JinEngine::Graphic
 		for (uint i = data->GetIndex() + 1; i < handleCount; ++i)
 			handlerVec[i]->SetIndex(handlerVec[i]->GetIndex() - 1);
 
-		handlerVec.erase(handlerVec.begin() + data->GetIndex());
-		data.Release();
+		handlerVec.erase(handlerVec.begin() + data->GetIndex()); 
 
 		//Try to erase area data if 0 member
 		if (handlerVec.size() == 0 && targetVec.size() == 0)
 			areaData.erase(areaGuid);
 		return true;
 	}
-	bool JCsmManager::DestroyTarget(JUserPtr<JCsmTargetInfo>& data)
+	bool JCsmManager::DestroyTarget(JCsmTargetInfo* data)
 	{
+		if (data == nullptr)
+			return false;
+
 		const size_t areaGuid = data->GetAreaInfo()->GetGuid();
 		auto area = areaData.find(areaGuid);
 		if (area == areaData.end())
@@ -135,8 +153,7 @@ namespace JinEngine::Graphic
 		for (uint i = data->GetIndex() + 1; i < targetCount; ++i)
 			targetVec[i]->SetIndex(targetVec[i]->GetIndex() - 1);
 
-		targetVec.erase(targetVec.begin() + data->GetIndex());
-		data.Release();
+		targetVec.erase(targetVec.begin() + data->GetIndex()); 
 	 
 		//Try to erase area data if 0 member
 		if (handlerVec.size() == 0 && targetVec.size() == 0)
@@ -147,7 +164,7 @@ namespace JinEngine::Graphic
 	{ 
 		areaData.emplace(guid, AreaData(guid));
 	} 
-	void JCsmManager::Clear()
+	void JCsmManager::ClearResource()
 	{
 		areaData.clear();
 	}

@@ -30,12 +30,8 @@ SOFTWARE.
 #include"../../Core/Interface/JGroupInterface.h"
 
 namespace JinEngine
-{ 
-	namespace Graphic
-	{ 
-		class JGraphicResourceUserAccess;	//texture has one gResource
-	}
-
+{  
+	class JGraphicResourceUserInterface;
 	namespace Editor
 	{  
 		class JEditorStringMap;
@@ -127,7 +123,7 @@ namespace JinEngine
 			class Icon : public ExtraWidget
 			{
 			public:
-				using GetGResourceF = Core::JSFunctorType<Graphic::JGraphicResourceUserAccess*>;
+				using GetGResourceF = Core::JSFunctorType<JGraphicResourceUserInterface*>;
 			private:
 				std::unique_ptr<GetGResourceF::Functor> getGResourceFunctor;	//get icon image access
 			public:

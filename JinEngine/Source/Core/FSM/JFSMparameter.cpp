@@ -97,7 +97,7 @@ namespace JinEngine
 			static void RegisterTypeData()
 			{
 				JIdentifier::RegisterPrivateInterface(JFSMparameter::StaticTypeInfo(), pPrivate);
-				IMPL_REALLOC_BIND(JFSMparameter::JFSMparameterImpl, thisPointer)
+				IMPL_REALLOC_BIND()
 			}
 		};
 

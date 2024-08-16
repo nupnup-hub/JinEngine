@@ -23,16 +23,13 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once  
-#include"../../Graphic/JGraphicConstants.h" 
-#include"../../Graphic/GraphicResource/JGraphicResourceType.h"
+#pragma once   
+#include"../../Object/GraphicRule/GraphicResource/JGraphicModuleTextureResourceUserAccess.h"
+#include"../../Object/Component/JComponent.h"
+#include"../../Object/Resource/JResourceObject.h"
 
 namespace JinEngine
-{
-	namespace Graphic
-	{
-		class JGraphicResourceUserAccess;
-	}
+{  
 	namespace Editor
 	{
 		struct JGuiImageInfo
@@ -40,10 +37,10 @@ namespace JinEngine
 		public:
 			using ExtraFuncPerImagePtr = void(*)(int);
 		public:
-			Graphic::JGraphicResourceUserAccess* gUserAccess = nullptr;
+			JGraphicResourceUserInterface* gUser = nullptr;
 			ExtraFuncPerImagePtr extraPerImagePtr = nullptr;	//excute after display valid image
 		public:
-			Graphic::ResourceHandle handle = nullptr;	//unsafe
+			ResourceHandle handle = nullptr;	//unsafe
 		public:
 			J_GRAPHIC_RESOURCE_TYPE rType;
 			J_GRAPHIC_BIND_TYPE bType = J_GRAPHIC_BIND_TYPE::SRV;
@@ -53,10 +50,13 @@ namespace JinEngine
 			bool displayAllType = false;
 			bool useFirstHandle = false;	//handle을 사용할경우 반드시 true여야 한다.
 		public:
-			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess);
-			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const J_GRAPHIC_RESOURCE_TYPE rType);
-			JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType);
-			JGuiImageInfo(Graphic::ResourceHandle handle);
+			JGuiImageInfo(JGraphicResourceUserInterface* gUserAccess); 
+			JGuiImageInfo(JGraphicResourceUserInterface* gUserAccess, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType = J_GRAPHIC_BIND_TYPE::SRV);
+			JGuiImageInfo(JComponent* comp);
+			JGuiImageInfo(JComponent* comp, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType = J_GRAPHIC_BIND_TYPE::SRV);
+			JGuiImageInfo(JResourceObject* resource);
+			JGuiImageInfo(JResourceObject* resource, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType = J_GRAPHIC_BIND_TYPE::SRV);
+			JGuiImageInfo(ResourceHandle handle);
 		public:
 			bool IsValid()const noexcept;
 		};

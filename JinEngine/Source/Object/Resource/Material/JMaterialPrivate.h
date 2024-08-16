@@ -27,12 +27,7 @@ SOFTWARE.
 #include"../JResourceObjectPrivate.h" 
 
 namespace JinEngine
-{ 
-	namespace Graphic
-	{
-		struct JMaterialConstants;
-		class JGraphic;
-	} 
+{  
 	class JMaterial;
 	class JRenderItem;
 	class JPreviewResourceScene;
@@ -65,28 +60,7 @@ namespace JinEngine
 		{
 		private:
 			void Clear(Core::JIdentifier* ptr, const bool isForced) final;
-		};
-		class FrameUpdateInterface final
-		{
-		private:
-			friend class Graphic::JGraphic;
-		private: 
-			static bool UpdateStart(JMaterial* mat, const bool isUpdateForced)noexcept;
-			static void UpdateFrame(JMaterial* mat, Graphic::JMaterialConstants& constants)noexcept;
-			static void UpdateEnd(JMaterial* mat)noexcept;
-		private:
-			static uint GetMaterialFrameIndex(JMaterial* mat)noexcept;
-		private:
-			static bool IsLastFrameUpdated(JMaterial* mat);
-			static bool HasRecopyRequest(JMaterial* mat)noexcept;
-		};
-		class FrameIndexInterface final
-		{
-		private:
-			friend class JRenderItem;
-		private:
-			static uint GetMaterialFrameIndex(JMaterial* mat)noexcept;
-		};
+		}; 
 		class UpdateShaderInterface
 		{
 		private:

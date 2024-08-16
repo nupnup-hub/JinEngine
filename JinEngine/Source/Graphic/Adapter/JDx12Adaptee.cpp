@@ -27,6 +27,7 @@ SOFTWARE.
 #include"../JGraphicUpdateHelper.h"
 #include"../Accelerator/Dx/JDx12GpuAcceleratorManager.h"
 #include"../DataSet/Dx/JDx12GraphicTaskDataSet.h"
+#include"../DataSet/Dx/JDx12GraphicObjectDataSetManager.h"
 #include"../Debug/Dx/JDx12GraphicDebug.h"
 #include"../DepthMap/Dx/JDx12DepthTest.h"
 #include"../Device/Dx/JDx12GraphicDevice.h"
@@ -40,7 +41,7 @@ SOFTWARE.
 #include"../Culling/Frustum/JFrustumCulling.h"
 #include"../Scene/Dx/JDx12SceneDraw.h"
 #include"../ShadowMap/Dx/JDx12ShadowMap.h" 
-#include"../ShadowMap/JCsmManager.h"
+#include"../ShadowMap/Dx/JDx12CsmManager.h"
 #include"../Outline/Dx/JDx12Outline.h"
 #include"../Image/JPostProcessPipeline.h"
 #include"../Image/Dx/JDx12Blur.h"
@@ -93,16 +94,16 @@ namespace JinEngine::Graphic
 			ID3D12GraphicsCommandList* cmd,
 			const bool useRaycastDevice = false)
 		{
-			context->Begin();
 			context->Initialize(cmd,
 				static_cast<JDx12GraphicDevice*>(drawRefSet.device),
 				static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM),
 				static_cast<JDx12CullingManager*>(drawRefSet.cullingM),
 				static_cast<JDx12GpuAcceleratorManager*>(drawRefSet.acceleratorM),
-				static_cast<JDx12FrameResource*>(drawRefSet.currFrame),
+				static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM),
 				&drawRefSet.info,
 				&drawRefSet.option,
 				useRaycastDevice);
+			context->Begin();
 		}
 		static void EndContext(JDx12CommandContext* context)
 		{
@@ -234,15 +235,15 @@ namespace JinEngine::Graphic
 		return std::make_unique<JDx12GraphicDevice>();
 	}
 	void JDx12Adaptee::CreateResourceManageSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set)
-	{
+	{ 
 		set.graphic = std::make_unique<JDx12GraphicResourceManager>();
 		set.culling = std::make_unique<JDx12CullingManager>();
-		set.accelerator = std::make_unique<JDx12GpuAcceleratorManager>(shareData.frameIndexAccess);
-		set.csm = std::make_unique<JCsmManager>();
+		set.accelerator = std::make_unique<JDx12GpuAcceleratorManager>();
+		set.csm = std::make_unique<JDx12CsmManager>();
+		set.frame = std::make_unique<JDx12FrameResourceManager>();
 		set.shareData = std::make_unique<JDx12GraphicResourceShareData>();
+		set.objectData = std::make_unique<JDx12GraphicObjectDataSetManager>();
 		set.context = std::make_unique<JCommandContextManager>();
-		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
-			set.frame[i] = std::make_unique<JDx12FrameResource>();
 	}
 	void JDx12Adaptee::CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set)
 	{
@@ -305,7 +306,8 @@ namespace JinEngine::Graphic
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(drawRefSet.cullingM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResourceManager* dx12Fm = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM);
+		JDx12FrameResource* dx12Frame = dx12Fm->GetCurrentDxFrameResource();
 		JDx12GraphicResourceShareData* dx12Share = static_cast<JDx12GraphicResourceShareData*>(drawRefSet.shareData);
 
 		dx12Frame->ResetCmd(J_MAIN_THREAD_ORDER::BEGIN);
@@ -345,7 +347,7 @@ namespace JinEngine::Graphic
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		JDx12CommandContext* context = Context::Get(J_MAIN_THREAD_ORDER::BEGIN);
 		context->FlushResourceBarriers();
 
@@ -364,7 +366,7 @@ namespace JinEngine::Graphic
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 
 		dx12Frame->ResetCmd(drawRefSet.info.frame.threadCount);
 
@@ -384,7 +386,7 @@ namespace JinEngine::Graphic
 			return false;
 		   
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		JDx12CommandContext* context = Context::Get(J_MAIN_THREAD_ORDER::BEGIN);
 		context->FlushResourceBarriers();
 		 
@@ -403,7 +405,8 @@ namespace JinEngine::Graphic
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResourceManager* dx12Fm = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM);
+		JDx12FrameResource* dx12Frame = dx12Fm->GetCurrentDxFrameResource();
 		JDx12GraphicResourceShareData* dx12Share = static_cast<JDx12GraphicResourceShareData*>(drawRefSet.shareData);
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_MAIN_THREAD_ORDER::MID);
@@ -432,7 +435,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		JDx12CommandContext* context = Context::Get(J_MAIN_THREAD_ORDER::MID);
 		context->FlushResourceBarriers();
 
@@ -451,7 +454,7 @@ namespace JinEngine::Graphic
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		 
 		//J_MAIN_THREAD_ORDER::END reset 안됬을시 처리필요  
 		if (!cond.isSceneDrawn)
@@ -484,7 +487,7 @@ namespace JinEngine::Graphic
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(drawRefSet.cullingM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_MAIN_THREAD_ORDER::END);
 		JDx12CommandContext* context = Context::Get(J_MAIN_THREAD_ORDER::END);
@@ -523,7 +526,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_THREAD_TASK_TYPE::OCC, threadIndex);
 		SettingDescriptorHeaps(dx12Gm, cmdList);
@@ -536,10 +539,10 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::NotifyCompleteDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.frameResourceM))
 			return false;
 
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ThrowIfFailedG(dx12Frame->GetCmd(J_THREAD_TASK_TYPE::OCC, threadIndex)->Close());
 		SetEvent(dx12Frame->GetHandle(J_THREAD_TASK_TYPE::OCC, threadIndex));
 
@@ -554,7 +557,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex);
 		SettingDescriptorHeaps(dx12Gm, cmdList);
@@ -571,7 +574,7 @@ namespace JinEngine::Graphic
 		if (!IsValid(drawRefSet))
 			return false;
 
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ThrowIfFailedG(dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex)->Close());
 		SetEvent(dx12Frame->GetHandle(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex));
 
@@ -586,7 +589,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SCENE, threadIndex);
 		SettingDescriptorHeaps(dx12Gm, cmdList);
@@ -604,7 +607,7 @@ namespace JinEngine::Graphic
 		if (!IsValid(drawRefSet))
 			return false;
 
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ThrowIfFailedG(dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SCENE, threadIndex)->Close());
 		SetEvent(dx12Frame->GetHandle(J_THREAD_TASK_TYPE::SCENE, threadIndex));
 
@@ -619,7 +622,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ID3D12CommandQueue* commandQueue = dx12Device->GetCommandQueue();
 
 		WaitForMultipleObjects(drawRefSet.info.frame.threadCount, dx12Frame->GetHandle(J_THREAD_TASK_TYPE::OCC), true, INFINITE);
@@ -632,7 +635,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ID3D12CommandQueue* commandQueue = dx12Device->GetCommandQueue();
 
 		WaitForMultipleObjects(drawRefSet.info.frame.threadCount, dx12Frame->GetHandle(J_THREAD_TASK_TYPE::SHADOW_MAP), true, INFINITE);
@@ -645,7 +648,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
+	JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ID3D12CommandQueue* commandQueue = dx12Device->GetCommandQueue();
 
 		WaitForMultipleObjects(drawRefSet.info.frame.threadCount, dx12Frame->GetHandle(J_THREAD_TASK_TYPE::SCENE), true, INFINITE);

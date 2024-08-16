@@ -30,6 +30,8 @@ SOFTWARE.
 #include"../JClearableInterface.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Utility/JCommonUtility.h"
@@ -40,30 +42,29 @@ SOFTWARE.
 namespace JinEngine
 {
 	using namespace DirectX;
-	namespace
+	namespace Private
 	{
-		static JSkeletonAssetPrivate sPrivate;
+		static JSkeletonAssetPrivate instance;
 	}
  
 	class JSkeletonAsset::JSkeletonAssetImpl : public Core::JTypeImplBase, public JClearableInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSkeletonAssetImpl)
 	public:
-		JWeakPtr<JSkeletonAsset> thisPointer = nullptr;
+		JWeakPtr<JSkeletonAsset> thisPointer;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public: 
-		JOwnerPtr<JSkeleton> skeleton = nullptr;
-		JOwnerPtr<JAvatar> avatar = nullptr;
+		JOwnerPtr<JSkeleton> skeleton;
+		JOwnerPtr<JAvatar> avatar;
 		JSKELETON_TYPE skeletonType; 
 	public:
 		const Core::JTypeInstanceSearchHint modelHint;
-	public:
 		JSkeletonAssetImpl(const InitData& initData, JSkeletonAsset* thisSkelRaw)
 			:modelHint(initData.modelHint)
-		{}
-		~JSkeletonAssetImpl() 
-		{
-			sizeof(JSkeletonAssetImpl);
+		{ 
 		}
+		~JSkeletonAssetImpl() 
+		{}
 	public:
 		std::vector<std::vector<uint8>> GetSkeletonTreeIndexVec()noexcept
 		{
@@ -219,7 +220,7 @@ namespace JinEngine
 				if (ImportSkeleton(ReadAssetData(path)))
 				{ 
 					JSkeletonAsset::LoadMetadata metadata(thisPointer->GetDirectory());
-					static_cast<JSkeletonAssetPrivate::AssetDataIOInterface&>(sPrivate.GetAssetDataIOInterface()).LoadMetadata(path, &metadata);
+					static_cast<JSkeletonAssetPrivate::AssetDataIOInterface&>(Private::instance.GetAssetDataIOInterface()).LoadMetadata(path, &metadata);
 					if (metadata.isValidAvatar)
 						SetAvatar(&metadata.avatar);
 					thisPointer->SetValid(true);
@@ -294,6 +295,15 @@ namespace JinEngine
 				skeleton->ownerSkeleton = thisPointer;
 			return true;
 		}
+	public:
+		void Activate()
+		{
+			StuffResource();
+		}
+		void DeActivate()
+		{
+			ClearResource();
+		}
 	public: 
 		void Initialize(InitData* initData)
 		{
@@ -318,21 +328,19 @@ namespace JinEngine
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 			RegisterRTypeInfo(JSkeletonAsset::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
-			Core::JIdentifier::RegisterPrivateInterface(JSkeletonAsset::StaticTypeInfo(), sPrivate);
+			Core::JIdentifier::RegisterPrivateInterface(JSkeletonAsset::StaticTypeInfo(), Private::instance);
 
-			IMPL_REALLOC_BIND(JSkeletonAsset::JSkeletonAssetImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 
 			NotifyReAllocPtr notifySkeltonReAllocPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
 			{ 
-				auto movedSkel = static_cast<JSkeleton*>(movedPtr);
-				movedSkel->ownerSkeleton->impl->skeleton.Release();
-				movedSkel->ownerSkeleton->impl->skeleton.Reset(movedSkel);
+				auto movedSkel = static_cast<JSkeleton*>(movedPtr); 
+				movedSkel->ownerSkeleton->impl->skeleton.Swap(movedSkel);
 			};
 			NotifyReAllocPtr notifyAvatarReAllocPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
 			{				
-				auto movedAvatar = static_cast<JAvatar*>(movedPtr);
-				movedAvatar->ownerSkeleton->impl->avatar.Release();
-				movedAvatar->ownerSkeleton->impl->avatar.Reset(movedAvatar);
+				auto movedAvatar = static_cast<JAvatar*>(movedPtr); 
+				movedAvatar->ownerSkeleton->impl->avatar.Swap(movedAvatar);
 			};
 			auto skeletonReAllocF = std::make_unique<NotifyReAllocF>(notifySkeltonReAllocPtr);
 			auto avatarReAllocF = std::make_unique<NotifyReAllocF>(notifyAvatarReAllocPtr);
@@ -384,7 +392,15 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JSkeletonAsset::PrivateInterface()const noexcept
 	{
-		return sPrivate;
+		return Private::instance;
+	}
+	JGraphicModuleManagedDataFrame* JSkeletonAsset::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JSkeletonAsset::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_RESOURCE_TYPE JSkeletonAsset::GetResourceType()const noexcept
 	{
@@ -441,13 +457,15 @@ namespace JinEngine
 	} 
 	void JSkeletonAsset::DoActivate()noexcept
 	{
+		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JResourceObject::DoActivate();
-		impl->StuffResource();
+		impl->Activate();
 	}
 	void JSkeletonAsset::DoDeActivate()noexcept
 	{
-		impl->ClearResource();
-		JResourceObject::DoDeActivate();
+		impl->DeActivate();
+		JResourceObject::DoDeActivate(); 
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	}
 	JSkeletonAsset::JSkeletonAsset(InitData& initData)
 		:JResourceObject(initData), impl(std::make_unique<JSkeletonAssetImpl>(initData, this))
@@ -502,7 +520,7 @@ namespace JinEngine
 				metadata.modelHint,
 				JSkeletonAsset::JSkeletonAssetImpl::ReadAssetData(pathData.path));
 
-			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
+			auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::move(initData), &Private::instance);
 			newSkel.ConnnectChild(idenUser);
 		}
 		if (newSkel != nullptr)

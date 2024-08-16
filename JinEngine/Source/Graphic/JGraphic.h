@@ -51,14 +51,12 @@ namespace JinEngine
 		private:
 			template<typename T>friend class Core::JCreateUsingNew; 
 		private:
-			struct UpdateHelper;
-			struct DrawHelper;
-			struct DrawCondition;
-		private:
 			friend class JGraphicPrivate;
 			class JGraphicImpl;
+			class JGraphicModuleImpl;
 		private:
 			std::unique_ptr<JGraphicImpl> impl;
+			std::unique_ptr<JGraphicModuleImpl> moduleImpl;
 		public:
 			JGraphicInfo GetGraphicInfo()const noexcept; 
 			const JGraphicInfo& GetGraphicInfoRef()const noexcept;
@@ -77,6 +75,9 @@ namespace JinEngine
 			JGraphic();
 			~JGraphic();
 		};
+
+
+
 		using _JGraphic = JinEngine::Core::JSingletonHolder<Graphic::JGraphic>;
 	}
 	using JGraphic = Graphic::_JGraphic;

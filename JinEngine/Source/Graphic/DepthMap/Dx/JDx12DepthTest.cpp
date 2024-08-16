@@ -28,27 +28,18 @@ SOFTWARE.
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../Utility/Dx/JDx12Utility.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"
-#include"../../FrameResource/Dx/JDx12FrameResource.h"
-#include"../../FrameResource/JAnimationConstants.h"
-#include"../../FrameResource/JObjectConstants.h" 
-#include"../../FrameResource/JOcclusionConstants.h"
+#include"../../FrameResource/Dx/JDx12FrameResource.h" 
 #include"../../Culling/Dx/JDx12CullingManager.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../JGraphicInfo.h"
 #include"../../JGraphicUpdateHelper.h"
 #include"../../../Object/Component/Transform/JTransform.h"
-#include"../../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../../Object/Component/RenderItem/JRenderItemPrivate.h"
-#include"../../../Object/Component/Camera/JCamera.h"
-#include"../../../Object/Component/Camera/JCameraPrivate.h"
-#include"../../../Object/Component/Light/JLight.h"
-#include"../../../Object/Component/Light/JLightPrivate.h"
-#include"../../../Object/Component/Light/JDirectionalLight.h"
-#include"../../../Object/Component/Light/JDirectionalLightPrivate.h"
+#include"../../../Object/Component/RenderItem/JRenderItem.h" 
+#include"../../../Object/Component/Camera/JCamera.h" 
+#include"../../../Object/Component/Light/JLight.h"  
 #include"../../../Object/Resource/JResourceManager.h"
-#include"../../../Object/Resource/Mesh/JMeshGeometry.h"
-#include"../../../Object/Resource/Mesh/JMeshGeometryPrivate.h"  
+#include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Core/Identity/JIdentifier.h"
 #include"../../../Application/Engine/JApplicationEngine.h"
@@ -148,7 +139,7 @@ namespace JinEngine::Graphic
 		uint st, ed= 0; 
 		helper.DispatchWorkIndex(gameObject.size(), st, ed);
 
-		auto cullUser = helper.GetCullInterface();
+		auto cInterface = helper.GetCullInterface();
 		JUserPtr<JMeshGeometry> mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE);
 		
 		context->SetMeshGeometryData(mesh);
@@ -156,13 +147,14 @@ namespace JinEngine::Graphic
 		for (uint i = st; i < ed; ++i)
 		{
 			JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
-			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem);
-
+			auto rItemFInterface = static_cast<JFrameUpdateInterface*>(renderItem->ModuleManagedData()->GetFrameUpdateUserInterface());
+			
 			if (condition.onlyDrawOccluder && !renderItem->IsOccluder())
 				continue;
 
-			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cullUser.IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
-				continue;
+			const uint boundFrameIndex = rItemFInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
+			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cInterface->IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
+				continue; 
 			 
 			context->SetGraphicsRootConstantBufferView(objCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT, boundFrameIndex);		 
 			context->DrawIndexedInstanced(mesh);
@@ -189,19 +181,19 @@ namespace JinEngine::Graphic
 		helper.DispatchWorkIndex(gameObject.size(), st, ed);
 
 		JUserPtr<JMeshGeometry> mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE);
-		auto cullUser = helper.GetCullInterface();
-		
+	 
 		context->SetPipelineState(gShaderData[TEST_TYPE::QUERY_TEST].get());
 		context->SetMeshGeometryData(mesh);
 		for (uint i = st; i < ed; ++i)
 		{
-			JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
-			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem);
-
+			JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get(); 
+			auto rItemFInterface = static_cast<JFrameUpdateInterface*>(renderItem->ModuleManagedData()->GetFrameUpdateUserInterface());
+ 
 			if (condition.onlyDrawOccluder && !renderItem->IsOccluder())
 				continue;
 
-			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cullUser.IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
+			const uint boundFrameIndex = rItemFInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
+			if (condition.allowCulling && !renderItem->IsIgnoreCullingResult() && cInterface->IsCulled(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, boundFrameIndex))
 				continue;
 
 			const bool canQuery = condition.IsValidDrawingIndex(boundFrameIndex);
@@ -227,23 +219,14 @@ namespace JinEngine::Graphic
 	bool JDx12DepthTest::BindGraphicResource(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
 		context->SetGraphicsRootSignature(mRootSignature.Get()); 
-		int frameIndex = invalidIndex;
-
-		using CamFrameInterface = JCameraPrivate::FrameIndexInterface;
-		using LitFrameInterface = JLightPrivate::FrameIndexInterface;
 		if (helper.GetDrawType() == JDrawHelper::DRAW_TYPE::OCC)
 		{
-			if (helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-				frameIndex = helper.GetCamFrameIndex(CameraFrameLayer::depthTest);
-			else if (helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-				frameIndex = helper.GetLitFrameIndex(LightFrameLayer::depthTest);
+			int frameIndex = helper.GetFrameInterface()->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS);
+			context->SetGraphicsRootConstantBufferView(passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS, frameIndex);
+			return true;
 		}
-
-		if (frameIndex == invalidIndex)
-			return false;
-		 
-		context->SetGraphicsRootConstantBufferView(passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS, frameIndex);
-		return true;
+		else
+			return false;	 
 	}
 	void JDx12DepthTest::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
 	{

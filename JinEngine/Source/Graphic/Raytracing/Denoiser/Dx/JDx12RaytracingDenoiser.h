@@ -79,11 +79,14 @@ namespace JinEngine
 			struct UserPrivateData : public Core::JVolatileStorageInterface
 			{
 			public:
-				static constexpr uint historyCount = 2;
+				static constexpr uint historyCount = 2; 
 			public:
 				JUserPtr<JGraphicResourceInfo> colorHistory[historyCount];
 				JUserPtr<JGraphicResourceInfo> fastColorHistory[historyCount];
 				JUserPtr<JGraphicResourceInfo> historyLength[historyCount];  
+			public:
+				JGraphicDevice* device = nullptr;
+				JGraphicResourceManager* gm = nullptr;
 			public:
 				JDx12GraphicBufferT<GIDenoiserPassConstants> frameBuffer;
 			private:

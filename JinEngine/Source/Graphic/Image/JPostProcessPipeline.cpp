@@ -54,8 +54,9 @@ namespace JinEngine::Graphic
 		if (!isUpdatedThisFrame && helper.option.postProcess.exposureType == J_EXPOSURE_TYPE::NONE)
 			return;
 		  
-		auto gInfo = computeSet->gm->GetInfo(helper.cam.Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		computeSet->imageShareData = computeSet->shareData->GetResourceDependencyData(J_GRAPHIC_TASK_TYPE::CONTROLL_POST_PROCESS_PIPELINE, gInfo);
+		auto gInterface = helper.GetResourceInterface(); 
+		auto gInfo = gInterface->GetGraphicInfo(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		computeSet->imageShareData = computeSet->shareData->GetResourceDependencyData(J_GRAPHIC_TASK_TYPE::CONTROLL_POST_PROCESS_PIPELINE, gInfo.Get());
 		if (computeSet->imageShareData == nullptr)
 			return;
 		   

@@ -157,8 +157,9 @@ namespace JinEngine
 		camera->GetTransform()->SetPosition(camNewPos + additionalPos);
 		camera->GetTransform()->SetRotation(camera->GetTransform()->GetRotation() + zeroExtentAdjustRot);
 		camera->GetTransform()->LookAt(bSphere.Center);
-
-		auto dLight = scene->GetFirstDirectionalLight();
+		 
+		const UniqueIndex uniqueIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL);
+		auto dLight = scene->GetFirstComponent<JLight>(uniqueIndex);
 		dLight->SetPower(2.0f);
 		dLight->GetOwner()->GetTransform()->SetRotation(JVector3F(75, 0, 0));
 	}
@@ -168,8 +169,9 @@ namespace JinEngine
 		JVector3F camNewPos = bSphere.Center + data.additionalPos + CreateVec3(bSphere.Radius);
 		camera->GetTransform()->SetPosition(camNewPos); 
 		camera->GetTransform()->LookAt(bSphere.Center);
-		
-		auto dLight = scene->GetFirstDirectionalLight();
+
+		const UniqueIndex uniqueIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL);
+		auto dLight = scene->GetFirstComponent<JLight>(uniqueIndex);
 		dLight->SetPower(2.0f);
 		dLight->GetOwner()->GetTransform()->SetRotation(JVector3F(25, 0, 0));
 	}
@@ -180,7 +182,8 @@ namespace JinEngine
 		camera->GetTransform()->SetPosition(camNewPos); 
 		camera->GetTransform()->LookAt(bSphere.Center);
 		 
-		auto dLight = scene->GetFirstDirectionalLight();
+		const UniqueIndex uniqueIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL);
+		auto dLight = scene->GetFirstComponent<JLight>(uniqueIndex);
 		dLight->SetPower(2.0f);
 		dLight->GetOwner()->GetTransform()->SetRotation(JVector3F(25, 0, 0));
 	}

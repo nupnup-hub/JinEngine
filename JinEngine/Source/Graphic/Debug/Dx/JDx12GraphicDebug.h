@@ -88,7 +88,7 @@ namespace JinEngine
 					JDx12GraphicResourceComputeSetBufferBase& destBase);
 			public:
 				void SetOcclusionBuffer(JDx12CommandContext* context,
-					JGraphicResourceUserInterface* gRInterface,
+					JGraphicResourceInterface* gRInterface,
 					const JDrawHelper& helper,
 					const J_GRAPHIC_RESOURCE_TYPE srcType,
 					const J_GRAPHIC_RESOURCE_TYPE destType,

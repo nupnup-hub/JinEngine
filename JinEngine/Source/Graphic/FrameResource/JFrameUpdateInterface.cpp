@@ -23,12 +23,53 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#include"JFrameUpdateInterface.h" 
+#include"JFrameUpdateInterface.h"  
+#include"../../Object/Component/JComponent.h"
+#include"../../Object/Resource/JResourceObject.h"
 
 namespace JinEngine
 {
 	namespace Graphic
-	{ 
+	{
+		uint JFrameDirtyChain::GetListenerCount()const noexcept
+		{
+			return (uint)listenerVec.size();
+		}
+		void JFrameDirtyChain::SetFrameDirty()noexcept
+		{
+			for (const auto& data : listenerVec)
+				static_cast<JFrameUpdateInterface*>((*data.getFrameUserBind)())->GetDirtyBase()->SetFrameDirty();
+		}
+		bool JFrameDirtyChain::AddFrameDirtyListener(JFrameDirtyListener&& listener)noexcept
+		{ 
+			listenerVec.push_back(std::move(listener));
+			return true;
+		}
+		bool JFrameDirtyChain::RemoveFrameDirtyListener(const size_t guid)noexcept
+		{
+			uint listenerCount = (uint)listenerVec.size();
+			for (uint i = 0; i < listenerCount; ++i)
+			{
+				if (listenerVec[i].guid == guid)
+				{
+					listenerVec.erase(listenerVec.begin() + i);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		uint JFrameDirtyBase::GetListenerCount()const noexcept
+		{
+			return dirtyChain == nullptr ? 0 : (uint)dirtyChain->GetListenerCount();
+		}
+		void JFrameDirtyBase::SetFrameDirty()noexcept
+		{
+			if (dirtyChain == nullptr)
+				return;
+
+			dirtyChain->SetFrameDirty();
+		}
 		bool JFrameDirtyBase::IsFrameHotDirted()const noexcept
 		{
 			return  GetFrameDirtyMax() > 0 && GetFrameDirty() == (GetFrameDirtyMax());
@@ -36,6 +77,20 @@ namespace JinEngine
 		bool JFrameDirtyBase::IsLastFrameHotUpdated()const noexcept
 		{
 			return GetFrameDirty() == (GetFrameDirtyMax() - 1);
+		}
+		bool JFrameDirtyBase::AddFrameDirtyListener(JFrameDirtyListener&& listener)noexcept
+		{
+			if (dirtyChain == nullptr)
+				dirtyChain = std::make_unique<JFrameDirtyChain>();
+
+			return dirtyChain->AddFrameDirtyListener(std::move(listener));
+		}
+		bool JFrameDirtyBase::RemoveFrameDirtyListener(const size_t guid)noexcept
+		{
+			if (dirtyChain == nullptr)
+				return false;
+
+			return dirtyChain->RemoveFrameDirtyListener(guid);
 		}
 
 		int JFrameDirtyTrigger::GetFrameDirty()const noexcept
@@ -47,19 +102,26 @@ namespace JinEngine
 			return 0;
 		}
 		void JFrameDirtyTrigger::SetFrameDirty()noexcept
-		{ 
+		{
+			JFrameDirtyBase::SetFrameDirty();
 		}
 		bool JFrameDirtyTrigger::IsFrameDirted()const noexcept
 		{
 			return false;
 		}
-		void JFrameDirtyTrigger::MinusFrameDirty()noexcept
+		bool JFrameDirtyTrigger::IsLastFrameUpdated()const noexcept
 		{
-
-		}
+			return false;
+		} 
 		void JFrameDirtyTrigger::OffFrameDirty()noexcept
 		{
 
+		}
+		void JFrameDirtyTrigger::BeginUpdate()noexcept
+		{ 
+		}
+		void JFrameDirtyTrigger::EndUpdate()noexcept
+		{ 
 		}
 
 
@@ -72,32 +134,34 @@ namespace JinEngine
 			return Constants::gNumFrameResources;
 		}
 		void JFrameDirty::SetFrameDirty()noexcept
-		{ 
+		{
+			JFrameDirtyBase::SetFrameDirty();
 			frameDirty = GetFrameDirtyMax();
 		}
 		bool JFrameDirty::IsFrameDirted()const noexcept
 		{
 			return frameDirty;
 		}
-		void JFrameDirty::MinusFrameDirty()noexcept
+		bool JFrameDirty::IsLastFrameUpdated()const noexcept
 		{
-			--frameDirty;
-			if (frameDirty < 0)
-				frameDirty = 0;
-		}
+			return isLastFrameUpdated;
+		} 
 		void JFrameDirty::OffFrameDirty()noexcept
 		{
 			frameDirty = 0;
 		}
-
-		bool JFrameUpdateInterface::Register(const JFrameUploadDataCreationDesc& desc)
+		void JFrameDirty::BeginUpdate()noexcept
 		{
-
+			isLastFrameUpdated = false;
 		}
-		void JFrameUpdateInterface::DeRegister()
+		void JFrameDirty::EndUpdate()noexcept
 		{
-
+			--frameDirty;
+			if (frameDirty < 0)
+				frameDirty = 0;
+			isLastFrameUpdated = true;
 		}
+
 		int JFrameUpdateInterface::GetNumber(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
 		{
 			auto user = GetFrameInfo(type);
@@ -105,7 +169,7 @@ namespace JinEngine
 		}
 		int JFrameUpdateInterface::GetFrameIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
 		{
-			auto user = GetFrameInfo(type);
+			auto user = GetFrameInfo(type); 
 			return user != nullptr ? user->GetFrameIndex() : invalidIndex;
 		}
 		int JFrameUpdateInterface::GetFrameIndexSize(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept
@@ -134,6 +198,14 @@ namespace JinEngine
 
 			return dirtyBase->IsFrameDirted();
 		}
+		bool JFrameUpdateInterface::IsLastUpdated()const noexcept
+		{
+			auto dirtyBase = GetDirtyBase();
+			if (dirtyBase == nullptr)
+				return false;
+
+			return dirtyBase->IsLastFrameUpdated();
+		}
 		void JFrameUpdateInterface::OffFrameDirty()noexcept
 		{
 			auto dirtyBase = GetDirtyBase();
@@ -149,7 +221,41 @@ namespace JinEngine
 
 			objectUpdateB->InvokeCompletelyBind();
 		}
-		bool JFrameUpdateInterface::RegisterObjectUpdateB(JFrameObjectUpdateB&& bind)
+		bool JFrameUpdateInterface::TryRegisterDirtyListener(JFrameDirtyListener&& listener)
+		{
+			return GetDirtyBase()->AddFrameDirtyListener(std::move(listener));
+		}
+		bool JFrameUpdateInterface::TryRegisterDirtyListener(const JUserPtr<JObject>& obj)
+		{
+			JFrameDirtyListener listener;
+			listener.guid = obj->GetGuid();
+
+			if (obj->GetObjectType() == J_OBJECT_TYPE::COMPONENT_OBJECT)
+			{
+				auto listenerLam = [](JUserPtr<JObject> obj)
+				{
+					return static_cast<JComponent*>(obj.Get())->ModuleManagedData()->GetFrameUpdateUserInterface();
+				};
+				listener.getFrameUserBind = Core::UniqueBind(std::make_unique<JFrameDirtyListener::GetListenerF>(listenerLam), JUserPtr<JObject>(obj));
+			}
+			else if (obj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
+			{
+				auto listenerLam = [](JUserPtr<JObject> obj)
+				{
+					return static_cast<JResourceObject*>(obj.Get())->ModuleManagedData()->GetFrameUpdateUserInterface();
+				};
+				listener.getFrameUserBind = Core::UniqueBind(std::make_unique<JFrameDirtyListener::GetListenerF>(listenerLam), JUserPtr<JObject>(obj));
+			}
+			else
+				return false;
+
+			return TryRegisterDirtyListener(std::move(listener));
+		}
+		bool JFrameUpdateInterface::TryDeRegisterDirtyListener(const size_t guid)
+		{
+			return GetDirtyBase()->RemoveFrameDirtyListener(guid); 
+		}
+		bool JFrameUpdateInterface::JFrameUpdateInterface::RegisterObjectUpdateB(JFrameObjectUpdateB&& bind)
 		{
 			objectUpdateB = std::move(bind);
 			return true;

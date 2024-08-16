@@ -30,6 +30,14 @@ SOFTWARE.
 using namespace DirectX;
 namespace JinEngine::Graphic
 {
+	void JCsmHandlerInterface::AddInfo(const JUserPtr<JCsmHandlerInfo>& newInfo)
+	{
+		info = newInfo;
+	}
+	JCsmHandlerInfo* JCsmHandlerInterface::Release()
+	{
+		return info.Release();
+	}
 	JCsmOption JCsmHandlerInterface::GetOption()const noexcept
 	{
 		return info != nullptr ? info->GetOption() : JCsmOption();
@@ -42,6 +50,10 @@ namespace JinEngine::Graphic
 	{
 		static JCsmComputeResult emptyResult;
 		return info != nullptr ? info->GetComputeResult(index) : emptyResult;
+	}
+	JCsmHandlerInfo* JCsmHandlerInterface::GetInfo()const noexcept
+	{
+		return info.Get();
 	}
 	void JCsmHandlerInterface::SetOption(const JCsmOption& newOption)noexcept
 	{

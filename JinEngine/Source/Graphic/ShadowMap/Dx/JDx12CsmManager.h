@@ -22,17 +22,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
-
-#pragma once 
-#include"../JCsmManager.h" 
+#pragma once
+#include"../JCsmManager.h"
 
 namespace JinEngine
 {
 	namespace Graphic
-	{ 
-		class JDx12Manager : public JCsmManager
+	{
+		class JDx12CsmManager final: public JCsmManager
 		{
-
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JDx12CsmManager)
+		public:
+			~JDx12CsmManager();
+		public: 
+			void Initialize(JGraphicDevice* device) final;
+			void Clear() final;
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		private:
+			JOwnerPtr<JCsmHandlerInfo> _CreateHandler(JCsmHandleCreationDesc& desc, JCsmAreaInfo* areInfo) final;
+			JOwnerPtr<JCsmTargetInfo> _CreateTarget(JCsmTargetCreationDesc& desc, JCsmAreaInfo* areInfo)final;
+		private:
+			void BuildResource(JGraphicDevice* device);
+			void ClearResource();
+		public:
+			static void RegisterTypeData();
 		};
 	}
 }

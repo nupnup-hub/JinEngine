@@ -25,6 +25,7 @@ SOFTWARE.
 
 #pragma once 
 #include"JCsmType.h"
+#include"../Device/JGraphicDeviceUser.h"
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Reflection/JReflection.h"
 #include<DirectXCollision.h>
@@ -33,6 +34,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{		
+		class JCsmManager;
 		/*
 		* JCsmHandlerInterface에서만 생성가능한 Info -> 수정 2024-08-01 Manager에서 생성된다.
 		* Handler는 복수가 존재하며 각각 참조하는 Target도 다르다
@@ -43,18 +45,17 @@ namespace JinEngine
 		* Deafult Heap에서 할당받는다.
 		*/
 		class JCsmHandlerInterface;
-		class JCsmTargetInfo
+		class JCsmTargetInfo : public JGraphicDeviceUser
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCsmTargetInfo)
+			REGISTER_CLASS_USE_ALLOCATOR(JCsmTargetInfo)
+		private:
+			friend class JCsmManager;
 		private:
 			int index = -1; 
 		private:
 			JCsmAreaInfo* areaInfo = nullptr;
 		private: 
 			GetCsmTargetBoundingFrustumBindPtr getBoundingFrustumB;
-		public:
-			JCsmTargetInfo(JCsmAreaInfo* areaInfo, GetCsmTargetBoundingFrustumBindPtr&& getBoundingFrustumB);
-			~JCsmTargetInfo();
 		public: 
 			int GetIndex()const noexcept;
 			JCsmAreaInfo* GetAreaInfo()const noexcept;
@@ -65,6 +66,9 @@ namespace JinEngine
 			void SetFrustumPtr(GetCsmTargetBoundingFrustumBindPtr&& newGetBoundingFrustumB);
 		public:
 			bool IsValid()const noexcept;
+		protected:
+			JCsmTargetInfo(JCsmAreaInfo* areaInfo, GetCsmTargetBoundingFrustumBindPtr&& getBoundingFrustumB);
+			virtual ~JCsmTargetInfo();
 		};
 	}
 }

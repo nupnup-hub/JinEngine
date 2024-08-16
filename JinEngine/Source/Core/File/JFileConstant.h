@@ -84,6 +84,8 @@ namespace JinEngine
 			static std::wstring MakeFilePath(const std::wstring& folderPath, const std::wstring& name);
 			//format = L".format"
 			static std::wstring MakeFilePath(const std::wstring& folderPath, const std::wstring& name, const std::wstring& format);
+		public:
+			static std::wstring MakeCacheFilePath(const std::wstring& folderPath, const size_t guid);
 		};
 	}
 }

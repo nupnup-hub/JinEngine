@@ -105,7 +105,7 @@ namespace JinEngine
 			static void MoveDirectory(const JUserPtr<JDirectory>& dir, const JUserPtr<JDirectory>& newParent)noexcept;
 			static void DeleteDirectory(const JUserPtr<JDirectory>& dir)noexcept;
 		};
-		class DestroyInstanceInterfaceEx
+		class DestroyInstanceInterfaceEx final
 		{
 		private:
 			friend class JResourceManager;

@@ -31,41 +31,36 @@ SOFTWARE.
 #include"../JResourceObjectEventDesc.h"
 #include"../../Directory/JDirectory.h"
 #include"../../JObjectFileIOHelper.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Utility/JCommonUtility.h"
-#include"../../../Core/Log/JLogMacro.h"
-#include"../../../Graphic/JGraphic.h" 
-#include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
+#include"../../../Core/Log/JLogMacro.h" 
 #include"../../../Application/Project/JApplicationProject.h"  
 #include<fstream>
 #include<io.h>  
 
 namespace JinEngine
 {
-	namespace
+
+	REGISTER_ENUM_CLASS(J_TEXTURE_TYPE, int, TEXTURE_2D, TEXTURE_CUBE)
+		namespace Private
 	{
-		static JTexturePrivate tPrivate;
-	}
-	namespace Private
-	{
-		static Graphic::JMipmapGenerationDesc InitMipmapGenerateDesc()
-		{
-			Graphic::JMipmapGenerationDesc desc;
-			desc.type = Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
-			desc.kernelSize = Graphic::J_KERNEL_SIZE::_3x3;
-			desc.sharpnessFactor = 2.5f;
-			return desc;
-		} 
-		 
+		static JTexturePrivate instance;
+
 		static constexpr float minMipmapSharpness = 0.001f;
 		static constexpr float maxMipmapSharpness = 32;
-	}
-	
-	namespace
-	{
-		REGISTER_ENUM_CLASS(J_TEXTURE_TYPE, int, TEXTURE_2D, TEXTURE_CUBE)
+
+		static JMipmapGenerationDesc InitMipmapGenerateDesc()
+		{
+			JMipmapGenerationDesc desc;
+			desc.type = J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
+			desc.kernelSize = J_KERNEL_SIZE::_3x3;
+			desc.sharpnessFactor = 2.5f;
+			return desc;
+		}
 		static J_TEXTURE_TYPE Convert(const J_GRAPHIC_RESOURCE_TYPE rType)
 		{
 			switch (rType)
@@ -92,14 +87,18 @@ namespace JinEngine
 		}
 	}
 
-	class JTexture::JTextureImpl : public Core::JTypeImplBase,
-		public JClearableInterface, 
-		public Graphic::JGraphicSingleResourceHolder
+	class JTexture::JTextureImpl : public Core::JTypeImplBase, public JClearableInterface
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTextureImpl) 
+		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTextureImpl)
 	public:
 		JWeakPtr<JTexture> thisPointer = nullptr;
-	public: 
+		/*
+		* JGraphicResourceUserInterface 사용시
+		* 하나의 GraphicResource만 소지하므로 First 함수들을 사용해도 문제가 없으나
+		* 추후 변경사항이 있을경우 수정하고 Task 혹은 할당 순서에 따른 index로 자원에 접근해야한다.
+		*/
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+	public:
 		J_GRAPHIC_RESOURCE_TYPE textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 	public:
 		REGISTER_PROPERTY_EX(innerTextureType, GetInnerTextureType, SetInnerTextureType, GUI_ENUM_COMBO(J_TEXTURE_TYPE))
@@ -109,14 +108,14 @@ namespace JinEngine
 		REGISTER_METHOD(GetTextureResolutionS)
 		REGISTER_METHOD_READONLY_GUI_WIDGET(ResolutionDetail, GetTextureResolutionS, GUI_READONLY_TEXT())
 	public:
-		Graphic::JMipmapGenerationDesc mipMapGenerateDesc = Private::InitMipmapGenerateDesc();
-		REGISTER_GUI_ENUM_CONDITION(TextureMipmapType, Graphic::J_GRAPHIC_MIP_MAP_TYPE, GetMipmapType, true)
-		REGISTER_METHOD_GUI_WIDGET(MipmapType, GetMipmapType, SetMipmapType, GUI_ENUM_COMBO(Graphic::J_GRAPHIC_MIP_MAP_TYPE))
-		REGISTER_METHOD_GUI_WIDGET(MipmapKernelSize, GetMipmapKernelSize, SetMipmapKernelSize, GUI_ENUM_COMBO(Graphic::J_KERNEL_SIZE))
+		JMipmapGenerationDesc mipMapGenerateDesc = Private::InitMipmapGenerateDesc();
+		REGISTER_GUI_ENUM_CONDITION(TextureMipmapType, J_GRAPHIC_MIP_MAP_TYPE, GetMipmapType, true)
+		REGISTER_METHOD_GUI_WIDGET(MipmapType, GetMipmapType, SetMipmapType, GUI_ENUM_COMBO(J_GRAPHIC_MIP_MAP_TYPE))
+		REGISTER_METHOD_GUI_WIDGET(MipmapKernelSize, GetMipmapKernelSize, SetMipmapKernelSize, GUI_ENUM_COMBO(J_KERNEL_SIZE))
 		REGISTER_METHOD_GUI_WIDGET(MipmapSharpness, GetMipmapSharpnessFactor, SetMipmapSharpnessFactor, GUI_SLIDER(Private::minMipmapSharpness, Private::maxMipmapSharpness, true))
 	public:
-		Graphic::JConvertColorDesc convertDesc;
-		REGISTER_METHOD_GUI_WIDGET(ReverseY, IsReverseY, SetReverseY,  GUI_CHECKBOX())
+		JConvertColorDesc convertDesc;
+		REGISTER_METHOD_GUI_WIDGET(ReverseY, IsReverseY, SetReverseY, GUI_CHECKBOX())
 	public:
 		JTextureImpl(const InitData& initData, JTexture* thisTexRaw)
 		{
@@ -125,26 +124,27 @@ namespace JinEngine
 			else
 				textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 
-			innerTextureType = Convert(textureType);
-			resolution = initData.resoultion;			 
-			mipMapGenerateDesc = initData.mipMapDesc; 
+			innerTextureType = Private::Convert(textureType);
+			resolution = initData.resoultion;
+			mipMapGenerateDesc = initData.mipMapDesc;
 			/**
 			* 현재는 convertDesc결과가 assetdata에 반영되어서 load시 추가적인 작업이 없지만
-			* 추후에 texture load할때 추가적인 작업이 필요하다면 Set함수를 수정하고 
+			* 추후에 texture load할때 추가적인 작업이 필요하다면 Set함수를 수정하고
 			* Texture Read시 변경사항을 감지할수있는 방법을 추가할 필요가있다.
 			*/
-			convertDesc = initData.convertDesc;
+			convertDesc = initData.convertDesc; 
 		}
 		~JTextureImpl()
-		{}
+		{ 
+		}
 	public:
 		uint GetTextureWidth()const noexcept
 		{
-			return GetResourceWidth();
+			return graphicData->GetGraphicResourceUserInterface()->GetResourceWidth(textureType, GraphicResourceIndex());
 		}
 		uint GetTextureHeight()const noexcept
 		{
-			return GetResourceHeight();
+			return graphicData->GetGraphicResourceUserInterface()->GetResourceHeight(textureType, GraphicResourceIndex());
 		}
 		std::string GetTextureResolutionS()const noexcept
 		{
@@ -158,11 +158,11 @@ namespace JinEngine
 		{
 			return resolution;
 		}
-		Graphic::J_GRAPHIC_MIP_MAP_TYPE GetMipmapType()const noexcept
+		J_GRAPHIC_MIP_MAP_TYPE GetMipmapType()const noexcept
 		{
 			return mipMapGenerateDesc.type;
 		}
-		Graphic::J_KERNEL_SIZE GetMipmapKernelSize()const noexcept
+		J_KERNEL_SIZE GetMipmapKernelSize()const noexcept
 		{
 			return mipMapGenerateDesc.kernelSize;
 		}
@@ -170,9 +170,18 @@ namespace JinEngine
 		{
 			return mipMapGenerateDesc.sharpnessFactor;
 		}
-		int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+	private:
+		JGraphicResourceUserInterface* GraphicUser()const noexcept
+		{ 
+			return graphicData->GetGraphicResourceUserInterface();
+		}  
+		uint GraphicResourceIndex()const noexcept
 		{
-			return (rType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || rType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE) ? 0 : invalidIndex;
+			return 0;
+		}
+		JGraphicResourceTypeSet GraphicResourceTypeSet()const noexcept
+		{
+			return JGraphicResourceTypeSet(textureType, J_GRAPHIC_TASK_TYPE::UNKNOWN);
 		}
 	public:
 		void SetTextureType(const J_GRAPHIC_RESOURCE_TYPE newTextureType)noexcept
@@ -180,7 +189,7 @@ namespace JinEngine
 			if (textureType != newTextureType)
 			{
 				textureType = newTextureType;
-				innerTextureType = Convert(textureType);
+				innerTextureType = Private::Convert(textureType);
 				if (thisPointer->IsValid())
 				{
 					ClearResource();
@@ -198,7 +207,7 @@ namespace JinEngine
 			if (type == J_TEXTURE_TYPE::TEXTURE_CUBE && thisPointer->GetFormat() != L".dds")
 				return;
 
-			SetTextureType(Convert(type));
+			SetTextureType(Private::Convert(type));
 		}
 		void SetTextureResolution(const J_TEXTURE_RESOLUTION newResolution)
 		{
@@ -206,38 +215,38 @@ namespace JinEngine
 				return;
 
 			resolution = newResolution;
-			if (HasGraphicResourceHandle())
+			if (GraphicUser()->HasFirstHandle())
 			{
-				DestroyGraphicResource();
+				GMI()->DestroyAllGraphicsResourcesOfType(graphicData.Get(), textureType);
 				ReadTextureData();
 				JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
 					J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE,
 					std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
-			}	
+			}
 		}
-		void SetMipmapDesc(const Graphic::JMipmapGenerationDesc& newDesc)
+		void SetMipmapDesc(const JMipmapGenerationDesc& newDesc)
 		{
 			if (newDesc == mipMapGenerateDesc)
 				return;
 
-			const bool changedExceptType =(mipMapGenerateDesc.kernelSize != newDesc.kernelSize ||
+			const bool changedExceptType = (mipMapGenerateDesc.kernelSize != newDesc.kernelSize ||
 				mipMapGenerateDesc.sharpnessFactor != newDesc.sharpnessFactor) && mipMapGenerateDesc.type == newDesc.type;
-			const bool denyModifyMipmap = changedExceptType && mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::GAUSSIAN && 
-				mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::KAISER;
+			const bool denyModifyMipmap = changedExceptType && mipMapGenerateDesc.type != J_GRAPHIC_MIP_MAP_TYPE::GAUSSIAN &&
+				mipMapGenerateDesc.type != J_GRAPHIC_MIP_MAP_TYPE::KAISER;
 
-			if (HasGraphicResourceHandle() && !denyModifyMipmap)
+			if (GraphicUser()->HasFirstHandle() && !denyModifyMipmap)
 			{
-				const bool isNoneTo = mipMapGenerateDesc.type == Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE &&
-					newDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE;
-				const bool isToNone = mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE &&
-					newDesc.type == Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE;
-				const bool isOtherToApi = mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT &&
-					newDesc.type == Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
+				const bool isNoneTo = mipMapGenerateDesc.type == J_GRAPHIC_MIP_MAP_TYPE::NONE &&
+					newDesc.type != J_GRAPHIC_MIP_MAP_TYPE::NONE;
+				const bool isToNone = mipMapGenerateDesc.type != J_GRAPHIC_MIP_MAP_TYPE::NONE &&
+					newDesc.type == J_GRAPHIC_MIP_MAP_TYPE::NONE;
+				const bool isOtherToApi = mipMapGenerateDesc.type != J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT &&
+					newDesc.type == J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
 
 				if (isNoneTo || isToNone || isOtherToApi)
 				{
 					mipMapGenerateDesc = newDesc;
-					DestroyGraphicResource();
+					GMI()->DestroyAllGraphicsResourcesOfType(graphicData.Get(), textureType);
 					ReadTextureData();
 					JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
 						J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE,
@@ -247,39 +256,40 @@ namespace JinEngine
 				{
 					auto createDesc = CreateTextureCreateDesc();
 					createDesc->mipMapDesc = newDesc;
-
-					if (SetMipmap(GetFirstGraphicInfo(), *createDesc))
+					 
+					if (GMI()->SetMipmap(graphicData.Get(), GraphicResourceTypeSet(), GraphicResourceIndex(), *createDesc))
 						mipMapGenerateDesc = newDesc;
 				}
 			}
 			else
 				mipMapGenerateDesc = newDesc;
 		}
-		void SetMipmapType(const Graphic::J_GRAPHIC_MIP_MAP_TYPE mipmapType)noexcept
+		void SetMipmapType(const J_GRAPHIC_MIP_MAP_TYPE mipmapType)noexcept
 		{
-			Graphic::JMipmapGenerationDesc newDesc = mipMapGenerateDesc;
+			JMipmapGenerationDesc newDesc = mipMapGenerateDesc;
 			newDesc.type = mipmapType;
 			SetMipmapDesc(newDesc);
 		}
-		void SetMipmapKernelSize(const Graphic::J_KERNEL_SIZE kenelType)noexcept
+		void SetMipmapKernelSize(const J_KERNEL_SIZE kenelType)noexcept
 		{
-			Graphic::JMipmapGenerationDesc newDesc = mipMapGenerateDesc;
+			JMipmapGenerationDesc newDesc = mipMapGenerateDesc;
 			newDesc.kernelSize = kenelType;
 			SetMipmapDesc(newDesc);
 		}
 		void SetMipmapSharpnessFactor(const float sharpness)noexcept
 		{
-			Graphic::JMipmapGenerationDesc newDesc = mipMapGenerateDesc;
+			JMipmapGenerationDesc newDesc = mipMapGenerateDesc;
 			newDesc.sharpnessFactor = std::clamp(sharpness, Private::minMipmapSharpness, Private::maxMipmapSharpness);
 			SetMipmapDesc(newDesc);
 		}
-		void SetConvertDesc(const Graphic::JConvertColorDesc& newConvertDesc)
+		void SetConvertDesc(const JConvertColorDesc& newConvertDesc)
 		{
-			auto gInfo = GetFirstGraphicInfo();
-			if (convertDesc == newConvertDesc || gInfo == nullptr)
+			if (convertDesc == newConvertDesc && !GraphicUser()->HasFirstHandle())
+				return;
+			 
+			if (!GMI()->SetTextureDetail(graphicData.Get(), GraphicResourceTypeSet(), GraphicResourceIndex(), newConvertDesc))
 				return;
 
-			SetTextureDetail(GetFirstGraphicInfo(), newConvertDesc);
 			convertDesc = newConvertDesc;
 			JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
 				J_RESOURCE_EVENT_TYPE::UPDATE_NON_FRAME_RESOURCE,
@@ -287,7 +297,7 @@ namespace JinEngine
 		}
 		void SetReverseY(const bool value)
 		{
-			Graphic::JConvertColorDesc newConvertDesc = convertDesc;
+			JConvertColorDesc newConvertDesc = convertDesc;
 			newConvertDesc.reverseY = value;
 			SetConvertDesc(newConvertDesc);
 		}
@@ -306,14 +316,15 @@ namespace JinEngine
 			if (resolution == J_TEXTURE_RESOLUTION::ORIGINAL)
 				return;
 
-			auto firstInfo = GetFirstGraphicInfo();
-			if (firstInfo == nullptr)
+			if (!GraphicUser()->HasFirstHandle())
 				return;
-			 
-			const uint bigOne = max(firstInfo->GetWidth(), firstInfo->GetHeight());
+
+			const JVector2F resourceSize = GraphicUser()->GetFirstResourceSize();
+			const uint bigOne = (uint)resourceSize.GetMaxElemet();
+
 			auto elementValueVec = Core::GetEnumElementValueVec<J_TEXTURE_RESOLUTION>();
 			for (const auto& data : elementValueVec)
-			{ 
+			{
 				if (data == (uint)J_TEXTURE_RESOLUTION::ORIGINAL)
 					continue;
 
@@ -323,13 +334,12 @@ namespace JinEngine
 					break;
 				}
 			}
-			
 		}
 		void AdjustMipmap()
 		{
-			mipMapGenerateDesc.type = GetFirstGraphicInfo()->GetMipmapType();
+			mipMapGenerateDesc.type = GraphicUser()->GetFirstMipmapType();
 		}
-	public:
+	private:
 		void StuffResource()
 		{
 			if (!thisPointer->IsValid())
@@ -342,44 +352,35 @@ namespace JinEngine
 		{
 			if (thisPointer->IsValid())
 			{
-				if (HasGraphicResourceHandle())
-					DestroyGraphicResource(); 
+				if (GraphicUser()->HasFirstHandle())
+					GMI()->DestroyAllGraphicsResourcesOfType(graphicData.Get(), textureType);
 				thisPointer->SetValid(false);
 			}
 		}
-		std::unique_ptr<Graphic::JTextureCreationDesc> CreateTextureCreateDesc()
+		std::unique_ptr<JTextureCreationDesc> CreateTextureCreateDesc()
 		{
-			return std::make_unique<Graphic::JTextureCreationDesc>(thisPointer->GetPath(), thisPointer->GetFormat(), (uint)resolution, CreateMipmapGenerateDesc());
+			return std::make_unique<JTextureCreationDesc>(thisPointer->GetPath(), thisPointer->GetFormat(), (uint)resolution, CreateMipmapGenerateDesc());
 		}
-		Graphic::JMipmapGenerationDesc CreateMipmapGenerateDesc()
+		JMipmapGenerationDesc CreateMipmapGenerateDesc()
 		{
 			return mipMapGenerateDesc;
 		}
 	public:
 		bool ReadTextureData()
 		{
-			if (!HasGraphicResourceHandle())
-			{  
-				if (textureType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
-				{
-					if (CreateResource(CreateTextureCreateDesc(), textureType))
-					{ 
-						AdjustResoultion();
-						AdjustMipmap();
-						return true;
-					}
-				}
-				else if (textureType == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
-				{
-					if (CreateResource(CreateTextureCreateDesc(), textureType))
-					{
-						AdjustResoultion();
-						AdjustMipmap();
-						return true;
-					}
-				}
+			if (GraphicUser()->HasFirstHandle())
+				return false;
+
+			JGraphicResourceTypeSet typeSet = GraphicResourceTypeSet();
+			JGraphicResourceCreationDesc desc(typeSet, CreateTextureCreateDesc());
+			if (GMI()->CreateGraphicResource(graphicData.Get(), desc))
+			{
+				AdjustResoultion();
+				AdjustMipmap();
+				return true;
 			}
-			return false;
+			else
+				return false;
 		}
 		bool ImportTexture(const std::wstring& oriPath)
 		{
@@ -391,7 +392,7 @@ namespace JinEngine
 			std::wstring format;
 			JCUtil::DecomposeFilePath(oriPath, folderPath, name, format);
 
-			int formatIndex = thisPointer->GetFormatIndex(thisPointer->GetResourceType(),format);
+			int formatIndex = thisPointer->GetFormatIndex(thisPointer->GetResourceType(), format);
 			if (formatIndex != thisPointer->GetFormatIndex() || formatIndex == GetInvalidFormatIndex())
 				return false;
 
@@ -401,17 +402,28 @@ namespace JinEngine
 			dest << source.rdbuf();
 			source.close();
 			dest.close();
-			 
+
 			return true;
 		}
 	public:
+		void Activate()noexcept
+		{ 
+			StuffResource();
+		}
+		void DeActivate()noexcept
+		{
+			//has order dependency 
+			ClearResource(); 
+		}
+	public:
 		void NotifyReAlloc()
-		{		 
+		{
 			RegisterInterfacePointer();
 		}
 	public:
 		void Initialize(InitData* initData)
 		{
+			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
 			//객체를 처음생성할때 initData에서 import
 			if (!thisPointer->HasFile())
 				ImportTexture(initData->oridataPath);
@@ -420,15 +432,13 @@ namespace JinEngine
 		}
 		void RegisterThisPointer(JTexture* tex)
 		{
-			thisPointer = Core::GetWeakPtr(tex);  
+			thisPointer = Core::GetWeakPtr(tex);
 		}
 		void RegisterInterfacePointer()
 		{
-			Graphic::JGraphicResourceInterface::SetInterfacePointer(this); 
 		}
 		void DeRegisterInterfacePointer()
 		{
-			Graphic::JGraphicResourceInterface::SetInterfacePointer(nullptr);
 		}
 		static void RegisterTypeData()
 		{
@@ -454,7 +464,7 @@ namespace JinEngine
 				return std::vector<J_RESOURCE_TYPE>();
 			};
 			auto textureImportLam = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
-			{ 
+			{
 				std::unique_ptr<InitData> initData = std::make_unique<InitData>(desc->importPathData.name,
 					Core::MakeGuid(),
 					(J_OBJECT_FLAG)desc->importPathData.flag,
@@ -465,24 +475,24 @@ namespace JinEngine
 				{
 					const JTextureImportDesc* textureDesc = static_cast<const JTextureImportDesc*>(desc);
 					initData->mipMapDesc.type = textureDesc->useMipmap ?
-						Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT :
-						Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE;
+						J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT :
+						J_GRAPHIC_MIP_MAP_TYPE::NONE;
 				}
- 
+
 				//return { JICI::Create<JTexture>(std::move(initData)) }; 
 				return { JUserPtr<JTexture>::ConvertChild(JICI::Create(std::move(initData))) };
 			};
-			
+
 			auto foramatVec = JTexture::GetAvailableFormat();
-			for(const auto& data: foramatVec)
+			for (const auto& data : foramatVec)
 				JResourceObjectImporter::Instance().AddFormatInfo(data, J_RESOURCE_TYPE::TEXTURE, textureImportLam);
 			//JResourceObjectImporter::Instance().AddFormatInfo(L".png", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 			//JResourceObjectImporter::Instance().AddFormatInfo(L".dds", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 			//JResourceObjectImporter::Instance().AddFormatInfo(L".tga", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 			//JResourceObjectImporter::Instance().AddFormatInfo(L".bmp", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 
-			Core::JIdentifier::RegisterPrivateInterface(JTexture::StaticTypeInfo(), tPrivate);
-			IMPL_REALLOC_BIND(JTexture::JTextureImpl, thisPointer)
+			Core::JIdentifier::RegisterPrivateInterface(JTexture::StaticTypeInfo(), Private::instance);
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -496,7 +506,7 @@ namespace JinEngine
 		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
 		J_GRAPHIC_RESOURCE_TYPE textureType)
-		:JResourceObject::InitData(JTexture::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory),
+		: JResourceObject::InitData(JTexture::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory),
 		oridataPath(oridataPath), textureType(textureType)
 	{}
 	JTexture::InitData::InitData(const size_t guid,
@@ -504,7 +514,7 @@ namespace JinEngine
 		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
 		J_GRAPHIC_RESOURCE_TYPE textureType)
-		:JResourceObject::InitData(JTexture::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory),
+		: JResourceObject::InitData(JTexture::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory),
 		oridataPath(oridataPath), textureType(textureType)
 	{}
 	JTexture::InitData::InitData(const std::wstring& name,
@@ -518,21 +528,25 @@ namespace JinEngine
 		oridataPath(oridataPath), textureType(textureType)
 	{}
 	bool JTexture::InitData::IsValidData()const noexcept
-	{ 
+	{
 		return JResourceObject::InitData::IsValidData() && _waccess(oridataPath.c_str(), 00) != -1;
 	}
 	JTexture::LoadMetadata::LoadMetadata(const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
- 
+
 	Core::JIdentifierPrivate& JTexture::PrivateInterface()const noexcept
-	{ 
-		return tPrivate;
-	}
-	const Graphic::JGraphicResourceUserInterface JTexture::GraphicResourceUserInterface()const noexcept
 	{
-		return Graphic::JGraphicResourceUserInterface{ impl.get() };
-	} 
+		return Private::instance;
+	}
+	JGraphicModuleManagedDataFrame* JTexture::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JTexture::GetSubTypeIndex()const noexcept
+	{
+		return 0;
+	}
 	J_RESOURCE_TYPE JTexture::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -543,11 +557,11 @@ namespace JinEngine
 	}
 	std::vector<std::wstring> JTexture::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp", L".tif", L".tiff"};
+		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp", L".tif", L".tiff" };
 		static bool hasUpperCase = false;
 		if (!hasUpperCase)
 		{
-			const uint existCount = (uint)format.size(); 
+			const uint existCount = (uint)format.size();
 			for (uint i = 0; i < existCount; ++i)
 				format.push_back(JCUtil::ToUppercase(format[i]));
 			hasUpperCase = true;
@@ -573,29 +587,32 @@ namespace JinEngine
 	void JTexture::SetTextureType(const J_GRAPHIC_RESOURCE_TYPE textureType)noexcept
 	{
 		impl->SetTextureType(textureType);
-	} 
+	}
 	void JTexture::SetTextureResolution(const J_TEXTURE_RESOLUTION resolutionType)noexcept
 	{
 		impl->SetTextureResolution(resolutionType);
 	}
 	void JTexture::DoActivate()noexcept
-	{	
+	{
+		if (impl->graphicData == nullptr)
+			impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JResourceObject::DoActivate();
-		impl->StuffResource();
+		impl->Activate();
 	}
 	void JTexture::DoDeActivate()noexcept
-	{ 
-		impl->ClearResource();
-		JResourceObject::DoDeActivate();
+	{
+		impl->DeActivate();
+		JResourceObject::DoDeActivate(); 
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	}
 	JTexture::JTexture(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JTextureImpl>(initData, this))
 	{  }
 	JTexture::~JTexture()
-	{  
+	{
 		impl.reset();
 	}
- 
+
 	using CreateInstanceInterface = JTexturePrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JTexturePrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JTexturePrivate::AssetDataIOInterface;
@@ -614,7 +631,7 @@ namespace JinEngine
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
-		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JTexture::InitData::StaticTypeInfo());	
+		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JTexture::InitData::StaticTypeInfo());
 		return isValidPtr && initData->IsValidData();
 	}
 
@@ -629,7 +646,7 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::LoadData::StaticTypeInfo()))
 			return nullptr;
- 
+
 		auto loadData = static_cast<JTexture::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
@@ -637,7 +654,7 @@ namespace JinEngine
 
 		if (LoadMetadata(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
- 
+
 		JUserPtr<JTexture> newTex = nullptr;
 		if (directory->HasFile(metadata.guid))
 			newTex = Core::GetUserPtr<JTexture>(JTexture::StaticTypeInfo().TypeGuid(), metadata.guid);
@@ -656,13 +673,13 @@ namespace JinEngine
 			initData->mipMapDesc = metadata.mipMapDesc;
 			initData->convertDesc = metadata.convertDesc;
 
-			auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &tPrivate);
-			newTex.ConnnectChild(idenUser); 
+			auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::move(initData), &Private::instance);
+			newTex.ConnnectChild(idenUser);
 		}
 		return newTex;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
-	{ 
+	{
 		//asset data는 임포트시 한번 저장되고 이후에 저장되지 않는다 (fixed)
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -678,8 +695,8 @@ namespace JinEngine
 		auto loadMetadata = static_cast<JTexture::LoadMetadata*>(data);
 		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-		 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->textureType, "TextureType"); 
+
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->textureType, "TextureType");
 		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->resoultion, "Resoultion");
 		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->mipMapDesc.type, "MipmapType");
 		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->mipMapDesc.kernelSize, "MipmapKernelSize");
@@ -692,17 +709,17 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
-	 
+
 		auto storeData = static_cast<JTexture::StoreData*>(data);
 		JUserPtr<JTexture> tex = Core::ConnectChildUserPtr<JTexture>(storeData->obj);
-	 
+
 		JFileIOTool tool;
 		if (!tool.Begin(tex->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	  
+
 		JObjectFileIOHelper::StoreEnumData(tool, tex->GetTextureType(), "TextureType");
 		JObjectFileIOHelper::StoreEnumData(tool, tex->GetTextureResolution(), "Resoultion");
 		JObjectFileIOHelper::StoreEnumData(tool, tex->impl->mipMapGenerateDesc.type, "MipmapType");

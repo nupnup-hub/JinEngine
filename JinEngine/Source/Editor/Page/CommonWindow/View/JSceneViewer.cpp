@@ -40,7 +40,7 @@ SOFTWARE.
 #include"../../../../Graphic/JGraphic.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceType.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"../../../../Graphic/GraphicResource/JGraphicResourceManager.h"
 #include"../../../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
 //Test
 //#include"../../../../Object/Resource/JResourceManager.h" 
@@ -89,8 +89,8 @@ namespace JinEngine
 					JGuiImageInfo info(selectedCam.Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					if (selectedCam->AllowPostProcess())
 					{
-						auto gInterface = selectedCam->GraphicResourceUserInterface();
-						info.dataIndex = gInterface.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
+						auto gUser = selectedCam->ModuleManagedData()->GetGraphicResourceUserInterface();
+						info.dataIndex = gUser->GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
 					}
 					JGui::Image(info, JGui::GetWindowSize());
 				}
@@ -154,7 +154,8 @@ namespace JinEngine
 				//static int xDir = 1;
 				static int zDir = 1;
 
-				auto dLight = scene->GetFirstDirectionalLight();
+				const uint uniqueIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL);
+				auto dLight = scene->GetFirstComponent<JLight>(uniqueIndex);
 				if (dLight == nullptr)
 					return;
 

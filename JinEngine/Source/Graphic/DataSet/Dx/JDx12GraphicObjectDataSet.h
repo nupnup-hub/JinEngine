@@ -28,7 +28,6 @@ SOFTWARE.
 namespace JinEngine
 {
 	namespace Graphic
-	{
-
+	{ 
 	}
 }

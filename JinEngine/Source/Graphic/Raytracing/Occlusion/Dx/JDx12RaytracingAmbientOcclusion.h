@@ -28,8 +28,8 @@ SOFTWARE.
 #include"../../../Buffer/Dx/JDx12GraphicBuffer.h"
 #include"../../../Buffer/Dx/JHlslDebug.h"
 #include"../../../Image/Dx/JDx12ImageConstants.h"
-#include"../../../Shader/Dx/JDx12ShaderDataHolder.h" 
-#include"../../../FrameResource/JRaytracingConstants.h"
+#include"../../../Shader/Dx/JDx12ShaderDataHolder.h"  
+#include"../../../FrameResource/Dx/JRaytracingConstants.h"
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
 #include<wrl/client.h> 
 #include<dxgiformat.h>
@@ -66,6 +66,9 @@ namespace JinEngine
 			JUserPtr<JGraphicResourceInfo> randomVecInfo;
 		private:
 			std::unique_ptr<HlslDebug> debugHandle;
+		private:
+			JDx12GraphicDevice* cachedDevice;
+			JDx12GraphicResourceManager* cachedGm;
 		public:
 			~JDx12RaytracingAmbientOcclusion();
 		public:

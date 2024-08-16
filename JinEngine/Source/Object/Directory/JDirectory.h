@@ -68,6 +68,7 @@ namespace JinEngine
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		std::wstring GetPath()const noexcept;
 		std::wstring GetMetaFilePath()const noexcept;
 		uint GetChildernDirctoryCount()const noexcept;

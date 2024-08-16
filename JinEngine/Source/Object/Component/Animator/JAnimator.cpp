@@ -47,18 +47,18 @@ SOFTWARE.
 namespace JinEngine
 { 
 	using AnimationControllerInterfaced = JAnimationControllerPrivate::AnimationInterface;
-	namespace
+	namespace Private
 	{
 		static auto isAvailableoverlapLam = []() {return false; };
-		static JAnimatorPrivate aPrivate;
+		static JAnimatorPrivate instance;
 	} 
  
 	class JAnimator::JAnimatorImpl : public Core::JTypeImplBase, public JResourceObjectUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimatorImpl) 
 	public:
-		JWeakPtr<JAnimator> thisPointer = nullptr;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
+		JWeakPtr<JAnimator> thisPointer;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false));
 		JUserPtr<JSkeletonAsset> skeletonAsset;
@@ -156,8 +156,7 @@ namespace JinEngine
 		}
 	public:
 		void Activate()
-		{
-			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
+		{ 
 			RegisterAnimationFrameData();
 			OnResourceRef();
 			SettingAnimationUpdateData();
@@ -167,9 +166,8 @@ namespace JinEngine
 			ClearAnimationUpdateData();
 			OffResourceRef();
 			DeRegisterAnimationFrameData();
-			GraphicModuleInterface()->DeAllocate(graphicData); 
 		}
-	public:
+	private:
 		void OnResourceRef()
 		{
 			if (skeletonAsset.IsValid())
@@ -199,8 +197,7 @@ namespace JinEngine
 		}
 	public:
 		void NotifyReAlloc()
-		{
-			//ReRegisterFrameData(Graphic::J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION, this);
+		{ 
 			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 	public:
@@ -228,7 +225,7 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JAnimator::StaticTypeInfo };
-			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
+			static IsAvailableOverlapCallable isAvailableOverlapCallable{ Private::isAvailableoverlapLam };
 
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
 			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
@@ -247,12 +244,12 @@ namespace JinEngine
 
 			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable, isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ nullptr};
+			static CTypePrivateFunc cTypeInterfaceFunc{};
  
 			JComponent::RegisterCTypeInfo(JAnimator::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
-			Core::JIdentifier::RegisterPrivateInterface(JAnimator::StaticTypeInfo(), aPrivate);
+			Core::JIdentifier::RegisterPrivateInterface(JAnimator::StaticTypeInfo(), Private::instance);
  
-			IMPL_REALLOC_BIND(JAnimator::JAnimatorImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -265,11 +262,15 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JAnimator::PrivateInterface()const noexcept
 	{
-		return aPrivate;
+		return Private::instance;
 	}
-	JGraphicModuleManagedDataFrame* JAnimator::GetModuleManagedData()const noexcept
+	JGraphicModuleManagedDataFrame* JAnimator::ModuleManagedData()const noexcept
 	{
 		return impl->graphicData.Get();
+	}
+	uint JAnimator::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_COMPONENT_TYPE JAnimator::GetComponentType()const noexcept
 	{
@@ -298,7 +299,7 @@ namespace JinEngine
 	}
 	bool JAnimator::IsAvailableOverlap()const noexcept
 	{
-		return isAvailableoverlapLam();
+		return Private::isAvailableoverlapLam();
 	}
 	bool JAnimator::PassDefectInspection()const noexcept
 	{
@@ -321,6 +322,7 @@ namespace JinEngine
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
+		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JComponent::DoActivate();
 		impl->Activate();
 		RegisterComponent(impl->thisPointer);
@@ -330,6 +332,7 @@ namespace JinEngine
 		DeRegisterComponent(impl->thisPointer);
 		impl->DeActivate();
 		JComponent::DoDeActivate();
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	}
 	JAnimator::JAnimator(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JAnimatorImpl>(initData, this))
@@ -393,12 +396,12 @@ namespace JinEngine
 		JUserPtr<JAnimationController> aniCont = JObjectFileIOHelper::_LoadHasIden<JAnimationController>(tool, "AnimationController");
 		JUserPtr<JSkeletonAsset> skeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(tool, "SkeletonAsset");
 		 
-		auto idenUser = aPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JAnimator::InitData>(guid, flag, owner), &aPrivate);
+		auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::make_unique<JAnimator::InitData>(guid, flag, owner), &Private::instance);
 		auto aniUser = Core::ConvertChildUserPtr<JAnimator>(std::move(idenUser));
 		aniUser->SetAnimatorController(aniCont);
 		aniUser->SetSkeletonAsset(skeletonAsset);
 		if (!isActivated)
-			aniUser->DoDeActivate();
+			aniUser->DeActivate();
 
 		return aniUser;
 	}

@@ -28,6 +28,7 @@ SOFTWARE.
 #include"JResourceObjectEventType.h" 
 #include"JReferenceInterface.h"
 #include"../JObject.h"
+#include"../GraphicRule/JGraphicModuleManagedDataUser.h"
 #include"../../Core/File/JFilePathData.h" 
 #include"../../Core/Interface/JValidInterface.h"
 #include"../../Core/Event/JEventManager.h"  
@@ -42,10 +43,32 @@ namespace JinEngine
 	struct RTypePrivateFunc;
 	struct JResourceEventDesc;
 
+	//feature
+	/*
+	* Purpose
+	* Engine내부에서만 사용되는 자원 혹은 외부 포맷의 자원들은 모두 .jasset으로 생성 or 변환되어서 저장되며
+	* JResourceObject 객체의 하위 class들로서 각각 자원에 대한 접근과 제어를 책임진다.
+	*/
+	/*
+	* Manage
+	* RAII을 준수하며 Ref count가 0가 될시 JResourceObject는 파괴되고 대신 JResourceObject에 메타데이터를 소유한
+	* JFile이 생성되며 해당 리소스는 파일에서 열람가능한 상태이고 GetResource()를 통한 인스턴스를 요구할시 
+	* 다시 생성된다.
+	*/
+	/* 
+	* Cache
+	* Editor에서 시뮬레이션등을 수행할때 Resource의 값을 변경하는 경우가 있으며 Rollback을 위해
+	* Cache file을 추가하고 Engine이 종료될시 일괄 삭제된다.
+	*/
+	/*
+	* Metafile
+	* 경량의 Metafile로 Resource의 특성을 빠른시간에 읽어올 수 있다.
+	*/
+
 	class JResourceObject;
 	using JResourceEventManager = Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*, JResourceEventDesc*>;
 	using JResourceEventInterface = JResourceEventManager::Interface;
-	class JResourceObject : public JObject, public JReferenceInterface, public Core::JValidInterface
+	class JResourceObject : public JObject, public JReferenceInterface, public Core::JValidInterface, public JGraphicModuleUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JResourceObject)
 	public: 

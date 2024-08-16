@@ -39,7 +39,7 @@ namespace JinEngine
 		protected:
 			virtual ~JFSMdiagramOwnerInterface() = default; 
 		private: 
-			virtual JFSMparameterStorageUserAccess* GetParameterStorageUser()noexcept = 0; 
+			virtual JFSMparameterStorageUserAccess* GetParameterStorageUser()noexcept = 0;
 			virtual bool RegisterDiagram(JUserPtr<JFSMdiagram> diagram)noexcept = 0;
 			virtual bool DeRegisterDiagram(JUserPtr<JFSMdiagram> diagram)noexcept = 0;
 		protected:

@@ -28,6 +28,9 @@ namespace JinEngine
 {
 	void JGraphicModuleUtility::SetFrameDirty(JGraphicModuleManagedDataFrame* graphicData) noexcept
 	{
+		if (graphicData == nullptr)
+			return;
+
 		auto ptr = graphicData->GetFrameUpdateUserInterface();
 		if (ptr == nullptr)
 			return;

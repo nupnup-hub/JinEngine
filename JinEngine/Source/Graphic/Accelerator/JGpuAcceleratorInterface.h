@@ -41,20 +41,16 @@ namespace JinEngine
 			JUserPtr<JGpuAcceleratorInfo> info;
 		public:
 			virtual ~JGpuAcceleratorInterface() = default;
-		protected:
-			bool CreateGpuAccelerator(const JGpuAcceleratorBuildDesc& desc);
-			bool DestroyGpuAccelerator();
-		protected:
-			void UpdateTransform(const JUserPtr<JComponent>& comp);
-			void AddComponent(const JUserPtr<JComponent>& comp);
-			void RemoveComponent(const JUserPtr<JComponent>& comp);
+		public:
+			void AddInfo(const JUserPtr<JGpuAcceleratorInfo>& newInfo);
+			JGpuAcceleratorInfo* ReleaseInfo(); 
 		public:
 			int GetArrayIndex()const noexcept final;
 			J_GPU_ACCELERATOR_BUILD_OPTION GetBuildOption()const noexcept final;
+			JUserPtr<JGpuAcceleratorInfo> GetInfo()const noexcept;
 		public:
 			bool HasInfo()const noexcept final;
-		protected: 
-			static bool CanBuildGpuAccelerator()noexcept;
+			bool CanBuild()const noexcept final;
 		};
 	}
 }

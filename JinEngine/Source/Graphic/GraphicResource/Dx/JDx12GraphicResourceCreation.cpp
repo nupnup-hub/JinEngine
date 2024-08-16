@@ -627,13 +627,13 @@ namespace JinEngine::Graphic
 		{
 			switch (type)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP: 
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP: 
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
 				return D3D12_RESOURCE_STATE_GENERIC_READ;
 				/*
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
+				case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
 					break;
 				*/
 			default:
@@ -649,9 +649,9 @@ namespace JinEngine::Graphic
 			uint gBufferLayerStart = (uint)J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP;
 			switch (type)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP: 
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY: 
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP: 
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY: 
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
 			{
 				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 				heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -661,7 +661,7 @@ namespace JinEngine::Graphic
 				clearFormat = desc.Format;
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
 			{
 				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 				heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -671,12 +671,12 @@ namespace JinEngine::Graphic
 				clearFormat = desc.Format;
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
 			{
 				desc.Flags = Core::AddSQValueEnum(desc.Flags, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 				break;
 			}
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
 			{
 				desc = CD3DX12_RESOURCE_DESC(D3D12_RESOURCE_DIMENSION_BUFFER, 0, GetFixedBufferElementSize(type), 1, 1, 1,
 					DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
@@ -692,12 +692,12 @@ namespace JinEngine::Graphic
 		{
 			switch (type)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP:
 				return Constants::GetBackBufferClearColor();		//same as render taget common clear 
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP: 
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP: 
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
 			default:
 				return Constants::GetBlackClearColor();
 			}
@@ -706,8 +706,8 @@ namespace JinEngine::Graphic
 		{
 			switch (type)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNTER_BUFFER:
 				return false;
 			default:
 				return true;
@@ -1752,15 +1752,15 @@ namespace JinEngine::Graphic
 		{
 			switch (opType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP:
 				return &BindAlbedoMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY:
 				return &BindLightingPropertyMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
 				return &BindNormalMap; 
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY:
 				return &BindVelocityMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
+			case JinEngine::J_GRAPHIC_RESOURCE_OPTION_TYPE::BLUR:
 				return &BindBlur;
 			default:
 				return nullptr;
@@ -2039,9 +2039,9 @@ namespace JinEngine::Graphic
 			elementSize = creationDesc.formatHint->elementSize;
 		return JDx12GraphicResourceHolderDesc(std::move(defaultBuffer), D3D12_RESOURCE_STATE_COMMON, elementSize);
 	}
-	JDx12GraphicResourceHolderDesc JDx12GraphicResourceCreation::Create(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE type)
+	JDx12GraphicResourceHolderDesc JDx12GraphicResourceCreation::Create(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc)
 	{
-		return (Resource::GetCreateD3dResourcePtr(type))(data, creationDesc);
+		return (Resource::GetCreateD3dResourcePtr(creationDesc.type.resouce))(data, creationDesc);
 	}
 	JDx12GraphicResourceHolderDesc JDx12GraphicResourceCreation::Create(const JDeviceData& data, ID3D12Resource* dxInfoResource, const J_GRAPHIC_RESOURCE_OPTION_TYPE type)
 	{
@@ -2076,8 +2076,7 @@ namespace JinEngine::Graphic
 			return JDx12GraphicResourceHolderDesc(std::move(newResource), initState);
 	}
 	bool JDx12GraphicResourceCreation::Load(const JDeviceData& data,
-		const JGraphicResourceCreationDesc& creationDesc,
-		const J_GRAPHIC_RESOURCE_TYPE type,
+		const JGraphicResourceCreationDesc& creationDesc, 
 		Microsoft::WRL::ComPtr<ID3D12Resource>& newResource,
 		Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 		std::unique_ptr<DirectX::ResourceUploadBatch>& uploadBatch, 
@@ -2085,7 +2084,7 @@ namespace JinEngine::Graphic
 	{
 		HRESULT res = (HRESULT)-1;
 		D3D12_RESOURCE_FLAGS flag = D3D12_RESOURCE_FLAG_NONE;
-		if (type == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON && creationDesc.bindDesc.HasRequestAdditionalBind(J_GRAPHIC_BIND_TYPE::UAV))
+		if (creationDesc.type.resouce == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON && creationDesc.bindDesc.HasRequestAdditionalBind(J_GRAPHIC_BIND_TYPE::UAV))
 			flag |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
 		if (creationDesc.textureDesc->oriFormat == L".dds")

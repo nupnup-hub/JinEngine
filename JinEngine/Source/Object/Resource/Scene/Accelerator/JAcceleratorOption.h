@@ -71,7 +71,7 @@ namespace JinEngine
 	struct JAcceleratorCullingInfo
 	{
 	public:
-		Graphic::JCullingUserInterface cullUser;
+		JCullingUserInterface* cullUser;
 		DirectX::BoundingFrustum frustum;
 		DirectX::BoundingFrustum cullingFrustum;
 	public:
@@ -89,12 +89,12 @@ namespace JinEngine
 		bool allowPushVisibleObjVec = false;
 		bool allowCullingOrderedByDistance = false;
 	public:
-		JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
+		JAcceleratorCullingInfo(JCullingUserInterface* cullUser,
 			DirectX::BoundingFrustum camFrustum);
-		JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
+		JAcceleratorCullingInfo(JCullingUserInterface* cullUser,
 			DirectX::BoundingFrustum camFrustum,
 			DirectX::BoundingFrustum cullingFrustum);
-		JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
+		JAcceleratorCullingInfo(JCullingUserInterface* cullUser,
 			const DirectX::BoundingBox bbox);
 	};
 	struct JAcceleratorAlignInfo
@@ -230,6 +230,6 @@ namespace JinEngine
 	public:
 		JUserPtr<JGameObject> root;
 		J_ACCELERATOR_LAYER layer = J_ACCELERATOR_LAYER::COMMON_OBJECT;
-		Graphic::J_GPU_ACCELERATOR_BUILD_OPTION flag = Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_NONE;
+		J_GPU_ACCELERATOR_BUILD_OPTION flag = J_GPU_ACCELERATOR_BUILD_OPTION_NONE;
 	};
 }

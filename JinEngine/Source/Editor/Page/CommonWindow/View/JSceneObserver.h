@@ -113,7 +113,9 @@ namespace JinEngine
 			struct TextureDebug
 			{
 			public:
-				std::vector<Graphic::ResourceHandle> gpuHandle;
+				JUserPtr<JTexture> texture;
+			public:
+				std::vector<ResourceHandle> gpuHandle;
 				std::vector<Core::JDataHandle> dataHandle;
 			public:
 				float sizeFactor = 0.25f;

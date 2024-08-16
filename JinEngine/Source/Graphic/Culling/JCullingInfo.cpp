@@ -101,17 +101,11 @@ namespace JinEngine
 		bool JCullingInfo::CanSetCullingValue()const noexcept
 		{
 			return resultHolder->CanSetValue();
-		}
-		bool JCullingInfo::Destroy(JCullingInfo* info)
-		{
-			return JGraphicPrivate::CullingInterface::DestroyCullignData(info);;
-		}
-		JCullingInfo::JCullingInfo(JCullingManager* manager,
-			const J_CULLING_TYPE cullingType,
+		} 
+		JCullingInfo::JCullingInfo(const J_CULLING_TYPE cullingType,
 			const uint updatedInfoCount,
 			std::unique_ptr<JCullingResultHolder>&& resultHolder)
-			:manager(manager), 
-			cullingType(cullingType),
+			:cullingType(cullingType),
 			resultHolder(std::move(resultHolder))
 		{
 			updatedInfo.resize(updatedInfoCount);

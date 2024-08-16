@@ -126,11 +126,11 @@ namespace JinEngine
 
 #define REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, ...)											\
 		private:																				\
-			inline static struct typeName##TypeInfoInstance										\
+			inline static struct TypeInfoInstance										\
 			{																					\
 			public:																				\
-				typeName##TypeInfoInstance(){ static JTypeInfoRegister typeRegister{#typeName};	}\
-			}typeName##TypeInfoInstance;														\
+				TypeInfoInstance(){ static JTypeInfoRegister typeRegister{#typeName};	}\
+			}TypeInfoInstance;														\
 																								\
 
 

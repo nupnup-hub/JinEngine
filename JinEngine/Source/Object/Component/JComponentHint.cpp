@@ -60,21 +60,10 @@ namespace JinEngine
 		return (*createInitDataCallable)(nullptr, typeInfo, owner, std::move(parentInitData));
 	}
 
-	CTypePrivateFunc::CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable)
-		:setFrameDirtyCallable(setFrameDirtyCallable)
+	CTypePrivateFunc::CTypePrivateFunc()
 	{}
 	CTypePrivateFunc::~CTypePrivateFunc()
-	{
-		setFrameDirtyCallable = nullptr;
-	}
-	void CTypePrivateFunc::CallSetFrameDirty(JComponent* jComp)
-	{
-		(*setFrameDirtyCallable)(nullptr, jComp);
-	}
-	SetCFrameDirtyCallable* CTypePrivateFunc::GetSetFrameDirtyCallable()
-	{
-		return setFrameDirtyCallable;
-	}
+	{} 
 
 	struct CTypeInfoData
 	{
@@ -165,13 +154,5 @@ namespace JinEngine
 	bool CTypeCommonCall::NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept
 	{
 		return CTypeInfo::Instance().cFuncStorage[(uint)a.thisType].CallGetTypeInfo().Name() < CTypeInfo::Instance().cFuncStorage[(uint)b.thisType].CallGetTypeInfo().Name();
-	}
-	void CTypePrivateCall::CallSetFrameDirty(JComponent* jComp)
-	{
-		return CTypeInfo::Instance().pFuncStorage[(uint)jComp->GetComponentType()].CallSetFrameDirty(jComp);
-	}
-	SetCFrameDirtyCallable* CTypePrivateCall::GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType)
-	{
-		return CTypeInfo::Instance().pFuncStorage[(uint)cType].GetSetFrameDirtyCallable();
 	}
 }

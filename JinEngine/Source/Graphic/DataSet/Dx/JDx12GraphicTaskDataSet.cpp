@@ -245,10 +245,10 @@ namespace JinEngine::Graphic
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicRtGiComputeSet::JDx12GraphicRtGiComputeSet(JCommandContext* context, JGraphicDevice* device, JGraphicResourceShareData* shareData)
+	JDx12GraphicRtGiComputeSet::JDx12GraphicRtGiComputeSet(JCommandContext* context, JGraphicDevice* device,   JGraphicResourceShareData* shareData)
 		:JGraphicRtGiComputeSet(context), device(device), shareData(shareData)
 	{
-		SetValid(IsAllSameDevice(context, device));
+		SetValid(IsAllSameDevice(context, device, shareData));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicRtGiComputeSet::GetDeviceType()const noexcept
 	{

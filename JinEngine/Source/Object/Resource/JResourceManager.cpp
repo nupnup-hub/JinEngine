@@ -51,6 +51,7 @@ SOFTWARE.
 #include"../Directory/JDirectoryPrivate.h"  
 #include"../JObjectFileIOHelper.h"
 #include"../JObjectModifyInterface.h"
+#include"../GraphicRule/Shader/JGraphicModuleShaderType.h"
 
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/File/JFileConstant.h" 
@@ -62,10 +63,7 @@ SOFTWARE.
 #include"../../Application/Engine/JApplicationEngine.h"
 #include"../../Application/Project/JApplicationProject.h"
 //#include"../../Core/Geometry/JDirectXCollisionEx.h"
-
-#include"../../Graphic/JGraphic.h"
-//#include"../../Graphic/JGraphicDrawList.h" 
-  
+ 
 
 //Debug
 //#include"../../Core/Memory/JMemoryCapture.h"
@@ -105,7 +103,8 @@ namespace JinEngine
 		~JResourceManagerImpl()
 		{}
 	public:
-		void Initialize() {}
+		void Initialize() 
+		{}
 		void Terminate(const bool storeResource)
 		{
 			//StoreProjectResource();
@@ -147,15 +146,10 @@ namespace JinEngine
 
 			defaultData->Clear();
 			if (projectRootDir != nullptr)
-			{
-				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(projectRootDir.Get());
-				projectRootDir = nullptr;
-			}
+				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(projectRootDir.Release());
 			if (engineRootDir != nullptr)
-			{
-				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(engineRootDir.Get());
-				engineRootDir = nullptr;
-			}
+				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(engineRootDir.Release());
+			
 			_JReflectionInfo::Instance().SearchInstance();
 			modInterface.ClearModifiedInfoStructure();
 		}
@@ -204,8 +198,9 @@ namespace JinEngine
 			CreateDefaultTexture(defaultData->selectorTextureType);
 		}
 		void LoadProjectResource()
-		{
+		{ 
 			Terminate(true);
+			JFileIOHelper::DestroyAllFile(JApplicationProject::ModResourceCachePath());
 			defaultData->Initialize();
 			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			engineRootDir = JICI::Create<JDirectory>(JApplicationEngine::ProjectPath(), Core::MakeGuid(), rootFlag, nullptr);

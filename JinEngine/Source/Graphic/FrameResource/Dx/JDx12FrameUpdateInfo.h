@@ -39,7 +39,6 @@ namespace JinEngine
 			JDx12FrameResourceManager* manager;
 		private:
 			JDx12FrameUpdateInfo(const J_FRAME_RESOURCE_UPLOAD_TYPE type, JFrameUpdateAreaInfo* newAreaInfo, JDx12FrameResourceManager* manager);
-			~JDx12FrameUpdateInfo();
 		};
 	}
 }

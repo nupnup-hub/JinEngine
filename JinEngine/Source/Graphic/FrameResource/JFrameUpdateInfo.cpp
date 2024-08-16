@@ -84,12 +84,12 @@ namespace JinEngine
 			return index != invalidIndex;
 		}
 
-		JFrameUpdateAreaInfo::JFrameUpdateAreaInfo(size_t guid, int stIndex, int edIndex)
-			:guid(guid), stIndex(stIndex), edIndex(edIndex)
+		JFrameUpdateAreaInfo::JFrameUpdateAreaInfo(size_t guid, int stIndex, int count)
+			:guid(guid), stIndex(stIndex), count(count)
 		{}
 		int JFrameUpdateAreaInfo::GetInfoCount()const noexcept
 		{
-			return edIndex - stIndex;
+			return count;
 		}
 		int JFrameUpdateAreaInfo::GetStIndex()const noexcept
 		{
@@ -97,25 +97,23 @@ namespace JinEngine
 		}
 		int JFrameUpdateAreaInfo::GetEdIndex()const noexcept
 		{
-			return edIndex;
+			return stIndex + count;
 		}
-		int JFrameUpdateAreaInfo::Increase()
+		void JFrameUpdateAreaInfo::IncreaseStIndex()
 		{
-			++stIndex;
-			++edIndex;
+			++stIndex; 
 		}
-		int JFrameUpdateAreaInfo::Decrease()
+		void JFrameUpdateAreaInfo::DecreaseStIndex()
 		{
-			--stIndex;
-			--edIndex;
+			--stIndex; 
 		}
-		int JFrameUpdateAreaInfo::IncreaseEdIndex()
+		void JFrameUpdateAreaInfo::IncreaseCount()
 		{
-			++edIndex;
+			++count;
 		}
-		int JFrameUpdateAreaInfo::DecreaseEdIndex()
+		void JFrameUpdateAreaInfo::DecreaseCount()
 		{
-			--edIndex;
+			--count;
 		}
 	}
 }

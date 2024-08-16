@@ -48,10 +48,11 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JLightImpl> impl;
 	public: 
+		uint GetSubTypeIndex()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
-			return J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
+			return J_COMPONENT_TYPE::ENGINE_LIGHT;
 		} 
 		JVector3<float> GetColor()const noexcept; 
 		uint GetShadowResolution()const noexcept;
@@ -83,8 +84,13 @@ namespace JinEngine
 	public: 
 		bool IsShadowActivated()const noexcept;
 		bool IsAvailableOverlap()const noexcept final; 
-		bool AllowDisplayShadowMap()const noexcept; 
-		bool AllowLightCulling()const noexcept;  
+		bool AllowDisplayShadowMap()const noexcept;  
+		virtual bool AllowFrustumCulling()const noexcept = 0;
+		virtual bool AllowHzbOcclusionCulling()const noexcept = 0;
+		virtual bool AllowHdOcclusionCulling()const noexcept = 0;
+		virtual bool AllowDisplayOccCullingDepthMap()const noexcept = 0;
+	protected:
+		void UpdateLightShape()noexcept;
 	protected:
 		void DoActivate()noexcept override;
 		void DoDeActivate()noexcept override;

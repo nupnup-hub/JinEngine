@@ -29,11 +29,7 @@ SOFTWARE.
 namespace JinEngine
 {  
 	class JTransform;  
-	class JGameObject;
-	namespace Graphic
-	{
-		class JFrameDirtyTriggerBase;
-	}
+	class JGameObject; 
 	class JTransformPrivate final : public JComponentPrivate
 	{
 	public:

@@ -64,6 +64,7 @@ SOFTWARE.
 #include"../../../../Object/Resource/JResourceObjectImporter.h" 
 #include"../../../../Window/JWindow.h"
 #include"../../../../Application/Project/JApplicationProject.h"   
+#include"../../../../Application/Engine/JApplicationEngine.h"   
 #include<filesystem>
 
 // #include "../../../../Graphic/GraphicResource/JGraphicResourceInfo.h"

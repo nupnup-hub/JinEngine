@@ -76,11 +76,19 @@ namespace JinEngine::Core
 	{
 		return JRGBVector(238, 130, 238, 255);
 	}  
-	JRGBVector JRGBColorDefine::FixedColor(const uint index)
+	JRGBVector JRGBColorDefine::White()noexcept
+	{
+		return JRGBVector(255, 255, 255, 255);
+	}
+	JRGBVector JRGBColorDefine::Black()noexcept
+	{
+		return JRGBVector(0, 0, 0, 0);
+	}
+	JRGBVector JRGBColorDefine::FixedColor(const uint index)noexcept
 	{
 		return FixedColor(std::min((COLOR_TYPE)index, COLOR_TYPE::BLACK));
 	}
-	JRGBVector JRGBColorDefine::FixedColor(const COLOR_TYPE type)
+	JRGBVector JRGBColorDefine::FixedColor(const COLOR_TYPE type)noexcept
 	{
 		switch (type)
 		{

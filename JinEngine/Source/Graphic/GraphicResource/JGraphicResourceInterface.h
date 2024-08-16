@@ -32,6 +32,7 @@ SOFTWARE.
 #include"../Image/JImageProcessingEnum.h" 
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/Math/JVector.h"  
+#include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Object/GraphicRule/GraphicResource/JGraphicModuleTextureResourceUserAccess.h"
 
 namespace JinEngine
@@ -47,7 +48,7 @@ namespace JinEngine
 		class JDataHandle;
 	}
 	namespace Graphic
-	{ 
+	{
 		//class JCullingInterface;
 
 		/**
@@ -58,31 +59,20 @@ namespace JinEngine
 		//수정 Impl의 상위 interfacae가아닌 Graphic module내에서 관리하는 객체로 수정하고자
 		//기존의 public Core::JTypeImplInterfacePointerHolder<JGraphicResourceInterface> 상속받는 코드는 수정한다.
 		//2024-07-27
-
+		 
 		class JGraphicResourceInterface : public JGraphicResourceUserInterface
 		{
-		protected:
-			bool CreateResource(const JGraphicResourceCreationDesc& createDesc, const J_GRAPHIC_RESOURCE_TYPE rType);
-			bool CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE option);
-		protected:
-			bool DestroyGraphicResource(JUserPtr<JGraphicResourceInfo>& info);
-			bool DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE option);
-		protected:
-			/**
-			* @brief non mipmap일 경우와 graphic api defined로 mipmap을 변경하고 싶은경우 해당하는 resource를 다시 만들 필요가있으며
-			* 그밖에 경우에만 desc에 맞는 새로운 mipmap을 생성
-			*/
-			bool SetMipmap(const JUserPtr<JGraphicResourceInfo>& info, const JTextureCreationDesc& createDesc);
-			/**
-			* @brief color curve를 조정하며 현재는 reverseY만 추가된상태.
-			*/
-			bool SetTextureDetail(const JUserPtr<JGraphicResourceInfo>& info, const JConvertColorDesc& convertDesc);
-		private:
+		public:
+			using DestoryInfoF = Core::JSFunctorType<void, JGraphicResourceInfo*>::Functor;
+		public:
 			/**
 			* @parameter newInfo is always valid user pointer and has fit space
 			* @parameter dataIndex used multi holder not single holder
 			*/
 			virtual void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex = 0) = 0;
+			virtual void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0) = 0;
+			virtual void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) = 0;
+			virtual void RemoveInfoAll(DestoryInfoF& destroyF) = 0;
 		public:
 			uint GetResourceWidth(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final;
 			uint GetResourceHeight(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final;
@@ -94,6 +84,7 @@ namespace JinEngine
 			int GetOptionHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept final;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept final;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
+			uint GetMipmapCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 			ResourceHandle GetGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint bIndex, const uint dataIndex) const noexcept final;
 			ResourceHandle GetOptionGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex, const uint dataIndex) const noexcept final;
 		public:
@@ -103,71 +94,69 @@ namespace JinEngine
 			JVector2F GetFirstResourceInvSize()const noexcept final;
 			J_GRAPHIC_RESOURCE_TYPE GetFirstResourceType()const noexcept final;
 			ResourceHandle GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept final;
-			J_GRAPHIC_MIP_MAP_TYPE GetFirstMipmapType()const noexcept final;  
+			J_GRAPHIC_MIP_MAP_TYPE GetFirstMipmapType()const noexcept final;
+			int GetResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)const noexcept final;
 			//for debugging
 			virtual std::vector<J_GRAPHIC_RESOURCE_TYPE> GetResourceTypeVec()const noexcept = 0;
-		protected:
-			virtual JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept = 0;
+		public:
+			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)const noexcept;
+			virtual JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)const noexcept = 0;
 			virtual JUserPtr<JGraphicResourceInfo> GetFirstGraphicInfo()const noexcept = 0;
 		public:
-			bool IsValidHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final; 
+			bool IsValidHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final;
 			bool IsValidHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 			bool HasFirstHandle()const noexcept final;
 			bool HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 			bool HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept final;
 			bool HasSpace(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
-			virtual bool HasFixedSpaceByTaskType() const noexcept = 0; 
-		protected:
-			int NextResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept;
+			virtual bool HasFixedSpaceByTaskType() const noexcept = 0;
 		public:
-			//Debug
-			/**
-			* @brief for debug texture mipmap
-			*/
-			bool TryFirstResourceMipmapBind(_Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)const final;
-			void ClearFirstResourceMipmapBind(_Inout_ std::vector<Core::JDataHandle>& dataHandle)final;
+			int NextResourceIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept;;
 		};
+
 		class JGraphicSingleResourceHolder : public JGraphicResourceInterface
 		{
 		private:
 			JUserPtr<JGraphicResourceInfo> info = nullptr;
-		public:
-			bool DestroyGraphicResource();
 		private:
-			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex);
+			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex)final;
+			void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)final;
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) final;
+			void RemoveInfoAll(DestoryInfoF& destroyF)final;
 		public:
-			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;  
+			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
 			std::vector<J_GRAPHIC_RESOURCE_TYPE> GetResourceTypeVec()const noexcept final;
 		protected:
-			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final;
+			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)const noexcept final;
 			JUserPtr<JGraphicResourceInfo> GetFirstGraphicInfo()const noexcept final;
-		public: 
+		public:
 			bool HasGraphicResourceHandle()const noexcept;
-			bool HasFixedSpaceByTaskType() const noexcept final; 
+			bool HasFixedSpaceByTaskType() const noexcept final;
 		};
 		class JGraphicTypePerSingleResourceHolder : public JGraphicResourceInterface
 		{
 		private:
 			JUserPtr<JGraphicResourceInfo> info[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
-		protected:
-			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType);
-			void DestroyAllTexture();
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex);
+			void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)final;
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) final;
+			void RemoveInfoAll(DestoryInfoF& destroyF)final;
 		public:
-			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;   
+			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
 			uint GetAllocableResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 			std::vector<J_GRAPHIC_RESOURCE_TYPE> GetResourceTypeVec()const noexcept final;
 		protected:
-			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final;
+			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)const noexcept final;
 			JUserPtr<JGraphicResourceInfo> GetFirstGraphicInfo()const noexcept final;
-		public:  
-			bool HasFixedSpaceByTaskType()const noexcept final; 
+		public:
+			bool HasFixedSpaceByTaskType()const noexcept final;
 		};
+
 		class JGraphicMultiResourceHolder : public JGraphicResourceInterface
 		{
-		//private:
-		//	friend class JCullingInterface;
+			//private:
+			//	friend class JCullingInterface;
 		private:
 			struct MultiResourceInfo
 			{
@@ -181,23 +170,22 @@ namespace JinEngine
 			};
 		private:
 			MultiResourceInfo info;
-		public:
-			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
-			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType);
-			void DestroyAllTexture();
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex);
+			void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)final;
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) final;
+			void RemoveInfoAll(DestoryInfoF& destroyF)final;
 		public:
-			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;  
+			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
 			uint GetAllocableResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 			std::vector<J_GRAPHIC_RESOURCE_TYPE> GetResourceTypeVec()const noexcept final;
 		protected:
-			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final;
+			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)const noexcept final;
 			JUserPtr<JGraphicResourceInfo> GetFirstGraphicInfo()const noexcept final;
-		public:  
+		public:
 			bool HasFixedSpaceByTaskType() const noexcept final;
 		};
- 
+
 		/*
 		* type당 하나의 resource가필요할경우 사용.
 		*/
@@ -221,32 +209,42 @@ namespace JinEngine
 					initTrigger = true;
 				}
 			}
-		protected:
-			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType)
-			{
-				int index = GetTypeIndex(rType);
-				if (index == invalidIndex || info[index] == nullptr)
-					return;
-
-				JGraphicResourceInfo::Destroy(info[index].Release()); 
-			}
-			void DestroyAllTexture()
-			{
-				for (uint i = 0; i < count; ++i)
-					JGraphicResourceInfo::Destroy(info[i].Release());
-			}
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex)
 			{
 				int index = order[(uint)newInfo->GetGraphicResourceType()];
-				info[index] = newInfo; 
+				info[index] = newInfo;
+			}
+			void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)final
+			{
+				int index = order[(uint)rType]; 
+				if (index == invalidIndex || info[index] == nullptr)
+					return;
+				 
+				destroyF(info[index].Release());
+			}
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) final
+			{
+				int index = order[(uint)rType];
+				if (index == invalidIndex || info[index] == nullptr)
+					return;
+
+				destroyF(info[index].Release());
+			}
+			void RemoveInfoAll(DestoryInfoF& destroyF)final
+			{ 
+				for (uint i = 0; i < count; ++i)
+				{
+					if (info[i] != nullptr)
+						destroyF(info[i].Release());
+				} 
 			}
 		public:
 			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final
 			{
 				//return ((rType == type ? GetGraphicInfo(type) != nullptr : 0) + ...);
 				return uint(GetGraphicInfo(rType, 0) != nullptr);
-			} 
+			}
 			uint GetAllocableResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType)const noexcept final
 			{
 				return GetTypeIndex(rType) != invalidIndex ? 1 : 0;
@@ -262,8 +260,11 @@ namespace JinEngine
 				return res;
 			}
 		protected:
-			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final
+			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)const noexcept final
 			{
+				if (dataIndex == invalidIndex)
+					return nullptr;
+
 				int index = GetTypeIndex(rType);
 				return index != invalidIndex ? info[index] : nullptr;
 			}
@@ -278,17 +279,17 @@ namespace JinEngine
 			}
 		private:
 			int GetTypeIndex(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-			{	
+			{
 				return order[(uint)rType];
 			}
-		public: 
+		public:
 			bool HasFixedSpaceByTaskType() const noexcept final
 			{
 				return false;
-			} 
-		}; 
+			}
+		};
 		template<typename TypeSequence>
-		int JGraphicWideSingleResourceHolder<TypeSequence>::order[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT]; 
+		int JGraphicWideSingleResourceHolder<TypeSequence>::order[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 
 		/*
 		* type당 복수의 resource가필요하며
@@ -301,18 +302,18 @@ namespace JinEngine
 		public:
 			using FirstType = typename StaticTupleSequence::FirstType;
 			using SecondType = typename StaticTupleSequence::SecondType;
-		private: 
-			static constexpr uint count = StaticTupleSequence::count; 
+		private:
+			static constexpr uint count = StaticTupleSequence::count;
 			static constexpr bool typeIsFirst = std::is_same_v<FirstType, J_GRAPHIC_RESOURCE_TYPE>;
 			static constexpr bool hasType = (std::is_same_v<FirstType, J_GRAPHIC_RESOURCE_TYPE> || std::is_same_v<SecondType, J_GRAPHIC_RESOURCE_TYPE>);
 			static constexpr bool hasIndex = (std::is_integral_v<FirstType> || std::is_integral_v<SecondType>);
-			static constexpr bool isValid = hasType && hasIndex;		 
-		private: 
+			static constexpr bool isValid = hasType && hasIndex;
+		private:
 			static_assert(isValid, "Invalid StaticTupleSequence");
-		private:  
+		private:
 			static int order[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 			static uint arrayLength[count];
-		private: 
+		private:
 			JUserPtr<JGraphicResourceInfo>* info[count];
 		public:
 			JGraphicRestrictMultiResourceHolder()
@@ -345,42 +346,42 @@ namespace JinEngine
 				for (uint i = 0; i < count; ++i)
 					delete[] info[i];
 			}
-		public:
-			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType)
+		private:
+			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex)
+			{ 
+				JUserPtr<JGraphicResourceInfo>* rArray = GetArray(newInfo->GetGraphicResourceType());
+				rArray[dataIndex] = newInfo;
+			}
+			void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)final
 			{
+				auto infoPtr = GetGraphicInfoHandle(rType, GetResourceIndex(rType, taskType, localIndex));
+				if (infoPtr == nullptr)
+					return;
+				 
+				destroyF(infoPtr->Release());
+			}
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) final
+			{ 
 				const int typeIndex = GetTypeIndex(rType);
 				if (typeIndex == invalidIndex)
 					return;
 
 				JUserPtr<JGraphicResourceInfo>* rArray = info[typeIndex];
-				for (uint i= 0; i < arrayLength[typeIndex]; ++i)
-				{
-					if(rArray[i] != nullptr)
-						JGraphicResourceInfo::Destroy(rArray[i].Release());
-				}
-			} 
-			void DestroyAllTexture()
+				for (uint i = 0; i < arrayLength[typeIndex]; ++i)
+					destroyF(rArray[i].Release());		 
+			}
+			void RemoveInfoAll(DestoryInfoF& destroyF)final
 			{
+				std::vector<JGraphicResourceInfo*> release;
 				for (uint i = 0; i < count; ++i)
 				{
 					for (uint j = 0; j < arrayLength[j]; ++j)
-					{
-						if (info[i][j] == nullptr)
-							continue;
-
-						JGraphicResourceInfo::Destroy(info[i][j].Release());
-					}
-				}
-			}
-		private:
-			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex)
-			{  
-				JUserPtr<JGraphicResourceInfo>* rArray = GetArray(newInfo->GetGraphicResourceType());
-				rArray[dataIndex] = newInfo;
+						destroyF(info[i][j].Release());
+				} 
 			}
 		public:
 			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final
-			{ 
+			{
 				return GetTypeIndex(rType) != invalidIndex ? arrayLength[GetTypeIndex(rType)] : 0;
 			}
 			std::vector<J_GRAPHIC_RESOURCE_TYPE> GetResourceTypeVec()const noexcept
@@ -393,47 +394,55 @@ namespace JinEngine
 						if (info[i][j] != nullptr)
 							res.push_back(info[i][j]->GetGraphicResourceType());
 					}
-				} 
+				}
 				return res;
 			}
 		protected:
-			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final
+			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)const noexcept final
+			{
+				if (dataIndex == invalidIndex)
+					return nullptr;
+
+				const int typeIndex = GetTypeIndex(rType);
+				return typeIndex != invalidIndex && arrayLength[typeIndex] > dataIndex ? info[typeIndex][dataIndex] : nullptr;
+			}
+			JUserPtr<JGraphicResourceInfo>* GetGraphicInfoHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)noexcept
 			{
 				const int typeIndex = GetTypeIndex(rType);
-				return typeIndex != invalidIndex && arrayLength[typeIndex] > dataIndex ? info[typeIndex][dataIndex]: nullptr;
+				return typeIndex != invalidIndex && arrayLength[typeIndex] > dataIndex ? &info[typeIndex][dataIndex] : nullptr;
 			}
 			JUserPtr<JGraphicResourceInfo> GetFirstGraphicInfo()const noexcept final
-			{ 
+			{
 				for (uint i = 0; i < count; ++i)
-				{ 
+				{
 					for (uint j = 0; j < arrayLength[j]; ++j)
 					{
 						if (info[i][j] != nullptr)
 							return info[i][j];
 					}
-				} 
+				}
 				return nullptr;
-			}		
+			}
 		private:
 			int GetTypeIndex(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-			{
+			{ 
 				return order[(uint)rType];
-			}  
+			}
 			JUserPtr<JGraphicResourceInfo>* GetArray(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
-			{
+			{  
 				return GetTypeIndex(rType) != invalidIndex ? info[(uint)GetTypeIndex(rType)] : nullptr;
 			}
-		public:  
+		public:
 			bool HasFixedSpaceByTaskType() const noexcept final
 			{
 				return true;
-			} 
-		};	
+			}
+		};
 		template<typename StaticTupleSequence>
 		int JGraphicRestrictMultiResourceHolder<StaticTupleSequence>::order[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 		template<typename StaticTupleSequence>
 		uint JGraphicRestrictMultiResourceHolder<StaticTupleSequence>::arrayLength[JGraphicRestrictMultiResourceHolder::count];
-	 
+
 		/*
 		* type당 복수의 resource가필요하며
 		* 각각 갯수의 제한을 알 수 없는 경우 사용.
@@ -443,9 +452,9 @@ namespace JinEngine
 		{
 		private:
 			static constexpr uint singleCount = SignleTypeSequence::count;
-			static constexpr uint multiCount = MultiTypeSequence::count;  
+			static constexpr uint multiCount = MultiTypeSequence::count;
 		private:
-			static int singleOrder[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT]; 
+			static int singleOrder[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 			static int multiOrder[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 		private:
 			JUserPtr<JGraphicResourceInfo> singleInfo[singleCount];
@@ -459,56 +468,11 @@ namespace JinEngine
 					SignleTypeSequence::StuffTypeSequenceOrder(std::make_index_sequence<singleCount>(), singleOrder, (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT);
 					MultiTypeSequence::StuffTypeSequenceOrder(std::make_index_sequence<multiCount>(), multiOrder, (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT);
 					initTrigger = true;
-				} 
+				}
 			}
 			~JGraphicWideSingleAndMultiResourceHolder()
 			{
 
-			}
-		public:
-			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType)
-			{
-				int multiIndex = GetMultiInfoVecIndex(rType);
-				if (multiIndex != invalidIndex)
-				{
-					const uint multiVecCount = (uint)multiInfo[multiIndex].size();
-					for (uint i = 0; i < multiVecCount; ++i)
-						JGraphicResourceInfo::Destroy(multiInfo[multiIndex][i].Release());
-					multiInfo[multiIndex].clear();
-				}
-				else
-				{
-					int index = GetSingleInfoIndex(rType);
-					if (index == invalidIndex || singleInfo[index] == nullptr)
-						return;
-
-					JGraphicResourceInfo::Destroy(singleInfo[index].Release());
-				}
-			}
-			void DestroyMultiTexture(const J_GRAPHIC_RESOURCE_TYPE rType, const uint index)
-			{
-				int multiIndex = GetMultiInfoVecIndex(rType);
-				if (multiIndex != invalidIndex)
-				{
-					if (multiInfo[multiIndex].size() <= index)
-						return;
-
-					JGraphicResourceInfo::Destroy(multiInfo[multiIndex][index].Release());
-					multiInfo[multiIndex].erase(multiInfo[multiIndex].begin() + index);
-				}
-			}
-			void DestroyAllTexture()
-			{
-				for (uint i = 0; i < singleCount; ++i)
-					JGraphicResourceInfo::Destroy(singleInfo[i].Release());
-
-				for (uint i = 0; i < multiCount; ++i)
-				{
-					const uint multiVecCount = (uint)multiInfo[i].size();
-					for (uint j = 0; j < multiVecCount; ++j)
-						JGraphicResourceInfo::Destroy(multiInfo[i][j].Release());
-					multiInfo[i].clear();
-				}
 			}
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo, const uint dataIndex)
@@ -519,6 +483,62 @@ namespace JinEngine
 					multiInfo[multiIndex].push_back(newInfo);
 				else if (singleInfo[singleIndex] != nullptr)
 					singleInfo[singleIndex] = newInfo;
+			}
+			void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)final
+			{
+				int multiIndex = GetMultiInfoVecIndex(rType);
+				int index = GetResourceIndex(rType, taskType, localIndex);
+
+				if (multiIndex != invalidIndex)
+				{
+					if (multiInfo[multiIndex].size() <= index)
+						return;
+
+					destroyF(multiInfo[multiIndex][index].Release());
+					multiInfo[multiIndex].erase(multiInfo[multiIndex].begin() + index);
+				}
+				else
+				{
+					int index = GetSingleInfoIndex(rType);
+					if (index == invalidIndex || singleInfo[index] == nullptr)
+						return;
+
+					destroyF(singleInfo[index].Release()); 
+				}
+			}
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) final
+			{
+				int multiIndex = GetMultiInfoVecIndex(rType);
+				if (multiIndex != invalidIndex)
+				{ 
+					const uint multiVecCount = (uint)multiInfo[multiIndex].size();
+					for (uint i = 0; i < multiVecCount; ++i)
+						destroyF(multiInfo[multiIndex][i].Release());
+					 
+					multiInfo[multiIndex].clear(); 
+				}
+				else
+				{
+					int index = GetSingleInfoIndex(rType);
+					if (index == invalidIndex)
+						return;
+
+					destroyF(singleInfo[index].Release());
+				}
+			}
+			void RemoveInfoAll(DestoryInfoF& destroyF)final
+			{
+				std::vector<JGraphicResourceInfo*> result;
+				for (uint i = 0; i < singleCount; ++i)
+					destroyF(singleInfo[i].Release());
+
+				for (uint i = 0; i < multiCount; ++i)
+				{
+					const uint multiVecCount = (uint)multiInfo[i].size();
+					for (uint j = 0; j < multiVecCount; ++j)
+						destroyF(multiInfo[i][j].Release());
+					multiInfo[i].clear();
+				}
 			}
 		public:
 			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final
@@ -555,8 +575,11 @@ namespace JinEngine
 			{
 				return  multiInfo[GetMultiInfoVecIndex(rType)].size();
 			}
-			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept final
+			JUserPtr<JGraphicResourceInfo> GetGraphicInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const int dataIndex)const noexcept final
 			{
+				if (dataIndex == invalidIndex)
+					return nullptr;
+
 				int multiIndex = GetMultiInfoVecIndex(rType);
 				if (multiIndex != invalidIndex)
 					return (multiInfo[multiIndex].size() > dataIndex ? multiInfo[multiIndex][dataIndex] : nullptr);
@@ -619,7 +642,7 @@ namespace JinEngine
 			bool HasFixedSpaceByTaskType() const noexcept final
 			{
 				return false;
-			} 
+			}
 		private:
 			bool HasSingleInfo(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 			{
@@ -670,6 +693,6 @@ namespace JinEngine
 				}
 				indexList[index] = invalidIndex;
 			}
-		}; 
+		};
 	}
 }

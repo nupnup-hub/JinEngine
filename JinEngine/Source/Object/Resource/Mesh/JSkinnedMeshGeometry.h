@@ -72,6 +72,7 @@ namespace JinEngine
 		std::unique_ptr<JSkinnedMeshGeometryImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final; 
 		Core::J_MESHGEOMETRY_TYPE GetMeshGeometryType()const noexcept final; 
 		JUserPtr<JSkeletonAsset> GetSkeletonAsset()const noexcept;
 	private:

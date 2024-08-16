@@ -31,8 +31,8 @@ namespace JinEngine
 {
 	//class JObject;
 	namespace Core
-	{
-		class JTypeInfo;  
+	{ 
+		class JTypeInfo;   
 		template<typename Type>
 		class JTypeInfoInitializer
 		{
@@ -42,7 +42,7 @@ namespace JinEngine
 			std::string name;
 			std::string fullName;
 			size_t hashCode;
-			JTypeInfo* parent;  
+			JTypeInfo* parent;   
 		public:
 			JTypeInfoInitializer(const std::string& name)
 				:name(name)
@@ -52,7 +52,7 @@ namespace JinEngine
 				if constexpr (std::is_void_v<Type::ParentType>)
 					parent = nullptr;
 				else
-					parent = &Type::ParentType::StaticTypeInfo();
+					parent = &Type::ParentType::StaticTypeInfo(); 
 			} 
 		};
 	}

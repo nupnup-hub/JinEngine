@@ -91,9 +91,7 @@ namespace JinEngine
 			void SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE newMipmapType)noexcept;
 		public:
 			bool HasView(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
-			virtual bool HasOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept = 0; 
-		public: 
-			static bool Destroy(JGraphicResourceInfo* info);  
+			virtual bool HasOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept = 0;  
 		protected:
 			void TryCreateOptionViewInfo();
 			void DestroyOptionViewInfo();

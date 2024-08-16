@@ -29,6 +29,7 @@ SOFTWARE.
 #include"../../Image/Dx/JDx12ImageConstants.h"
 #include"../../Device/JGraphicDevice.h"
 #include"../../Utility/Dx/JDx12Utility.h" 
+#include"../../../Object/GraphicRule/JGraphicModuleInterfaceHolder.h"
 
 namespace JinEngine::Graphic
 {
@@ -82,14 +83,19 @@ namespace JinEngine::Graphic
 	{ }
 
 	JDx12GraphicResourceShareData::SsaoData::SsaoData(JGraphicDevice* device, JGraphicResourceManager* gM, const uint width, const uint height)
+		: device(device), gM(gM)
 	{
-		JGraphicResourceCreationDesc desc;
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
+		JGraphicResourceCreationDesc desc(typeSet);
 		desc.width = width;
 		desc.height = height;
 
-		intermediate00 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP);
-		intermediate01 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP);
-		depth = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERMEDIATE_MAP;
+		intermediate00 = gM->CreateResource(device, desc);
+		intermediate01 = gM->CreateResource(device, desc);
+
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP;
+		depth = gM->CreateResource(device, desc);
 
 		const uint sliceWidth = (width + Constants::ssaoSplitCount - 1) / Constants::ssaoSplitCount;
 		const uint sliceHeight = (height + Constants::ssaoSplitCount - 1) / Constants::ssaoSplitCount;
@@ -98,16 +104,19 @@ namespace JinEngine::Graphic
 		desc.height = sliceHeight;
 		desc.arraySize = Constants::ssaoSliceCount;
 
-		interleave = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP);
-		depthInterleave = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::SSAO_INTERLEAVE_MAP;
+		interleave = gM->CreateResource(device, desc);
+
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP;
+		depthInterleave = gM->CreateResource(device, desc);
 	}
 	JDx12GraphicResourceShareData::SsaoData::~SsaoData()
-	{
-		JGraphicResourceInfo::Destroy(intermediate00.Release());
-		JGraphicResourceInfo::Destroy(intermediate01.Release());
-		JGraphicResourceInfo::Destroy(interleave.Release());
-		JGraphicResourceInfo::Destroy(depth.Release());
-		JGraphicResourceInfo::Destroy(depthInterleave.Release());
+	{ 
+		gM->DestroyGraphicTextureResource(device, intermediate00.Release());
+		gM->DestroyGraphicTextureResource(device, intermediate01.Release());
+		gM->DestroyGraphicTextureResource(device, interleave.Release());
+		gM->DestroyGraphicTextureResource(device, depth.Release());
+		gM->DestroyGraphicTextureResource(device, depthInterleave.Release());
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::SsaoData::GetDeviceType()const noexcept
 	{
@@ -127,13 +136,16 @@ namespace JinEngine::Graphic
 	{}
 
 	JDx12GraphicResourceShareData::ImageProcessingData::ImageProcessingData(JGraphicDevice* device, JGraphicResourceManager* gM, const uint width, const uint height)
+		:device(device), gM(gM)
 	{
-		JGraphicResourceCreationDesc desc;
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
+		JGraphicResourceCreationDesc desc(typeSet);
 		desc.width = width;
 		desc.height = height;
 
-		intermediate00 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING);
-		intermediate01 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING;
+		intermediate00 = gM->CreateResource(device, desc);
+		intermediate01 = gM->CreateResource(device, desc);
 
 		uint histogramInitData[Constants::histogramBufferCount];
 		memset(histogramInitData, 0, Constants::histogramBufferCount * sizeof(uint));
@@ -141,38 +153,43 @@ namespace JinEngine::Graphic
 		desc.width = Constants::histogramBufferCount;
 		desc.height = 1;
 		desc.uploadBufferDesc = std::make_unique<JUploadBufferCreationDesc>(histogramInitData, Constants::histogramBufferCount * sizeof(uint));
-		desc.formatHint = std::make_unique<Graphic::JGraphicFormatHint>();
+		desc.formatHint = std::make_unique<JGraphicFormatHint>();
 		desc.formatHint->elementSize = sizeof(uint);
 		desc.formatHint->isUnsigned = true;
-		histogram = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON;
+		histogram = gM->CreateResource(device, desc);
 
 		desc.width = Constants::exposureBufferCount;
 		desc.height = 1;
 		desc.uploadBufferDesc = std::make_unique<JUploadBufferCreationDesc>();
 		desc.uploadBufferDesc->useEngineDefine = true;
 		desc.formatHint = nullptr;
-		defaultExposure = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE;
+		defaultExposure = gM->CreateResource(device, desc);
 
 		desc.width = width;
 		desc.height = height;
 		desc.uploadBufferDesc = nullptr;
-		lumaUnorm = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA;
+		lumaUnorm = gM->CreateResource(device, desc);
 
 		desc.width = Graphic::Constants::CalBloomWidth(width);
 		desc.height = Graphic::Constants::CalBloomHeight(height);
-		desc.formatHint = std::make_unique<Graphic::JGraphicFormatHint>();
+		desc.formatHint = std::make_unique<JGraphicFormatHint>();
 		desc.formatHint->isUnsigned = true;
 		desc.formatHint->isNormalized = false;
 		desc.uploadBufferDesc = nullptr;
-		lumaLowResolutionUint = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_LUMA;
+		lumaLowResolutionUint = gM->CreateResource(device, desc);
 
 		desc.width = Graphic::Constants::CalBloomWidth(width);
 		desc.height = Graphic::Constants::CalBloomHeight(height);
 		desc.formatHint = nullptr;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING;
 		for (uint i = 0; i < Constants::bloomSampleCount; ++i)
 		{
-			bloom[i][0] = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING);
-			bloom[i][1] = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING);
+			bloom[i][0] = gM->CreateResource(device, desc);
+			bloom[i][1] = gM->CreateResource(device, desc);
 
 			desc.width /= 2;
 			desc.height /= 2;
@@ -190,43 +207,47 @@ namespace JinEngine::Graphic
 		desc.formatHint = std::make_unique<JGraphicFormatHint>();
 		desc.formatHint->elementSize = sizeof(uint);
 		desc.uploadBufferDesc = std::make_unique<JUploadBufferCreationDesc>(initCounter, counterElementCount * sizeof(uint32));
-		fxaaWorkCounter = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON;
+		fxaaWorkCounter = gM->CreateResource(device, desc);
 
 		desc.width = indirectElementCount;
 		desc.height = 1;
 		desc.formatHint->elementSize = sizeof(D3D12_DISPATCH_ARGUMENTS);
 		desc.uploadBufferDesc = std::make_unique<JUploadBufferCreationDesc>(initIndirect, indirectElementCount * indirectElementSize);
-		fxaaIndirectParameters = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON;
+		fxaaIndirectParameters = gM->CreateResource(device, desc);
 
 		const uint fXAAWorkSize = width * height / 4 + 128;
 		desc.width = fXAAWorkSize;
 		desc.height = 1;
 		desc.formatHint = nullptr;
 		desc.uploadBufferDesc = nullptr;
-		fxaaColorQueue = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_FXAA_COLOR_QUEUE;
+		fxaaColorQueue = gM->CreateResource(device, desc);
 
-		desc.formatHint = std::make_unique<Graphic::JGraphicFormatHint>();
+		desc.formatHint = std::make_unique<JGraphicFormatHint>();
 		desc.formatHint->elementSize = sizeof(uint);
 		desc.formatHint->isUnsigned = true;
-		fxaaWorkerQueue = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON;
+		fxaaWorkerQueue = gM->CreateResource(device, desc);
 	}
 	JDx12GraphicResourceShareData::ImageProcessingData::~ImageProcessingData()
 	{
-		JGraphicResourceInfo::Destroy(intermediate00.Release());
-		JGraphicResourceInfo::Destroy(intermediate01.Release());
-		JGraphicResourceInfo::Destroy(histogram.Release());
-		JGraphicResourceInfo::Destroy(defaultExposure.Release());
-		JGraphicResourceInfo::Destroy(lumaUnorm.Release());
-		JGraphicResourceInfo::Destroy(lumaLowResolutionUint.Release());
+		gM->DestroyGraphicTextureResource(device, intermediate00.Release());
+		gM->DestroyGraphicTextureResource(device, intermediate01.Release());
+		gM->DestroyGraphicTextureResource(device, histogram.Release());
+		gM->DestroyGraphicTextureResource(device, defaultExposure.Release());
+		gM->DestroyGraphicTextureResource(device, lumaUnorm.Release());
+		gM->DestroyGraphicTextureResource(device, lumaLowResolutionUint.Release());
 		for (uint i = 0; i < Constants::bloomSampleCount; ++i)
 		{
-			JGraphicResourceInfo::Destroy(bloom[i][0].Release());
-			JGraphicResourceInfo::Destroy(bloom[i][1].Release());
+			gM->DestroyGraphicTextureResource(device, bloom[i][0].Release());
+			gM->DestroyGraphicTextureResource(device, bloom[i][1].Release());
 		}
-		JGraphicResourceInfo::Destroy(fxaaWorkCounter.Release());
-		JGraphicResourceInfo::Destroy(fxaaIndirectParameters.Release());
-		JGraphicResourceInfo::Destroy(fxaaWorkerQueue.Release());
-		JGraphicResourceInfo::Destroy(fxaaColorQueue.Release());
+		gM->DestroyGraphicTextureResource(device, fxaaWorkCounter.Release());
+		gM->DestroyGraphicTextureResource(device, fxaaIndirectParameters.Release());
+		gM->DestroyGraphicTextureResource(device, fxaaWorkerQueue.Release());
+		gM->DestroyGraphicTextureResource(device, fxaaColorQueue.Release());
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::ImageProcessingData::GetDeviceType()const noexcept
 	{
@@ -268,8 +289,10 @@ namespace JinEngine::Graphic
 	}
 
 	JDx12GraphicResourceShareData::RestirTemporalAccumulationData::RestirTemporalAccumulationData(JGraphicDevice* device, JGraphicResourceManager* gM, const uint width, const uint height)
+		:device(device), gM(gM)
 	{  
-		JGraphicResourceCreationDesc desc;
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		JGraphicResourceCreationDesc desc(typeSet);
 		desc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
 		desc.bindDesc.useEngineDefinedBindType = false;
 		desc.textureDesc = std::make_unique< JTextureCreationDesc>();
@@ -280,27 +303,31 @@ namespace JinEngine::Graphic
 
 		desc.width = width * 0.5f;
 		desc.height = height * 0.5f;
-		restirColorIntermediate00 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		restirColorIntermediate00 = gM->CreateResource(device, desc);
 
 		desc.width = width;
 		desc.height = height;
-		restirColorHistoryIntermediate00 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
-		restirColorHistoryIntermediate01 = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON); 
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		restirColorHistoryIntermediate00 = gM->CreateResource(device, desc);
+		restirColorHistoryIntermediate01 = gM->CreateResource(device, desc); 
 
 		desc.width = width;
 		desc.height = 1;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
-		viewZ = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		viewZ = gM->CreateResource(device, desc);
 
 		desc.width = width;
 		desc.height = 1;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
-		preViewZ = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		preViewZ = gM->CreateResource(device, desc);
 
 		desc.width = width;
 		desc.height = 1;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16_UNORM;
-		restirDepthDerivative = gM->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		restirDepthDerivative = gM->CreateResource(device, desc);
 
 		desc.width = width;
 		desc.height = height;
@@ -313,14 +340,14 @@ namespace JinEngine::Graphic
 		//}
 	}
 	JDx12GraphicResourceShareData::RestirTemporalAccumulationData::~RestirTemporalAccumulationData()
-	{
-		JGraphicResourceInfo::Destroy(restirColorHistoryIntermediate00.Release());
-		JGraphicResourceInfo::Destroy(restirColorHistoryIntermediate01.Release()); 
-		JGraphicResourceInfo::Destroy(viewZ.Release());
-		JGraphicResourceInfo::Destroy(preViewZ.Release());
-		JGraphicResourceInfo::Destroy(restirDepthDerivative.Release()); 
+	{ 
+		gM->DestroyGraphicTextureResource(device, restirColorHistoryIntermediate00.Release());
+		gM->DestroyGraphicTextureResource(device, restirColorHistoryIntermediate01.Release());
+		gM->DestroyGraphicTextureResource(device, viewZ.Release());
+		gM->DestroyGraphicTextureResource(device, preViewZ.Release());
+		gM->DestroyGraphicTextureResource(device, restirDepthDerivative.Release());
 		//for (uint i = 0; i < SIZE_OF_ARRAY(restirDenoiseMipmap); ++i)
-		//	JGraphicResourceInfo::Destroy(restirDenoiseMipmap[i].Release());
+		//	gM->DestroyGraphicTextureResource(restirDenoiseMipmap[i].Release());
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::RestirTemporalAccumulationData::GetDeviceType()const noexcept
 	{

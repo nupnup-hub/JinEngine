@@ -33,6 +33,8 @@ SOFTWARE.
 #include"../Material/JDefaultMaterialSetting.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h"  
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h"  
@@ -42,10 +44,10 @@ SOFTWARE.
 namespace JinEngine
 {
 	using namespace DirectX; 
-	namespace
+	namespace Private
 	{
 		const static std::wstring skeletonSymbol = L"--SkeletonData--";
-		static JSkinnedMeshGeometryPrivate sPrivate;
+		static JSkinnedMeshGeometryPrivate instance;
 	}
  
 	class JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl : public Core::JTypeImplBase,
@@ -53,14 +55,19 @@ namespace JinEngine
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSkinnedMeshGeometryImpl)
 	public:
-		JWeakPtr<JSkinnedMeshGeometry> thisPointer = nullptr;
+		JWeakPtr<JSkinnedMeshGeometry> thisPointer;
+		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
 	private:
 		const size_t privateGuid = Core::MakeGuid();
 	public:
-		JUserPtr<JSkeletonAsset> skeletonAsset = nullptr;
+		JUserPtr<JSkeletonAsset> skeletonAsset;
 	public:
-		JSkinnedMeshGeometryImpl(const InitData& initData, JSkinnedMeshGeometry* thisMeshRaw){}
-		~JSkinnedMeshGeometryImpl(){}
+		JSkinnedMeshGeometryImpl(const InitData& initData)
+		{ 
+		}
+		~JSkinnedMeshGeometryImpl()
+		{ 
+		} 
 	public:
 		void SetSkeletonAsset(JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
 		{
@@ -257,13 +264,22 @@ namespace JinEngine
 			return std::make_unique<InitData>(name, meta->guid, meta->flag, meta->formatIndex, meta->directory, ReadAssetData(path));
 		}
 	public:
+		void Activate()noexcept
+		{
+			OnResourceRef();
+		}
+		void DeActivate()noexcept
+		{
+			OffResourceRef();
+		}
+	public:
 		void NotifyReAlloc()
 		{
 			ResetEventListenerPointer(*JResourceObject::EvInterface(), privateGuid);
 		}
 	public:
 		void Initialize(InitData* initData)
-		{
+		{ 
 			SetSkeletonAsset(initData->skeletonAsset);
 		}	 
 		void RegisterThisPointer(JSkinnedMeshGeometry* mesh)
@@ -280,8 +296,8 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			Core::JIdentifier::RegisterPrivateInterface(JSkinnedMeshGeometry::StaticTypeInfo(), sPrivate);
-			IMPL_REALLOC_BIND(JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl, thisPointer);
+			Core::JIdentifier::RegisterPrivateInterface(JSkinnedMeshGeometry::StaticTypeInfo(), Private::instance);
+			IMPL_REALLOC_BIND();
 			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
 		}
 	};
@@ -321,8 +337,12 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JSkinnedMeshGeometry::PrivateInterface()const noexcept
 	{
-		return sPrivate;
+		return Private::instance;
 	}
+	JGraphicModuleManagedDataFrame* JSkinnedMeshGeometry::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	} 
 	Core::J_MESHGEOMETRY_TYPE JSkinnedMeshGeometry::GetMeshGeometryType()const noexcept
 	{
 		return Core::J_MESHGEOMETRY_TYPE::SKINNED;
@@ -333,16 +353,19 @@ namespace JinEngine
 	}
 	void JSkinnedMeshGeometry::DoActivate()noexcept
 	{
+		if (impl->graphicData == nullptr)
+			impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
 		JMeshGeometry::DoActivate();
-		impl->OnResourceRef();
+		impl->Activate();
 	}
 	void JSkinnedMeshGeometry::DoDeActivate()noexcept
 	{
-		impl->OffResourceRef();
-		JMeshGeometry::DoDeActivate();
+		impl->DeActivate();
+		JMeshGeometry::DoDeActivate(); 
+		GraphicModuleInterface()->DeAllocate(impl->graphicData);
 	}
 	JSkinnedMeshGeometry::JSkinnedMeshGeometry(InitData& initData)
-		:JMeshGeometry(initData), impl(std::make_unique<JSkinnedMeshGeometryImpl>(initData, this))
+		:JMeshGeometry(initData), impl(std::make_unique<JSkinnedMeshGeometryImpl>(initData))
 	{}
 	JSkinnedMeshGeometry::~JSkinnedMeshGeometry()
 	{
@@ -359,9 +382,11 @@ namespace JinEngine
 	}
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
-		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JSkinnedMeshGeometry* mesh = static_cast<JSkinnedMeshGeometry*>(createdPtr);
 		mesh->impl->RegisterThisPointer(mesh);
+		mesh->impl->graphicData = GraphicModuleInterface()->Allocate(mesh->impl->thisPointer);
+
+		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData); 
 		mesh->impl->RegisterPostCreation();
 		mesh->impl->Initialize(static_cast<JSkinnedMeshGeometry::InitData*>(initData));
 	} 
@@ -397,7 +422,7 @@ namespace JinEngine
 		if (newMesh == nullptr)
 		{
 			using Impl = JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl;
-			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &sPrivate);
+			auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &Private::instance);
 			newMesh.ConnnectChild(idenUser);
 		}
 		return newMesh;

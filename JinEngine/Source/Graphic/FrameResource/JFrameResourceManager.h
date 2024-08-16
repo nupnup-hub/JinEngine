@@ -37,12 +37,12 @@ namespace JinEngine
 	namespace Graphic
 	{ 
 		struct JFrameUpdateOption
-		{
-		public:
-			bool forcedUpdateTrigger = false;
+		{ 
 		}; 
 		struct JFrameUpdateDataSet
-		{
+		{ 
+		public:
+			using CompVec = std::vector<JUserPtr<JComponent>>;  
 		public:
 			struct Log
 			{
@@ -51,13 +51,19 @@ namespace JinEngine
 				uint hotUpdatedCount = 0;
 			};
 		public:
-			ObjectDataSetVec* objDataVec;
+			const ObjectDataSetVec* objDataVec;
+			const CompVec* compVec;
+		public:
 			const JObjectDataSetMetadata metadata;
-			const JFrameUpdateOption option;
+			const JFrameUpdateOption option;  
 		public:
 			Log updateLog;							//Out
 		public:
-			JFrameUpdateDataSet(ObjectDataSetVec* objDataVec, const JObjectDataSetMetadata& metadata, const JFrameUpdateOption& option);
+			JFrameUpdateDataSet(const ObjectDataSetVec* objDataVec, const JObjectDataSetMetadata& metadata, const JFrameUpdateOption& option);
+			JFrameUpdateDataSet(const CompVec* compVec, const JObjectDataSetMetadata& metadata, const JFrameUpdateOption& option);
+		public:
+			uint GetDataStorageCount()const noexcept; 
+			JGraphicObjectDataSetBase* GetDataSet(const uint index)const noexcept;
 		};
 
 		class JFrameUpdateInterface;
@@ -79,18 +85,32 @@ namespace JinEngine
 				using MovedRecordElementType = int;
 				using MovedAccumulationType = int;
 			public:
-				MovedRecordElementType* movedRecord;				//Accumulation left to right
+				MovedRecordElementType* movedRecord;
+				//MovedRecordElementType* movedRecord = nullptr;				//Accumulation left to right
 				MovedAccumulationType movedAccumulation;
+			public:
+				uint moveRecordRange = 0;
+			public:
+				bool forcedUpdateTrigger = false;
+			private:
+				static constexpr MovedRecordElementType invalidRecord = invalidIndex;
 			public:
 				void Initialize(const JGraphicInfo& info);
 				void Clear(); 
+				void ClearRecordValue(const uint index, const uint count);
+			private:
+				void AllocMovedrecord(const uint count);
+				void DeAllocMovedrecord();
 			public:
 				void ReflectMovedNumber(const int number);
-			public:
 				void ResizeMovedIndexArray(const uint beforeCount, const uint newCount);
-			};
+			public:
+				void Sort(); 
+			}; 
 		private:   
 			UpdateHint hint[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT][Constants::gNumFrameResources];
+		public:
+			~JFrameResourceManager();
 		public:
 			virtual void Initialize(JGraphicDevice* device);
 			virtual void Clear(); 
@@ -98,18 +118,22 @@ namespace JinEngine
 			virtual JFrameResource* GetCurrentFrameResource() noexcept = 0;
 			virtual JFrameResource* GetFrameResource(const uint index) noexcept = 0;
 			virtual uint GetCurrentFrameIndex() const noexcept = 0; 
+			virtual uint GetNextFrameIndex()const noexcept = 0;
 			virtual uint GetTotalRegistedCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept = 0;
 			virtual uint GetTotalFrameCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept = 0;
 			virtual uint GetAreaRegistedCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept = 0;
 			//count 0 ~ areaStart
 			virtual uint GetAreaRegistedOffset(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept = 0;
+			virtual uint GetFrameResourceCapacity(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept = 0;
 		private: 
 			UpdateHint* GetFrameHint(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameIndex)noexcept;
 		public:
 			virtual void SetNextFrameResource() = 0;
 		public:
+			bool IsForcedUpdate(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+		public:
 			virtual JUserPtr<JFrameUpdateInfo> Register(const JFrameUploadDataCreationDesc& desc) = 0;
-			virtual void DeRegister(const JUserPtr<JFrameUpdateInfo>& info);
+			virtual bool DeRegister(JFrameUpdateInfo* info);
 		public:
 			virtual void ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount);
 		public:
@@ -124,6 +148,8 @@ namespace JinEngine
 			*/
 			virtual void Update(JFrameUpdateDataSet& set) = 0;
 			virtual void EndUpdate();  
+		private: 
+			void ClearResource();
 		};
 	}
 }

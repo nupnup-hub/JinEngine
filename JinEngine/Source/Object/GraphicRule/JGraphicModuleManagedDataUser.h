@@ -30,7 +30,7 @@ namespace JinEngine
 	class JGraphicModuleUserInterface
 	{
 	public:
-		virtual JGraphicModuleManagedDataFrame* GetModuleManagedData()const noexcept = 0;
+		virtual JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept = 0;
 	};
 
 }

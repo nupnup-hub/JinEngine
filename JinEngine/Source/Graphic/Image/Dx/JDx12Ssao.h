@@ -59,7 +59,7 @@ namespace JinEngine
 			BILATERAL_Y,
 			COUNT
 		};
-		class JDx12Ssao : public JSsao
+		class JDx12Ssao final: public JSsao
 		{
 		private:
 			using JDx12GraphicShaderDataHolder = JDx12GraphicShaderDataHolder<1>;
@@ -124,6 +124,9 @@ namespace JinEngine
 			std::unique_ptr<JDx12GraphicBufferT<SsaoAoSliceConstants>> ssaoAoSliceCB;
 		private:
 			JUserPtr<JGraphicResourceInfo> randomVecInfo[(uint)J_SSAO_TYPE::COUNT]; 
+		private:
+			JDx12GraphicDevice* cachedDevice;
+			JDx12GraphicResourceManager* cachedGm;
 		public:
 			JDx12Ssao();
 			~JDx12Ssao();

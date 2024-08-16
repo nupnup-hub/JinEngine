@@ -43,6 +43,7 @@ namespace JinEngine
 		class JFrameResourceManager;
 		class JCommandContextManager;
 		class JGraphicResourceShareData; 
+		class JGraphicObjectDataSetManager;
 		class JFrameResource;
 
 		struct JGraphicInfo;
@@ -51,10 +52,11 @@ namespace JinEngine
 		public:
 			std::unique_ptr<JGraphicResourceManager> graphic;
 			std::unique_ptr<JCullingManager> culling;
-			std::unique_ptr<JGpuAcceleratorManager> accelerator;
 			std::unique_ptr<JCsmManager> csm;	//safe change device
+			std::unique_ptr<JGpuAcceleratorManager> accelerator;
 			std::unique_ptr<JFrameResourceManager> frame;
 			std::unique_ptr<JGraphicResourceShareData> shareData; 
+			std::unique_ptr<JGraphicObjectDataSetManager> objectData;
 		public:
 			std::unique_ptr<JCommandContextManager> context;
 		public:

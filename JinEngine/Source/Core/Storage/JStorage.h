@@ -86,7 +86,7 @@ namespace JinEngine
 				return objectVec.cbegin();
 			}
 			Type* Add(Type&& obj)noexcept
-			{
+			{ 
 				objectVec.push_back(std::move(obj));
 				return &objectVec[objectVec.size()-1];
 			}

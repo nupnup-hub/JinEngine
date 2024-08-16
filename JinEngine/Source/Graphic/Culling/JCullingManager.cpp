@@ -120,6 +120,9 @@ namespace JinEngine
 			}
 			return true;
 		} 
+		void JCullingManager::Initialize(JGraphicDevice* device)
+		{ 
+		}
 		void JCullingManager::Clear()
 		{
 			ClearResource();
@@ -130,35 +133,6 @@ namespace JinEngine
 				cullingInfo[i].clear();
 		}
 		void JCullingManager::RegisterTypeData()
-		{
-			//Caution!
-			//Culling Info은 Device에 따른 상속을 사용하지않으므로 
-			//JCullingManager(Base)에서 Realloc 함수를 등록한다
-			//추후에 상속을 사용할시 해당 device를 사용하는 JCullingManager에서 
-			//Realloc을 등록하도록한다.
-			using JAllocationDesc = JinEngine::Core::JAllocationDesc;
-			using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;
-			using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;
-			using ReceiverPtr = JAllocationDesc::ReceiverPtr;
-			using ReAllocatedPtr = JAllocationDesc::ReAllocatedPtr;
-			using MemIndex = JAllocationDesc::MemIndex;
-
-			NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
-			{
-				JCullingInfo* movedInfo = static_cast<JCullingInfo*>(movedPtr);
-				JCullingManager* manager = movedInfo->manager;
-
-				//Release를 먼저하지않으면 Reset시 유효한 pointer를 소유하므로 pointer 파괴를 시도하며
-				//현재 alloc class에서 메모리를 재배치하는 과정에서 에러를 일으킬수 있으므로
-				//Release() 한다음 Reset()을 호출해야한다.
-				manager->cullingInfo[(int)movedInfo->GetCullingType()][movedInfo->GetArrayIndex()].Release();
-				manager->cullingInfo[(int)movedInfo->GetCullingType()][movedInfo->GetArrayIndex()].Reset(movedInfo);
-			};
-			auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);
-			std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();
-
-			desc->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);
-			JCullingInfo::StaticTypeInfo().SetAllocationOption(std::move(desc));
-		}
+		{}
 	}
 }

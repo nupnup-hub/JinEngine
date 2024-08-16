@@ -29,15 +29,15 @@ SOFTWARE.
 #include"../../Core/Guid/JGuidCreator.h"
 
 namespace JinEngine::Graphic
-{
-	void JCsmTargetInterface::AddCsmTargetInfo(const JUserPtr<JCsmTargetInfo>& newInfo)
-	{  
+{ 
+	void JCsmTargetInterface::AddInfo(const JUserPtr<JCsmTargetInfo>& newInfo)
+	{
 		info = newInfo;
 	}
-	void JCsmTargetInterface::RemoveCsmTargetInfo()
+	JCsmTargetInfo* JCsmTargetInterface::Release()
 	{
-		info = nullptr;
-	} 
+		return info.Release();
+	}
 	int JCsmTargetInterface::GetTargetIndex()const noexcept
 	{  
 		return info != nullptr ? info->GetIndex() : invalidIndex;

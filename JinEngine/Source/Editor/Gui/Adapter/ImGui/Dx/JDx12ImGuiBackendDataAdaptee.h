@@ -41,7 +41,7 @@ namespace JinEngine
 				_In_ const Graphic::GuiIdentification guiIden) final;
 			std::unique_ptr<Graphic::JGuiDrawData> CreateDrawData(_In_ Graphic::JGraphicDevice* device,
 				_In_ Graphic::JGraphicResourceManager* gm,
-				_In_ Graphic::JFrameResource* frame,
+				_In_ Graphic::JFrameResourceManager* frame,
 				_In_ const Graphic::GuiIdentification guiIden) final;
 		};
 	}

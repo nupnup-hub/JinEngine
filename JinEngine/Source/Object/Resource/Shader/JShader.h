@@ -25,16 +25,14 @@ SOFTWARE.
 
 #pragma once   
 #include"../JResourceObject.h"
-#include"../../../Core/Geometry/Mesh/JMeshType.h"   
-#include"../../../Graphic/Shader/JShaderType.h"
+#include"../../GraphicRule/Shader/JGraphicModuleShaderHolder.h"
+#include"../../../Core/Geometry/Mesh/JMeshType.h"    
 
 namespace JinEngine
-{
-	namespace Graphic
-	{
-		class JShaderDataHolder;
-	}
+{ 
 	class JShaderPrivate; 
+	class JShaderDataHolder;
+
 	class JShader final : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JShader) 
@@ -65,18 +63,20 @@ namespace JinEngine
 		std::unique_ptr<JShaderImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
 			return J_RESOURCE_TYPE::SHADER;
 		}
-		std::wstring GetFormat()const noexcept final;
+		std::wstring GetFormat()const noexcept final; 
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
-		JUserPtr<Graphic::JShaderDataHolder> GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
-		JUserPtr<Graphic::JShaderDataHolder> GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
-		JUserPtr<Graphic::JShaderDataHolder> GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
-		JUserPtr<Graphic::JShaderDataHolder> GetComputeData()const noexcept;
+		JUserPtr<JShaderDataHolder> GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		JUserPtr<JShaderDataHolder> GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		JUserPtr<JShaderDataHolder> GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		JUserPtr<JShaderDataHolder> GetComputeData()const noexcept;
 		J_GRAPHIC_SHADER_FUNCTION GetShaderGFunctionFlag()const noexcept;
 		J_COMPUTE_SHADER_FUNCTION GetShdaerCFunctionFlag()const noexcept;
 		JGraphicShaderCondition GetShaderCondition()const noexcept;
@@ -89,6 +89,9 @@ namespace JinEngine
 		static JUserPtr<JShader> FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
 			const JGraphicShaderCondition graphicPSOCond,
 			const J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
+	public:
+		void RecompileGraphicShader();
+		void RecompileComputeShader();
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

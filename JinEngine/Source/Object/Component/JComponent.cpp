@@ -75,7 +75,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			IMPL_REALLOC_BIND(JComponent::JComponentImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 

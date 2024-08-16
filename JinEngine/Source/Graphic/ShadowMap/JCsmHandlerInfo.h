@@ -50,6 +50,8 @@ namespace JinEngine
 				bool IsValid()const noexcept;
 			};
 		private:
+			friend class JCsmManager;
+		private:
 			int index = invalidIndex;
 		private:
 			JCsmOption option;
@@ -59,10 +61,6 @@ namespace JinEngine
 		private:
 			NotifyAddCsmTargetBindPtr notifyAddCsmTargetB;
 			NotifySubtractCsmTargetBindPtr notifySubtractCsmTargetB;
-		public:
-			JCsmHandlerInfo(JCsmAreaInfo* areaInfo,
-				NotifyAddCsmTargetBindPtr&& notifyAddCsmTargetB = nullptr,
-				NotifySubtractCsmTargetBindPtr&& notifySubtractCsmTargetB = nullptr);
 		public:
 			int GetIndex()const noexcept;
 			JCsmOption GetOption()const noexcept;
@@ -91,6 +89,11 @@ namespace JinEngine
 				const DirectX::BoundingFrustum& camFrustumW,	//world frustum
 				const size_t mapSize,
 				const uint targetIndex);
+		protected:
+			JCsmHandlerInfo(JCsmAreaInfo* areaInfo,
+				NotifyAddCsmTargetBindPtr&& notifyAddCsmTargetB = nullptr,
+				NotifySubtractCsmTargetBindPtr&& notifySubtractCsmTargetB = nullptr);
+			virtual ~JCsmHandlerInfo() = default;
 		};
 	}
 }
