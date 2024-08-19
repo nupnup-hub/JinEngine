@@ -128,7 +128,7 @@ namespace JinEngine
 		public:
 			void SetFenceValue(const GraphicFence value)noexcept;
 		public:
-			void MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint index, const uint moveCount)final;
+			void MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint stIndex, const uint destIndex, const uint count)final;
 		public:
 			void ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)final;
 		public:

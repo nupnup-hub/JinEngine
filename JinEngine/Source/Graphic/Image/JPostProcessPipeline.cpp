@@ -27,6 +27,7 @@ SOFTWARE.
 #include"JToneMapping.h"
 #include"JConvertColor.h"
 #include"JBloom.h"
+#include"JBlur.h"
 #include"JAntialise.h"
 #include"JPostProcessExposure.h"
 #include"JPostProcessHistogram.h"
@@ -43,8 +44,9 @@ namespace JinEngine::Graphic
 		NONE = 0,
 		TONE_MAPPING = 1 << 0,
 		BLOOM = 1 << 1,
-		FXAA = 1 << 2,
-		EXPOSURE= 1 << 3
+		BLUR = 1 << 2,
+		FXAA = 1 << 3,
+		EXPOSURE= 1 << 4
 	};
 	void JPostProcessPipeline::ApplyPostProcess(JPostProcessComputeSet* computeSet, const JDrawHelper& helper, const bool isUpdatedThisFrame)
 	{ 
@@ -82,7 +84,7 @@ namespace JinEngine::Graphic
 			computeSet->ppSet->aa->ApplyFxaa(computeSet, helper);
 			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::FXAA);
 		}
-
+ 
 		if (appliedType != POST_PROCESSING_TYPE::NONE)
 		{
 			computeSet->ppSet->convertColor->ApplyToDisplayColor(computeSet, helper);
@@ -95,6 +97,12 @@ namespace JinEngine::Graphic
 			if (helper.option.postProcess.useHistogramDebug)
 				computeSet->ppSet->histogram->DrawHistogram(computeSet, helper);
 		}
+		if (helper.option.postProcess.useBlur)
+		{
+			computeSet->ppSet->blur->ApplyBlur(computeSet, helper);
+			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::BLUR);
+		}
+
 		computeSet->imageShareData->UpdateEnd();
 	}
 }

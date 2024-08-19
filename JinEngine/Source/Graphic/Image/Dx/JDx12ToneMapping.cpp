@@ -182,7 +182,7 @@ namespace JinEngine::Graphic
 		ClearPso();
 
 		ID3D12Device* d3d12Device = static_cast<JDx12GraphicDevice*>(dataSet.device)->GetDevice();
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 	}
 	void JDx12ToneMapping::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM)
@@ -191,10 +191,10 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption()); 
 	}
-	void JDx12ToneMapping::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12ToneMapping::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildToneMappingRootSignature(device);
 	}

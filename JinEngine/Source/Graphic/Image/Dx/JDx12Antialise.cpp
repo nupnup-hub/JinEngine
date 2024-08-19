@@ -205,10 +205,10 @@ namespace JinEngine::Graphic
 	}
 	void JDx12Antialise::BuildResource(JDx12GraphicDevice* device, JGraphicResourceManager* gM)
 	{
-		BuildRootSingnature(device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(device->GetDevice(), GetGraphicInfo(), GetGraphicOption());
 	}
-	void JDx12Antialise::BuildRootSingnature(JDx12GraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12Antialise::BuildRootSignature(JDx12GraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildFxaaRootSignature(device->GetDevice());
 		BuildFxaaCommandSignature(device->GetDevice());

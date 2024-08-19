@@ -67,7 +67,7 @@ bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 
     TA::Actor actor = RestirTA::CreateActor(preUv, posW, normal, viewZ, materialID, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
     TA::ComputeCubicWeight(actor, result);
     
-    //result.canUseBilinear &= all(abs(velocity) <= EPSILON);
+    result.canUseBilinear &= all(abs(velocity) <= 0.001f);
     if (result.canUseCubic)
     { 
         preColor = Catmul::Compute(preColorHistory, samLinearClmap, result.bicubicParameter);

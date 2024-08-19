@@ -84,7 +84,11 @@ namespace JinEngine::Graphic
 		return graphicResourceInterface.get();
 	}
 	*/
-
+	 
+	JObjectDataSetMetadata::JObjectDataSetMetadata()
+	{
+		supportedFrameType.reset();
+	}
 	bool JObjectDataSetMetadata::IsComponentType()const noexcept
 	{
 		return uniqueIndex < totalCompVariation;

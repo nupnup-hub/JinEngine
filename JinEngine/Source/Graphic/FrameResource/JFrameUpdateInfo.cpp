@@ -35,6 +35,7 @@ namespace JinEngine
 		{}
 		int JFrameUpdateInfo::GetNumber()const noexcept
 		{ 
+			sizeof(JFrameUpdateInfo);
 			return number;
 		}
 		int JFrameUpdateInfo::GetFrameIndex()const noexcept

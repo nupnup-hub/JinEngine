@@ -283,8 +283,8 @@ namespace JinEngine
 			return submeshes.size() > index ? submeshes[index].GetName() : L"InValidAccess";
 		}
 		REGISTER_METHOD(GetSubMeshMaterialVec)
-			REGISTER_METHOD_READONLY_GUI_WIDGET(SubMeshMaterial, GetSubMeshMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true, false))
-			std::vector<JUserPtr<JMaterial>> GetSubMeshMaterialVec()const noexcept
+		REGISTER_METHOD_READONLY_GUI_WIDGET(SubMeshMaterial, GetSubMeshMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true, false))
+		std::vector<JUserPtr<JMaterial>> GetSubMeshMaterialVec()const noexcept
 		{
 			const uint count = (uint)submeshes.size();
 			std::vector<JUserPtr<JMaterial>> matVec(count);

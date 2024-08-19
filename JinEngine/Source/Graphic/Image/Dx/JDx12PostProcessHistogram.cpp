@@ -167,13 +167,13 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 
 		clearHistogram = std::make_unique<JDx12ClearBufferUseCs>();
 		clearHistogram->Initialize(d3d12Device, JVector3<uint>(Constants::histogramBufferCount, 1, 1), sizeof(uint32), 0);
 	}
-	void JDx12PostProcessHistogram::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12PostProcessHistogram::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildHistogramRootSignature(device); 
 	}

@@ -33,11 +33,12 @@ namespace JinEngine::Graphic
 
 	JPostProcessEffectSet::JPostProcessEffectSet(JToneMapping* tm,
 		JBloom* bloom,
+		JBlur* blur,
 		JAntialise* aa,
 		JPostProcessHistogram* histogram,
 		JPostProcessExposure* exposure,
 		JConvertColor* convertColor)
-		: tm(tm), bloom(bloom), aa(aa), histogram(histogram), exposure(exposure), convertColor(convertColor)
+		: tm(tm), bloom(bloom), blur(blur), aa(aa), histogram(histogram), exposure(exposure), convertColor(convertColor)
 	{ 
 		SetValid(tm != nullptr && bloom != nullptr && histogram != nullptr && exposure != nullptr && convertColor != nullptr);
 	}
@@ -177,6 +178,10 @@ namespace JinEngine::Graphic
 		: context(context)
 	{}
 	 
+	JGraphicVelocityComputeSet::JGraphicVelocityComputeSet(JCommandContext* context)
+		: context(context)
+	{}
+
 	JGraphicEndConditonSet::JGraphicEndConditonSet(const bool isSceneDrawn)
 		:isSceneDrawn(isSceneDrawn)
 	{}

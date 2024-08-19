@@ -55,7 +55,9 @@ namespace JinEngine
 		float GetFrustumNear()const noexcept final;
 		float GetFrustumFar()const noexcept final;
 		float GetRange()const noexcept;
+		//Rad
 		float GetInnerConeAngle()const noexcept; 
+		//Rad
 		float GetOuterConeAngle()const noexcept;
 		JVector3F GetWorldPosition()const noexcept;
 		JVector3F GetWorldDirection()const noexcept;

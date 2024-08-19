@@ -154,7 +154,7 @@ namespace JinEngine
 			void RecompileShader(const JGraphicShaderCompileSet& dataSet)final;
 		private:
 			void BuildResouce(JGraphicDevice* device, JGraphicResourceManager* gM);
-			void BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
+			void BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildBuffer(JDx12GraphicDevice* device, JDx12GraphicResourceManager* gm);
 		private: 

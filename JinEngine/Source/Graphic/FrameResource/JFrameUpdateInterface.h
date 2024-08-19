@@ -52,8 +52,7 @@ namespace JinEngine
 		protected:
 			virtual ~JFrameDirtyBase() = default;
 		public:
-			virtual int GetFrameDirty()const noexcept = 0;
-			virtual int GetFrameDirtyMax()const noexcept = 0;
+			virtual int GetFrameDirty()const noexcept = 0; 
 			uint GetListenerCount()const noexcept;
 		public:
 			virtual void SetFrameDirty()noexcept;
@@ -76,8 +75,7 @@ namespace JinEngine
 		class JFrameDirtyTrigger : public JFrameDirtyBase
 		{
 		public:
-			int GetFrameDirty()const noexcept override;
-			int GetFrameDirtyMax()const noexcept override;
+			int GetFrameDirty()const noexcept override; 
 		public:
 			void SetFrameDirty()noexcept override;
 		public:
@@ -96,8 +94,7 @@ namespace JinEngine
 			int frameDirty = 0;
 			bool isLastFrameUpdated = false;
 		public:
-			int GetFrameDirty()const noexcept override;
-			int GetFrameDirtyMax()const noexcept override;
+			int GetFrameDirty()const noexcept override; 
 		public:
 			void SetFrameDirty()noexcept override;
 		public:
@@ -114,7 +111,8 @@ namespace JinEngine
 		{
 		private:
 			using ObjectUpdateBind = JFrameObjectUpdateB;
-			ObjectUpdateBind objectUpdateB;
+			ObjectUpdateBind hotUpdateBind;
+			ObjectUpdateBind alwaysUpdateBind;
 		public:
 			virtual bool Add(const JUserPtr<JFrameUpdateInfo>& newInfo) = 0;
 			virtual JFrameUpdateInfo* Release(const J_FRAME_RESOURCE_UPLOAD_TYPE type) = 0;
@@ -133,13 +131,14 @@ namespace JinEngine
 		public:
 			void OffFrameDirty()noexcept final;
 		public:
-			void TryExecuteObjectUpdateBind();
+			void TryExecuteObjectHotUpdateBind();
+			void TryExecuteObjectAlwaysUpdateBind();
 		public:
 			bool TryRegisterDirtyListener(JFrameDirtyListener&& listener)final;
 			bool TryRegisterDirtyListener(const JUserPtr<JObject>& obj)final;
 			bool TryDeRegisterDirtyListener(const size_t guid)final;
 		public:
-			bool RegisterObjectUpdateB(JFrameObjectUpdateB&& bind)final;
+			bool RegisterObjectUpdateB(JFrameObjectUpdateB&& hotUpdateBind = nullptr, JFrameObjectUpdateB&& alwaysUpdateBind = nullptr)final;
 			bool DeRegisterObjectUpdateB()final;
 		};
 
@@ -220,6 +219,11 @@ namespace JinEngine
 				return order[(uint)type];
 			}
 		public:
+			static bool IsSupported(const J_FRAME_RESOURCE_UPLOAD_TYPE type)
+			{
+				return TypeSequence::Index(type) != invalidIndex;
+				//return order[(uint)type] != invalidIndex;
+			}
 			bool HasSpace(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
 			{
 				int typeIndex = GetTypeIndex(type);
@@ -268,6 +272,10 @@ namespace JinEngine
 				return &dirty;
 			}
 		public:
+			static bool IsSupported(const J_FRAME_RESOURCE_UPLOAD_TYPE type)
+			{
+				return false;
+			}
 			bool HasSpace(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final
 			{
 				return false;

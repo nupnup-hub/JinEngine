@@ -33,14 +33,18 @@ namespace JinEngine
 		class JDx12Adaptee final : public JGraphicAdaptee
 		{
 		public:
+			~JDx12Adaptee();
+		public:
 			void Initialize(JCommandContextManager* manager) final;
 			void Clear() final;
+		private:
+			void ClearResource();
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		public:
 			std::unique_ptr<JGraphicDevice> CreateDevice(const JGraphicSubClassShareData& shareData) final;
 			void CreateResourceManageSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set) final;
-			void CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set) final;
+			void CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JSceneDrawingSubclassSet& set) final;
 			void CreateCullingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set) final;
 			void CreateImageProcessingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set) final;
 			void CreateRaytracingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set) final;

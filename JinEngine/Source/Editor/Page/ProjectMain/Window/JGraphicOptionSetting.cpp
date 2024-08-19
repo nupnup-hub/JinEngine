@@ -166,6 +166,7 @@ namespace JinEngine
 				uint tmVariation[2]{ 0,1 };
 				isChanged |= JGui::CheckBox("Use TomeMapping##JGraphicOptionSetting", option.postProcess.useToneMapping);
 				isChanged |= JGui::CheckBox("Use Bloom##JGraphicOptionSetting", option.postProcess.useBloom);
+				isChanged |= JGui::CheckBox("Use Blur##JGraphicOptionSetting", option.postProcess.useBlur);
 				isChanged |= JGui::CheckBox("Use Histogram Debug##JGraphicOptionSetting", option.postProcess.useHistogramDebug);
 				isChanged |= EnumCombo("Exposure", "##JGraphicOptionSetting", option.postProcess.exposureType);
 				isChanged |= EnumCombo("BloomQuality", "##JGraphicOptionSetting", option.postProcess.bloomQuality);

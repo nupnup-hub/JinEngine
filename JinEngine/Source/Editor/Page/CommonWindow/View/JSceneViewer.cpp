@@ -32,6 +32,7 @@ SOFTWARE.
 #include"../../../EditTool/JEditorCameraControl.h" 
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Component/Light/JDirectionalLight.h" 
+#include"../../../../Object/Component/Light/JPointLight.h" 
 #include"../../../../Object/Component/Transform/JTransform.h" 
 
 #include"../../../../Object/Resource/Scene/JScene.h" 
@@ -146,7 +147,46 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(tool, editorCamCtrl->GetMovemnetFactor(), "MovemnetFactor:");
 		}
 		void JSceneViewer::TestLight()
-		{
+		{ 
+			if (JGraphic::Instance().GetGraphicOptionRef().debugging.testTrigger01)
+			{
+				const uint uniqueIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::POINT);
+				auto pLightVec = scene->GetComponentVec(uniqueIndex);
+				
+				for (const auto& data : pLightVec)
+				{ 
+					auto pLight = static_cast<JPointLight*>(data.Get());
+					auto color = pLight->GetColor(); 
+
+					//static float xDeltaFloat = 0.025f;
+					static float zDeltaFloat = 0.075f;
+					//static int xDir = 1;
+					static int zDir = 1;
+
+					auto t = pLight->GetOwner()->GetTransform();
+					auto curRot = t->GetRotation();
+
+					if (curRot.z > 90)
+						zDir = -1;
+					else if (curRot.z <= 0)
+						zDir = 1;
+
+					t->SetRotation(curRot + JVector3F(0, 0, zDeltaFloat * zDir));
+
+					curRot = t->GetRotation();
+					//JVector3F xp90 = JVector3F(100, 120, 255);
+					//JVector3F xn90 = JVector3F(233, 240, 250);
+					JVector3F zp90 = JVector3F(20, 125, 255);
+					JVector3F zp0 = JVector3F(255, 125, 20);
+
+					//JVector3F xFactor = JVector3F(0, 0, 0);
+					JVector3F zFactor = JVector3F(0, 0, 0);
+					//xFactor = JVector3F::EWMA(xn90, xp90, (curRot.x + 90) / 180.0f);
+					zFactor = JVector3F::EWMA(zp90, zp0, max(curRot.z, 1e-06) / 90.0f);
+
+					pLight->SetColor(zFactor / 255.0f);
+				}
+			}
 			if (JGraphic::Instance().GetGraphicOptionRef().debugging.testTrigger02)
 			{
 				//static float xDeltaFloat = 0.025f;

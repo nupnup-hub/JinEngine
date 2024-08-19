@@ -45,7 +45,7 @@ namespace JinEngine
 		public:
 			virtual std::unique_ptr<JGraphicDevice> CreateDevice(const JGraphicSubClassShareData& shareData) = 0;
 			virtual void CreateResourceManageSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set) = 0;
-			virtual void CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set) = 0;
+			virtual void CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JSceneDrawingSubclassSet& set) = 0;
 			virtual void CreateCullingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set) = 0;
 			virtual void CreateImageProcessingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set) = 0;
 			virtual void CreateRaytracingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set) = 0;

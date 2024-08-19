@@ -79,7 +79,7 @@ namespace JinEngine
 	class JCamera::JCameraImpl : public Core::JTypeImplBase, public WindowEventListener
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JCameraImpl)
-			REGISTER_GUI_BOOL_CONDITION(IsOrthoCam, isOrtho, false)
+		REGISTER_GUI_BOOL_CONDITION(IsOrthoCam, isOrtho, false)
 	public:
 		//manage set func releated graphic resource
 		enum MANAGED_SET
@@ -126,10 +126,15 @@ namespace JinEngine
 		// Cache View/Proj matrices.
 		JMatrix4x4 mView;
 		JMatrix4x4 mProj;
+		JMatrix4x4 mPreInvView;
 		JMatrix4x4 mPreViewProj;
+	public:
 		DirectX::BoundingFrustum mCamFrustum;
+	public:
 		JVector2F uvToViewA = JVector2F::Zero();
 		JVector2F uvToViewB = JVector2F::Zero();
+		JVector2F preUvToViewA = JVector2F::Zero();
+		JVector2F preUvToViewB = JVector2F::Zero();
 		float tanHalfFovX = 0;
 		float tanHalfFovY = 0;
 	public:
@@ -202,14 +207,14 @@ namespace JinEngine
 		//Impl생성자에서 interface class 참조시 interface class가 함수내에서 impl을 참조할 경우 error
 		//impl이 아직 생성되지 않았으므로
 		JCameraImpl(const InitData& initData, JCamera* thisCamRaw)
-		{
+		{  
 			rtSizeRate = initData.rtSizeRate;
 		}
 		~JCameraImpl()
 		{}
 	public:
 		float GetNear()const noexcept
-		{
+		{ 
 			return camNear;
 		}
 		float GetFar()const noexcept
@@ -342,7 +347,7 @@ namespace JinEngine
 		}
 		void SetNear(const float value)noexcept
 		{
-			camNear = std::clamp(value, Constants::minCamFrustumNear, camFar);
+			camNear = std::clamp(value, Constants::minCamFrustumNear, camFar - Constants::minCamFrustumDistance);
 			if (camNear < 0.1f)
 				camNear = 0.1f;
 			if (isOrtho)
@@ -352,7 +357,7 @@ namespace JinEngine
 		}
 		void SetFar(const float value) noexcept
 		{
-			camFar = std::clamp(value, camNear, Constants::maxCamFrustumFar);
+			camFar = std::clamp(value, camNear + Constants::minCamFrustumDistance, Constants::maxCamFrustumFar);
 			if (isOrtho)
 				CalOrthoLens();
 			else
@@ -693,8 +698,7 @@ namespace JinEngine
 		//return false;
 		}
 		bool OnGITrigger()const noexcept
-		{
-			//test code
+		{ 
 			return thisPointer->GetOwner()->GetOwnerScene()->IsMainScene() &&
 				!thisPointer->GetOwner()->IsEditorObject() && 
 				GMI()->IsActivatedRaytracingGI() &&
@@ -774,16 +778,35 @@ namespace JinEngine
 			}
 		}
 	private:
-		void Update()
+		void HotUpdate()
 		{
-			UpdateViewMatrix();
+			thisPointer->GetTransform()->CalTransformMatrix(mView); 
 		}
-		void UpdateViewMatrix() noexcept
+		void AlwaysUpdate()
 		{
-			mPreViewProj.StoreXM(XMMatrixMultiply(mView.LoadXM(), mProj.LoadXM()));
-			thisPointer->GetTransform()->CalTransformMatrix(mView);
+			if (AllowTemporalResource())
+			{
+				mPreInvView = mView;
+				mPreViewProj.StoreXM(XMMatrixMultiply(mView.LoadXM(), mProj.LoadXM()));
+				preUvToViewA = uvToViewA;
+				preUvToViewB = uvToViewB;
+			}
+		} 
+		void UpdateProjMatrixDependency()
+		{
+			tanHalfFovX = 1.0f / fabs(mProj(0, 0));
+			tanHalfFovY = 1.0f / fabs(mProj(1, 1));
 
-			//test 
+			//uv -> view = (screen coord * (2.0f, -2.0f) + (- 1.0f,  1.0f)) * z * (inv proj)
+			//z와 screen coord는 shader에서 수행하므로
+			//uvToView =  ((2.0f, -2.0f) +  (- 1.0f,  1.0f)) * inv proj
+ 
+			uvToViewA.x = 2.0f * tanHalfFovX;
+			uvToViewA.y = -2.0f * tanHalfFovY;
+			uvToViewB.x = -1.0f * tanHalfFovX;
+			uvToViewB.y = 1.0f * tanHalfFovY;
+
+			//uvToView test 
 			/*
 			if (IsFrameHotDirted())
 			{
@@ -851,20 +874,6 @@ namespace JinEngine
 			MessageBoxA(0, screen.ToString().c_str(), "Screen", 0);
 			*/
 		}
-		void UpdateProjMatrixDependency()
-		{
-			tanHalfFovX = 1.0f / fabs(mProj(0, 0));
-			tanHalfFovY = 1.0f / fabs(mProj(1, 1));
-
-			//uv -> view = (screen coord * (2.0f, -2.0f) + (- 1.0f,  1.0f)) * z * (inv proj)
-			//z와 screen corrd는 shader에서 수행하므로
-			//uvToView =  ((2.0f, -2.0f) +  (- 1.0f,  1.0f)) * inv proj
-
-			uvToViewA.x = 2.0f * tanHalfFovX;
-			uvToViewA.y = -2.0f * tanHalfFovY;
-			uvToViewB.x = -1.0f * tanHalfFovX;
-			uvToViewB.y = 1.0f * tanHalfFovY;
-		}
 		/*
 		float NdcToViewPZ(const float v)
 		{
@@ -915,6 +924,7 @@ namespace JinEngine
 			camFar = Constants::defaultCamFrustumFar;
 			mView = JMatrix4x4::Identity();
 			mProj = JMatrix4x4::Identity();
+			mPreInvView = JMatrix4x4::Identity();
 			mPreViewProj = JMatrix4x4::Identity();
 
 			const JVector2F clientSize = JWindow::GetClientSize();
@@ -1453,6 +1463,10 @@ namespace JinEngine
 	{
 		return impl->mProj;
 	}
+	DirectX::XMMATRIX JCamera::GetPreInvView()const noexcept
+	{
+		return impl->mPreInvView.LoadXM();
+	}
 	DirectX::XMMATRIX JCamera::GetPreViewProj()const noexcept
 	{
 		return impl->mPreViewProj.LoadXM();
@@ -1461,6 +1475,11 @@ namespace JinEngine
 	{
 		a = impl->uvToViewA;
 		b = impl->uvToViewB;
+	}
+	void JCamera::GetPreUvToView(JVector2F& a, JVector2F& b)const noexcept
+	{
+		a = impl->preUvToViewA;
+		b = impl->preUvToViewB;
 	}
 	DirectX::BoundingFrustum JCamera::GetBoundingFrustum()const noexcept
 	{

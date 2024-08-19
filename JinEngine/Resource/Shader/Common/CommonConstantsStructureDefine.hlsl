@@ -63,11 +63,11 @@ struct SceneData
 struct CameraData  
 {
 	//float4x4 camView;					//light shape drawing
-    float4x4 invView; //pixel
+    float4x4 invView;                   //pixel
 	//float4x4 camProj;					//pixel	light shape drawing
 	//float4x4 camInvProj;				//vertex
-    float4x4 viewProj; //vertex
-    float4x4 preViewProj; //pixel
+    float4x4 viewProj;                  //vertex
+    //float4x4 preViewProj;             //pixel ... move other shader pass because velocity frame frequency is not same as scene drawing(2024-08-19)
 	//float4x4 camInvViewProj;
 	//float4x4 camViewProjTex;
     float2 renderTargetSize;

@@ -242,9 +242,9 @@ namespace JinEngine::Graphic
 	{
 		fence = value;
 	}
-	void JDx12FrameResource::MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint index,  const uint moveCount)
+	void JDx12FrameResource::MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint stIndex, const uint destIndex, const uint count)
 	{
-		bufferVec[(uint)type]->MoveData(index, moveCount);
+		bufferVec[(uint)type]->MoveData(stIndex, destIndex, count);
 	}
 	void JDx12FrameResource::ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)
 	{

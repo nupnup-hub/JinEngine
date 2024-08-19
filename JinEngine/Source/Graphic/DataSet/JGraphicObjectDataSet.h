@@ -465,7 +465,13 @@ namespace JinEngine
 			bool isSupportedFrameResourceUpload = false;
 			bool isSupportedFrameDirty = false;
 			bool isSupportedGpuAccelerator = false;
-			bool isSupportedGraphicResource = false; 
+			bool isSupportedGraphicResource = false;
+		public:
+			//detail 
+			bool canAccessSupportedFrameDetail = false;
+			std::bitset<(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT> supportedFrameType; 
+		public:
+			JObjectDataSetMetadata();
 		public:
 			bool IsComponentType()const noexcept;
 			bool IsResourceType()const noexcept;

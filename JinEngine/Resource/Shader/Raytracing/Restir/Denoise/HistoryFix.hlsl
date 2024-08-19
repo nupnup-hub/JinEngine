@@ -35,8 +35,8 @@ SOFTWARE.
 #define DIMY 16
 #endif 
    
-#define BLUR_RADIUS 2
-#define TAB_DISTANCE 4
+#define BLUR_RADIUS 3
+#define TAB_DISTANCE 9
 
 Texture2D srcColorHistory : register(t0);
 Texture2D scrFastColorHistory : register(t1);

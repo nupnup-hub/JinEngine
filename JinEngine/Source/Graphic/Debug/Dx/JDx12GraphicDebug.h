@@ -68,10 +68,10 @@ namespace JinEngine
 				CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle;  
 				CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
 			public:
-				JVector2<uint> size = JVector2<uint>::Zero();
-				JVector2F nearFar = 0; 
+				JVector2<uint> size = JVector2<uint>::Zero(); 
 			public:
 				uint arrayCount = 0;
+				uint arrayPerView = 0;
 				int arrayIndex = invalidIndex;
 			public:
 				bool isNonLinearDepthMap = true;

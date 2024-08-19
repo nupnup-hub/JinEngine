@@ -645,7 +645,7 @@ namespace JinEngine::Editor
 			}
 		}
 	}
-
+	 
 	void JImGuiAdaptee::Initialize(std::unique_ptr<Graphic::JGuiInitData>&& initData)
 	{
 		if (!IsSameGui(initData->GetGuiIdentification()))
@@ -669,6 +669,10 @@ namespace JinEngine::Editor
 		IntiailizeBackend(imguiInitData); 
 	}
 	void JImGuiAdaptee::Clear()
+	{
+		ClearResource(); 
+	}
+	void JImGuiAdaptee::ClearResource()
 	{
 		ClearBackend();
 		ImGui::DestroyContext();

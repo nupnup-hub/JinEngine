@@ -421,8 +421,8 @@ namespace JinEngine::Graphic
 	}
 	void JCsmHandlerInfo::RemoveTarget(const uint index)
 	{
-		NotifyPopTarget(index);
 		target.erase(target.begin() + index);
+		NotifyPopTarget(index);
 	}
 	void JCsmHandlerInfo::NotifyAddTarget(const uint index)
 	{

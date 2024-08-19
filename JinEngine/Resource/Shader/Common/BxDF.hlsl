@@ -214,8 +214,10 @@ class BxDF
     
     float GGXINDF()
     {
-        const float b = ((roughness2 - 1.0f) * dotNH * dotNH + 1.0f);
+        const float b = (dotNH * roughness2 - dotNH) * dotNH + 1.0f;
         return roughness2 / (PI * b * b);
+        //const float b = ((roughness2 - 1.0f) * dotNH * dotNH + 1.0f);
+        //return roughness2 / (PI * b * b);
     }
     float GGXANDF()
     {
@@ -385,7 +387,7 @@ class BxDF
         const float3 diffuse = LambertianIDiffuse() * dotNL * ONE_OVER_PI;
 #else
         const float3 diffuse = float3(0, 0, 0);
-#endif
+#endif 
         
 #if USE_BRDF_GGX_MICROFACET
     
@@ -394,7 +396,7 @@ class BxDF
 #else
         const float ndf = GGXANDF();
 #endif   
-        return diffuse + fresnel * ndf * GGXSmithG2HeightCorrelatedA();  
+        return diffuse + fresnel * ndf * GGXSmithG2HeightCorrelatedA();
     
 #elif USE_BRDF_BECKMANN_MICROFACET   
 #ifdef USE_BRDF_ISOTROPY_NDF
@@ -435,7 +437,7 @@ class BxDF
 #elif USE_BRDF_SHIRELY_DIFFUSE
 	    eval = ShirelyDiffuse();
 #elif USE_BRDF_LAMBERTIAN_DIFFUSE
-        eval = LambertianIDiffuse()I;
+        eval = LambertianIDiffuse();
 #else
         eval = float3(0, 0, 0);
 #endif

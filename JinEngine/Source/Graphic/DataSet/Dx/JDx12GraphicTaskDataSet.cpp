@@ -274,7 +274,18 @@ namespace JinEngine::Graphic
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
-	 
+
+	JDx12GraphicVelocityComputeSet::JDx12GraphicVelocityComputeSet(JCommandContext* context, JGraphicDevice* device)
+		:JGraphicVelocityComputeSet(context), device(device)
+	{
+		SetValid(IsAllSameDevice(context, device));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicVelocityComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+
 	JDx12GraphicInfoChangedSet::JDx12GraphicInfoChangedSet(const JGraphicInfo& preInfo,
 		const JGraphicInfo& newInfo, 
 		JGraphicDevice* device,

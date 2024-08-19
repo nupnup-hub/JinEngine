@@ -40,6 +40,7 @@ SOFTWARE.
 #include"../../../../Core/Log/JLogMacro.h"  
 #include"../../../../Core/Math/JVectorExtend.h"  
 
+#include"../../../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine::Graphic
 {
 	//restir gi는 svgf사용시 분산의 부정확한 추정때문에 아티팩트가 발생한다(Correlated input)
@@ -142,18 +143,17 @@ namespace JinEngine::Graphic
 		//const JVector2<uint> quaterRtSize = camRtSize / 4.0f;
 		const JUserPtr<JScene>& scene = helper.scene;
 		const size_t sceneGuid = scene->GetGuid();
+		 
+		static GIDenoiserPassConstants constants; 
 
-		const DirectX::XMMATRIX camInvView = cam->GetInvView();
-
-		GIDenoiserPassConstants constants;
-		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(camInvView));
-		constants.camPreInvView.StoreXM(DirectX::XMMatrixTranspose(camPreInvView.LoadXM()));
+		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
+		constants.camPreInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreInvView()));
 		constants.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj()));
 		constants.rtSize = camRtSize;
 		constants.invRtSize = 1.0f / camRtSize;
 		cam->GetUvToView(constants.uvToViewA, constants.uvToViewB);
-		constants.preUvToViewA = preUvToViewA;
-		constants.preUvToViewB = preUvToViewB;
+		cam->GetPreUvToView(constants.preUvToViewA, constants.preUvToViewB);
+
 		constants.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
 		constants.camNearMulFar = constants.camNearFar.x * constants.camNearFar.y;
 		constants.denoiseRange = Common::denoiseRange;
@@ -162,11 +162,8 @@ namespace JinEngine::Graphic
 		++constants.sampleNumber;
 		if (constants.sampleNumber >= Common::sampleNumberMax)
 			constants.sampleNumber = 0;
-
-		frameBuffer.CopyData(helper.info.frame.currIndex, constants);
-		camPreInvView.StoreXM(camInvView);
-		preUvToViewA = constants.uvToViewA;
-		preUvToViewB = constants.uvToViewB;
+		 
+		frameBuffer.CopyData(helper.info.frame.currIndex, constants); 
 	}
 	void JDx12RaytracingDenoiser::UserPrivateData::End(const JDrawHelper& helper)
 	{

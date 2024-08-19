@@ -35,10 +35,12 @@ namespace JinEngine
 		class JImGuiAdaptee : public JGuiBehaviorAdaptee
 		{
 		private:
-			std::unique_ptr<JImGuiPrivateData> data;
+			std::unique_ptr<JImGuiPrivateData> data; 
 		public:
 			void Initialize(std::unique_ptr<Graphic::JGuiInitData>&& initData) final;
 			void Clear() final; 
+		private:
+			void ClearResource();
 		protected:
 			virtual void IntiailizeBackend(JImGuiInitData* initData) = 0;
 			virtual void ClearBackend() = 0;

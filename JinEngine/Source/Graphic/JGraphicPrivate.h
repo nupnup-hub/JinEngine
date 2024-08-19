@@ -69,7 +69,7 @@ namespace JinEngine
 				static std::unique_ptr<JGuiInitData> GetGuiInitData()noexcept;
 			private:
 				static void UpdateWait();  
-				static void UpdateFrame();
+				static void Update();
 			private:  
 				static void Draw(const bool allowDrawScene);
 			private:

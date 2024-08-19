@@ -190,6 +190,7 @@ namespace JinEngine
 		float operator() (size_t row, size_t column)const noexcept;
 		float& operator() (size_t row, size_t column)noexcept;
 		bool operator==(const JMatrix4x4& rhs)const noexcept;
+		bool operator!=(const JMatrix4x4& rhs)const noexcept;
 	public:
 		void StoreXM(const DirectX::FXMMATRIX& xm)noexcept;
 		DirectX::XMMATRIX LoadXM()const noexcept;

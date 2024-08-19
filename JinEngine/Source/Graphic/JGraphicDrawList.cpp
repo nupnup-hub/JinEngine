@@ -108,18 +108,19 @@ namespace JinEngine
 		{
 			memset(updateCount, 0, sizeof(uint) * totalCompVariation);
 			memset(hotUpdateCount, 0, sizeof(uint) * totalCompVariation);
-
-			thisFrameObjCount = 0;
+			memset(moveCount, 0, sizeof(uint) * totalCompVariation);
+			memset(thisFrameCount, 0, sizeof(uint) * totalCompVariation);
+			memset(lastFrameCount, 0, sizeof(uint) * totalCompVariation);
+			 
 			sceneUpdated = false;
 			shadowUpdated = false;
-			hzbOccCullingUpdated = hdOccCullingUpdated = false;
-			 
-			hasObjRecopy = false;
+			hzbOccCullingUpdated = hdOccCullingUpdated = false; 
 		}
 		void JGraphicDrawTarget::UpdateInfo::EndUpdate()
 		{ 
 			static constexpr UniqueIndex ritemIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>();
 			static constexpr UniqueIndex aniIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>();
+			static constexpr UniqueIndex camIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>();
 			static constexpr UniqueIndex dLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL);
 			static constexpr UniqueIndex pLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::POINT);
 			static constexpr UniqueIndex sLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::SPOT);
@@ -131,15 +132,16 @@ namespace JinEngine
 				updateCount[dLitIndex] + 
 				updateCount[pLitIndex] +
 				updateCount[sLitIndex] +
-				updateCount[rLitIndex];
+				updateCount[rLitIndex] + 
+				moveCount[camIndex] + 
+				moveCount[ritemIndex];
 
 			if (sceneUpdateFactor > 0 || nextSceneUpdate)
 				sceneUpdated = true;
 	 
 			//const uint shadowUpdateCount = hotObjUpdateCount + hotAniUpdateCount + hotLitghtUpdateCount + shadowMapUpdateCount;
 			//shadow map을 소유한 shadow requestor update이외에 영향을 주는 객체들의 update count
-			const uint shadowUpdateFactor = updateCount[ritemIndex] + updateCount[aniIndex] + hasObjRecopy;
-
+			const uint shadowUpdateFactor = updateCount[ritemIndex] + updateCount[aniIndex] + moveCount[ritemIndex];
 			if (shadowUpdateFactor > 0)
 				shadowUpdated = true;
 			 
@@ -148,10 +150,10 @@ namespace JinEngine
 
 			hdOccCullingUpdated = occUpdateFactor;
 			hzbOccCullingUpdated = occUpdateFactor;
-			if (thisFrameObjCount < lastFrameObjCount)
+			if (thisFrameCount[ritemIndex] < lastFrameCount[ritemIndex])
 				shadowUpdated = hdOccCullingUpdated = hzbOccCullingUpdated = true;
 
-			lastFrameObjCount = thisFrameObjCount;
+			memcpy(lastFrameCount, thisFrameCount, sizeof(uint) * totalCompVariation);
 			nextSceneUpdate = false;
 		}
 

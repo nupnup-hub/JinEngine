@@ -489,18 +489,13 @@ namespace JinEngine
 		{
 			auto csmUser = graphicData->GetCsmHandleUserInterface();
 			auto gUser = graphicData->GetGraphicResourceUserInterface();
-
-			uint targetCount = 1;
-			if (canAllocCsm)
-				targetCount = csmUser->GetTargetCount();
-
+			 
 			//already exist handle
 			if (gUser->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE))
 				return;
 
 			JGraphicResourceCreationDesc desc(Private::DebugTypeSet(), JVector2F(thisPointer->GetShadowMapSize()));
-
-			const uint debugResourceCount = csmUser->GetOption().GetSplitCount() * targetCount;
+			const uint debugResourceCount = canAllocCsm ? (csmUser->GetOption().GetSplitCount() * csmUser->GetTargetCount()) : 1;
 			for (uint i = 0; i < debugResourceCount; ++i)
 				GMI()->CreateGraphicResource(graphicData.Get(), desc);
 		}
@@ -511,7 +506,7 @@ namespace JinEngine
 	public:
 		void Activate()
 		{ 
-			IMPL_REGISTER_FRAME_UPDATE_ACTION();
+			IMPL_REGISTER_FRAME_UPDATE_ACTION_HOT();
 
 			if (AllowHdOcclusionCulling() && AllowHzbOcclusionCulling())
 				allowHdOcclusionCulling = allowHzbOcclusionCulling = false;
@@ -531,7 +526,7 @@ namespace JinEngine
 			IMPL_DEREGISTER_FRAME_UPDATE_ACTION();
 		}
 	private:
-		void Update()
+		void HotUpdate()
 		{
 			UpdateLightTransform();
 		}
@@ -540,9 +535,10 @@ namespace JinEngine
 			const XMMATRIX viewM = Private::CalView(GetTransform());
 			view.StoreXM(viewM);
 			proj.StoreXM(Private::CalProj(GetSceneBBox(), view, thisPointer->GetShadowResolution(), vSceneBBoxMinF, vSceneBBoxMaxF));
+			direction = Private::CalLightWorldDir(GetTransform());
+
 			if (CanAllocateCsm())
 				graphicData->GetCsmHandleUserInterface()->Update(viewM, GetSceneBBox(), thisPointer->GetShadowMapSize());
-			direction = Private::CalLightWorldDir(GetTransform());
 		}
 		void UpdateCsmTargetCount(const uint index, const bool isRegister)
 		{
@@ -601,7 +597,7 @@ namespace JinEngine
 				const uint debugResourceIndex = csmUser->GetOption().GetSplitCount() * index;
 				GMI()->DestroyGraphicResource(graphicData.Get(), smaTypeSet, index);
 				if (thisPointer->AllowDisplayShadowMap())
-					GMI()->DestroyGraphicResource(graphicData.Get(), smaTypeSet, debugResourceIndex, csmUser->GetOption().GetSplitCount());
+					GMI()->DestroyGraphicResource(graphicData.Get(), J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugResourceIndex, csmUser->GetOption().GetSplitCount());
 			}
 			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
@@ -650,7 +646,7 @@ namespace JinEngine
 					};
 
 					NotifyAddCsmTargetF::Ptr addPtr = notifyAddLam;
-					NotifySubtractCsmTargetF::Ptr subtractPtr = notifyAddLam;
+					NotifySubtractCsmTargetF::Ptr subtractPtr = notifySubtractLam;
 
 					JCsmHandleCreationDesc desc(impl->thisPointer->GetGuid(), impl->thisPointer->GetOwner()->GetOwnerGuid());
 					desc.notifyAddCsmTargetB = Core::UniqueBind(addPtr, JUserPtr<JObject>(impl->thisPointer), Core::JEmptyType());
@@ -871,11 +867,7 @@ namespace JinEngine
 	float JDirectionalLight::GetFrustumFar()const noexcept
 	{
 		return impl->GetFrustumFar();
-	}
-	float JDirectionalLight::GetTanAngle()const noexcept
-	{
-		return XMVectorGetX(DirectX::XMVector3AngleBetweenNormals(impl->direction.ToXmV(), Private::GetInitDir()));
-	}
+	} 
 	JVector3F JDirectionalLight::GetInitWorldDirection()const noexcept
 	{
 		return Private::GetInitDir();
@@ -890,7 +882,7 @@ namespace JinEngine
 	}
 	JVector3F JDirectionalLight::GetFrustumMinPoint()const noexcept
 	{
-		return impl->vSceneBBoxMaxF;
+		return impl->vSceneBBoxMinF;
 	}
 	JVector3F JDirectionalLight::GetFrustumMaxPoint()const noexcept
 	{

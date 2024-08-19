@@ -77,7 +77,7 @@ namespace JinEngine
 			return 1.0f;
 		}
 		static XMVECTOR CalLightWorldDir(const JUserPtr<JTransform>& transform, const JVector3<float>& initDir = JVector3<float>(0, -1, 0)) noexcept
-		{
+		{  
 			return XMVector3Normalize(XMVector3Rotate(initDir.ToXmV(), transform->GetWorldQuaternion().ToXmV()));
 		}
 		static XMVECTOR CalLightWorldPos(const JUserPtr<JTransform>& transform) noexcept
@@ -86,6 +86,7 @@ namespace JinEngine
 		}
 		static XMMATRIX CalView(const JUserPtr<JTransform>& transform) noexcept
 		{
+			//return XMMatrixLookToLH(transform->GetWorldPosition().ToXmV(), CalLightWorldDir(transform), transform->GetFront().ToXmV());
 			JMatrix4x4 m;
 			JTransform::CalTransformMatrix(m,
 				transform,
@@ -100,6 +101,18 @@ namespace JinEngine
 			//Caution!
 			//Near값은 1보다 작을시 shadow map에 그려지는 물체들의 깊이값이 비정확해진다.
 			return XMMatrixPerspectiveFovLH(angle, aspect, fNear, fFar);
+		}
+		static JGraphicResourceTypeSet ShadowMapTypeSet()noexcept
+		{
+			return JGraphicResourceTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		}
+		static JGraphicResourceTypeSet DebugTypeSet()noexcept
+		{
+			return JGraphicResourceTypeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
+		}
+		static JCullingTypeSet FrustumSet()noexcept
+		{
+			return JCullingTypeSet(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 		}
 	}
 
@@ -308,12 +321,11 @@ namespace JinEngine
 		void CreateShadowMapResource()noexcept
 		{
 			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, thisPointer->GetAreaGuid());
-
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->CreateGraphicResource(graphicData.Get(), gTypeSet);
-
-			JCullingTypeSet cTypeSet(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-			GMI()->CreateCullingData(graphicData.Get(), cTypeSet);
+			 
+			JGraphicResourceCreationDesc desc(Private::ShadowMapTypeSet(), JVector2F(thisPointer->GetShadowMapSize()));
+			GMI()->CreateGraphicResource(graphicData.Get(), desc);
+			 
+			GMI()->CreateCullingData(graphicData.Get(), Private::FrustumSet());
 
 			if (thisPointer->AllowDisplayShadowMap())
 				CreateShadowMapDebugResource();
@@ -330,29 +342,24 @@ namespace JinEngine
 			GMI()->CancelExecutableGraphicFeature(graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP);
 
 			DestroyShadowMapDebugResource();
-
-			JCullingTypeSet cTypeSet(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-			GMI()->DestroyCullingData(graphicData.Get(), cTypeSet);
-
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->DestroyGraphicResource(graphicData.Get(), gTypeSet);
-
+			 
+			GMI()->DestroyCullingData(graphicData.Get(), Private::FrustumSet());		 
+			GMI()->DestroyGraphicResource(graphicData.Get(), Private::ShadowMapTypeSet());
 			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
 		};
 		void CreateShadowMapDebugResource()
-		{
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->CreateGraphicResource(graphicData.Get(), gTypeSet);
+		{ 
+			JGraphicResourceCreationDesc desc(Private::DebugTypeSet(), JVector2F(thisPointer->GetShadowMapSize()));
+			GMI()->CreateGraphicResource(graphicData.Get(), desc);
 		}
 		void DestroyShadowMapDebugResource()
-		{
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->DestroyGraphicResource(graphicData.Get(), gTypeSet);
+		{ 
+			GMI()->DestroyGraphicResource(graphicData.Get(), Private::DebugTypeSet());
 		}
 	public:
 		void Activate()noexcept
 		{
-			IMPL_REGISTER_FRAME_UPDATE_ACTION();
+			IMPL_REGISTER_FRAME_UPDATE_ACTION_HOT();
 			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, thisPointer->GetAreaGuid());
 			SetFuncList().InvokeAll(this, CONDTION_MASK::PASS_NONE, true);
 			JGMUtil::SetFrameDirty(graphicData.Get());		    
@@ -366,7 +373,7 @@ namespace JinEngine
 			IMPL_DEREGISTER_FRAME_UPDATE_ACTION();
 		}
 	private:
-		void Update()
+		void HotUpdate()
 		{
 			UpdateLightTransform();
 		}
@@ -529,11 +536,11 @@ namespace JinEngine
 	}
 	JMatrix4x4 JSpotLight::GetView()const noexcept
 	{
-		return impl->proj;
+		return impl->view;
 	}
 	JMatrix4x4 JSpotLight::GetProj()const noexcept
 	{
-		return impl->view;
+		return impl->proj;
 	}
 	void JSpotLight::SetShadow(const bool value)noexcept
 	{

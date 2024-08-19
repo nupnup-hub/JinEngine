@@ -58,12 +58,14 @@ namespace JinEngine
 
 		class JTypeBase;
 		class JTypeInfo;
+
+		template<typename T>
 		class JPtrData
 		{
-		private:
-			using VoidPointer = void*;
+		//private:
+		//	using VoidPointer = void*;
 		public:
-			VoidPointer ptr = nullptr;
+			T* ptr = nullptr;
 			std::atomic<uint> userCount = 0;
 			std::atomic<uint> weakCount = 0;
 		};
@@ -81,7 +83,7 @@ namespace JinEngine
 			template<typename T> friend class JUserPtrInterface;
 			template<typename T> friend class JWeakPtrInterface;
 		private:
-			JPtrData* ptrData = nullptr;
+			JPtrData<T>* ptrData = nullptr;
 		public:
 			T& operator*()
 			{
@@ -109,12 +111,15 @@ namespace JinEngine
 				return ptrData != nullptr ? ptrData->weakCount.load() : 0;
 			}
 		protected:
+			/**
+			* @brief 호출하는 클래스에서 타입에 대한 유효성검사를 해야한다.
+			*/
 			template<typename U>
 			void SetValidPtrData(const JPtrBase<U>& otherPtrBase)
 			{
-				ptrData = otherPtrBase.ptrData;
+				ptrData = static_cast<JPtrData<T>*>(static_cast<void*>(otherPtrBase.ptrData));
 			}
-			void SetValidPtrData(JPtrData* newPtrData)
+			void SetValidPtrData(JPtrData<T>* newPtrData)
 			{
 				ptrData = newPtrData;
 			}
@@ -337,7 +342,7 @@ namespace JinEngine
 			}
 			void OwnerConnect(T* ptr)noexcept
 			{
-				PtrBase::SetValidPtrData(new JPtrData());
+				PtrBase::SetValidPtrData(new JPtrData<T>());
 				Owner::SetValidPointer(ptr);
 			}
 			void OwnerDisConnect()noexcept

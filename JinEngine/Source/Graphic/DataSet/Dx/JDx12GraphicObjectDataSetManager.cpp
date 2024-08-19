@@ -139,6 +139,18 @@ namespace JinEngine::Graphic
 				static constexpr bool value = T::isSupportedFrameUpload;
 			};
 			template<typename T, typename = void>
+			struct HasFrameUploadTypeHint
+			{
+			public:
+				static constexpr bool value = false;
+			};
+			template<typename T>
+			struct HasFrameUploadTypeHint<T, std::void_t<decltype(&T::IsSupported)>>
+			{
+			public:
+				static constexpr bool value = true;
+			};
+			template<typename T, typename = void>
 			struct HasFrameDirtyHint
 			{
 			public:
@@ -162,13 +174,27 @@ namespace JinEngine::Graphic
 			static constexpr bool isSupportedFrameDirty = hasFrameInterface && HasFrameDirtyHint<FrameInterface>::value;
 		protected:
 			static void Register(JObjectDataSetMetadata& data)
-			{			 
+			{			  
+				//CanUse 
 				data.isSupportedCulling = hasCullingInterface;
 				data.isSupportedGpuAccelerator = hasGpuAcceleratorInterface;
 				data.isSupportedGraphicResource = hasGraphicResourceInterface;
 
 				data.isSupportedFrameDirty = isSupportedFrameDirty;
 				data.isSupportedFrameResourceUpload = isSupportedFrameUpload;
+
+				if constexpr (hasFrameInterface && HasFrameUploadTypeHint<FrameInterface>::value)
+				{
+					//OutputDebugStringA((data.tag +": ").c_str());
+					data.canAccessSupportedFrameDetail = true;
+					for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
+					{
+						const J_FRAME_RESOURCE_UPLOAD_TYPE type = (J_FRAME_RESOURCE_UPLOAD_TYPE)i;
+						data.supportedFrameType.set(i, FrameInterface::IsSupported(type));
+						//OutputDebugStringA((" " + Core::GetName(type) + " " + std::to_string(FrameInterface::IsSupported(type))).c_str());
+					}
+					//OutputDebugStringA("\n");
+				}
 			}
 		}; 
 		
@@ -224,7 +250,7 @@ namespace JinEngine::Graphic
 	{
 		namespace Animator
 		{
-			using FrameUpload = Core::JDefinedTypeSequence< J_FRAME_RESOURCE_UPLOAD_TYPE,
+			using FrameUpload = Core::JDefinedTypeSequence<J_FRAME_RESOURCE_UPLOAD_TYPE,
 				J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION>;
 
 			using FrameInterface = JFrameUpdateTypePerSingleHolder<JFrameDirtyTrigger, FrameUpload>;
@@ -275,12 +301,19 @@ namespace JinEngine::Graphic
 			class CameraFrameDirty final : public JFrameDirty
 			{
 			public:
+				/*
 				int GetFrameDirtyMax()const noexcept final
 				{
 					//첫번째 frame에 update된 constants에  mPreViewProj이 유효한 값을 갖게 하기위해 +1
 					//(1: delta), (2: zero), (3: zero), (1: zero)
 					return Graphic::Constants::gNumFrameResources + 1;
 				}
+				-> 수정 mPreViewProj와 같은 matrix값들은 frame dirty가 3일시 6번을 update 해줘야한다.
+				preframe - curframe delta를 0 ~ 2 그리고 3 ~ 5를 변동이 없는 값들로 채워줘야 옳바른
+				Velocity 값을 구할 수 있다 허나 mPreViewProj은 제한적인 상황에 사용됨으로
+				해당하는 Subclass에서 자체적으로 계산해서 upload하도록 하자.
+				2024-08-19
+				*/
 			};
 			using FrameInterface = JFrameUpdateTypePerSingleHolder<CameraFrameDirty, FrameUpload>;
 			 
@@ -858,7 +891,7 @@ namespace JinEngine::Graphic
 		}
 		void ApplyDeferred(const JGraphicOptionChangedSet& set, const ObjectDataSetVec& camVec)
 		{
-			if (set.preOption.rendering.allowDeferred == set.newOption.rendering.allowDeferred ||
+			if (set.preOption.rendering.allowDeferred == set.newOption.rendering.allowDeferred &&
 				set.preOption.rendering.allowRaytracing == set.newOption.rendering.allowRaytracing)
 				return;
 

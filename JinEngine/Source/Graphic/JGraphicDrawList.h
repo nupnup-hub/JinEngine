@@ -141,11 +141,9 @@ namespace JinEngine
 			public:
 				uint updateCount[totalCompVariation];
 				uint hotUpdateCount[totalCompVariation];
-			public:
-				uint thisFrameObjCount = 0;
-				uint lastFrameObjCount = 0;
-			public:
-				bool hasObjRecopy = false;
+				uint moveCount[totalCompVariation];
+				uint thisFrameCount[totalCompVariation];
+				uint lastFrameCount[totalCompVariation];
 			public:
 				bool sceneUpdated = false;
 				bool shadowUpdated = false;  

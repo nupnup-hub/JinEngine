@@ -481,14 +481,13 @@ namespace JinEngine
 				int multiIndex = GetMultiInfoVecIndex(newInfo->GetGraphicResourceType());
 				if (multiIndex != invalidIndex)
 					multiInfo[multiIndex].push_back(newInfo);
-				else if (singleInfo[singleIndex] != nullptr)
+				else if (singleIndex != invalidIndex)
 					singleInfo[singleIndex] = newInfo;
 			}
 			void RemoveInfo(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType, const uint localIndex = 0)final
 			{
 				int multiIndex = GetMultiInfoVecIndex(rType);
 				int index = GetResourceIndex(rType, taskType, localIndex);
-
 				if (multiIndex != invalidIndex)
 				{
 					if (multiInfo[multiIndex].size() <= index)
@@ -499,11 +498,11 @@ namespace JinEngine
 				}
 				else
 				{
-					int index = GetSingleInfoIndex(rType);
-					if (index == invalidIndex || singleInfo[index] == nullptr)
+					int singleIndex = GetSingleInfoIndex(rType);
+					if (index == invalidIndex || singleInfo[singleIndex] == nullptr)
 						return;
 
-					destroyF(singleInfo[index].Release()); 
+					destroyF(singleInfo[singleIndex].Release()); 
 				}
 			}
 			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_GRAPHIC_RESOURCE_TYPE rType) final
@@ -519,11 +518,11 @@ namespace JinEngine
 				}
 				else
 				{
-					int index = GetSingleInfoIndex(rType);
-					if (index == invalidIndex)
+					int singleIndex = GetSingleInfoIndex(rType);
+					if (singleIndex == invalidIndex)
 						return;
 
-					destroyF(singleInfo[index].Release());
+					destroyF(singleInfo[singleIndex].Release());
 				}
 			}
 			void RemoveInfoAll(DestoryInfoF& destroyF)final

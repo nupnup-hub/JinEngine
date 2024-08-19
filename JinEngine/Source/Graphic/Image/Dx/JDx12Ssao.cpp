@@ -648,7 +648,7 @@ namespace JinEngine::Graphic
 		ClearPso();
 
 		ID3D12Device* d3d12Device = static_cast<JDx12GraphicDevice*>(dataSet.device)->GetDevice();
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 	}
 	void JDx12Ssao::BuildResouce(JGraphicDevice* device, JGraphicResourceManager* gM)
@@ -657,14 +657,14 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildBuffer(dx12Device, dx12Gm);
 
 		cachedDevice = dx12Device;
 		cachedGm = dx12Gm;
 	}
-	void JDx12Ssao::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12Ssao::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{ 
 		BuildSsaoRootSignature(device, option);
 		BuildSsaoBlurRootSignature(device);

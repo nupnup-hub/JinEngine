@@ -34,6 +34,7 @@ SOFTWARE.
 #include"../../Utility/Dx/JDx12ObjectCreation.h" 
 #include"../../../Application/Engine/JApplicationEngine.h" 
 #include"../../../Core/Exception/JExceptionMacro.h"  
+#include"../../../Core/Log/JLogMacro.h"
 #include"../../../Core/Platform/JHardwareInfo.h"  
 #include"../../../Object/Component/Camera/JCamera.h"
 #include"../../../Object/Component/Light/JLight.h"
@@ -125,8 +126,6 @@ namespace JinEngine::Graphic
 				}
 			}
 			size = rtSet.info->GetResourceSize();		 
-			nearFar.x = helper.cam->GetNear();
-			nearFar.y = helper.cam->GetFar();
 			isNonLinearDepthMap = !helper.cam->IsOrthoCamera();
 			allowHzb = helper.cam->AllowHzbOcclusionCulling();
 		}
@@ -137,22 +136,23 @@ namespace JinEngine::Graphic
 			* light는 type에 따라서 projection type이 정해진다.
 			* directional => orhto ... Linear
 			* point, spot => perspective ... NonLinear
-			*/
+			*/ 
 			const J_LIGHT_TYPE litType = helper.lit->GetLightType();
 			if (litType == J_LIGHT_TYPE::SPOT || litType == J_LIGHT_TYPE::POINT)
 				isNonLinearDepthMap = true;	//spot is perspective
 			else if (litType == J_LIGHT_TYPE::DIRECTIONAL)
 			{
 				auto dLit = Core::ConnectChildUserPtr<JDirectionalLight>(helper.lit);
+				auto csmRInterface = dLit->ModuleManagedData()->GetCsmHandleUserInterface();
+
 				if (dLit->IsCsmActivated())
-				{
-					arrayCount = dLit->GetCsmSplitCount();
+				{ 
+					arrayCount = csmRInterface->GetTargetCount();
+					arrayPerView = dLit->GetCsmSplitCount();
 					isArrayTexture = true;
 				}
 			}
-
-			nearFar.x = helper.lit->GetFrustumNear();
-			nearFar.y = helper.lit->GetFrustumFar();
+			 
 			allowTrigger[DEBUG_TYPE_DEPTH] = true;
 			allowHzb = helper.lit->AllowHzbOcclusionCulling();
 			 
@@ -166,16 +166,23 @@ namespace JinEngine::Graphic
 			//array texture가 항상 먼저 할당된다.
 			for (uint i = 0; i < arrayCount; ++i)
 			{
+				srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataOffset + i));
+				for (uint j = 0; j < arrayPerView; ++j)
+				{
+					const uint index = arrayPerView * i + j;
+					if (!gRInterface->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, index))
+						continue;
+
+					destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataOffset + index));
+				}
+			}
+
+			int srcBaseIndexOffset = isArrayTexture ? arrayCount : 0;
+			for (uint i = arrayCount * arrayPerView; i < debugCount && i < macCount; ++i)
+			{
 				if (!gRInterface->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, i))
 					continue;
 
-				if(i == 0)
-					srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataOffset));
-				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataOffset + i));
-			}
-			int srcBaseIndexOffset = isArrayTexture ? 1 : 0;
-			for (uint i = arrayCount; i < debugCount && i < macCount; ++i)
-			{
 				srcBase.Push(context->ComputeSet(gRInterface, grType, shadowDataOffset + srcBaseIndexOffset));
 				destBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugDataOffset + i));
 				++srcBaseIndexOffset;
@@ -285,21 +292,37 @@ namespace JinEngine::Graphic
 		//array texture가 항상 먼저 할당된다.
 		for (uint i = 0; i < set.arrayCount; ++i)
 		{
-			if (!destBuff(i).IsValid())
+			if (!srcBuff(i).IsValid())
+			{
+				J_LOG_PRINT_OUT("Invalid src", "");
 				continue;
+			}
 
-			set.srcHandle = srcBuff(0).GetGpuSrvHandle();
-			set.destHandle = destBuff(i).GetGpuUavHandle();
-			set.size = srcBuff(0).info->GetResourceSize();
-			set.arrayIndex = i;
-			Execute(context, set, csmShaderData.get());
+			set.srcHandle = srcBuff(i).GetGpuSrvHandle();
+			set.size = srcBuff(i).info->GetResourceSize();
+			for (uint j = 0; j < set.arrayPerView; ++j)
+			{
+				const int viewIndex = set.arrayPerView * i + j;
+				if (!destBuff(viewIndex).IsValid())
+				{
+					J_LOG_PRINT_OUT("Invalid dest", "");
+					continue;
+				}
+
+				set.destHandle = destBuff(viewIndex).GetGpuUavHandle();
+				set.arrayIndex = j;
+				Execute(context, set, csmShaderData.get());
+			}
 		}
 		set.arrayIndex = invalidIndex; 
-		uint srcIndex = set.isArrayTexture ? 1 : 0;
-		for (uint i = set.arrayCount; i < destBuff.validCount; ++i)
+		uint srcIndex = set.isArrayTexture ? set.arrayCount : 0;
+		for (uint i = set.arrayCount * set.arrayPerView; i < destBuff.validCount; ++i)
 		{
-			if (!destBuff(i).IsValid())
+			if (!destBuff(i).IsValid() || !srcBuff(srcIndex).IsValid())
+			{
+				J_LOG_PRINT_OUT("Invalid buff", "");
 				continue;
+			}
 
 			set.srcHandle = srcBuff(srcIndex).GetGpuSrvHandle();
 			set.destHandle = destBuff(i).GetGpuUavHandle();
@@ -385,10 +408,9 @@ namespace JinEngine::Graphic
 		context->SetPipelineState(holder);
 		context->SetComputeRootDescriptorTable(Private::srcTextureHandleIndex, set.srcHandle); 
 		context->SetComputeRootDescriptorTable(Private::destTextureHandleIndex, set.destHandle);
-		context->SetComputeRoot32BitConstants(Private::settingCbIndex, 0, set.size); 
-		context->SetComputeRoot32BitConstants(Private::settingCbIndex, 2, set.nearFar); 
+		context->SetComputeRoot32BitConstants(Private::settingCbIndex, 0, set.size);  
 		if (set.arrayIndex != invalidIndex)
-			context->SetComputeRoot32BitConstants(Private::settingCbIndex, 4, set.arrayIndex);
+			context->SetComputeRoot32BitConstants(Private::settingCbIndex, 2, set.arrayIndex);
 		context->Dispatch2D(set.size, holder->dispatchInfo.threadDim.XY());
 	}
 	void JDx12GraphicDebug::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
@@ -402,7 +424,7 @@ namespace JinEngine::Graphic
 		JDx12RootSignatureBuilder2<Private::slotCount, 1> builder;
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);		//srcTextureHandleIndex 
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);		//destTextureHandleIndex
-		builder.PushConstants(5, 0);	//settingCbIndex
+		builder.PushConstants(3, 0);	//settingCbIndex
 		builder.PushSampler(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
 			D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressUVW
 			0.0f,                               // mipLODBias

@@ -68,13 +68,13 @@ namespace JinEngine
 		JUserPtr<JShader> shader;
 	public:
 		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0.0f, 1.0f))
-			float metallic = Core::JMaterialParameter::InitMetalic();
+		float metallic = Core::JMaterialParameter::InitMetalic();
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0.0f, 1.0f))
-			float roughness = Core::JMaterialParameter::InitRoughness();
+		float roughness = Core::JMaterialParameter::InitRoughness();
 		REGISTER_PROPERTY_EX(specularFactor, GetSpecular, SetSpecular, GUI_SLIDER(0.0f, 1.0f))
-			float specularFactor = Core::JMaterialParameter::InitSpecularFactor();
+		float specularFactor = Core::JMaterialParameter::InitSpecularFactor();
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-			JVector4<float> albedoColor = Core::JMaterialParameter::InitAlbedoColor();
+		JVector4<float> albedoColor = Core::JMaterialParameter::InitAlbedoColor();
 		JMatrix4x4 matTransform = JMatrix4x4::Identity();
 	public:
 		//Texture
@@ -97,13 +97,13 @@ namespace JinEngine
 		//수정필요
 		//isDebug
 		REGISTER_PROPERTY_EX(shadow, OnShadow, SetShadow, GUI_CHECKBOX())
-			bool shadow = false;
+		bool shadow = false;
 		REGISTER_PROPERTY_EX(light, OnLight, SetLight, GUI_CHECKBOX())
-			bool light = false;
+		bool light = false;
 		REGISTER_PROPERTY_EX(albedoMapOnly, OnAlbedoOnly, SetAlbedoMapOnly, GUI_CHECKBOX())
-			bool albedoMapOnly = false;
+		bool albedoMapOnly = false;
 		REGISTER_PROPERTY_EX(skyMaterial, IsSkyMaterial, SetSkyMaterial, GUI_CHECKBOX())
-			bool skyMaterial = false;
+		bool skyMaterial = false;
 		bool isDebugMaterial = false;
 		bool alphaClip = false;
 	public:

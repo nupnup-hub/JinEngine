@@ -143,6 +143,6 @@ namespace JinEngine::Graphic
 			for (uint i = 0; i < SIZE_OF_ARRAY(optionHolderSet->holder); ++i)
 				optionHolderSet->holder[i] = nullptr;		 
 			optionHolderSet = nullptr;
-		}
+		} 
 	}
 }

@@ -102,6 +102,8 @@ namespace JinEngine
 			bool Pop(JFrameUpdateInfo* info);
 		private:
 			JOwnerPtr<JDx12FrameUpdateInfo> CreateInfo(const JFrameUploadDataCreationDesc& desc, JFrameUpdateAreaInfo* areaInfo);
+		private:
+			void ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)final;
 		public:
 			void BeginUpdate()final;
 			void Update(JFrameUpdateDataSet& set)final;

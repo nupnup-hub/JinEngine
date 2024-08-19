@@ -30,7 +30,10 @@ SOFTWARE.
 #include"../JGraphicSubClassInterface.h"
 #include"../DataSet/JGraphicObjectDataSet.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
- 
+  
+#ifdef _USE_FRAME_MOVE_DIRTY_OPTIMIZATION
+#define USE_FRAME_MOVE_DIRTY_OPTIMIZATION
+#endif
 namespace JinEngine
 {
 	class JObject;
@@ -49,6 +52,8 @@ namespace JinEngine
 			public:
 				uint updatedCount = 0;
 				uint hotUpdatedCount = 0;
+			public:
+				uint moveCount = 0;
 			};
 		public:
 			const ObjectDataSetVec* objDataVec;
@@ -79,33 +84,43 @@ namespace JinEngine
 			//Update시 DeRegister이 발생한 인덱스 Array를 정렬한 뒤 memmove을 수행한다.
 			//정렬은 22, 44, 66이 있을시 22에서 한칸, 44에서 두칸, 66에서 세칸을 당겨와야하므로
 			//각 DeRegister 인덱스마다 카운팅을 옳바르게 하는데 필요하다.
+			//2024-08-18 
+			//Insert시 ReBuid->Reflect 순으로 진행되야 element를 뒤쪽으로 Push가능하다
+			//반대로 Pop시에 ReBuid를 먼저하면 만약 buffer가 축소될시 data를 잃어버리므로
+			//해결방법은 버퍼를 복사하고 Reflect를 실행해야하며 종합해서 실시간 update마다
+			//타입당 loop 수행과 move search 그리고 buffer 복사와 삭제을 수행하게 되며 현재보다
+			//크게 나아지지않고 최악에 경우는 더 않좋을 것 으로 판단되어 적용을 보류한다. 
 			struct UpdateHint
 			{
+				//int minMoveDirtyIndex = invalidIndex;
+#ifdef _USE_FRAME_MOVE_DIRTY_OPTIMIZATION
 			public:
 				using MovedRecordElementType = int;
 				using MovedAccumulationType = int;
 			public:
-				MovedRecordElementType* movedRecord;
-				//MovedRecordElementType* movedRecord = nullptr;				//Accumulation left to right
-				MovedAccumulationType movedAccumulation;
-			public:
+				MovedRecordElementType* movedRecord; 
 				uint moveRecordRange = 0;
+			public: 
+				bool hasMoveDirty = false;
+#else
 			public:
-				bool forcedUpdateTrigger = false;
-			private:
-				static constexpr MovedRecordElementType invalidRecord = invalidIndex;
+				int dirtyMinIndex = INT_MAX;
+				int moveDirty = 0;
+#endif
+			public: 
+				bool forcedUpdateTrigger = false; 
 			public:
 				void Initialize(const JGraphicInfo& info);
 				void Clear(); 
 				void ClearRecordValue(const uint index, const uint count);
-			private:
+			public:
+#ifdef _USE_FRAME_MOVE_DIRTY_OPTIMIZATION
 				void AllocMovedrecord(const uint count);
 				void DeAllocMovedrecord();
+#endif
 			public:
-				void ReflectMovedNumber(const int number);
-				void ResizeMovedIndexArray(const uint beforeCount, const uint newCount);
-			public:
-				void Sort(); 
+				void ReflectInsertNumber(const int number); 
+				void ReflectPopNumber(const int number);  
 			}; 
 		private:   
 			UpdateHint hint[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT][Constants::gNumFrameResources];
@@ -127,13 +142,22 @@ namespace JinEngine
 			virtual uint GetFrameResourceCapacity(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept = 0;
 		private: 
 			UpdateHint* GetFrameHint(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameIndex)noexcept;
+		protected:
+			int GetMoveDirtyMinIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
 		public:
 			virtual void SetNextFrameResource() = 0;
 		public:
 			bool IsForcedUpdate(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
 		public:
 			virtual JUserPtr<JFrameUpdateInfo> Register(const JFrameUploadDataCreationDesc& desc) = 0;
-			virtual bool DeRegister(JFrameUpdateInfo* info);
+			virtual bool DeRegister(JFrameUpdateInfo* info) = 0;
+		protected: 
+			void ReflectInsertNumber(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint number);
+			void ReflectPopNumber(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint number);
+		private:
+#ifdef _USE_FRAME_MOVE_DIRTY_OPTIMIZATION
+			void ReflectMoveDirty(const J_FRAME_RESOURCE_UPLOAD_TYPE type);
+#endif
 		public:
 			virtual void ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount);
 		public:

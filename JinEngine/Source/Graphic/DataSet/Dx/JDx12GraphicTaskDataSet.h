@@ -243,6 +243,17 @@ namespace JinEngine
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
 
+		struct JDx12GraphicVelocityComputeSet : public JGraphicVelocityComputeSet
+		{
+		public:
+			JGraphicDevice* device; 
+		public:
+			JDx12GraphicVelocityComputeSet(JCommandContext* context, JGraphicDevice* device);
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		};
+
+
 		struct JDx12GraphicInfoChangedSet : public JGraphicInfoChangedSet
 		{
 		public:

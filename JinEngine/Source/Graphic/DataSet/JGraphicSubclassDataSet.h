@@ -70,14 +70,25 @@ namespace JinEngine
 		};
 
 		class JSceneDraw;
+		class JSceneVelocity;
 		class JShadowMap;
-		class JDepthTest;
-		struct JDrawingSubclassSet
+		class JDepthTest; 
+		class JOutline;
+		class JGraphicDebug;
+
+		//related to scene object drawing
+		struct JSceneDrawingSubclassSet
 		{
 		public:
+			//Drawing scene object
 			std::unique_ptr<JSceneDraw> scene;
 			std::unique_ptr<JShadowMap> shadowMap;
 			std::unique_ptr<JDepthTest> depthTest;
+		public:
+			//Compute scene task
+			std::unique_ptr<JOutline> outline;
+			std::unique_ptr<JGraphicDebug> debug;
+			std::unique_ptr<JSceneVelocity> velocity;
 		public:
 			void Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage);
 			void Clear();
@@ -89,7 +100,9 @@ namespace JinEngine
 		class JFrustumCulling;
 		class JHardwareOccCulling;
 		class JHZBOccCulling;
-		class JLightCulling;
+		class JLightCulling; 
+
+		//related to culling
 		struct JCullingSubclassSet
 		{
 		public:
@@ -103,9 +116,7 @@ namespace JinEngine
 		public:
 			void GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV);
 		};
-
-		class JGraphicDebug;
-		class JOutline;
+		 
 		class JBlur;
 		class JDownSampling;
 		class JSsao;
@@ -117,12 +128,12 @@ namespace JinEngine
 		class JConvertColor;
 		class JPostProcessPipeline; 
 		struct JPostProcessEffectSet;
+
+		//related to image processing
 		struct JImageProcessingSubclassSet
 		{
 		public:
 			//post process
-			std::unique_ptr<JGraphicDebug> debug;
-			std::unique_ptr<JOutline> outline;
 			std::unique_ptr<JBlur> blur;
 			std::unique_ptr<JDownSampling> downSampling;
 			std::unique_ptr<JSsao> ssao;
@@ -132,7 +143,7 @@ namespace JinEngine
 			std::unique_ptr<JPostProcessHistogram> histogram;
 			std::unique_ptr<JPostProcessExposure> exposure;
 			std::unique_ptr<JConvertColor> convertColor;
-			std::unique_ptr<JPostProcessEffectSet> ppEffectSet;	//data set
+			std::unique_ptr<JPostProcessEffectSet> ppEffectSet;			//data set
 			std::unique_ptr<JPostProcessPipeline> ppPipeline;			//pipe line 
 		public:
 			void Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage);
@@ -144,6 +155,8 @@ namespace JinEngine
 		class JRaytracingGI;
 		class JRaytracingAmbientOcclusion;
 		class JRaytracingDenoiser;
+
+		//related to raytracing
 		struct JRaytracingSubclassSet
 		{
 		public:

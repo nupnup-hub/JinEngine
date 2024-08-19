@@ -88,11 +88,7 @@ namespace JinEngine
 				JGraphicDevice* device = nullptr;
 				JGraphicResourceManager* gm = nullptr;
 			public:
-				JDx12GraphicBufferT<GIDenoiserPassConstants> frameBuffer;
-			private:
-				JMatrix4x4 camPreInvView = JMatrix4x4::Identity();
-				JVector2F preUvToViewA = JVector2F::One();
-				JVector2F preUvToViewB = JVector2F::One();
+				JDx12GraphicBufferT<GIDenoiserPassConstants> frameBuffer; 
 			private:
 				std::random_device rd;	//use hardware
 				std::mt19937 gen;

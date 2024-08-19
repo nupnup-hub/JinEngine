@@ -23,18 +23,12 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once
-#include"../../../Core/JCoreEssential.h"
+#include"JSceneVelocity.h"
 
-namespace JinEngine
+namespace JinEngine::Graphic
 {
-	namespace Constants
+	bool JSceneVelocity::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 	{
-		static constexpr float minCamFrustumNear = 1.0f;
-		static constexpr float maxCamFrustumFar = 10000.0f;
-		static constexpr float minCamFrustumDistance = 50.0f;
-		static constexpr float defaultCamFrustumNear = minCamFrustumNear;
-		static constexpr float defaultCamFrustumFar = maxCamFrustumFar * 0.05f;
-		static constexpr float defaultCamFovDeg = 60;	//degree
+		return taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_COMPUTE;
 	}
 }

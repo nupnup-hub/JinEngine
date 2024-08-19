@@ -140,6 +140,7 @@ namespace JinEngine
 				//현재는 test에 편의를 위해 graphic option에서 설정한다.
 				bool useToneMapping = false;
 				bool useBloom = false;
+				bool useBlur = false;
 				bool useHistogramDebug = false;
 				J_EXPOSURE_TYPE exposureType = J_EXPOSURE_TYPE::NONE;
 				J_BLOOM_QUALITY bloomQuality = J_BLOOM_QUALITY::HIGH;

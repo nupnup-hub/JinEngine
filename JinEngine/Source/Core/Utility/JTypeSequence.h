@@ -48,14 +48,14 @@ namespace JinEngine
 				int index = 0;
 				int result = invalidIndex;
 
-				auto lam = [](int& result, int& index, T type)
+				auto lam = [](int& result, int& index, T t, T type)
 				{
-					if (index == (int)type)
+					if (t == (type))
 						result = index;
 					++index;
 				};
 
-				(lam(result, index, Type), ...);
+				(lam(result, index, t, Type), ...);
 				//((i == index ? (result = Param::first) : ++index), ...);
 				return result;
 			}
@@ -137,21 +137,21 @@ namespace JinEngine
 				int index = 0;
 				int result = invalidIndex;
 
-				auto lam = [](int& result, int& index, T type)
+				auto lam = [](int& result, int& index, T t, T type)
 				{
-					if (index == (int)type)
+					if (t == (type))
 						result = index;
 					++index;
 				};
 
 				if constexpr (std::is_same_v<T, FirstType>)
 				{
-					(lam(result, index, Param::first), ...);
+					(lam(result, index, t,  Param::first), ...);
 					//((i == index ? (result = Param::first) : ++index), ...);
 				}
 				else if constexpr (std::is_same_v<T, SecondType>)
 				{
-					(lam(result, index, Param::second), ...); 
+					(lam(result, index, t, Param::second), ...); 
 					//((i == index ? (result = Param::second) : ++index), ...);
 				}
 

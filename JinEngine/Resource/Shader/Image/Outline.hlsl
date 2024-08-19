@@ -52,6 +52,9 @@ static const float yFilter[9] = { 1,2,1,0,0,0,-1,-2,-1 };
 float4 PS(VertexOut pin) : SV_Target
 {
 	const int3 baseIndex = int3(pin.texC.x * width, pin.texC.y * height, 0);
+	
+	//stencin map value
+	//control outline thickness(ref value)
 	int colorIndex[9] =
 	{
 		stencilMap.Load(baseIndex + int3(-thickness, thickness, 0)).y,
@@ -93,6 +96,7 @@ float4 PS(VertexOut pin) : SV_Target
 		gy += rate * yFilter[i];
 	}
 	 
+	//control outline thickness(restrict range)
 	const float colorDist = sqrt(gx * gx + gy * gy);
 	if (colorDist >= threshold)
 		return colors[finalColorIndex];

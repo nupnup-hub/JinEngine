@@ -40,9 +40,10 @@ SOFTWARE.
 #include"../Culling/Light/Dx/JDx12LightCulling.h"
 #include"../Culling/Frustum/JFrustumCulling.h"
 #include"../Scene/Dx/JDx12SceneDraw.h"
+#include"../Scene/Dx/JDx12Outline.h"
+#include"../Scene/Dx/JDx12SceneVelocity.h"
 #include"../ShadowMap/Dx/JDx12ShadowMap.h" 
-#include"../ShadowMap/Dx/JDx12CsmManager.h"
-#include"../Outline/Dx/JDx12Outline.h"
+#include"../ShadowMap/Dx/JDx12CsmManager.h" 
 #include"../Image/JPostProcessPipeline.h"
 #include"../Image/Dx/JDx12Blur.h"
 #include"../Image/Dx/JDx12DownSampling.h"
@@ -218,11 +219,20 @@ namespace JinEngine::Graphic
 			CashData().Clear();
 		}
 	}
+
+	JDx12Adaptee::~JDx12Adaptee()
+	{
+		ClearResource();
+	}
 	void JDx12Adaptee::Initialize(JCommandContextManager* manager)
 	{
 		Context::CashData().Initialize(manager);
 	}
 	void JDx12Adaptee::Clear()
+	{
+		ClearResource();
+	}
+	void JDx12Adaptee::ClearResource()
 	{
 		Context::CashData().Clear();
 	}
@@ -245,11 +255,15 @@ namespace JinEngine::Graphic
 		set.objectData = std::make_unique<JDx12GraphicObjectDataSetManager>();
 		set.context = std::make_unique<JCommandContextManager>();
 	}
-	void JDx12Adaptee::CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set)
+	void JDx12Adaptee::CreateDrawSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JSceneDrawingSubclassSet& set)
 	{
 		set.scene = std::make_unique<JDx12SceneDraw>();
 		set.shadowMap = std::make_unique<JDx12ShadowMap>();
 		set.depthTest = std::make_unique<JDx12DepthTest>();
+
+		set.outline = std::make_unique<JDx12Outline>();
+		set.debug = std::make_unique<JDx12GraphicDebug>();
+		set.velocity = std::make_unique<JDx12SceneVelocity>();
 	}
 	void JDx12Adaptee::CreateCullingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set)
 	{
@@ -260,8 +274,6 @@ namespace JinEngine::Graphic
 	}
 	void JDx12Adaptee::CreateImageProcessingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set)
 	{
-		set.debug = std::make_unique<JDx12GraphicDebug>();
-		set.outline = std::make_unique<JDx12Outline>();
 		set.blur = std::make_unique<JDx12Blur>();
 		set.downSampling = std::make_unique<JDx12DownSampling>();
 		set.ssao = std::make_unique<JDx12Ssao>();
@@ -271,7 +283,7 @@ namespace JinEngine::Graphic
 		set.histogram = std::make_unique<JDx12PostProcessHistogram>();
 		set.exposure = std::make_unique<JDx12PostProcessExposure>();
 		set.convertColor = std::make_unique<JDx12ConvertColor>();
-		set.ppEffectSet = std::make_unique<JPostProcessEffectSet>(set.tm.get(), set.bloom.get(), set.aa.get(), set.histogram.get(), set.exposure.get(), set.convertColor.get());
+		set.ppEffectSet = std::make_unique<JPostProcessEffectSet>(set.tm.get(), set.bloom.get(), set.blur.get(), set.aa.get(), set.histogram.get(), set.exposure.get(), set.convertColor.get());
 		set.ppPipeline = std::make_unique<JPostProcessPipeline>();
 	}
 	void JDx12Adaptee::CreateRaytracingSubclass(const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set)

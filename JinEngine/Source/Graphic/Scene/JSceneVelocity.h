@@ -23,18 +23,28 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once
-#include"../../../Core/JCoreEssential.h"
+#pragma once 
+#include"../JGraphicTaskInterface.h"
+#include"../JGraphicSubClassInterface.h" 
+#include"../../Core/JCoreEssential.h"   
+#include"../../Core/Pointer/JOwnerPtr.h"  
 
 namespace JinEngine
 {
-	namespace Constants
+	class JGameObject;
+	namespace Graphic
 	{
-		static constexpr float minCamFrustumNear = 1.0f;
-		static constexpr float maxCamFrustumFar = 10000.0f;
-		static constexpr float minCamFrustumDistance = 50.0f;
-		static constexpr float defaultCamFrustumNear = minCamFrustumNear;
-		static constexpr float defaultCamFrustumFar = maxCamFrustumFar * 0.05f;
-		static constexpr float defaultCamFovDeg = 60;	//degree
+		class JDrawHelper;
+		struct JGraphicInfo;
+		class JSceneVelocity : public JGraphicTaskInterface, public JGraphicSubClassInterface
+		{
+		public:
+			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM) = 0;
+			virtual void Clear() = 0;
+		public:
+			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final; 
+		public:
+			virtual void Compute(const JGraphicVelocityComputeSet* set, const JDrawHelper& helper) = 0;
+		};
 	}
 }

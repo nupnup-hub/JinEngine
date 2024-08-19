@@ -72,6 +72,7 @@ namespace JinEngine
 		public:
 			JToneMapping* tm;
 			JBloom* bloom;
+			JBlur* blur;
 			JAntialise* aa;
 			JPostProcessHistogram* histogram;
 			JPostProcessExposure* exposure;
@@ -79,6 +80,7 @@ namespace JinEngine
 		public:
 			JPostProcessEffectSet(JToneMapping* tm,
 				JBloom* bloom,
+				JBlur* blur,
 				JAntialise* aa,
 				JPostProcessHistogram* histogram,
 				JPostProcessExposure* exposure,
@@ -171,7 +173,7 @@ namespace JinEngine
 		public:
 			JGraphicSceneDrawSet(JCommandContext* context);
 		};
-
+ 
 		struct JGraphicShadowMapDrawSet : public JGraphicDeviceUser, public Core::JValidInterface
 		{
 		public:
@@ -328,6 +330,15 @@ namespace JinEngine
 		public:
 			JGraphicRtShadowComputeSet(JCommandContext* context);
 		};
+
+		struct JGraphicVelocityComputeSet : public JGraphicDeviceUser, public Core::JValidInterface
+		{
+		public:
+			JCommandContext* context;
+		public:
+			JGraphicVelocityComputeSet(JCommandContext* context);
+		};
+
 
 		//draw scene single thread
 		struct JGraphicDrawSceneSTSet

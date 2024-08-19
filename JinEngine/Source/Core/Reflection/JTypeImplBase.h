@@ -180,18 +180,53 @@ namespace JinEngine
 		auto tFInterface = transform->ModuleManagedData()->GetFrameUpdateUserInterface();\
 		tFInterface->TryDeRegisterDirtyListener(thisPointer->GetGuid());					\
 
-
-		//Rule: function name is Update
-#define IMPL_REGISTER_FRAME_UPDATE_ACTION()										\
-																				\
-		auto updateLam = [](JUserPtr<JObject> obj)								\
-		{																		\
-			static_cast<ThisInterfaceType*>(obj.Get())->impl->Update();				\
+  
+		//일반적으로 Always -> Hot 순으로 Update를 실시한다
+		//필요하다면 JTransition처럼 Pre - Post 접두사를 붙은 함수를 추가하자. 
+		//Rule: function name is HotUpdate
+#define IMPL_REGISTER_FRAME_UPDATE_ACTION_HOT()										\
+																					\
+		auto hotUpdateLam = [](JUserPtr<JObject> obj)								\
+		{																			\
+			static_cast<ThisInterfaceType*>(obj.Get())->impl->HotUpdate();			\
 		};																			\
 																					\
-		auto bind = JFrameObjectUpdateF::CreateCompletelyBind(updateLam, JUserPtr<JObject>(thisPointer));	\
+		auto bind = JFrameObjectUpdateF::CreateCompletelyBind(hotUpdateLam, JUserPtr<JObject>(thisPointer));	\
 		graphicData->GetFrameUpdateUserInterface()->RegisterObjectUpdateB(std::move(bind));					\
 																											\
+
+
+		//Rule: function name is AlwaysUpdate
+#define IMPL_REGISTER_FRAME_UPDATE_ACTION_ALWAYS()									\
+																					\
+		auto alwaysUpdateLam = [](JUserPtr<JObject> obj)							\
+		{																			\
+			static_cast<ThisInterfaceType*>(obj.Get())->impl->AlwaysUpdate();		\
+		};																			\
+																					\
+		auto bind = JFrameObjectUpdateF::CreateCompletelyBind(alwaysUpdateLam, JUserPtr<JObject>(thisPointer));	\
+		graphicData->GetFrameUpdateUserInterface()->RegisterObjectUpdateB(nullptr, std::move(bind));					\
+																											\
+
+
+#define IMPL_REGISTER_FRAME_UPDATE_ACTION()											\
+																					\
+		auto hotUpdateLam = [](JUserPtr<JObject> obj)								\
+		{																			\
+			static_cast<ThisInterfaceType*>(obj.Get())->impl->HotUpdate();			\
+		};																			\
+		auto alwaysUpdateLam = [](JUserPtr<JObject> obj)							\
+		{																			\
+			static_cast<ThisInterfaceType*>(obj.Get())->impl->AlwaysUpdate();		\
+		};																			\
+																					\
+		auto hotBind = JFrameObjectUpdateF::CreateCompletelyBind(hotUpdateLam, JUserPtr<JObject>(thisPointer));					\
+		auto alwaysBind = JFrameObjectUpdateF::CreateCompletelyBind(alwaysUpdateLam, JUserPtr<JObject>(thisPointer));			\
+		graphicData->GetFrameUpdateUserInterface()->RegisterObjectUpdateB(std::move(hotBind), std::move(alwaysBind));		\
+																																\
+
+
+
 
 #define  IMPL_DEREGISTER_FRAME_UPDATE_ACTION() graphicData->GetFrameUpdateUserInterface()->DeRegisterObjectUpdateB();					
 

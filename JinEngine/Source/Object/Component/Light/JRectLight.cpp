@@ -81,6 +81,18 @@ namespace JinEngine
 		{
 			return XMMatrixPerspectiveFovLH(90.0f * JMathHelper::DegToRad, 1.0f, fNear, fFar); 
 		}
+		static JGraphicResourceTypeSet ShadowMapTypeSet() noexcept
+		{
+			return JGraphicResourceTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		}
+		static JGraphicResourceTypeSet DebugTypeSet() noexcept
+		{
+			return JGraphicResourceTypeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
+		}
+		static JCullingTypeSet FrustumSet()noexcept
+		{
+			return JCullingTypeSet(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		}
 	}
 
 	class JRectLight::JRectLightImpl : public Core::JTypeImplBase, public JResourceObjectUserInterface
@@ -310,12 +322,11 @@ namespace JinEngine
 		void CreateShadowMapResource()noexcept
 		{
 			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, thisPointer->GetAreaGuid());
-
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->CreateGraphicResource(graphicData.Get(), gTypeSet);
-
-			JCullingTypeSet cTypeSet(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-			GMI()->CreateCullingData(graphicData.Get(), cTypeSet);
+			 
+			JGraphicResourceCreationDesc desc(Private::ShadowMapTypeSet(), JVector2F(thisPointer->GetShadowMapSize()));
+			GMI()->CreateGraphicResource(graphicData.Get(), desc);
+			 
+			GMI()->CreateCullingData(graphicData.Get(), Private::FrustumSet());
 
 			if (thisPointer->AllowDisplayShadowMap())
 				CreateShadowMapDebugResource();
@@ -332,29 +343,24 @@ namespace JinEngine
 			GMI()->CancelExecutableGraphicFeature(graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP);
 
 			DestroyShadowMapDebugResource();
-
-			JCullingTypeSet cTypeSet(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
-			GMI()->DestroyCullingData(graphicData.Get(), cTypeSet);
-
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->DestroyGraphicResource(graphicData.Get(), gTypeSet);
-
+			 
+			GMI()->DestroyCullingData(graphicData.Get(), Private::FrustumSet());		 
+			GMI()->DestroyGraphicResource(graphicData.Get(), Private::ShadowMapTypeSet());
 			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
 		};
 		void CreateShadowMapDebugResource()
-		{
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->CreateGraphicResource(graphicData.Get(), gTypeSet);
+		{ 
+			JGraphicResourceCreationDesc desc(Private::DebugTypeSet(), JVector2F(thisPointer->GetShadowMapSize()));
+			GMI()->CreateGraphicResource(graphicData.Get(), desc);
 		}
 		void DestroyShadowMapDebugResource()
-		{
-			JGraphicResourceTypeSet gTypeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
-			GMI()->DestroyGraphicResource(graphicData.Get(), gTypeSet);
+		{ 
+			GMI()->DestroyGraphicResource(graphicData.Get(), Private::DebugTypeSet());
 		}
 	public:
 		void Activate()noexcept
 		{
-			IMPL_REGISTER_FRAME_UPDATE_ACTION();
+			IMPL_REGISTER_FRAME_UPDATE_ACTION_HOT();
 			ltcMat = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_MAT);
 			ltcAmp = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_AMP);
 
@@ -374,7 +380,7 @@ namespace JinEngine
 			IMPL_DEREGISTER_FRAME_UPDATE_ACTION();
 		}
 	private:
-		void Update()
+		void HotUpdate()
 		{
 			UpdateLightTransform();
 		}

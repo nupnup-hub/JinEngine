@@ -68,8 +68,10 @@ namespace JinEngine
 		DirectX::XMMATRIX GetInvView()const noexcept;  
 		DirectX::XMMATRIX GetProj()const noexcept;  
 		JMatrix4x4 GetProj4x4()const noexcept; 
+		DirectX::XMMATRIX GetPreInvView()const noexcept;
 		DirectX::XMMATRIX GetPreViewProj()const noexcept;
 		void GetUvToView(JVector2F& a, JVector2F& b)const noexcept;
+		void GetPreUvToView(JVector2F& a, JVector2F& b)const noexcept;
 		/*
 		* @return world bounding frustum
 		*/

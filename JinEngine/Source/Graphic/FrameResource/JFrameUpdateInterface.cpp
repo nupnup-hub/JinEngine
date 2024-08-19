@@ -72,11 +72,11 @@ namespace JinEngine
 		}
 		bool JFrameDirtyBase::IsFrameHotDirted()const noexcept
 		{
-			return  GetFrameDirtyMax() > 0 && GetFrameDirty() == (GetFrameDirtyMax());
+			return GetFrameDirty() == Constants::gNumFrameResources;
 		}
 		bool JFrameDirtyBase::IsLastFrameHotUpdated()const noexcept
 		{
-			return GetFrameDirty() == (GetFrameDirtyMax() - 1);
+			return GetFrameDirty() == (Constants::gNumFrameResources - 1);
 		}
 		bool JFrameDirtyBase::AddFrameDirtyListener(JFrameDirtyListener&& listener)noexcept
 		{
@@ -96,11 +96,7 @@ namespace JinEngine
 		int JFrameDirtyTrigger::GetFrameDirty()const noexcept
 		{
 			return 0;
-		}
-		int JFrameDirtyTrigger::GetFrameDirtyMax()const noexcept
-		{
-			return 0;
-		}
+		} 
 		void JFrameDirtyTrigger::SetFrameDirty()noexcept
 		{
 			JFrameDirtyBase::SetFrameDirty();
@@ -128,15 +124,11 @@ namespace JinEngine
 		int JFrameDirty::GetFrameDirty()const noexcept
 		{
 			return frameDirty;
-		}
-		int JFrameDirty::GetFrameDirtyMax()const noexcept
-		{
-			return Constants::gNumFrameResources;
-		}
+		} 
 		void JFrameDirty::SetFrameDirty()noexcept
 		{
 			JFrameDirtyBase::SetFrameDirty();
-			frameDirty = GetFrameDirtyMax();
+			frameDirty = Constants::gNumFrameResources;
 		}
 		bool JFrameDirty::IsFrameDirted()const noexcept
 		{
@@ -214,12 +206,19 @@ namespace JinEngine
 
 			dirtyBase->OffFrameDirty();
 		}
-		void JFrameUpdateInterface::TryExecuteObjectUpdateBind()
+		void JFrameUpdateInterface::TryExecuteObjectHotUpdateBind()
 		{
-			if (objectUpdateB == nullptr)
+			if (hotUpdateBind == nullptr)
 				return;
 
-			objectUpdateB->InvokeCompletelyBind();
+			hotUpdateBind->InvokeCompletelyBind();
+		} 
+		void JFrameUpdateInterface::TryExecuteObjectAlwaysUpdateBind()
+		{
+			if (alwaysUpdateBind == nullptr)
+				return;
+
+			alwaysUpdateBind->InvokeCompletelyBind();
 		}
 		bool JFrameUpdateInterface::TryRegisterDirtyListener(JFrameDirtyListener&& listener)
 		{
@@ -255,14 +254,16 @@ namespace JinEngine
 		{
 			return GetDirtyBase()->RemoveFrameDirtyListener(guid); 
 		}
-		bool JFrameUpdateInterface::JFrameUpdateInterface::RegisterObjectUpdateB(JFrameObjectUpdateB&& bind)
+		bool JFrameUpdateInterface::RegisterObjectUpdateB(JFrameObjectUpdateB&& hotUpdateBind, JFrameObjectUpdateB&& alwaysUpdateBind)
 		{
-			objectUpdateB = std::move(bind);
+			JFrameUpdateInterface::hotUpdateBind = std::move(hotUpdateBind);
+			JFrameUpdateInterface::alwaysUpdateBind = std::move(alwaysUpdateBind);
 			return true;
 		}
 		bool JFrameUpdateInterface::DeRegisterObjectUpdateB()
 		{
-			objectUpdateB = nullptr;
+			hotUpdateBind = nullptr;
+			alwaysUpdateBind = nullptr;
 			return true;
 		}
 	}

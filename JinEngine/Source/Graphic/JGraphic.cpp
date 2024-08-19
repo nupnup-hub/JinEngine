@@ -37,6 +37,8 @@ SOFTWARE.
 #include"DataSet/JGraphicSubclassDataSet.h"
 #include"DataSet/JGraphicObjectDataSetManager.h"
 #include"Scene/JSceneDraw.h"
+#include"Scene/JOutline.h"
+#include"Scene/JSceneVelocity.h"
 #include"ShadowMap/JShadowMap.h"
 #include"ShadowMap/JCsmManager.h"
 #include"Debug/JGraphicDebug.h"
@@ -61,7 +63,6 @@ SOFTWARE.
 #include"Accelerator/JGpuAcceleratorManager.h"
 #include"Accelerator/JGpuAcceleratorInfo.h"
 #include"Command/JCommandContext.h"
-#include"Outline/JOutline.h"
 #include"Raytracing/Light/Global/JRaytracingGI.h"
 #include"Raytracing/Occlusion/JRaytracingAmbientOcclusion.h" 
 #include"Raytracing/Denoiser/JRaytracingDenoiser.h" 
@@ -180,25 +181,38 @@ namespace JinEngine
 			outV.push_back(csm.get());
 			outV.push_back(accelerator.get());
 			outV.push_back(frame.get());
+			outV.push_back(objectData.get());
 			outV.push_back(shareData.get()); 
 		}
-		void JDrawingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
+		void JSceneDrawingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
 		{
 			scene->Initialize(device, resourceManage->graphic.get());
 			shadowMap->Initialize(device, resourceManage->graphic.get());
 			depthTest->Initialize(device, resourceManage->graphic.get());
+
+			outline->Initialize(device, resourceManage->graphic.get());
+			debug->Initialize(device, resourceManage->graphic.get());
+			velocity->Initialize(device, resourceManage->graphic.get());
 		}
-		void JDrawingSubclassSet::Clear()
+		void JSceneDrawingSubclassSet::Clear()
 		{
-			scene = nullptr;
-			shadowMap = nullptr;
+			velocity = nullptr;
+			debug = nullptr;
+			outline = nullptr;
+
 			depthTest = nullptr;
+			shadowMap = nullptr;
+			scene = nullptr;
 		}
-		void JDrawingSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
+		void JSceneDrawingSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
 		{
 			outV.push_back(scene.get());
 			outV.push_back(shadowMap.get());
 			outV.push_back(depthTest.get());
+
+			outV.push_back(outline.get());
+			outV.push_back(debug.get());
+			outV.push_back(velocity.get());
 		}
 		void JCullingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
 		{
@@ -222,9 +236,7 @@ namespace JinEngine
 			outV.push_back(frustum.get());
 		}
 		void JImageProcessingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
-		{
-			debug->Initialize(device, resourceManage->graphic.get());
-			outline->Initialize(device, resourceManage->graphic.get());
+		{ 
 			blur->Initialize(device, resourceManage->graphic.get());
 			downSampling->Initialize(device, resourceManage->graphic.get());
 			ssao->Initialize(device, resourceManage->graphic.get());
@@ -247,14 +259,10 @@ namespace JinEngine
 			tm = nullptr;
 			ssao = nullptr;
 			downSampling = nullptr;
-			blur = nullptr;
-			outline = nullptr;
-			debug = nullptr;
+			blur = nullptr;  
 		}
 		void JImageProcessingSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
 		{
-			outV.push_back(debug.get());
-			outV.push_back(outline.get());
 			outV.push_back(blur.get());
 			outV.push_back(downSampling.get());
 			outV.push_back(ssao.get());
@@ -364,7 +372,7 @@ namespace JinEngine
 			std::unique_ptr<JGraphicDevice> device;
 		public:
 			JResourceManageSubclassSet resourceManage;
-			JDrawingSubclassSet drawing;
+			JSceneDrawingSubclassSet drawing;
 			JCullingSubclassSet culling;
 			JImageProcessingSubclassSet imageProcessing;
 			JRaytracingSubclassSet raytracing;
@@ -540,6 +548,8 @@ namespace JinEngine
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useHdr != newGraphicOption.postProcess.useHdr);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useFxaa != newGraphicOption.postProcess.useFxaa);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useToneMapping != newGraphicOption.postProcess.useToneMapping);
+				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useBloom != newGraphicOption.postProcess.useBloom);
+				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useBlur != newGraphicOption.postProcess.useBlur);
 
 #ifdef DEVELOP
 				//debugging`
@@ -1108,7 +1118,7 @@ namespace JinEngine
 
 				device->ResizeWindow({ resourceManage.graphic.get() });
 				resourceManage.graphic->ResizeWindow(device.get());
-				imageProcessing.outline->UpdatePassBuf(info.width, info.height, Constants::commonStencilRef);
+				drawing.outline->UpdatePassBuf(info.width, info.height, Constants::commonStencilRef);
 
 				// Wait until resize is complete.
 				device->EndPublicCommand();
@@ -1126,7 +1136,7 @@ namespace JinEngine
 					resourceManage.culling.get(),
 					resourceManage.accelerator.get(),
 					resourceManage.frame.get(),
-					imageProcessing.debug.get(),
+					drawing.debug.get(),
 					drawing.depthTest.get(),
 					imageProcessing.blur.get(),
 					imageProcessing.downSampling.get(),
@@ -1153,11 +1163,41 @@ namespace JinEngine
 
 				adapter->BeginUpdateStart(option.deviceType, *drawRefSet);
 			}
+			void Update()
+			{ 
+				UpdateFrameBuffer();
+				UpdateRequestor();
+			}
+			void UpdateReAllocCondition(JUpdateHelper::UpdateDataBase& uBase)const noexcept
+			{
+				uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::KEEP;
+				if (uBase.capacity <= uBase.count)
+				{
+					uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::UP_CAPACITY;
+					uBase.downCapacityCount = 0;
+				}
+				else if (uBase.count < (uBase.capacity / uBase.downCapacityFactor) && uBase.capacity > info.minCapacity)
+				{
+					if (uBase.downCapacityCount >= uBase.downCapacityCountMax)
+					{
+						uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::DOWN_CAPACITY;
+						uBase.downCapacityCount = 0;
+					}
+					else
+					{
+						uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::KEEP;
+						++uBase.downCapacityCount;
+					}
+				}
+				else
+					uBase.downCapacityCount = 0;
+			}
+		private:
 			void UpdateFrameBuffer()
 			{
 				updateHelper.Clear();
 				for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
-				{ 
+				{
 					const J_FRAME_RESOURCE_UPLOAD_TYPE type = (J_FRAME_RESOURCE_UPLOAD_TYPE)i;
 					updateHelper.uData[i].count = resourceManage.frame->GetTotalFrameCount(type);
 					updateHelper.uData[i].capacity = resourceManage.frame->GetFrameResourceCapacity(type);
@@ -1187,7 +1227,7 @@ namespace JinEngine
 						if (updateHelper.uData[i].reAllocCondition != J_GRAPHIC_CAPACITY_CONDITION::KEEP)
 						{
 							const J_FRAME_RESOURCE_UPLOAD_TYPE type = (J_FRAME_RESOURCE_UPLOAD_TYPE)i;
-							ReBuildFrameResource(type); 
+							ReBuildFrameResource(type);
 							updateHelper.uData[i].capacity = resourceManage.frame->GetFrameResourceCapacity(type);
 						}
 					}
@@ -1203,42 +1243,43 @@ namespace JinEngine
 				else if (updateHelper.hasBindingDataDirty)
 					SetGraphicInfo(newInfo, false, true, true);
 			}
-			void Update()
-			{ 
-				updateHelper.Begin();
+			void UpdateRequestor()
+			{
+				updateHelper.Begin(); 
 				resourceManage.frame->BeginUpdate();
-
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				//update frame resource and decide something drawing
 				for (uint i = 0; i < drawListCount; ++i)
 				{
-					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i); 
+					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
 					drawTarget->BeginUpdate();
-					for(uint j = 0; j < totalCompVariation; ++j) 
-					{ 
+					for (uint j = 0; j < totalCompVariation; ++j)
+					{
 						const JObjectDataSetMetadata meta = resourceManage.objectData->GetMetadata(j);
 						if (!meta.isSupportedFrameResourceUpload)
 							continue;
-						 
+
 						auto& compVec = drawTarget->scene->GetComponentCacheVec(j);
-						 
+
 						JFrameUpdateOption option;
 						JFrameUpdateDataSet updateSet(&compVec, meta, option);
 						resourceManage.frame->Update(updateSet);
 
 						drawTarget->updateInfo->updateCount[j] = updateSet.updateLog.updatedCount;
 						drawTarget->updateInfo->hotUpdateCount[j] = updateSet.updateLog.hotUpdatedCount;
-					} 
+						drawTarget->updateInfo->moveCount[j] = updateSet.updateLog.moveCount;
+						drawTarget->updateInfo->thisFrameCount[j] = (uint)compVec.size();
+					}
 					UpdateSceneRequestor(drawTarget);
 					UpdateShadowRequestor(drawTarget);
 					UpdateFrustumCullingRequestor(drawTarget);
 					UpdateOccCullingRequestor(drawTarget);
-					drawTarget->EndUpdate(); 
-				} 
+					drawTarget->EndUpdate();
+				}
 				for (uint j = 0; j < totalResourceVariation; ++j)
 				{
 					const uint index = totalCompVariation + j;
-					const JObjectDataSetMetadata meta = resourceManage.objectData->GetMetadata(index); 
+					const JObjectDataSetMetadata meta = resourceManage.objectData->GetMetadata(index);
 					if (!meta.isSupportedFrameResourceUpload)
 						continue;
 
@@ -1260,30 +1301,6 @@ namespace JinEngine
 				//if (option.rendering.allowRaytracing)
 				//	raytracing.ao->StreamOutDebugInfo();
 #endif
-			}
-			void UpdateReAllocCondition(JUpdateHelper::UpdateDataBase& uBase)const noexcept
-			{
-				uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::KEEP;
-				if (uBase.capacity <= uBase.count)
-				{
-					uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::UP_CAPACITY;
-					uBase.downCapacityCount = 0;
-				}
-				else if (uBase.count < (uBase.capacity / uBase.downCapacityFactor) && uBase.capacity > info.minCapacity)
-				{
-					if (uBase.downCapacityCount >= uBase.downCapacityCountMax)
-					{
-						uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::DOWN_CAPACITY;
-						uBase.downCapacityCount = 0;
-					}
-					else
-					{
-						uBase.reAllocCondition = J_GRAPHIC_CAPACITY_CONDITION::KEEP;
-						++uBase.downCapacityCount;
-					}
-				}
-				else
-					uBase.downCapacityCount = 0;
 			}
 		private:   
 			void UpdateSceneRequestor(_Inout_ JGraphicDrawTarget* target)
@@ -1425,7 +1442,7 @@ namespace JinEngine
 					{
 						//1.draw depth map
 						//2.create mipmap and compute hzb
-						//3.draw imageProcessing.debug map
+						//3.draw drawing.debug map
 						for (const auto& data : drawTarget->hzbOccCullingRequestor)
 						{
 							if (!data->canDrawThisFrame)
@@ -1458,7 +1475,7 @@ namespace JinEngine
 						if (!data->canDrawThisFrame)
 							continue;
 
-						imageProcessing.debug->ComputeLitDebug(dataSet.debugCompute.get(),
+						drawing.debug->ComputeLitDebug(dataSet.debugCompute.get(),
 							JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
 					}
 
@@ -1522,7 +1539,7 @@ namespace JinEngine
 					{
 						//1.query test
 						//2.extract query result
-						//3.draw imageProcessing.debug map
+						//3.draw drawing.debug map
 						for (const auto& data : drawTarget->hdOccCullingRequestor)
 						{
 							if (!data->canDrawThisFrame)
@@ -1555,7 +1572,7 @@ namespace JinEngine
 						if (!data->canDrawThisFrame)
 							continue;
 
-						imageProcessing.outline->DrawCamOutline(dataSet.outline.get(),
+						drawing.outline->DrawCamOutline(dataSet.outline.get(),
 							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
 					}
 					for (const auto& data : drawTarget->sceneRequestor)
@@ -1572,7 +1589,7 @@ namespace JinEngine
 						if (!data->canDrawThisFrame)
 							continue;
 
-						imageProcessing.debug->ComputeCamDebug(dataSet.debugCompute.get(),
+						drawing.debug->ComputeCamDebug(dataSet.debugCompute.get(),
 							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
 					}
 
@@ -1792,7 +1809,7 @@ namespace JinEngine
 				JGraphicMidFrameSet dataSet;
 				adapter->SettingMidFrame(option.deviceType, *drawRefSet, dataSet);
 
-				//mostly handle compute shader task or drawing imageProcessing.debug
+				//mostly handle compute shader task or drawing drawing.debug
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				JDrawHelper helper(info, option, alignedObject);
 
@@ -1911,7 +1928,7 @@ namespace JinEngine
 						continue;
 
 					helper.SetDrawTarget(data->GetOwnerTarget());
-					imageProcessing.debug->ComputeLitDebug(dataSet.debugCompute.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
+					drawing.debug->ComputeLitDebug(dataSet.debugCompute.get(), JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
 				}
 				for (const auto& data : registeredSceneRequestor)
 				{
@@ -1925,8 +1942,8 @@ namespace JinEngine
 					if (data->jCamera->AllowPostProcess())
 						imageProcessing.ppPipeline->ApplyPostProcess(dataSet.postPrcess.get(), copiedHelper, data->canDrawThisFrame);
 
-					imageProcessing.debug->ComputeCamDebug(dataSet.debugCompute.get(), copiedHelper);
-					imageProcessing.outline->DrawCamOutline(dataSet.outline.get(), copiedHelper);
+					drawing.debug->ComputeCamDebug(dataSet.debugCompute.get(), copiedHelper);
+					drawing.outline->DrawCamOutline(dataSet.outline.get(), copiedHelper);
 				}
 
 				if (option.debugging.allowDisplayLightCullingResult)
@@ -2276,7 +2293,7 @@ namespace JinEngine
 					++successCount;
 
 					impl->resourceManage.objectData->NotifyGraphicResourceCreation(base, newInfo, desc.type.task);
-				}
+				} 
 				return successCount > 0;
 			}
 			bool DestroyGraphicResource(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint localIndex = 0, const uint count = 1)final
@@ -2289,7 +2306,8 @@ namespace JinEngine
 					return false;
 
 				JGraphicResourceInterface::DestoryInfoF destroyF = CreateDestroyGraphicResourceF();
-				gInterface->RemoveInfo(destroyF, typeSet.resouce, typeSet.task, localIndex);
+				for(uint i = 0; i < count; ++i)
+					gInterface->RemoveInfo(destroyF, typeSet.resouce, typeSet.task, localIndex);
 				return true;
 			}
 			bool DestroyAllGraphicsResourcesOfType(JGraphicModuleManagedDataFrame* data, const J_GRAPHIC_RESOURCE_TYPE type) final
@@ -2686,9 +2704,8 @@ namespace JinEngine
 		{
 			JinEngine::JGraphic::Instance().impl->UpdateWait();
 		}
-		void MainAccess::UpdateFrame()
-		{
-			JinEngine::JGraphic::Instance().impl->UpdateFrameBuffer();
+		void MainAccess::Update()
+		{ 
 			JinEngine::JGraphic::Instance().impl->Update();
 		}
 		void MainAccess::Draw(const bool allowDrawScene)

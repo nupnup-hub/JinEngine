@@ -66,7 +66,7 @@ namespace JinEngine
 		virtual bool TryRegisterDirtyListener(const JUserPtr<JObject>& obj) = 0;
 		virtual bool TryDeRegisterDirtyListener(const size_t guid) = 0;
 	public:
-		virtual bool RegisterObjectUpdateB(JFrameObjectUpdateB&& bind) = 0;
+		virtual bool RegisterObjectUpdateB(JFrameObjectUpdateB&& hotUpdateBind = nullptr, JFrameObjectUpdateB&& alwaysUpdateBind = nullptr) = 0;
 		virtual bool DeRegisterObjectUpdateB() = 0;
 	};
 	 

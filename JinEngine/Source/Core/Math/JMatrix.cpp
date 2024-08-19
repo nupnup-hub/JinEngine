@@ -389,6 +389,10 @@ namespace JinEngine
 	{
 		return r[0] == rhs.r[0] && r[1] == rhs.r[1] && r[2] == rhs.r[2] && r[3] == rhs.r[3];
 	}  
+	bool JMatrix4x4::operator!=(const JMatrix4x4& rhs)const noexcept
+	{
+		return r[0] != rhs.r[0] || r[1] != rhs.r[1] || r[2] != rhs.r[2] || r[3] != rhs.r[3];
+	}
 	void JMatrix4x4::StoreXM(const DirectX::FXMMATRIX& xm)noexcept
 	{
 		_mm_storeu_ps(&_11, xm.r[0]);

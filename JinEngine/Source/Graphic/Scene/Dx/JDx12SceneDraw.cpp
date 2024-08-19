@@ -202,7 +202,7 @@ namespace JinEngine::Graphic
 				initHelper.macro[i].clear();
 				initHelper.macro[i].push_back(ConvertMacroSet(layout));
 				ConvertMacroSet(initHelper.gFunctionFlag, initHelper.macro[i]);
-
+				 
 				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D]) });
 				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE]) });
 				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_wstring(info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP]) });
@@ -912,22 +912,7 @@ namespace JinEngine::Graphic
 			};
 			context->CopyResource(fromSet, toSet, std::make_index_sequence<copyTarget>());
 		}
-	}
-	void JDx12SceneDraw::ComputeVelocity(JDx12CommandContext* context, const ResourceDataSet& set, const JDrawHelper& helper)
-	{
-		context->Transition(set.dsSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		context->Transition(set.velocitySet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		context->FlushResourceBarriers();
-
-		context->SetComputeRootSignature(velocityRootsignature.Get());
-		context->SetPipelineState(velocityShader.get());
-
-		context->SetComputeRootConstantBufferView(Velocity::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA, set.camFrameIndex);
-		context->SetComputeRootDescriptorTable(Velocity::depthMapIndex, set.dsSet.GetGpuSrvHandle());
-		context->SetComputeRootDescriptorTable(Velocity::velocityMapIndex, set.velocitySet.GetGpuUavHandle());
-
-		context->Dispatch2D(set.rtSet.info->GetResourceSize(), velocityShader->dispatchInfo.threadDim.XY());
-	}
+	} 
 	void JDx12SceneDraw::BeginDraw(const JGraphicBindSet* bindSet, const JDrawHelper& helper)
 	{
 		if (!IsSameDevice(bindSet))
@@ -1129,20 +1114,7 @@ namespace JinEngine::Graphic
 			BindGiResource(context, rSet, helper);
 		BindViewPortAndRect(context, rSet);
 		DrawFullScreenGeometry(context, rSet, helper);
-	}
-	void JDx12SceneDraw::ComputeSceneDependencyTemporalResource(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)
-	{
-		if (!IsSameDevice(drawSet) || !helper.allowTemporalProcess)
-			return;
-
-		const JDx12GraphicSceneDrawSet* dx12DrawSet = static_cast<const JDx12GraphicSceneDrawSet*>(drawSet);
-		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12DrawSet->context);
-		ResourceDataSet rSet(context, helper);
-		if (!rSet.IsValid() || !rSet.velocitySet.IsValid())
-			return;
-
-		ComputeVelocity(context, rSet, helper);
-	}
+	} 
 	void JDx12SceneDraw::DrawGameObject(JDx12CommandContext* context,
 		const std::vector<JUserPtr<JGameObject>>& gameObject,
 		const JDrawHelper& helper,
@@ -1223,8 +1195,7 @@ namespace JinEngine::Graphic
 
 		ReBuildRootSignature(static_cast<JDx12GraphicDevice*>(dataSet.device)->GetDevice(), GetGraphicInfo(), GetGraphicOption());
 		BuildDeferredShader(dataSet);
-		BuildVelocityShader(static_cast<JDx12GraphicDevice*>(dataSet.device)->GetDevice(), GetGraphicInfo(), GetGraphicOption());
-
+	 
 		auto shaderVec = JShader::StaticTypeInfo().GetInstanceRawPtrVec();
 		for (auto& data : shaderVec)
 		{
@@ -1459,10 +1430,7 @@ namespace JinEngine::Graphic
 			BuildDeferredShader(JGraphicShaderCompileSet(device));
 		}
 		else
-			BuildForwardRootSignature(static_cast<JDx12GraphicDevice*>(device)->GetDevice(), gInfo, gOption);
-
-		BuildVelocityRootSignature(static_cast<JDx12GraphicDevice*>(device)->GetDevice(), gInfo, gOption);
-		BuildVelocityShader(static_cast<JDx12GraphicDevice*>(device)->GetDevice(), gInfo, gOption);
+			BuildForwardRootSignature(static_cast<JDx12GraphicDevice*>(device)->GetDevice(), gInfo, gOption); 
 	}
 	void JDx12SceneDraw::BuildForwardRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
@@ -1478,7 +1446,7 @@ namespace JinEngine::Graphic
 		builder.PushShaderResource(0, 3);		//rLitBuffIndex
 		builder.PushShaderResource(0, 4);		//csmBuffIndex
 		builder.PushShaderResource(1);			//material
-
+		 
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D], 2, 0);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE], 2, 1);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP], 2, 2);
@@ -1551,15 +1519,6 @@ namespace JinEngine::Graphic
 		D3D12_ROOT_SIGNATURE_FLAGS flag = Private::useFullscreenQuad ? D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT : D3D12_ROOT_SIGNATURE_FLAG_NONE;
 		builder.Create(device, L"Main Deferred Shading RootSignature", deferredShadingRootSignature.GetAddressOf(), flag);
 	}
-	void JDx12SceneDraw::BuildVelocityRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
-	{
-		velocityRootsignature = nullptr;
-		JDx12RootSignatureBuilder<Velocity::rootSlotCount> builder;
-		builder.PushConstantsBuffer(Velocity::passCBIndex);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-		builder.Create(device, L"Velocity RootSignature", velocityRootsignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);
-	}
 	void JDx12SceneDraw::ReBuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		if (option.rendering.allowDeferred)
@@ -1580,8 +1539,7 @@ namespace JinEngine::Graphic
 
 			forwardRootSignature = nullptr;
 			BuildForwardRootSignature(device, info, option);
-		} 
-		BuildVelocityRootSignature(device, info, option);
+		}  
 	}
 	void JDx12SceneDraw::BuildDeferredShader(const JGraphicShaderCompileSet& dataSet)
 	{
@@ -1611,29 +1569,14 @@ namespace JinEngine::Graphic
 		initData.privateFlag = Core::AddSQValueEnum(SHADER_FUNCTION_PRIVATE_LIGHT_CULLING, SHADER_FUNCTION_PRIVATE_GLOBAL_ILLUMINATION);
 		holder = CreateShader(dataSet, initData);
 		deferredShadingHolder[INNER_DEFERRED_SHADER_INCLUDE_ALL] = (static_cast<JDx12GraphicShaderDataHolder*>(holder.Release()));
-	}
-	void JDx12SceneDraw::BuildVelocityShader(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
-	{ 
-		velocityShader = std::make_unique<JDx12ComputeShaderDataHolder>();
-
-		constexpr uint shaderCount = 1;
-		JDx12ComputePsoBulder<shaderCount> psoBuilder("JDx12SceneDraw");
-
-		psoBuilder.PushHolder(velocityShader.get());
-		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::SceneRasterize(L"VelocityBuffer.hlsl"), L"main"));
-		psoBuilder.PushThreadDim(Velocity::GetThreadDim());
-		psoBuilder.PushRootSignature(velocityRootsignature.Get());
-		psoBuilder.Create(device);
-	}
+	} 
 	void JDx12SceneDraw::ClearResource()
 	{ 
 		for (uint i = 0; i < SIZE_OF_ARRAY(deferredShadingHolder); ++i)
-			deferredShadingHolder[i] = nullptr;
-		velocityShader = nullptr;
+			deferredShadingHolder[i] = nullptr; 
 
 		forwardRootSignature = nullptr;
 		deferredGeometryRootSignature = nullptr;
-		deferredShadingRootSignature = nullptr;
-		velocityRootsignature = nullptr;
+		deferredShadingRootSignature = nullptr; 
 	}
 }

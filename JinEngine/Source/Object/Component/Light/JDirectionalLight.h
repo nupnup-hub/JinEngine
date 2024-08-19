@@ -53,8 +53,7 @@ namespace JinEngine
 		float GetMinPower()const noexcept;
 		float GetMaxPower()const noexcept;
 		float GetFrustumNear()const noexcept final;
-		float GetFrustumFar()const noexcept final;
-		float GetTanAngle()const noexcept;
+		float GetFrustumFar()const noexcept final; 
 		JVector3F GetInitWorldDirection()const noexcept;
 		JVector3F GetWorldDirection()const noexcept;
 		JVector3F GetCachedWorldDirection()const noexcept;

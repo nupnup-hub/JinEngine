@@ -178,6 +178,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useHdr, "UseHdr:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useToneMapping, "UseToneMapping:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useBloom, "UseBloom:");
+			JFileIOHelper::LoadAtomicData(tool, postProcess.useBlur, "UseBlur:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useHistogramDebug, "UseHistogramDebug:");
 
 			JFileIOHelper::LoadEnumData(tool, postProcess.exposureType, "ExposureType:");
@@ -269,6 +270,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useHdr, "UseHdr:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useToneMapping, "UseToneMapping:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useBloom, "UseBloom:");
+			JFileIOHelper::StoreAtomicData(tool, postProcess.useBlur, "UseBlur:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useHistogramDebug, "UseHistogramDebug:");
 
 			JFileIOHelper::StoreEnumData(tool, postProcess.exposureType, "ExposureType:");

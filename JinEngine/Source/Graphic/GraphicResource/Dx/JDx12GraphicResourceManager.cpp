@@ -1993,7 +1993,7 @@ namespace JinEngine::Graphic
 			//Release를 먼저하지않으면 Reset시 유효한 pointer를 소유하므로 pointer 파괴를 시도하며
 			//현재 alloc class에서 메모리를 재배치하는 과정에서 에러를 일으킬수 있으므로
 			//Release() 한다음 Reset()을 호출해야한다. 
-			//2024-08-15 수정 포인터만 변경하는 Swap 사용 
+			//2024-08-15 수정 포인터만 변경하는 Swap 사용  
 			manager->resource[(int)movedInfo->GetGraphicResourceType()][movedInfo->GetArrayIndex()].Swap(movedInfo);
 		};
 		auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);

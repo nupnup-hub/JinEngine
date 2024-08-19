@@ -62,7 +62,7 @@ namespace JinEngine
 				CopyData(type, elementIndex, count, dataVec.data(), sizeof(T));
 			}
 		public:
-			virtual void MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint index, const uint moveCount) = 0;
+			virtual void MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint stIndex, const uint destIndex, const uint count) = 0;
 		public:
 			virtual void ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount);
 		};

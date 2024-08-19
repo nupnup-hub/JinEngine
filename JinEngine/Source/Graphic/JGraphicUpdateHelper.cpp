@@ -94,9 +94,9 @@ namespace JinEngine
 				info.frame.count[i] = uData[i].count;
 				info.frame.capacity[i] = uData[i].capacity;
 			}
-			for (uint i = 0; i < (uint)J_RESOURCE_TYPE::COUNT; ++i)
+			for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 			{
-				info.resource.count[i] = bData[i].count;
+				info.resource.count[i] = bData[i].count; 
 				info.resource.border[i] = bData[i].capacity;
 			}
 		}

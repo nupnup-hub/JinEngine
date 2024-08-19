@@ -300,11 +300,12 @@ namespace JinEngine::Graphic
 		const uint spotLitOffset = context->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
 		const uint rectLitOffset = context->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 		  
-		GIPassConstants constants; 
+		static GIPassConstants constants;
 		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
 		constants.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj()));
 		constants.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
 		cam->GetUvToView(constants.uvToViewA, constants.uvToViewB);
+
 		constants.rtSize = camHalfRtSize;
 		constants.invRtSize = 1.0f / camHalfRtSize;
 		constants.origianlRtSize = camRtSize;

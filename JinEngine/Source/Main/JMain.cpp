@@ -197,7 +197,7 @@ namespace JinEngine
 					RefelectionMainAccess::Update();
 					ThreadManagerAccess::Update();
 					editorManager.Update();
-					GraphicMainAccess::UpdateFrame();
+					GraphicMainAccess::Update();
 					GraphicMainAccess::Draw(true);
 				}
 

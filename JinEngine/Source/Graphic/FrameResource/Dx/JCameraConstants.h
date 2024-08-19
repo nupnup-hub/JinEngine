@@ -49,7 +49,7 @@ namespace JinEngine
 			//JMatrix4x4 proj = JMatrix4x4::Identity(); 
 			//JMatrix4x4 invProj = JMatrix4x4::Identity();
 			JMatrix4x4 viewProj = JMatrix4x4::Identity();
-			JMatrix4x4 preViewProj = JMatrix4x4::Identity();
+			//JMatrix4x4 preViewProj = JMatrix4x4::Identity();
 			//JMatrix4x4 invViewProj = JMatrix4x4::Identity(); 
 			//JMatrix4x4 viewProjTex = JMatrix4x4::Identity();
 			JVector2F renderTargetSize = JVector2F::Zero();

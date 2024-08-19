@@ -315,16 +315,20 @@ namespace JinEngine::Graphic
 			context->InsertUAVBarrier(destSet.holder);
 		}
 	}
+	void JDx12Blur::ApplyBlur(JPostProcessComputeSet* computeSet, const JDrawHelper& helper)
+	{
+
+	}
 	void JDx12Blur::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM)
 	{
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption()); 
 	}
-	void JDx12Blur::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12Blur::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildBlurRootSignature(device); 
 	}

@@ -289,6 +289,11 @@ namespace JinEngine
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				JUserPtr<JAnimationFSMstate> state = diagramUser->GetStateByIndex(i);
+				if (state == nullptr)
+				{
+					J_LOG_PRINT_OUT("Null state", "");
+					continue;
+				}
 				tool.PushExistStack();
 				StateIOInterface(state)->LoadAssetData(tool, state);
 				tool.PopStack();

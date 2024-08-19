@@ -24,59 +24,45 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JAntialise.h" 
-#include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
-#include"../../Buffer/Dx/JDx12GraphicBuffer.h"
-#include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
-#include"../../../Core/Math/JMatrix.h"
-#include<wrl/client.h> 
-#include<dxgiformat.h>
+#include"../JSceneVelocity.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
+#include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
+#include"../../GraphicResource/JGraphicResourceInterface.h"
+#include"../../Shader/Dx/JDx12ShaderDataHolder.h"   
+#include<wrl/client.h>
 
 namespace JinEngine
 {
-	class JTexture;
 	namespace Graphic
 	{ 
+		class JDx12CommandContext;
+		class JDx12FrameResource;
+		class JDx12CullingManager;
 		class JDx12GraphicResourceManager;
 		class JDx12GraphicDevice;
-
-		class JDx12Antialise : public JAntialise
+		class JDx12SceneVelocity final : public JSceneVelocity
 		{
 		private:
+			using JDx12GraphicShaderDataHolder = JDx12GraphicShaderDataHolder<(uint)J_GRAPHIC_SHADER_EXTRA_FUNCTION::COUNT>;
 			using JDx12ComputeShaderDataHolder = JDx12ComputeShaderDataHolder<1>;
 		private:
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> fxaaRootSignature;
-			Microsoft::WRL::ComPtr<ID3D12CommandSignature> fxaaCommandSignature;
-		private:
-			std::unique_ptr<JDx12ComputeShaderDataHolder> fxaaPass1InputLinearColor;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> fxaaPass1InputLuma;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> fxaaPass2Vertical;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> fxaaPass2Horizontal;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> fxaaResolveWork;
-		public: 
-			~JDx12Antialise();
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> velocityRootsignature;
+			std::unique_ptr<JDx12ComputeShaderDataHolder> velocityShader;
+		public:
+			~JDx12SceneVelocity();
 		public:
 			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)final;
 			void Clear()final;
 		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;  
 		public:
-			void ApplyAA(JGraphicAAComputeSet* computeSet, const JDrawHelper& helper) final;
-			void ApplyFxaa(JPostProcessComputeSet* computeSet, const JDrawHelper& helper)final;
-		public:
-			void RecompileShader(const JGraphicShaderCompileSet& dataSet) final;
+			void Compute(const JGraphicVelocityComputeSet* set, const JDrawHelper& helper)final;
 		private:
-			void BuildResource(JDx12GraphicDevice* device, JGraphicResourceManager* gM);
-			void BuildRootSignature(JDx12GraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option);
+			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);
+			void BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 		private:
-			void BuildFxaaRootSignature(ID3D12Device* device);
-			void BuildFxaaCommandSignature(ID3D12Device* device);
-			void BuildFxaaPso(ID3D12Device* device, const JGraphicInfo& info);
-		private:
 			void ClearResource();
-			void ClearRootSignature();
-			void ClearPso(); 
 		};
 	}
 }
