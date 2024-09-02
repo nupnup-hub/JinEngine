@@ -1,7 +1,7 @@
 # Overview
 - Module dependency 
   
-![ModuleDependency](https://github.com/nupnup-hub/JinEngine/assets/59456231/95452b95-551f-43a1-b473-6537d9f80526)
+![ModuleDependency](https://github.com/user-attachments/assets/60fffeb9-a380-4905-90e1-998597efd541)
  
 #  The behavior of modules
 
