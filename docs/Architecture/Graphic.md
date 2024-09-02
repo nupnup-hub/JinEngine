@@ -12,7 +12,6 @@
     - JGraphic
       - Manage sub class
       - Control graphics-related functions at the highest level
-      - Although it is in a dependency relationship with the object module, the scope of the impact is limited by referring only to a specific interface or info, option.
     - JSubclassInterface
       - Has responsible for one or more tasks 
     - JOption
