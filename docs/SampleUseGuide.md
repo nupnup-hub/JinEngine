@@ -14,8 +14,9 @@
 
 ## LoadTexture
 
-![LoadSample00](https://github.com/nupnup-hub/JinEngine/assets/59456231/415a44b2-c279-41da-8531-48202c4dbe86)
-![LoadSample01](https://github.com/nupnup-hub/JinEngine/assets/59456231/4b699f0a-c4fc-4956-8bac-19281c06738a)
+![LoadTexture00](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Image/SampleGuide/LoadTexture00.png)
+![LoadTexture01](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Image/SampleGuide/LoadTexture01.png)
+![LoadTexture02](https://github.com/nupnup-hub/JinEngine/blob/Main/docs/Image/SampleGuide/LoadTexture02.png)
 
 ## SetMaterial
 
