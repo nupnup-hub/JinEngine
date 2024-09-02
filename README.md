@@ -8,7 +8,7 @@ Game engine for studying graphics and software architecture
 ![EngineImage01](https://github.com/nupnup-hub/JinEngine/assets/59456231/b46dd7fd-1a05-41ed-b6e1-cb9c2d6812f1)
 (Amazon Lumberyard Bistro model)
 
-[Overview](https://www.youtube.com/watch?v=ya89yOfRcdU)
+[Portfolio video](https://www.youtube.com/watch?v=ya89yOfRcdU)
 
 ## Features
 ### Graphis
