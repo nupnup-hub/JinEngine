@@ -74,7 +74,7 @@ namespace JinEngine::Core
 		canAlive = false;
 	}
 	bool JVolatileStorageInterface::CanAlive()const noexcept
-	{
+	{ 
 		return canAlive;
 	}
 }

@@ -29,6 +29,7 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/JGraphicResourceInterface.h"
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"   
+#include"../../../Core/Math/JMatrix.h"
 #include<wrl/client.h>
 
 namespace JinEngine
@@ -45,6 +46,22 @@ namespace JinEngine
 		private:
 			using JDx12GraphicShaderDataHolder = JDx12GraphicShaderDataHolder<(uint)J_GRAPHIC_SHADER_EXTRA_FUNCTION::COUNT>;
 			using JDx12ComputeShaderDataHolder = JDx12ComputeShaderDataHolder<1>;
+		private:
+			struct ResourceDataSet
+			{
+			public:
+				JDx12GraphicResourceComputeSet rtSet;
+				JDx12GraphicResourceComputeSet dsSet;
+				JDx12GraphicResourceComputeSet velocitySet;
+			public:
+				DirectX::XMMATRIX camPreViewProj;
+			public:
+				int camFrameIndex = invalidIndex;
+			public:
+				ResourceDataSet(JDx12CommandContext* context, const JDrawHelper& helper);
+			public:
+				bool IsValid()const noexcept;
+			};
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> velocityRootsignature;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> velocityShader;

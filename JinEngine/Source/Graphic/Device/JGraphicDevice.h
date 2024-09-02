@@ -64,18 +64,17 @@ namespace JinEngine
 			virtual GraphicFence GetFenceValue()const noexcept = 0;
 			virtual void GetLastDeviceError(_Out_ std::wstring& errorCode, _Out_ std::wstring& errorMsg) = 0;
 		public:
+			virtual bool IsSupported(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept = 0;
 			//return true if device support public command
-			virtual bool IsSupportPublicCommand()const noexcept = 0;
+			virtual bool IsSupportedPublicCommand()const noexcept = 0;
 			//return true if PublicCommand is activated
-			virtual bool IsPublicCommandStared()const noexcept = 0;
-			virtual bool IsRaytracingSupported()const noexcept = 0;
+			virtual bool IsPublicCommandStared()const noexcept = 0; 
 			//return true if PublicCommand is deactivated
-			virtual bool CanStartPublicCommand()const noexcept = 0;
-			virtual bool CanBuildGpuAccelerator()const noexcept = 0;
+			virtual bool CanStartPublicCommand()const noexcept = 0; 
 		public:
-			//if !IsSupportPublicCommand just return false
+			//if !IsSupportedPublicCommand just return false
 			virtual void StartPublicCommand() = 0;
-			//if !IsSupportPublicCommand just return false
+			//if !IsSupportedPublicCommand just return false
 			virtual void EndPublicCommand() = 0;
 			virtual void FlushCommandQueue() = 0;  
 		public:

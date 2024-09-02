@@ -34,6 +34,7 @@ namespace JinEngine
 		DIRECTORY_OBJECT,
 		EDITOR_OBJECT);
 
+	using UniqueIndex = int;
 	/*
 	enum class J_OBJECT_TYPE
 	{  

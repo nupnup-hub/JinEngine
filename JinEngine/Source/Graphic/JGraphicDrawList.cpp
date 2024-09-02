@@ -23,8 +23,7 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#include"JGraphicDrawList.h" 
-#include"GraphicResource/JGraphicResourceInfo.h"
+#include"JGraphicDrawList.h"  
 #include"../Object/Resource/Scene/JScene.h" 
 #include"../Object/Resource/Scene/JScenePrivate.h" 
 #include"../Object/Component/JComponent.h" 
@@ -106,11 +105,7 @@ namespace JinEngine
 
 		void JGraphicDrawTarget::UpdateInfo::BeginUpdate()
 		{
-			memset(updateCount, 0, sizeof(uint) * totalCompVariation);
-			memset(hotUpdateCount, 0, sizeof(uint) * totalCompVariation);
-			memset(moveCount, 0, sizeof(uint) * totalCompVariation);
-			memset(thisFrameCount, 0, sizeof(uint) * totalCompVariation);
-			memset(lastFrameCount, 0, sizeof(uint) * totalCompVariation);
+			memset(log, 0, sizeof(JGraphicUpdateLog) * totalCompVariation);
 			 
 			sceneUpdated = false;
 			shadowUpdated = false;
@@ -126,22 +121,34 @@ namespace JinEngine
 			static constexpr UniqueIndex sLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::SPOT);
 			static constexpr UniqueIndex rLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::RECT);
 
+			auto& rItemLog = log[ritemIndex];
+			auto& aniLog = log[aniIndex];
+			auto& dLitLog = log[dLitIndex];
+			auto& pLitLog = log[pLitIndex];
+			auto& sLitLog = log[sLitIndex];
+			auto& rLitLog = log[rLitIndex];
+			auto& camLog = log[camIndex];
+
 			//cam이 자기자신의 update이외에 영향을 주는 객체들의 update count
-			const uint sceneUpdateFactor = updateCount[ritemIndex] + 
-				updateCount[aniIndex] +
-				updateCount[dLitIndex] + 
-				updateCount[pLitIndex] +
-				updateCount[sLitIndex] +
-				updateCount[rLitIndex] + 
-				moveCount[camIndex] + 
-				moveCount[ritemIndex];
+			const uint sceneUpdateFactor = rItemLog.updateCount +
+				aniLog.updateCount +
+				dLitLog.updateCount +
+				pLitLog.updateCount +
+				sLitLog.updateCount +
+				rLitLog.updateCount + 
+				rItemLog.moveCount + 
+				aniLog.moveCount +
+				dLitLog.moveCount +
+				pLitLog.moveCount + 
+				sLitLog.moveCount +
+				rLitLog.moveCount;
 
 			if (sceneUpdateFactor > 0 || nextSceneUpdate)
 				sceneUpdated = true;
 	 
 			//const uint shadowUpdateCount = hotObjUpdateCount + hotAniUpdateCount + hotLitghtUpdateCount + shadowMapUpdateCount;
 			//shadow map을 소유한 shadow requestor update이외에 영향을 주는 객체들의 update count
-			const uint shadowUpdateFactor = updateCount[ritemIndex] + updateCount[aniIndex] + moveCount[ritemIndex];
+			const uint shadowUpdateFactor = rItemLog.updateCount + aniLog.updateCount + rItemLog.moveCount + aniLog.moveCount;
 			if (shadowUpdateFactor > 0)
 				shadowUpdated = true;
 			 
@@ -150,22 +157,22 @@ namespace JinEngine
 
 			hdOccCullingUpdated = occUpdateFactor;
 			hzbOccCullingUpdated = occUpdateFactor;
-			if (thisFrameCount[ritemIndex] < lastFrameCount[ritemIndex])
+			if (rItemLog.thisFrameCount < lastFrameCount[ritemIndex])
 				shadowUpdated = hdOccCullingUpdated = hzbOccCullingUpdated = true;
 
-			memcpy(lastFrameCount, thisFrameCount, sizeof(uint) * totalCompVariation);
+			for (uint i = 0; i < totalCompVariation; ++i)
+				lastFrameCount[i] = log[i].thisFrameCount;
 			nextSceneUpdate = false;
 		}
 
 		JGraphicDrawTarget::JGraphicDrawTarget(const JUserPtr<JScene>& scene)
 			: scene(scene)
-		{
-			updateInfo = std::make_unique<UpdateInfo>();
+		{ 
 		}
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
 		void JGraphicDrawTarget::BeginUpdate()
 		{
-			updateInfo->BeginUpdate();
+			updateInfo.BeginUpdate();
 			for (const auto& data : sceneRequestor)
 			{
 				data->isUpdated = false;
@@ -198,41 +205,41 @@ namespace JinEngine
 		void JGraphicDrawTarget::EndUpdate()
 		{ 
 			//manage drawing trigger
-			updateInfo->EndUpdate();
+			updateInfo.EndUpdate();
 			for (const auto& data : sceneRequestor)
 			{
-				if (updateInfo->sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
+				if (updateInfo.sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true; 
 			}
 			for (const auto& data : shadowRequestor)
 			{
-				if (updateInfo->shadowUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
+				if (updateInfo.shadowUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->passNextFrame)
 					data->canDrawThisFrame = false;
 			}
 			for (const auto& data : frustumCullingRequestor)
 			{
-				if (updateInfo->sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
+				if (updateInfo.sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
 					data->canDrawThisFrame = true;	
 			}
 			for (const auto& data : hzbOccCullingRequestor)
 			{
-				if (updateInfo->hzbOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
+				if (updateInfo.hzbOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
 					data->canDrawThisFrame = true;
 			}
 			for (const auto& data : hdOccCullingRequestor)
 			{
-				if (updateInfo->hdOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
+				if (updateInfo.hdOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
 					data->canDrawThisFrame = true;
 			}
-		}
+		} 
 
 		class DrawListPrivateData
 		{
@@ -264,7 +271,7 @@ namespace JinEngine
 				int index = GetIndex(scene);
 				if (index == invalidIndex)
 					return false;
-				 
+				  
 				drawList.erase(drawList.begin() + index);
 				return true;
 			} 
@@ -409,12 +416,12 @@ namespace JinEngine
 				int existIndex = GetReqIndex(drawList[index]->shadowRequestor, jLight);
 				if (existIndex == invalidIndex)
 					return false;
-				   
+				    
 				int cacheIndex = GetReqIndex(shadowMapDrawRequestorCacheVec, jLight);
 				shadowMapDrawRequestorCacheVec.erase(shadowMapDrawRequestorCacheVec.begin() + cacheIndex);
 
 				drawList[index]->shadowRequestor.erase(drawList[index]->shadowRequestor.begin() + existIndex);
-				drawList[index]->updateInfo->nextSceneUpdate = true;
+				drawList[index]->updateInfo.nextSceneUpdate = true;
 				return true;
 			}
 			bool PopFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept

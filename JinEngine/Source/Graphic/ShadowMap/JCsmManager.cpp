@@ -57,10 +57,7 @@ namespace JinEngine::Graphic
 	{ 
 		auto area = areaData.find(desc.areaGuid);
 		if (area == areaData.end())
-		{
-			CreateAreaData(desc.areaGuid);
-			area = areaData.find(desc.areaGuid);
-		}
+			area = CreateAreaData(desc.areaGuid);
 
 		CsmHandlerInfoVec& handlerVec = area->second.handler;
 		CsmTargetInfoVec& targetVec = area->second.target;
@@ -80,10 +77,7 @@ namespace JinEngine::Graphic
 	{ 
 		auto area = areaData.find(desc.areaGuid);
 		if (area == areaData.end())
-		{
-			CreateAreaData(desc.areaGuid);
-			area = areaData.find(desc.areaGuid); 
-		}
+			area = CreateAreaData(desc.areaGuid);
 
 		CsmHandlerInfoVec& handlerVec = area->second.handler;
 		CsmTargetInfoVec& targetVec = area->second.target;
@@ -160,9 +154,9 @@ namespace JinEngine::Graphic
 			areaData.erase(areaGuid);
 		return true;
 	}  
-	void JCsmManager::CreateAreaData(const size_t guid)
-	{ 
-		areaData.emplace(guid, AreaData(guid));
+	JCsmManager::AreaMap::iterator JCsmManager::CreateAreaData(const size_t guid)
+	{   
+		return areaData.emplace(guid, AreaData(guid)).first;
 	} 
 	void JCsmManager::ClearResource()
 	{

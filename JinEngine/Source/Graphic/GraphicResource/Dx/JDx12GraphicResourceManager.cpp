@@ -1285,7 +1285,7 @@ namespace JinEngine::Graphic
 			return false;
 		 
 		JDeviceData data(device, GetGraphicInfo(), GetGraphicOption());
-		device->StartPublicCommandSet(data.startCommandThisCreation);
+		device->StartPublicCommandSet(data.startCommandThisCreation);  
 
 		JDx12GraphicResourceInfo* dxInfo = static_cast<JDx12GraphicResourceInfo*>(info);
 		const uint rIndex = dxInfo->GetArrayIndex();

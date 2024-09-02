@@ -50,13 +50,14 @@ SOFTWARE.
 #include"../../JObjectFileIOHelper.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
-
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Application/Project/JApplicationProject.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
 #include"../../../Core/File/JFileConstant.h"  
 #include"../../../Core/Utility/JCommonUtility.h"  
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include<DirectXColors.h> 
   
 namespace JinEngine
@@ -88,7 +89,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSceneImpl)
 	public: 
 		JWeakPtr<JScene> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		JUserPtr<JGameObject> root;
 		JUserPtr<JGameObject> debugRoot;
@@ -629,7 +630,7 @@ namespace JinEngine
 			SetAllComponentFrameDirty();
 		}
 		void DeActivate()
-		{  ;
+		{  
 			JGameObjectPrivate::ActivateInterface::DeActivate(root);
 			JGameObjectPrivate::ActivateInterface::DeActivate(debugRoot);
 			ClearResource();
@@ -991,7 +992,15 @@ namespace JinEngine
 	}
 	void JScene::DoActivate() noexcept
 	{
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		auto reAllocModuleManagedDataPtr = [](const JFastPtr<JGraphicModuleManagedDataFrame>& data, JObject* object)					
+		{									
+			auto scene = static_cast<ThisType*>(object);
+			if (scene->impl->accelerator != nullptr)
+				scene->impl->accelerator->SetGraphicData(data);
+			scene->impl->graphicData = data;
+		};																																
+		impl->graphicData = GMI()->Allocate(JGraphicModuleManagedDataCreationDesc(impl->thisPointer, reAllocModuleManagedDataPtr));
+ 		
 		JResourceObject::DoActivate();
 		impl->Activate();
 	}
@@ -999,7 +1008,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JResourceObject::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);;
+		GMI()->DeAllocate(impl->graphicData);
 	}
 	JScene::JScene(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JSceneImpl>(initData, this))

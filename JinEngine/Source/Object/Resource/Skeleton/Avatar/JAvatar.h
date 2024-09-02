@@ -51,12 +51,8 @@ namespace JinEngine
 			uint8 refIndex = JSkeletonFixedData::incorrectJointIndex;
 			uint8 allottedParentRefIndex = JSkeletonFixedData::incorrectJointIndex;
 		};
-	public: 
-		static const std::vector<std::vector<JAvatarJointGuide>> jointGuide;
-		static const std::vector<std::string> tabName;
-		static const std::vector<uint8> jointReferenceParent;	// jointReference parent index
-		static const std::unordered_map<uint8, std::vector<uint8>> jointReferenceChildren;
-		static const std::unordered_map<J_AVATAR_JOINT, uint8> jointReferenceMap;
+	private:
+		static constexpr uint jointCategoryCount = 4;
 	private:
 		JWeakPtr<JSkeletonAsset> ownerSkeleton;
 	public:
@@ -65,6 +61,17 @@ namespace JinEngine
 		std::vector<uint8> jointReference = std::vector<uint8>(JSkeletonFixedData::maxAvatarJointCount, JSkeletonFixedData::incorrectJointIndex);
 		std::vector<JAvatarJointReference> jointBackReferenceMap;
 		std::vector<JAvatarInterpolation> jointInterpolation;
+	public: 
+		static const std::vector<std::vector<JAvatarJointGuide>>& GetAllJointGuide();
+		static const std::vector<JAvatarJointGuide>& GetJointCategoryGuide(const uint index);
+		static std::string GetJointCategoryName(const uint index);
+		static constexpr uint8 GetJointCategoryCount()
+		{
+			return jointCategoryCount;
+		}
+		static uint8 GetJointReferenceIndex(const J_AVATAR_JOINT joint);
+		static uint8 GetJointReferenceParent(const uint8 index);
+		static const std::vector<uint8>& GetJointReferenceChildren(const uint8 index); 
 	public:  
 		//Find allotted joint reference Index end joint to st Joint
 		uint8 FindReferenceIndexEndToRoot(const J_AVATAR_JOINT st, const J_AVATAR_JOINT ed)noexcept;

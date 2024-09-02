@@ -67,9 +67,11 @@ namespace JinEngine
 				static constexpr bool isValid = csmHandler || csmTarget || culling || frame || gpuAcc || graphicResource;
 			};
 		private:
+			int index = invalidIndex;
+		private:
 			friend class JGraphicObjectDataSetManager; 
 		public:
-			JGraphicObjectDataSetBase(const JUserPtr<JObject>& object);
+			JGraphicObjectDataSetBase(const JGraphicModuleManagedDataCreationDesc& desc);
 		private:
 			JCsmHandleUserInterface* GetCsmHandleUserInterface()const noexcept final;
 			JCsmTargetUserInterface* GetCsmTargetUserInterface()const noexcept final;
@@ -99,9 +101,9 @@ namespace JinEngine
 		private:
 			std::unique_ptr<Type> firstInterface;
 		public:
-			JGraphicObjectDataOneSocket(const JUserPtr<JObject>& object, 
+			JGraphicObjectDataOneSocket(const JGraphicModuleManagedDataCreationDesc& desc, 
 				std::unique_ptr<Type>&& firstInterface)
-				:JGraphicObjectDataSetBase(object), firstInterface(std::move(firstInterface))
+				:JGraphicObjectDataSetBase(desc), firstInterface(std::move(firstInterface))
 			{}
 		public:
 			JCsmHandlerInterface* GetCsmHandleInterface()const noexcept final
@@ -162,10 +164,10 @@ namespace JinEngine
 			std::unique_ptr<FirstType> firstInterface;
 			std::unique_ptr<SecondType> secondInterface;
 		public:
-			JGraphicObjectDataDoubleSocket(const JUserPtr<JObject>& object, 
+			JGraphicObjectDataDoubleSocket(const JGraphicModuleManagedDataCreationDesc& desc, 
 				std::unique_ptr<FirstType>&& firstInterface, 
 				std::unique_ptr<SecondType>&& secondInterface)
-				:JGraphicObjectDataSetBase(object), firstInterface(std::move(firstInterface)), secondInterface(std::move(secondInterface))
+				:JGraphicObjectDataSetBase(desc), firstInterface(std::move(firstInterface)), secondInterface(std::move(secondInterface))
 			{}
 		public:
 			JCsmHandlerInterface* GetCsmHandleInterface()const noexcept final
@@ -240,11 +242,11 @@ namespace JinEngine
 			std::unique_ptr<SecondType> secondInterface;
 			std::unique_ptr<ThirdType> thirdInterface;
 		public:
-			JGraphicObjectDataTripleSocket(const JUserPtr<JObject>& object, 
+			JGraphicObjectDataTripleSocket(const JGraphicModuleManagedDataCreationDesc& desc, 
 				std::unique_ptr<FirstType>&& firstInterface, 
 				std::unique_ptr<SecondType>&& secondInterface,
 				std::unique_ptr<ThirdType>&& thirdInterface)
-				:JGraphicObjectDataSetBase(object), 
+				:JGraphicObjectDataSetBase(desc), 
 				firstInterface(std::move(firstInterface)),
 				secondInterface(std::move(secondInterface)),
 				thirdInterface(std::move(thirdInterface))
@@ -336,12 +338,12 @@ namespace JinEngine
 			std::unique_ptr<ThirdType> thirdInterface;
 			std::unique_ptr<ForthType> forthInterface;
 		public:
-			JGraphicObjectDataQuadrupleSocket(const JUserPtr<JObject>& object, 
+			JGraphicObjectDataQuadrupleSocket(const JGraphicModuleManagedDataCreationDesc& desc, 
 				std::unique_ptr<FirstType>&& firstInterface,
 				std::unique_ptr<SecondType>&& secondInterface,
 				std::unique_ptr<ThirdType>&& thirdInterface,
 				std::unique_ptr<ForthType>&& forthInterface)
-				:JGraphicObjectDataSetBase(object),
+				:JGraphicObjectDataSetBase(desc),
 				firstInterface(std::move(firstInterface)),
 				secondInterface(std::move(secondInterface)),
 				thirdInterface(std::move(thirdInterface)),
@@ -437,7 +439,7 @@ namespace JinEngine
 			std::unique_ptr<JGpuAcceleratorInterface> gpuAcceleratorInterface;
 			std::unique_ptr<JGraphicResourceInterface> graphicResourceInterface;
 		public:
-			JGraphicObjectDataSetAllInOne(const JUserPtr<JObject>& object,
+			JGraphicObjectDataSetAllInOne(const JGraphicModuleManagedDataCreationDesc& desc,
 				std::unique_ptr<JCullingInterface>&& cullingInterface,
 				std::unique_ptr<JFrameUpdateInterface>&& frameInterface,
 				std::unique_ptr<JGpuAcceleratorInterface>&& gpuAcceleratorInterface,
@@ -458,25 +460,25 @@ namespace JinEngine
 			static constexpr int invalidType = invalidIndex;
 		public: 
 			int uniqueIndex = 0; 
-			std::string tag;
+			std::string tag = "";
 		public:
 			//feature
 			bool isSupportedCulling = false;
 			bool isSupportedFrameResourceUpload = false;
-			bool isSupportedFrameDirty = false;
 			bool isSupportedGpuAccelerator = false;
 			bool isSupportedGraphicResource = false;
 		public:
-			//detail 
-			bool canAccessSupportedFrameDetail = false;
+			//frame detail  
+			bool isSupportedFrameDirty = false;
+			bool isNeedToUpdateEveryFrame = false;
 			std::bitset<(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT> supportedFrameType; 
 		public:
-			JObjectDataSetMetadata();
+			JObjectDataSetMetadata(); 
 		public:
 			bool IsComponentType()const noexcept;
 			bool IsResourceType()const noexcept;
 		};
 
-		using ObjectDataSetVec = Core::JVectorStorage<JOwnerPtr<JGraphicObjectDataSetBase>>;
+		using ObjectDataSetVec = Core::JVectorStorage<JUniquePtr<JGraphicObjectDataSetBase>>;
 	}
 }

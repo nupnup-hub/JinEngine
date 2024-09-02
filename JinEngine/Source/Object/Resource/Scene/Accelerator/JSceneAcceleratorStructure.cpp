@@ -143,6 +143,7 @@ namespace JinEngine
 			bvh[i].reset();
 			kdTree[i].reset();
 		}
+		gpuAccelerator = nullptr;
 		spaceSpatialVec.clear();
 	}
 	/*void JSceneAcceleratorStructure::Culling(const JCullingFrustum& camFrustum)noexcept
@@ -344,6 +345,13 @@ namespace JinEngine
 		else
 			optionCash->SetGpuOption(option);
 	} 
+	void JSceneAcceleratorStructure::SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& data)
+	{
+		if (gpuAccelerator == nullptr)
+			return;
+
+		gpuAccelerator->SetGraphicData(data);
+	}
 	bool JSceneAcceleratorStructure::IsActivated(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)
 	{
 		if (type == J_ACCELERATOR_TYPE::OCTREE)
@@ -359,7 +367,7 @@ namespace JinEngine
 			bvh[(uint)layer]->IsAcceleratorActivated() && bvh[(uint)layer]->IsCullingActivated() ||
 			kdTree[(uint)layer]->IsAcceleratorActivated() && kdTree[(uint)layer]->IsCullingActivated();
 	}
-	void JSceneAcceleratorStructure::Activate(const JUserPtr<JGraphicModuleManagedDataFrame>& data)noexcept
+	void JSceneAcceleratorStructure::Activate(const JFastPtr<JGraphicModuleManagedDataFrame>& data)noexcept
 	{
 		if (!activateTrigger)
 		{
@@ -373,11 +381,11 @@ namespace JinEngine
 				spaceSpatialVec.push_back(bvh[i].get());
 				spaceSpatialVec.push_back(kdTree[i].get());
 			}
-			if (gpuAccelerator != nullptr)
-			{ 
-				gpuAccelerator->SetGraphicData(data);
+
+			SetGraphicData(data);
+			if(gpuAccelerator != nullptr)
 				gpuAccelerator->SetOption(optionCash->GetGpuOption());
-			}
+
 			optionCash.reset();
 			activateTrigger = true;
 		}

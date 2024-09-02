@@ -36,6 +36,7 @@ SOFTWARE.
 #endif  
 
 #define SHARED_BUFFER_SIZE 256
+#define RADIUS 1
 
 Texture2D scrColorHistory : register(t0);
 RWTexture2D<float4> destColorHistory : register(u0);
@@ -69,18 +70,18 @@ void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThr
     float minLuminance = FLT_MAX;
     int maxLuminanceCoord = groupIndex;
     int minLuminanceCoord = groupIndex;
-    
+ 
     [unroll]
-    for (int y = -1; y <= 1; y++)
+    for (int y = -RADIUS; y <= RADIUS; y++)
     {
         [unroll]
-        for (int x = -1; x <= 1; x++)
+        for (int x = -RADIUS; x <= RADIUS; x++)
         {
             if ((x == 0) && (y == 0))
                 continue;
             
             float2 sampleUv = uv + float2(x, y) * cb.invRtSize;
-            if (IsValidUv(sampleUv))
+            if (!IsValidUv(sampleUv))
                 continue;
             
             int sampleGroupIndex = groupIndex + x + (y * DIMX);
@@ -99,7 +100,7 @@ void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThr
             {
                 minLuminance = sampleLuminance;
                 minLuminanceCoord = sampleGroupIndex;
-            }
+            } 
         }
     }
     if (centerLuminance > maxLuminance)
@@ -107,6 +108,6 @@ void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThr
     if (centerLuminance < minLuminance)
         centerSharedCoord = minLuminanceCoord;
     
-    ///destColorHistory[pixelCoord] = scrColorHistory[pixelCoord];
+    //destColorHistory[pixelCoord] = scrColorHistory[pixelCoord];
     destColorHistory[pixelCoord] = float4(sharedColor[centerSharedCoord].xyz, centerVariance);
 }

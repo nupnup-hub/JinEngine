@@ -33,6 +33,27 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		namespace
+		{
+			static bool* _GetOptionalFeatureValuePtr(const JGraphicOption* option, const J_GRAPHIC_OPTIONAL_FEATURE type)noexcept
+			{
+				JGraphicOption* ptr = const_cast<JGraphicOption*>(option);
+				switch (type)
+				{
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::DEFERRED_RENDERING:
+					return &ptr->rendering.allowDeferred;
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING:
+					return &ptr->rendering.allowRaytracing;
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING_GI:
+					return &ptr->rendering.allowRaytracing;
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::POST_PROCESSING:
+					return &ptr->postProcess.usePostprocess;
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::GPU_ACCELERATOR:
+				default:
+					return nullptr;
+				} 
+			}
+		}
 		bool JGraphicOption::Culling::LightCullingDependencyChanged(const JGraphicOption& rhs)const noexcept
 		{
 			return isLightCullingActivated != rhs.culling.isLightCullingActivated ||
@@ -67,7 +88,7 @@ namespace JinEngine
 				spatialWeightAverageThreshold != rhs.spatialWeightAverageThreshold || 
 				useDenoiser != rhs.useDenoiser;
 		}
-
+		 
 		uint JGraphicOption::GetClusterTotalCount()const noexcept
 		{
 			return GetClusterXCount() * GetClusterYCount() * GetClusterZCount();
@@ -92,6 +113,10 @@ namespace JinEngine
 		{
 			return Constants::maxLightPerClusterRange[culling.lightPerClusterIndex];
 		}
+		bool* JGraphicOption::GetOptionalFeatureValuePtr(const J_GRAPHIC_OPTIONAL_FEATURE type)const noexcept
+		{  
+			return _GetOptionalFeatureValuePtr(this, type);
+		}  
 		bool JGraphicOption::IsOcclusionActivated()const noexcept
 		{
 			return culling.isOcclusionQueryActivated;
@@ -102,7 +127,7 @@ namespace JinEngine
 		}
 		bool JGraphicOption::CanUseRtGi()const noexcept
 		{
-			return rendering.allowDeferred && rendering.allowRaytracing;
+			return rendering.allowRaytracing;
 		}
 		bool JGraphicOption::CanUsePostProcess()const noexcept
 		{
@@ -110,7 +135,7 @@ namespace JinEngine
 		}
 		bool JGraphicOption::CanUseSSAO()const noexcept
 		{ 
-			return rendering.allowDeferred && postProcess.useSsao;
+			return postProcess.useSsao;
 		}  
 		void JGraphicOption::Load()
 		{
@@ -139,8 +164,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(tool, rendering.allowMultiThread, "AllowMultiThread:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.allowDrawGui, "AllowDrawGui:");
 			JFileIOHelper::LoadAtomicData(tool, rendering.allowDeferred, "AllowDeferred:");
-			JFileIOHelper::LoadAtomicData(tool, rendering.allowRaytracing, "AllowRaytracing:");
-			JFileIOHelper::LoadAtomicData(tool, rendering.useMSAA, "Msaa:");
+			JFileIOHelper::LoadAtomicData(tool, rendering.allowRaytracing, "AllowRaytracing:"); 
 			JFileIOHelper::LoadEnumData(tool, rendering.renderTargetFormat, "RenderTargetFormat:");
 
 			JFileIOHelper::LoadAtomicData(tool, rendering.useGGXMicrofacet, "UseGGXMicrofacet:");
@@ -172,6 +196,7 @@ namespace JinEngine
 
 			tool.PushExistStack("--PostProcess--");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useFxaa, "UseFxaa:");
+			JFileIOHelper::LoadAtomicData(tool, postProcess.useTaa, "UseTaa:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useSsao, "UseSsao:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useSsaoInterleave, "UseSsaoInterleave:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.usePostprocess, "UsePostprocess:");
@@ -231,7 +256,6 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(tool, rendering.allowDrawGui, "AllowDrawGui:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.allowDeferred, "AllowDeferred:");
 			JFileIOHelper::StoreAtomicData(tool, rendering.allowRaytracing, "AllowRaytracing:");
-			JFileIOHelper::StoreAtomicData(tool, rendering.useMSAA, "Msaa:");
 			JFileIOHelper::StoreEnumData(tool, rendering.renderTargetFormat, "RenderTargetFormat:");
 
 			JFileIOHelper::StoreAtomicData(tool, rendering.useGGXMicrofacet, "UseGGXMicrofacet:");
@@ -264,6 +288,7 @@ namespace JinEngine
 
 			tool.PushMapMember("--PostProcess--");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useFxaa, "UseFxaa:");
+			JFileIOHelper::StoreAtomicData(tool, postProcess.useTaa, "UseTaa:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useSsao, "UseSsao:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useSsaoInterleave, "UseSsaoInterleave:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.usePostprocess, "UsePostprocess:");

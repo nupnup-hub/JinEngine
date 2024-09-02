@@ -32,18 +32,18 @@ SOFTWARE.
 #ifndef DIMY
 #define DIMY 16
 #endif  
+#define SKIP_VELOCITY 0.001f
  
 Texture2D colorMap : register(t0);
 Texture2D<float> viewZMap : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D<float> preViewZMap : register(t3);
-Texture2D preNormalMap : register(t4);
-Texture2D<float2> depthDerivative : register(t5);
-Texture2D<float4> preColorHistory : register(t6);
-Texture2D<float4> preFastColorHistory : register(t7);
-Texture2D<uint> preHistoryLength : register(t8);
-Texture2D lightProp : register(t9);
-Texture2D preLightProp : register(t10);
+Texture2D preNormalMap : register(t4); 
+Texture2D<float4> preColorHistory : register(t5);
+Texture2D<float4> preFastColorHistory : register(t6);
+Texture2D<uint> preHistoryLength : register(t7);
+Texture2D lightProp : register(t8);
+Texture2D preLightProp : register(t9); 
 RWTexture2D<float4> colorHistory : register(u0);
 RWTexture2D<float4> fastColorHistory : register(u1);
 RWTexture2D<uint> historyLength : register(u2);
@@ -54,27 +54,26 @@ SamplerState samLinearClmap : register(s1);
 //우선은 Svgf에 사용된 구현을 참조 결과를 관찰하며
 //추후에 수정하도록한다.
  
-bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float3 posW, const float3 normal, const float viewZ, uint materialID, const float2 velocity, out float4 preColor, out float4 preFastColor, out uint currentHistory)
+bool DetermineDisOcclusion(const int2 pixelCoord, const float2 uv, const float2 preUv, const float3 posW, const float3 normal, const float viewZ, uint materialID, const float2 velocity, out float4 preColor, out float4 preFastColor, out uint currentHistory)
 {
     preColor = float4(0, 0, 0, 0);
     preFastColor = float4(0, 0, 0, 0);
     currentHistory = 0;
-    
-    float2 preUv = uv + velocity.xy;
+     
     float2 prePixelCenterCoord = preUv * cb.rtSize; //pixelCoord + float2(0.5f, 0.5f);
   
-    TA::Result result;
-    TA::Actor actor = RestirTA::CreateActor(preUv, posW, normal, viewZ, materialID, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
+    TA::GeometryErrorResult result;
+    TA::GeometryErrorEstimationActor actor = RestirTA::CreateActor(preUv, posW, normal, viewZ, materialID, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
     TA::ComputeCubicWeight(actor, result);
-    
-    result.canUseBilinear &= all(abs(velocity) <= 0.001f);
+    //result.canUseBilinear &= all(abs(velocity) <= SKIP_VELOCITY);
+     
     if (result.canUseCubic)
     { 
         preColor = Catmul::Compute(preColorHistory, samLinearClmap, result.bicubicParameter);
         preFastColor = Catmul::Compute(preFastColorHistory, samLinearClmap, result.bicubicParameter);
         currentHistory = preHistoryLength[prePixelCenterCoord].x;
-       // preColor = float4(0, 0, 1, 1);
-        //preFastColor = float4(0, 0, 1, 1);
+        //preColor = float4(0, 0, 1, 1);
+       // preFastColor = float4(0, 0, 1, 1);
         return true;
     }
     else if (result.canUseBilinear)
@@ -111,23 +110,23 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float4 prePosH = mul(float4(posW, 1.0f), cb.camPreViewProj);
     float2 preUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
     float2 velocity = preUv - uv;
-    
+     
     uint materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, uv, 0));
     //if (length(velocity) < 0.001f)
     //    velocity = float2(0, 0);
     float4 preColor;
     float4 preFastColor;
     uint currHistoryLength;
-    bool isValid = DetermineDisOcclusion(pixelCoord, uv, posW, normal, viewZ, materialID, velocity, preColor, preFastColor, currHistoryLength);
-    
+    bool isValid = DetermineDisOcclusion(pixelCoord, uv, preUv, posW, normal, viewZ, materialID, velocity, preColor, preFastColor, currHistoryLength);
+     
     currHistoryLength = min(MAX_FRAME_ACCMURATION, currHistoryLength + 1.0f);
     // this adjusts the alpha for the case where insufficient history is available.
     // It boosts the temporal accumulation to give the samples equal weights in
     // the beginning. 
     //const float alpha = isValid ? max(ALPHA, 1.0 / currHistoryLength) : 1.0;
      
-    const float accSpeed = isValid ? AccumSpeed(currHistoryLength) : 1.0f;
-    const float fastAccSpeed = isValid ? FastAccumSpeed(currHistoryLength) : 1.0f;
+    const float accSpeed = AccumSpeed(currHistoryLength);
+    const float fastAccSpeed = FastAccumSpeed(currHistoryLength);
   
     float3 newColor = lerp(preColor.xyz, color, accSpeed);
     float3 newFastColor = lerp(preFastColor.xyz, color, fastAccSpeed);

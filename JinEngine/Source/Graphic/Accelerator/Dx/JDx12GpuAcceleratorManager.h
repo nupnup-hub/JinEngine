@@ -66,7 +66,7 @@ namespace JinEngine
 			std::unique_ptr<JDx12GpuAcceleratorHolder> BuildAcceleratorStructure(BuildData& buildData);
 			void UpdateInstance(const BuildData& buildData, JDx12GpuAcceleratorHolder* holder, const J_GPU_ACCELERATOR_BUILD_OPTION preBuildOption);
 			void AddBottomLevelAs(BuildData& buildData, JDx12GpuAcceleratorHolder* holder);
-			void RemoveBottomLevelAs(const BuildData& buildData, JDx12GpuAcceleratorHolder* holder);
+			void RemoveBottomLevelAs(const BuildData& buildData, JDx12GpuAcceleratorHolder* holder); 
 		private:
 			void BuildResource(JGraphicDevice* device);
 			void ClearResource();

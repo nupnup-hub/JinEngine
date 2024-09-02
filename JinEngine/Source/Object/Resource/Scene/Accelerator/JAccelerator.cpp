@@ -326,7 +326,7 @@ namespace JinEngine
 		option = newOption;
 		Build();
 	}
-	void JGpuAccelerator::SetGraphicData(const JUserPtr<JGraphicModuleManagedDataFrame>& newSceneGraphicData)
+	void JGpuAccelerator::SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& newSceneGraphicData)
 	{
 		sceneGraphicData = newSceneGraphicData; 
 	}

@@ -41,6 +41,7 @@ SOFTWARE.
 #include"../../JObjectFileIOHelper.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h"
@@ -59,7 +60,7 @@ namespace JinEngine
 	namespace
 	{ 
 		using DiagramIOInterface = JAnimationFSMdiagramPrivate::AssetDataIOInterface;
-		using DiagramAnimationInterface = JAnimationFSMdiagramPrivate::AnimationInterface;
+		using DiagramAnimationInterface = JAnimationFSMdiagramPrivate::AnimationUpdateInterface;
 	}
 	namespace
 	{
@@ -73,7 +74,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationControllerImpl)
 	public:
 		JWeakPtr<JAnimationController> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		JOwnerPtr<Core::JFSMparameterStorage> paramStorage;
 		std::vector<JUserPtr<JAnimationFSMdiagram>> diagramVec;
@@ -99,7 +100,7 @@ namespace JinEngine
 			return nullptr;
 		}
 	public:
-		void Initialize(JAnimationUpdateData* updateData)noexcept
+		void Initialize(JAnimationUpdateData* updateData)const
 		{ 
 			const uint layerSize = (uint)diagramVec.size();
 			for (uint i = 0; i < layerSize; ++i)
@@ -108,7 +109,7 @@ namespace JinEngine
 				DiagramAnimationInterface::Enter(diagramVec[i], updateData, i);
 			}
 		}
-		void Update(JAnimationUpdateData* updateData)noexcept
+		void Update(JAnimationUpdateData* updateData)const
 		{
 			const uint layerSize = (uint)diagramVec.size();
 			for (uint i = 0; i < layerSize; ++i)
@@ -117,7 +118,7 @@ namespace JinEngine
 					DiagramAnimationInterface::Update(diagramVec[i], updateData, i);
 			}
 		}
-		void Compute(JAnimationUpdateData* updateData, JSkeletonMatrixSet& set)noexcept
+		void Compute(JAnimationUpdateData* updateData, JSkeletonMatrixSet& set)const
 		{
 			bool hasValidValue = false;
 			const uint layerSize = (uint)diagramVec.size();
@@ -428,7 +429,7 @@ namespace JinEngine
 	}
 	void JAnimationController::DoActivate()noexcept
 	{
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JResourceObject::DoActivate();
 		impl->Activate();
 	}
@@ -436,7 +437,7 @@ namespace JinEngine
 	{ 
 		impl->DeActivate();
 		JResourceObject::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	} 
 	JAnimationController::JAnimationController(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JAnimationControllerImpl>(initData, this))

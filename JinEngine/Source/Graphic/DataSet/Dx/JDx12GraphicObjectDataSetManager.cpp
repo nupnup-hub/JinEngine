@@ -39,6 +39,11 @@ SOFTWARE.
 #include"../../../Core/Utility/JTypeSequence.h"
 #include"../../../Core/Log/JLogMacro.h" 
 
+/*
+Lambda를 매개변수가 해당클래스에 포인터인 경우
+private까지 Access 가능 부모의 protected도 가능
+but 부모클래스인 경우 public 만가능
+*/
 #define REGISTER_ALLOC_OPTION(type)														\
 public:																					\
 static void RegisterTypeData()															\
@@ -69,13 +74,24 @@ static void RegisterTypeData()															\
 			return;																					\
 		}																							\
 																									\
-																									\
-		(*dataVec).Get(index)->Swap(movedInfo);														\
+		const uint count = dataVec->Count();														\
+		auto objRaw = obj.Get();																	\
+		for(uint i = 0; i < count; ++i)																\
+		{																							\
+			auto& data = *(dataVec->Get(i));														\
+			if (data->Object().Get() == objRaw)														\
+			{																						\
+				data.Swap(movedInfo);																\
+				type::NotifyReAlloc(data);															\
+				break;																				\
+			}																						\
+		}																							\
+		/*(*dataVec).Get(index)->Swap(movedInfo);*/													\
 	};																								\
 	auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);			\
 	std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();					\
 	desc->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);\
-	type::StaticTypeInfo().SetAllocationOption(std::move(desc));									\
+	StaticTypeInfo().SetAllocationOption(std::move(desc));									\
 }\
 
 
@@ -85,7 +101,7 @@ namespace JinEngine::Graphic
 	//Helper structure
 	namespace
 	{
-		static UniqueIndex GetUniqueIndex(const JUserPtr<JObject>& obj)
+		static UniqueIndex GetUniqueIndex(const JWeakPtr<JObject>& obj)
 		{  
 			const J_OBJECT_TYPE objType = obj->GetObjectType(); 
 			if (objType == J_OBJECT_TYPE::COMPONENT_OBJECT)
@@ -130,38 +146,18 @@ namespace JinEngine::Graphic
 			struct HasFrameUploadHint
 			{
 			public:
-				static constexpr bool value = true;
+				static constexpr bool isSupportedFrameUpload = false;
+				static constexpr bool isSupportedFrameDirty = false;
+				static constexpr bool isNeedToUpdateEveryFrame = false;
 			};
 			template<typename T>
 			struct HasFrameUploadHint<T, std::void_t<decltype(&T::isSupportedFrameUpload)>>
 			{
 			public:
-				static constexpr bool value = T::isSupportedFrameUpload;
-			};
-			template<typename T, typename = void>
-			struct HasFrameUploadTypeHint
-			{
-			public:
-				static constexpr bool value = false;
-			};
-			template<typename T>
-			struct HasFrameUploadTypeHint<T, std::void_t<decltype(&T::IsSupported)>>
-			{
-			public:
-				static constexpr bool value = true;
-			};
-			template<typename T, typename = void>
-			struct HasFrameDirtyHint
-			{
-			public:
-				static constexpr bool value = true;
-			};
-			template<typename T>
-			struct HasFrameDirtyHint<T, std::void_t<decltype(&T::isSupportedFrameDirty)>>
-			{
-			public:
-				static constexpr bool value = T::isSupportedFrameDirty;
-			};
+				static constexpr bool isSupportedFrameUpload = T::isSupportedFrameUpload;
+				static constexpr bool isSupportedFrameDirty = T::isSupportedFrameDirty;
+				static constexpr bool isNeedToUpdateEveryFrame = T::isNeedToUpdateEveryFrame;
+			};  
 		public:
 			//basicalliy
 			static constexpr bool hasCullingInterface = !std::is_same_v<CullingInterface, Core::JEmptyType>;
@@ -170,8 +166,9 @@ namespace JinEngine::Graphic
 			static constexpr bool hasGraphicResourceInterface = !std::is_same_v<GraphicResourceInterface, Core::JEmptyType>;
 		public:
 			//detail  
-			static constexpr bool isSupportedFrameUpload = hasFrameInterface && HasFrameUploadHint<FrameInterface>::value;
-			static constexpr bool isSupportedFrameDirty = hasFrameInterface && HasFrameDirtyHint<FrameInterface>::value;
+			static constexpr bool isSupportedFrameUpload = hasFrameInterface && HasFrameUploadHint<FrameInterface>::isSupportedFrameUpload;
+			static constexpr bool isSupportedFrameDirty = hasFrameInterface && HasFrameUploadHint<FrameInterface>::isSupportedFrameDirty;
+			static constexpr bool isNeedToUpdateEveryFrame = hasFrameInterface && HasFrameUploadHint<FrameInterface>::isNeedToUpdateEveryFrame;
 		protected:
 			static void Register(JObjectDataSetMetadata& data)
 			{			  
@@ -180,20 +177,17 @@ namespace JinEngine::Graphic
 				data.isSupportedGpuAccelerator = hasGpuAcceleratorInterface;
 				data.isSupportedGraphicResource = hasGraphicResourceInterface;
 
-				data.isSupportedFrameDirty = isSupportedFrameDirty;
 				data.isSupportedFrameResourceUpload = isSupportedFrameUpload;
+				data.isSupportedFrameDirty = isSupportedFrameDirty;
+				data.isNeedToUpdateEveryFrame = isNeedToUpdateEveryFrame;
 
-				if constexpr (hasFrameInterface && HasFrameUploadTypeHint<FrameInterface>::value)
-				{
-					//OutputDebugStringA((data.tag +": ").c_str());
-					data.canAccessSupportedFrameDetail = true;
+				if constexpr (hasFrameInterface)
+				{  
 					for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
 					{
 						const J_FRAME_RESOURCE_UPLOAD_TYPE type = (J_FRAME_RESOURCE_UPLOAD_TYPE)i;
-						data.supportedFrameType.set(i, FrameInterface::IsSupported(type));
-						//OutputDebugStringA((" " + Core::GetName(type) + " " + std::to_string(FrameInterface::IsSupported(type))).c_str());
-					}
-					//OutputDebugStringA("\n");
+						data.supportedFrameType.set(i, FrameInterface::IsSupported(type)); 
+					} 
 				}
 			}
 		}; 
@@ -253,7 +247,7 @@ namespace JinEngine::Graphic
 			using FrameUpload = Core::JDefinedTypeSequence<J_FRAME_RESOURCE_UPLOAD_TYPE,
 				J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION>;
 
-			using FrameInterface = JFrameUpdateTypePerSingleHolder<JFrameDirtyTrigger, FrameUpload>;
+			using FrameInterface = JFrameUpdateTypePerSingleHolder<JFrameAlwaysDirty, FrameUpload>;
 		}
 		namespace Behavior
 		{
@@ -267,25 +261,27 @@ namespace JinEngine::Graphic
 		namespace Camera
 		{
 			static constexpr uint mainRtNumber = 0;
-			static constexpr uint afterPostProcesseNumber = 1;
-			static constexpr uint giRtNumber = 2;
-			static constexpr uint litCullDebugRtNumber = 3;
+			static constexpr uint storePreviousDataNumber = mainRtNumber + 1;
+			static constexpr uint afterPostProcesseNumber = storePreviousDataNumber + 1;
+			static constexpr uint raytracingRtNumber = afterPostProcesseNumber + 1;
+			static constexpr uint litCullDebugRtNumber = raytracingRtNumber + 1;
+			static constexpr uint rtCount = litCullDebugRtNumber + 1;
 
 			static constexpr uint mainDsNumber = 0;
 			static constexpr uint previousDsNumber = 1;
+			static constexpr uint dsCount = previousDsNumber + 1;
 
 			static constexpr uint depthDebuggingNumber = 0;
 			static constexpr uint albedoDebuggingNumber = depthDebuggingNumber + 1;
 			static constexpr uint specularDebuggingNumber = albedoDebuggingNumber + 1;
 			static constexpr uint normalDebuggingNumber = specularDebuggingNumber + 1;
 			static constexpr uint tangentDebuggingNumber = normalDebuggingNumber + 1;
-			//static constexpr uint velocityDebuggingNumber = 4;
 			static constexpr uint ssaoDebuggingNumber = tangentDebuggingNumber + 1;
+			//static constexpr uint velocityDebuggingNumber = ssaoDebuggingNumber + 1;
+			//static constexpr uint debuggingMapCount = velocityDebuggingNumber + 1;
 			static constexpr uint debuggingMapCount = ssaoDebuggingNumber + 1;
-
-			static constexpr uint rtCount = 4;
-			static constexpr uint dsCount = 2;
-			static constexpr uint debugCount = 6;
+			static constexpr uint debugCount = debuggingMapCount + 1;
+ 
 			static constexpr uint reserviorCount = 4;
 
 			using FrameUpload = Core::JDefinedTypeSequence<J_FRAME_RESOURCE_UPLOAD_TYPE,
@@ -341,7 +337,7 @@ namespace JinEngine::Graphic
 					{
 					case J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
 					{
-						if (taskType == J_GRAPHIC_TASK_TYPE::RAYTRACING_GI || taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
+						if (taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
 							return 1;
 						else
 							return 1;
@@ -360,10 +356,10 @@ namespace JinEngine::Graphic
 							return 1;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::TANGENT_MAP_VISUALIZE)
 							return 1;
-						//else if (taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
-						//	return Private::velocityDebuggingNumber;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE)
 							return 1;
+						//else if (taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
+						//	return 1;
 						else
 							return 0;
 					}
@@ -377,9 +373,11 @@ namespace JinEngine::Graphic
 					{
 						if (taskType == J_GRAPHIC_TASK_TYPE::SCENE_DRAW)
 							return 1;
+						else if (taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
+							return 1;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT)
 							return 1;
-						else if (taskType == J_GRAPHIC_TASK_TYPE::RAYTRACING_GI || taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
+						else if (taskType == J_GRAPHIC_TASK_TYPE::RAYTRACING_GI)
 							return 1;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW)
 							return 1;
@@ -412,7 +410,7 @@ namespace JinEngine::Graphic
 					{
 					case J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL:
 					{
-						if (taskType == J_GRAPHIC_TASK_TYPE::RAYTRACING_GI || taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
+						if (taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
 							return previousDsNumber;
 						else
 							return mainDsNumber;
@@ -431,10 +429,10 @@ namespace JinEngine::Graphic
 							return normalDebuggingNumber;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::TANGENT_MAP_VISUALIZE)
 							return tangentDebuggingNumber;
-						//else if (taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
-						//	return Private::velocityDebuggingNumber;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE)
 							return ssaoDebuggingNumber;
+						//else if (taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
+						//	return velocityDebuggingNumber;
 						else
 							return invalidIndex;
 					}
@@ -448,10 +446,12 @@ namespace JinEngine::Graphic
 					{
 						if (taskType == J_GRAPHIC_TASK_TYPE::SCENE_DRAW)
 							return mainRtNumber;
+						else if (taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
+							return storePreviousDataNumber;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT)
 							return afterPostProcesseNumber;
-						else if (taskType == J_GRAPHIC_TASK_TYPE::RAYTRACING_GI || taskType == J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA)
-							return giRtNumber;
+						else if (taskType == J_GRAPHIC_TASK_TYPE::RAYTRACING_GI)
+							return raytracingRtNumber;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::LIGHT_LIST_DRAW)
 							return litCullDebugRtNumber;
 						else
@@ -756,10 +756,10 @@ namespace JinEngine::Graphic
 		private:
 			JDx12GraphicObjectDataSetManager* manager;
 		public:
-			JDx12GraphicObjectDataOneSocket(const JUserPtr<JObject>& object,
+			JDx12GraphicObjectDataOneSocket(const JGraphicModuleManagedDataCreationDesc& desc,
 				std::unique_ptr<Type>&& firstInterface,
 				JDx12GraphicObjectDataSetManager* manager)
-				:JGraphicObjectDataOneSocket<Type>(object, std::move(firstInterface)), manager(manager)
+				:JGraphicObjectDataOneSocket<Type>(desc, std::move(firstInterface)), manager(manager)
 			{  
 			}
 		};
@@ -774,11 +774,11 @@ namespace JinEngine::Graphic
 		private:
 			JDx12GraphicObjectDataSetManager* manager;
 		public:
-			JDx12GraphicObjectDataDoubleSocket(const JUserPtr<JObject>& object,
+			JDx12GraphicObjectDataDoubleSocket(const JGraphicModuleManagedDataCreationDesc& desc,
 				std::unique_ptr<FirstType>&& firstInterface,
 				std::unique_ptr<SecondType>&& secondInterface,
 				JDx12GraphicObjectDataSetManager* manager)
-				:JGraphicObjectDataDoubleSocket<FirstType, SecondType>(object,
+				:JGraphicObjectDataDoubleSocket<FirstType, SecondType>(desc,
 					std::move(firstInterface),
 					std::move(secondInterface)), manager(manager)
 			{}
@@ -794,12 +794,12 @@ namespace JinEngine::Graphic
 		private:
 			JDx12GraphicObjectDataSetManager* manager;
 		public:
-			JDx12GraphicObjectDataTripleSocket(const JUserPtr<JObject>& object,
+			JDx12GraphicObjectDataTripleSocket(const JGraphicModuleManagedDataCreationDesc& desc,
 				std::unique_ptr<FirstType>&& firstInterface,
 				std::unique_ptr<SecondType>&& secondInterface,
 				std::unique_ptr<ThirdType>&& thirdInterface,
 				JDx12GraphicObjectDataSetManager* manager)
-				:JGraphicObjectDataTripleSocket<FirstType, SecondType, ThirdType>(object,
+				:JGraphicObjectDataTripleSocket<FirstType, SecondType, ThirdType>(desc,
 					std::move(firstInterface),
 					std::move(secondInterface),
 					std::move(thirdInterface)), manager(manager)
@@ -816,18 +816,19 @@ namespace JinEngine::Graphic
 		private:
 			JDx12GraphicObjectDataSetManager* manager;
 		public:
-			JDx12GraphicObjectDataQuadrupleSocket(const JUserPtr<JObject>& object,
+			JDx12GraphicObjectDataQuadrupleSocket(const JGraphicModuleManagedDataCreationDesc& desc,
 				std::unique_ptr<FirstType>&& firstInterface,
 				std::unique_ptr<SecondType>&& secondInterface,
 				std::unique_ptr<ThirdType>&& thirdInterface,
 				std::unique_ptr<ForthType>&& forthInterface,
 				JDx12GraphicObjectDataSetManager* manager)
-				:JGraphicObjectDataQuadrupleSocket<FirstType, SecondType, ThirdType, ForthType>(object,
+				:JGraphicObjectDataQuadrupleSocket<FirstType, SecondType, ThirdType, ForthType>(desc,
 					std::move(firstInterface),
 					std::move(secondInterface),
 					std::move(thirdInterface),
 					std::move(forthInterface)), manager(manager)
-			{}
+			{ 
+			}
 		};
 
 		using AnimatorDataSet = JDx12GraphicObjectDataOneSocket<Animator::FrameInterface>;
@@ -899,7 +900,7 @@ namespace JinEngine::Graphic
 			const uint count = camVec.Count();
 			for (uint i = 0; i < count; ++i)
 			{
-				JOwnerPtr<JGraphicObjectDataSetBase>& objSet = *camVec.Get(i);
+				JUniquePtr<JGraphicObjectDataSetBase>& objSet = *camVec.Get(i);
 				JCamera* cam = static_cast<JCamera*>(objSet->Object().Get());
 				ApplyDeferred(cam, isAct);
 			}
@@ -933,19 +934,20 @@ namespace JinEngine::Graphic
 	JObjectDataSetMetadata JDx12GraphicObjectDataSetManager::GetMetadata(const UniqueIndex index)const noexcept
 	{
 		return metadata[index];
-	} 
+	}  
 	bool JDx12GraphicObjectDataSetManager::HasDependency(const JGraphicOption::TYPE type)const noexcept
 	{
-		if (type == JGraphicOption::TYPE::RENDERING)
+		if (type == JGraphicOption::TYPE::RENDERING || type == JGraphicOption::TYPE::POST_PROCESS)
 			return true;
 		else
 			return false;
 	}
-	JUserPtr<JGraphicModuleManagedDataFrame> JDx12GraphicObjectDataSetManager::Add(const JUserPtr<JObject>& obj)
+	JFastPtr<JGraphicModuleManagedDataFrame> JDx12GraphicObjectDataSetManager::Add(const JGraphicModuleManagedDataCreationDesc& desc)
 	{
-		JOwnerPtr<JGraphicObjectDataSetBase> newOwner;
-		JUserPtr<JGraphicObjectDataSetBase> result;
+		JUniquePtr<JGraphicObjectDataSetBase> newUnique;
+		JFastPtr<JGraphicObjectDataSetBase> result;
 
+		const JWeakPtr<JObject> obj = desc.object;
 		const J_OBJECT_TYPE objType = obj->GetObjectType();
 		UniqueIndex index = invalidIndex;
 
@@ -961,13 +963,13 @@ namespace JinEngine::Graphic
 			}
 			case JinEngine::J_COMPONENT_TYPE::ENGINE_ANIMATOR:
 			{
-				newOwner = Core::JPtrUtil::MakeOwnerPtr<AnimatorDataSet>(obj, std::make_unique<Animator::FrameInterface>(), this);
+				newUnique = Core::JPtrUtil::MakeUniquePtr<AnimatorDataSet>(desc, std::make_unique<Animator::FrameInterface>(), this);
 				index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>();
 				break;
 			}
 			case JinEngine::J_COMPONENT_TYPE::ENGINE_CAMERA:
 			{
-				newOwner = Core::JPtrUtil::MakeOwnerPtr<CameraDataSet>(obj,
+				newUnique = Core::JPtrUtil::MakeUniquePtr<CameraDataSet>(desc,
 					std::make_unique<Camera::CsmTargetInterface>(),
 					std::make_unique<Camera::CullingInterface>(),
 					std::make_unique<Camera::FrameInterface>(),
@@ -983,7 +985,7 @@ namespace JinEngine::Graphic
 				{
 				case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
 				{
-					newOwner = Core::JPtrUtil::MakeOwnerPtr<DirectionalLightDataSet>(obj, 
+					newUnique = Core::JPtrUtil::MakeUniquePtr<DirectionalLightDataSet>(desc,
 						std::make_unique<Light::Directional::CsmHandlerInterface>(),
 						std::make_unique<Light::Directional::CullingInterface>(),
 						std::make_unique<Light::Directional::FrameInterface>(),
@@ -994,7 +996,7 @@ namespace JinEngine::Graphic
 				}
 				case JinEngine::J_LIGHT_TYPE::POINT:
 				{
-					newOwner = Core::JPtrUtil::MakeOwnerPtr<PointLightDataSet>(obj, 
+					newUnique = Core::JPtrUtil::MakeUniquePtr<PointLightDataSet>(desc,
 						std::make_unique<Light::Point::CullingInterface>(),
 						std::make_unique<Light::Point::FrameInterface>(),
 						std::make_unique<Light::Point::GraphucResourceInterafce>(),
@@ -1004,7 +1006,7 @@ namespace JinEngine::Graphic
 				}
 				case JinEngine::J_LIGHT_TYPE::SPOT:
 				{
-					newOwner = Core::JPtrUtil::MakeOwnerPtr<SpotLightDataSet>(obj, 
+					newUnique = Core::JPtrUtil::MakeUniquePtr<SpotLightDataSet>(desc,
 						std::make_unique<Light::Spot::CullingInterface>(),
 						std::make_unique<Light::Spot::FrameInterface>(),
 						std::make_unique<Light::Spot::GraphucResourceInterafce>(),
@@ -1014,7 +1016,7 @@ namespace JinEngine::Graphic
 				}
 				case JinEngine::J_LIGHT_TYPE::RECT:
 				{
-					newOwner = Core::JPtrUtil::MakeOwnerPtr<RectLightDataSet>(obj, 
+					newUnique = Core::JPtrUtil::MakeUniquePtr<RectLightDataSet>(desc,
 						std::make_unique<Light::Rect::CullingInterface>(),
 						std::make_unique<Light::Rect::FrameInterface>(),
 						std::make_unique<Light::Rect::GraphucResourceInterafce>(),
@@ -1029,22 +1031,22 @@ namespace JinEngine::Graphic
 			}
 			case JinEngine::J_COMPONENT_TYPE::ENGINE_RENDERITEM:
 			{
-				newOwner = Core::JPtrUtil::MakeOwnerPtr<RenderItemDataSet>(obj, std::make_unique<RenderItem::FrameInterface>(), this);
+				newUnique = Core::JPtrUtil::MakeUniquePtr<RenderItemDataSet>(desc, std::make_unique<RenderItem::FrameInterface>(), this);
 				index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>();
 				break;
 			}
 			case JinEngine::J_COMPONENT_TYPE::ENGINE_TRANSFORM:
 			{
-				newOwner = Core::JPtrUtil::MakeOwnerPtr<TransformDataSet>(obj, std::make_unique<Transform::FrameInterface>(), this);
+				newUnique = Core::JPtrUtil::MakeUniquePtr<TransformDataSet>(desc, std::make_unique<Transform::FrameInterface>(), this);
 				index = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_TRANSFORM>();
 				break;
 			}
 			default:
 				break;
 			} 
-			result = newOwner;
-			if (newOwner != nullptr)
-				set[index].Add(std::move(newOwner));
+			result = newUnique;
+			if (newUnique != nullptr)
+				set[index].Add(std::move(newUnique));
 		}
 		else if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
 		{
@@ -1053,7 +1055,7 @@ namespace JinEngine::Graphic
 			{
 			case JinEngine::J_RESOURCE_TYPE::MATERIAL:
 			{
-				newOwner = Core::JPtrUtil::MakeOwnerPtr<MaterialDataSet>(obj, std::make_unique<Material::FrameInterface>(), this);
+				newUnique = Core::JPtrUtil::MakeUniquePtr<MaterialDataSet>(desc, std::make_unique<Material::FrameInterface>(), this);
 				index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MATERIAL>();
 				break;
 			}
@@ -1062,25 +1064,25 @@ namespace JinEngine::Graphic
 				const Core::J_MESHGEOMETRY_TYPE meshType = Core::ConnectChildUserPtr<JMeshGeometry>(obj)->GetMeshGeometryType();
 				if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
 				{
-					newOwner = Core::JPtrUtil::MakeOwnerPtr<StaticMeshDataSet>(obj, std::make_unique<Mesh::Static::GraphucResourceInterafce>(), this);
+					newUnique = Core::JPtrUtil::MakeUniquePtr<StaticMeshDataSet>(desc, std::make_unique<Mesh::Static::GraphucResourceInterafce>(), this);
 					index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MESH>(Core::J_MESHGEOMETRY_TYPE::STATIC);
 				}
 				else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
 				{
-					newOwner = Core::JPtrUtil::MakeOwnerPtr<SkinnedMeshDataSet>(obj, std::make_unique<Mesh::Skinned::GraphucResourceInterafce>(), this);
+					newUnique = Core::JPtrUtil::MakeUniquePtr<SkinnedMeshDataSet>(desc, std::make_unique<Mesh::Skinned::GraphucResourceInterafce>(), this);
 					index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MESH>(Core::J_MESHGEOMETRY_TYPE::SKINNED);
 				}
 				break;
 			}
 			case JinEngine::J_RESOURCE_TYPE::TEXTURE:
 			{
-				newOwner = Core::JPtrUtil::MakeOwnerPtr<TextureDataSet>(obj, std::make_unique<Texture::GraphucResourceInterafce>(), this);
+				newUnique = Core::JPtrUtil::MakeUniquePtr<TextureDataSet>(desc, std::make_unique<Texture::GraphucResourceInterafce>(), this);
 				index = ConvertResourceUniqueIndex<J_RESOURCE_TYPE::TEXTURE>();
 				break;
 			}
 			case JinEngine::J_RESOURCE_TYPE::SCENE:
 			{
-				newOwner = Core::JPtrUtil::MakeOwnerPtr<SceneDataSet>(obj, 
+				newUnique = Core::JPtrUtil::MakeUniquePtr<SceneDataSet>(desc,
 					std::make_unique<Scene::FrameInterface>(),
 					std::make_unique<Scene::GpuAcceleratorInterface>(),
 					this);
@@ -1095,26 +1097,25 @@ namespace JinEngine::Graphic
 			default:
 				break;
 			}
-			result = newOwner;
-			if (newOwner != nullptr)
-				set[index + totalCompVariation].Add(std::move(newOwner));
+			result = newUnique;
+			if (newUnique != nullptr)
+				set[index + totalCompVariation].Add(std::move(newUnique));
 		} 
 
 		//Develop::JDevelopDebug::PushLog(obj->GetTypeInfo().Name() + " Add");
 		//Develop::JDevelopDebug::Write();
-
 		return result;
 	}
-	bool JDx12GraphicObjectDataSetManager::Remove(JUserPtr<JGraphicModuleManagedDataFrame>& data)
+	bool JDx12GraphicObjectDataSetManager::Remove(JFastPtr<JGraphicModuleManagedDataFrame>& data)
 	{
 		if (data == nullptr)
 			return false;
 
-		auto removeLam = [](JOwnerPtr<JGraphicObjectDataSetBase>* owner, const size_t guid)
+		auto removeLam = [](JUniquePtr<JGraphicObjectDataSetBase>* owner, const size_t guid)
 		{
 			return (*owner)->Object()->GetGuid() == guid;
 		};
-		bool(*removePtr)(JOwnerPtr<JGraphicObjectDataSetBase>*, size_t) = removeLam;
+		bool(*removePtr)(JUniquePtr<JGraphicObjectDataSetBase>*, size_t) = removeLam;
 
 		const JWeakPtr<JObject> obj = data->Object();
 		const J_OBJECT_TYPE objType = obj->GetObjectType();
@@ -1126,43 +1127,31 @@ namespace JinEngine::Graphic
 		const UniqueIndex typeIndex = GetUniqueIndex(obj);  
 		return set[typeIndex].Remove(set[typeIndex].GetIndex(removePtr, obj->GetGuid()));
 	}
-	void JDx12GraphicObjectDataSetManager::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
+	void JDx12GraphicObjectDataSetManager::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& optionChangedSet)
 	{
-		if (set.preOption.rendering.allowDeferred != set.newOption.rendering.allowDeferred)
-			ApplyDeferred(set, GetDataVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>()));
-		else if (set.preOption.rendering.allowRaytracing != set.newOption.rendering.allowRaytracing)
-			ApplyDeferred(set, GetDataVec(ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>()));
+		for (uint i = 0; i < (uint)J_GRAPHIC_OPTIONAL_FEATURE::COUNT; ++i)
+		{
+			const J_GRAPHIC_OPTIONAL_FEATURE type = (J_GRAPHIC_OPTIONAL_FEATURE)i;
+			const bool* preValuePtr = optionChangedSet.preOption.GetOptionalFeatureValuePtr(type);
+			const bool* newValuePtr = optionChangedSet.newOption.GetOptionalFeatureValuePtr(type);
+
+			if (preValuePtr == nullptr || *preValuePtr == *newValuePtr)
+				continue;
+
+			auto funcMap = GMI()->GetObserverFuncMap(type);
+			for (const auto& funcData : funcMap)
+			{
+				if (funcData.second == nullptr)
+					continue;
+				 
+				const uint count = set[funcData.first].Count();
+				for (uint i = 0; i < count; ++i)
+					funcData.second((*set[funcData.first].Get(i))->Object().Get(), *newValuePtr);
+			}
+		}  
 	}
 	void JDx12GraphicObjectDataSetManager::NotifyGraphicResourceCreation(JGraphicObjectDataSetBase* base, const JUserPtr<JGraphicResourceInfo>& newInfo, const J_GRAPHIC_TASK_TYPE task)
 	{
-		auto obj = base->Object();
-		const J_OBJECT_TYPE objType = obj->GetObjectType();
-		if (objType == J_OBJECT_TYPE::COMPONENT_OBJECT)
-		{
-			const J_COMPONENT_TYPE compType = static_cast<JComponent*>(obj.Get())->GetComponentType();
-			switch (compType)
-			{
-			case JinEngine::J_COMPONENT_TYPE::USER_BEHAVIOR:
-				break;
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_ANIMATOR:
-				break;
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_CAMERA:
-			{ 
-				if(task == J_GRAPHIC_TASK_TYPE::SCENE_DRAW && newInfo->GetGraphicResourceType() == J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON)
-					Camera::AdditionalExecution(static_cast<JCamera*>(obj.Get()), GetGraphicOption());
-				break;
-			}
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_LIGHT:
-				break;
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_RENDERITEM:
-				break;
-			case JinEngine::J_COMPONENT_TYPE::ENGINE_TRANSFORM:
-				break; 
-			default:
-				break;
-			}
-		}
-		 
 	}
 	void JDx12GraphicObjectDataSetManager::BuildResource(JGraphicDevice* device)
 	{

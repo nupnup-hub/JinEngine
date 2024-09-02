@@ -42,6 +42,7 @@ SOFTWARE.
 #include"../../Directory/JFile.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h" 
 #include"../../../Core/Guid/JGuidCreator.h" 
@@ -67,7 +68,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationClipImpl)
 	public:
 		JWeakPtr<JAnimationClip> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		std::vector<Core::JAnimationSample>animationSample;			//fixed
 		size_t skeletonHash;			//fixed
@@ -298,7 +299,7 @@ namespace JinEngine
 				if (animationSample[tarIndex].jointPose.size() == 0)
 					continue;
 
-				const uint8 parentRefIndex = JAvatar::jointReferenceParent[i];
+				const uint8 parentRefIndex = JAvatar::GetJointReferenceParent(i);
 				const uint8 tarParentIndex = tarAvatar->jointReference[parentRefIndex];
 				const uint8 srcParentIndex = srcAvatar->jointReference[parentRefIndex];
 
@@ -732,7 +733,7 @@ namespace JinEngine
 	}
 	void JAnimationClip::DoActivate()noexcept
 	{
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JResourceObject::DoActivate();
 		impl->Activate();
 	}
@@ -740,7 +741,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JResourceObject::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JAnimationClip::JAnimationClip(InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JAnimationClipImpl>(initData, this))

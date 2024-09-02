@@ -31,6 +31,7 @@ SOFTWARE.
 #include"../../Resource/Scene/JScenePrivate.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
@@ -51,7 +52,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTransformImpl)
 	public:
 		JWeakPtr<JTransform> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public: 
 		REGISTER_PROPERTY_EX(position, GetPosition, SetPosition, GUI_INPUT(false))
 		mutable JVector3<float> position;
@@ -530,15 +531,15 @@ namespace JinEngine
 			return false;
 	}
 	void JTransform::DoActivate()noexcept
-	{
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+	{ 
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JComponent::DoActivate();
 		impl->SetFrameDirtyTrigger();
 	}
 	void JTransform::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JTransform::JTransform(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JTransformImpl>(initData, this))

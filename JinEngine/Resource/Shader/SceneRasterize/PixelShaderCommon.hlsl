@@ -35,7 +35,7 @@ SOFTWARE.
 #endif
 
 #define PARALLAX_STEP 4 
-#define PARALLAX_SCALE	0.03125f //	1 / 16 .. 1/ 32
+#define PARALLAX_SCALE	0.03125f //	1 / 16 .. 1/ 32 
 
 #ifndef TEXTURE_2D_COUNT
 #define TEXTURE_2D_COUNT 0

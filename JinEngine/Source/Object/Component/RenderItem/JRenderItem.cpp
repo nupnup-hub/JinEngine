@@ -37,6 +37,7 @@ SOFTWARE.
 #include"../../Resource/Material/JMaterialPrivate.h"  
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
@@ -60,7 +61,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JRenderItemImpl)
 	public:
 		JWeakPtr<JRenderItem> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JMeshGeometry> mesh;
@@ -111,14 +112,12 @@ namespace JinEngine
 				validMaterialVec[i] = GetValidMaterial(i);
 			return validMaterialVec;
 		}
-		REGISTER_METHOD(GetTotalVertexCount)
-		REGISTER_METHOD_READONLY_GUI_WIDGET(VertexCount, GetTotalVertexCount, GUI_READONLY_TEXT())
+		REGISTER_GET_METHOD_EX(VertexCount, GetTotalVertexCount, GUI_READONLY_TEXT())
 		uint GetTotalVertexCount()const noexcept
 		{
 			return mesh.IsValid() ? mesh->GetTotalVertexCount() : 0;
 		}
-		REGISTER_METHOD(GetTotalIndexCount)
-		REGISTER_METHOD_READONLY_GUI_WIDGET(IndexCount, GetTotalIndexCount, GUI_READONLY_TEXT())
+		REGISTER_GET_METHOD_EX(IndexCount, GetTotalIndexCount, GUI_READONLY_TEXT())
 		uint GetTotalIndexCount()const noexcept
 		{
 			return mesh.IsValid() ? mesh->GetTotalIndexCount() : 0;
@@ -576,7 +575,7 @@ namespace JinEngine
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JComponent::DoActivate();
 		impl->OnResourceRef();
 		if (!impl->isActivated && impl->mesh != nullptr)
@@ -594,7 +593,7 @@ namespace JinEngine
 		}
 		impl->OffResourceRef(); 
 		JComponent::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JRenderItem::JRenderItem(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JRenderItemImpl>(initData, this))

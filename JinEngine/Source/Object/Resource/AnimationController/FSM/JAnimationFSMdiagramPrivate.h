@@ -57,7 +57,7 @@ namespace JinEngine
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
 		};
-		class AnimationInterface final
+		class AnimationUpdateInterface final
 		{
 		private:
 			friend class JAnimationController;

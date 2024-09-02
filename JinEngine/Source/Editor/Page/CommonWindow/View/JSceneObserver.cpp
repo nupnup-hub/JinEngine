@@ -554,8 +554,8 @@ namespace JinEngine
 			const float iconRange = frustumRange / 0.25f;
 			validFrustum.Far = validFrustum.Near + iconRange;
 
-			auto viewM = editCamData.cam->GetView();
-			auto projM = editCamData.cam->GetProj();
+			auto viewM = editCamData.cam->GetView().LoadXM();
+			auto projM = editCamData.cam->GetProj().LoadXM();
 
 			const float camWidth = editCamData.cam->GetFarViewWidth();
 			const float camHeight = editCamData.cam->GetFarViewHeight();
@@ -1236,14 +1236,8 @@ namespace JinEngine
 						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW); },
 						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW); },
 						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW); },
-						/*
-						[](const GUser& g)
-						{
-							auto index = g.GetResourceIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-							return g.HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, index);
-						},
-						*/
-						[](const GUser* g) {return g->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO); }
+						[](const GUser* g) {return g->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO); },
+						//[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, J_GRAPHIC_TASK_TYPE::SCENE_DRAW); },
 					};
 					std::string name[deubgMapCount]
 					{
@@ -1251,15 +1245,15 @@ namespace JinEngine
 						"AlbedoMap",
 						"Specular Map",
 						"Normal Map",
-						"Tangent Map",
-						//"Velocity Map",
-						"SSAO Map"
+						"Tangent Map", 
+						"SSAO Map",
+					//	"Velocity Map"
 					};
 
 					const uint debugMapCount = gUser->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 					const uint sequence[deubgMapCount]
 					{
-						1, 2, 0, 3, 4, 5
+						1, 2, 0, 3, 4, 5, // 6
 					};
 					for (uint i = 0; i < debugMapCount; ++i)
 					{

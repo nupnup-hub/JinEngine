@@ -453,7 +453,25 @@ namespace JinEngine::Graphic
 	{
 		currBackBuffer = value;
 	}
-	bool JDx12GraphicDevice::IsSupportPublicCommand()const noexcept
+	bool JDx12GraphicDevice::IsSupported(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept
+	{
+		switch (featureType)
+		{
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::DEFERRED_RENDERING:
+			return true;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING:
+			return isRaytracingSupported;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING_GI:
+			return isRaytracingSupported;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::POST_PROCESSING:
+			return true;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::GPU_ACCELERATOR:
+			return isRaytracingSupported; 
+		default:
+			break;
+		}
+	}
+	bool JDx12GraphicDevice::IsSupportedPublicCommand()const noexcept
 	{
 		return true;
 	}
@@ -461,17 +479,9 @@ namespace JinEngine::Graphic
 	{
 		return stCommand;
 	}
-	bool JDx12GraphicDevice::IsRaytracingSupported()const noexcept
-	{
-		return isRaytracingSupported;
-	}
 	bool JDx12GraphicDevice::CanStartPublicCommand()const noexcept
 	{
 		return !stCommand;
-	}
-	bool JDx12GraphicDevice::CanBuildGpuAccelerator()const noexcept
-	{
-		return isRaytracingSupported;
 	}
 	void JDx12GraphicDevice::CalViewportAndRect(const JVector2F rtSize, const bool restrictRange, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept
 	{
@@ -552,8 +562,7 @@ namespace JinEngine::Graphic
 	void JDx12GraphicDevice::UpdateWait(const GraphicFence frameFence)
 	{
 		if (frameFence != 0 && fence->GetCompletedValue() < frameFence)
-		{
-			//nullptr, FALSE, FALSE, EVENT_ALL_ACCESS 
+		{ 
 			HANDLE eventHandle = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
 			ThrowIfFailedHr(fence->SetEventOnCompletion(frameFence, eventHandle));
 			WaitForSingleObject(eventHandle, INFINITE);

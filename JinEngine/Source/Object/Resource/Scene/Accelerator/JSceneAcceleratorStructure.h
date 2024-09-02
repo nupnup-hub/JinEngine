@@ -138,12 +138,13 @@ namespace JinEngine
 		void SetBvhOption(const J_ACCELERATOR_LAYER layer, const JBvhOption& option);
 		void SetKdTreeOption(const J_ACCELERATOR_LAYER layer, const JKdTreeOption& option);
 		void SetGpuAccelerator(JGpuAcceleratorOption option);
+		void SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& data);
 		//void SetDebugKdTreeOption(const JKdTreeOption& option);
 	public:
 		bool IsActivated(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type); 
 		bool HasCanCullingAccelerator(const J_ACCELERATOR_LAYER layer)const noexcept;
 	public:
-		void Activate(const JUserPtr<JGraphicModuleManagedDataFrame>& data)noexcept;
+		void Activate(const JFastPtr<JGraphicModuleManagedDataFrame>& data)noexcept;
 		void DeAcitvate()noexcept;
 	public:
 		void BuildDebugTree(const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept;

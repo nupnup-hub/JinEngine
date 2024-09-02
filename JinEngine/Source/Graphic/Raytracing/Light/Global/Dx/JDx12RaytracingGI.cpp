@@ -302,7 +302,7 @@ namespace JinEngine::Graphic
 		  
 		static GIPassConstants constants;
 		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
-		constants.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj()));
+		constants.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj().LoadXM()));
 		constants.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
 		cam->GetUvToView(constants.uvToViewA, constants.uvToViewB);
 
@@ -388,8 +388,8 @@ namespace JinEngine::Graphic
 		//velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 		aoMapSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, ssaoIndex);
 
-		preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
-		preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+		preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA);
+		preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA);
 		preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 		//preTangentSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 
@@ -466,10 +466,16 @@ namespace JinEngine::Graphic
 		auto& newInfo = dx12Set.newInfo.resource;
 		 
 		if (preInfo.GetBorder(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D) != newInfo.GetBorder(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D))
-		{
+		{ 
+			Clear();
+			BuildResource(dx12Set.device, dx12Set.gm);
+			for (auto& data : userPrivate)
+				data.second->SetClearTrigger();
+			/*			
 			raytracingRootSignature = nullptr;
 			ClearStateObject();
 			ClearShaderTable();
+			ClearRootSignature();
 
 			auto dx12Device = static_cast<JDx12GraphicDevice*>(dx12Set.device);
 			BuildRootSignature(dx12Device);
@@ -478,6 +484,7 @@ namespace JinEngine::Graphic
 			for (uint i = 0; i < STATE_OBJECT_TYPE_COUNT; ++i)
 				BuildRtStateObject(dx12Device->GetRaytracingDevice(), gInfo, gOption, (STATE_OBJECT_TYPE)i);
 			BuildRtShaderTables(dx12Device->GetRaytracingDevice(), gInfo);
+			*/
 		}
 	}
 	void JDx12RaytracingGI::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
@@ -522,10 +529,7 @@ namespace JinEngine::Graphic
 	{
 		auto data = userPrivate.find(helper.cam->GetGuid());
 		if (data == userPrivate.end())
-		{
-			userPrivate.emplace(helper.cam->GetGuid(), std::make_unique<UserPrivateData>(set.device));
-			data = userPrivate.find(helper.cam->GetGuid());
-		}
+			data = userPrivate.emplace(helper.cam->GetGuid(), std::make_unique<UserPrivateData>(set.device)).first;
 		set.SetUserPrivate(data->second.get(), helper);
 	}
 	void JDx12RaytracingGI::InitializeSampling(const GIDataSet& set, const JDrawHelper& helper)
@@ -676,13 +680,7 @@ namespace JinEngine::Graphic
 		++computeCount;
 		if (computeCount >= Common::clearUserDataFrequency)
 		{
-			for (auto& data : userPrivate)
-			{
-				if (data.second->CanAlive())
-					data.second->OffAliveTrigger();
-				else
-					userPrivate.erase(data.first); 
-			}
+			Core::JVolatileStorageInterface::UpdateEnd(userPrivate); 
 			computeCount = 0;
 		}
 	}

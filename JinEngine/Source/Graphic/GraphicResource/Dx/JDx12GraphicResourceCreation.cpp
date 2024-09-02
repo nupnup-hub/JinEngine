@@ -667,6 +667,7 @@ namespace JinEngine::Graphic
 				heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 				heapFlags = D3D12_HEAP_FLAG_NONE;
 
+				//desc.Format = DXGI_FORMAT_R32G32_FLOAT;
 				desc.Format = DXGI_FORMAT_R32_UINT;
 				clearFormat = desc.Format;
 				break;

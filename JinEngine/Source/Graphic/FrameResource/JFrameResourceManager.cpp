@@ -36,7 +36,20 @@ namespace JinEngine::Graphic
 	}
 	JFrameUpdateDataSet::JFrameUpdateDataSet(const CompVec* compVec, const JObjectDataSetMetadata& metadata, const JFrameUpdateOption& option)
 		: objDataVec(nullptr), compVec(compVec), metadata(metadata), option(option)
+	{ 
+	}
+	JFrameUpdateDataSet::JFrameUpdateDataSet(const JFrameUpdateDataSet& rhs)
+		: objDataVec(rhs.objDataVec), compVec(rhs.compVec), metadata(rhs.metadata), option(rhs.option), updateLog(rhs.updateLog)
 	{
+	}
+	JFrameUpdateDataSet& JFrameUpdateDataSet::operator=(const JFrameUpdateDataSet& rhs)
+	{
+		objDataVec =rhs.objDataVec;
+		compVec =rhs.compVec;
+		metadata = rhs.metadata;
+		option = rhs.option;
+		updateLog = rhs.updateLog;
+		return *this;
 	}
 	uint JFrameUpdateDataSet::GetDataStorageCount()const noexcept
 	{

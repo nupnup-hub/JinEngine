@@ -22,12 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
-#pragma once
-#include"Csm/JGraphicModuleCsmType.h"
-#include"Culling/JGraphicModuleCullingType.h"
-#include"GpuAccelerator/JGraphicModuleGpuAcceleratorType.h"
-#include"FrameResource/JGraphicModuleFrameResourceType.h"
-#include"GraphicResource/JGraphicModuleTextureResourceType.h" 
+#pragma once 
 #include"Shader/JGraphicModuleShaderHolder.h"
 #include"JGraphicModuleManagedDataFrame.h"
 #include"JGraphicModuleType.h"
@@ -37,9 +32,9 @@ namespace JinEngine
 	class JObject;
 	namespace Rule
 	{
+		using NotifyGraphicFeatureChangedFuncMap = std::unordered_map<size_t, NotifyGraphicFeatureChangedPtr>;
 		class JGraphicModuleInterface
-		{
-			//Creation
+		{ 
 		public:
 			/*
 			* timing
@@ -48,8 +43,8 @@ namespace JinEngine
 			* Activate가 아닌 Initialize 단계에서 Import나 Load등의 함수호출로 인해 GraphicModule에 접근이 
 			* 필요할 수 있으므로 각 Resource에 구현에 맞게 호출타이밍을 조절하도록하자.
 			*/
-			virtual JUserPtr<JGraphicModuleManagedDataFrame> Allocate(const JUserPtr<JObject>& object) = 0;
-			virtual void DeAllocate(JUserPtr<JGraphicModuleManagedDataFrame>& data) = 0;
+			virtual JFastPtr<JGraphicModuleManagedDataFrame> Allocate(const JGraphicModuleManagedDataCreationDesc& desc) = 0;
+			virtual void DeAllocate(JFastPtr<JGraphicModuleManagedDataFrame>& data) = 0;
 		public:
 			virtual bool RegisterScene(JGraphicModuleManagedDataFrame* data, const JGraphicSceneRegisterDesc& desc) = 0;
 			virtual bool DeRegisterScene(JGraphicModuleManagedDataFrame* data) = 0;
@@ -109,11 +104,13 @@ namespace JinEngine
 			virtual void AddComponent(JGpuAcceleratorUserInterface* gUser, const JUserPtr<JComponent>& newComp)noexcept = 0;
 			virtual void RemoveComponent(JGpuAcceleratorUserInterface* gUser, const JUserPtr<JComponent>& comp)noexcept = 0;
 		public:
-			//Check graphic feature
-			virtual bool IsActivatedDeferredRendering()const noexcept = 0;
-			virtual bool IsActivatedRaytracing()const noexcept = 0;
-			virtual bool IsActivatedRaytracingGI()const noexcept = 0;
-			virtual bool IsActivatedPostprocessing()const noexcept = 0;
+			//Optional graphic feature
+			virtual bool IsSupported(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept = 0;
+			virtual bool IsActivated(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept = 0;
+		public:
+			static void RegisterOptionalFeatureObserver(const JGraphicOptionalFeatureObserverDesc& desc);
+		public:
+			static NotifyGraphicFeatureChangedFuncMap GetObserverFuncMap(const J_GRAPHIC_OPTIONAL_FEATURE type);
 		};
 	}
 }

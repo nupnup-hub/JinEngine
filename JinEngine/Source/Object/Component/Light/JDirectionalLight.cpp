@@ -35,6 +35,7 @@ SOFTWARE.
 #include"../../Resource/JResourceManager.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Func/JFuncList.h" 
@@ -188,7 +189,7 @@ namespace JinEngine
 		using CONDTION_MASK = ManageFuncList::CONDITION_MASK;
 	public:
 		JWeakPtr<JDirectionalLight> thisPointer = nullptr;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
 	public:
 		JVector3<float> vSceneBBoxMinF;
 		JVector3<float> vSceneBBoxMaxF;
@@ -383,10 +384,10 @@ namespace JinEngine
 			return setFuncList;
 		}
 	public:
-		REGISTER_METHOD_GUI_WIDGET(CsmSplitCount, GetSplitCount, SetSplitCount, GUI_SLIDER(JCsmOption::minCountOfSplit, JCsmOption::maxCountOfSplit, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmSplitBlendRate, GetSplitBlendRate, SetSplitBlendRate, GUI_SLIDER(JCsmOption::minSplitRate, JCsmOption::maxSplitRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmShadowDistance, GetShadowDistance, SetShadowDistance, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmLevelBlendRate, GetLevelBlendRate, SetLevelBlendRate, GUI_SLIDER(JCsmOption::minLevelRate, JCsmOption::maxLevelRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmSplitCount, GetSplitCount, SetSplitCount, GUI_SLIDER(JCsmOption::minCountOfSplit, JCsmOption::maxCountOfSplit, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmSplitBlendRate, GetSplitBlendRate, SetSplitBlendRate, GUI_SLIDER(JCsmOption::minSplitRate, JCsmOption::maxSplitRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmShadowDistance, GetShadowDistance, SetShadowDistance, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmLevelBlendRate, GetLevelBlendRate, SetLevelBlendRate, GUI_SLIDER(JCsmOption::minLevelRate, JCsmOption::maxLevelRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
 	public:
 		bool IsActivated()const noexcept
 		{
@@ -520,6 +521,8 @@ namespace JinEngine
 		{ 
 			//has order dependency 
 			SetFuncList().InvokeAllReverse(this, CONDTION_MASK::PASS_NONE, SetParam(false, true));
+			GMI()->CancelExecutableGraphicFeature(graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP);
+
 			GMI()->DestroyAllGraphicsResources(graphicData.Get());
 			GMI()->DestroyAllCullingData(graphicData.Get());
 			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT);
@@ -1009,7 +1012,7 @@ namespace JinEngine
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JLight::DoActivate();
 		impl->Activate();
 		RegisterComponent(impl->thisPointer, GetLitTypeComparePtr());
@@ -1019,7 +1022,7 @@ namespace JinEngine
 		DeRegisterComponent(impl->thisPointer);
 		impl->DeActivate();
 		JLight::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JDirectionalLight::JDirectionalLight(const InitData& initData)
 		:JLight(initData), impl(std::make_unique<JDirectionalLightImpl>(initData, this))

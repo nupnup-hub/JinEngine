@@ -22,19 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
+#pragma once
+#include"../JCoreEssential.h"
 
-#include"JGraphicEvent.h"
-#include"GraphicResource/JGraphicResourceInfo.h"
-
-namespace JinEngine::Graphic
+namespace JinEngine
 {
-	JGraphicOptionChangedEvStruct::JGraphicOptionChangedEvStruct(const JGraphicOption& preOption, const JGraphicOption& newOption)
-		:preOption(preOption), newOption(newOption)
+	namespace Core
 	{
-		SetValid(true);
-	}
-	J_GRAPHIC_EVENT_TYPE JGraphicOptionChangedEvStruct::GetEventType()const noexcept
-	{
-		return J_GRAPHIC_EVENT_TYPE::OPTION_CHANGED;
+		class JThreadUtil
+		{
+		public:
+			static void DispatchWorkIndex(const uint taskCount, const uint threadCount, const uint threadIndex, _Out_ uint& stIndex, _Out_ uint& edIndex) noexcept;
+		};
 	}
 }

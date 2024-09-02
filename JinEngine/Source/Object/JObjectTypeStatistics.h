@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 #pragma once
+#include"JObjectType.h"
 #include"Component/JComponentType.h"
 #include"Component/Light/JLightType.h"
 #include"Resource/JResourceObjectType.h"
@@ -31,8 +32,7 @@ SOFTWARE.
 #include"../Core/Geometry/Mesh/JMeshType.h"
 
 namespace JinEngine
-{
-	using UniqueIndex = int;
+{ 
 	namespace Private
 	{
 		template<typename T, T _type, uint variationCount>
@@ -124,8 +124,8 @@ namespace JinEngine
 	using AnimationControllerVariation = Private::TypeVariation<J_RESOURCE_TYPE, J_RESOURCE_TYPE::ANIMATION_CONTROLLER, 1>;
 	 
 	//새로운 하위타입 추가시 반드시 변경사항을 적용해야함.
-	using CompVariation = Private::TotalTypeVariation<BehaviorVariation,
-		AnimatorVariation,
+	using CompVariation = Private::TotalTypeVariation<AnimatorVariation,
+		BehaviorVariation,
 		CameraVariation,
 		LightVariation,
 		RenderItemVariation,

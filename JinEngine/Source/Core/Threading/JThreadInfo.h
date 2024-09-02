@@ -24,7 +24,8 @@ SOFTWARE.
 
 
 #pragma once
-#include"JThreadType.h"  
+#include"JThreadType.h"   
+#include"../Pointer/JOwnerPtr.h"
 #include"../JCoreEssential.h"
 
 namespace JinEngine
@@ -35,7 +36,7 @@ namespace JinEngine
 		struct JThreadInitInfo
 		{
 		public:
-			ThreadEndNotifyPtr* notifyF;
+			ThreadEndNotifyPtr* notifyF = nullptr;
 			//WorkT가 wait상태일시 bind된 func를 교체관련 여부 trigger 관련된 기능들이 미구현 상태이므로 값은 수정불가
 			const bool callBindOnce = true;
 		public:
@@ -54,6 +55,19 @@ namespace JinEngine
 		public:
 			JThreadInfo() = default;
 			JThreadInfo(const JThreadInitInfo& initInfo, const J_THREAD_USE_CASE_TYPE useCase);
+		};
+
+		struct JThreadUserHandle
+		{
+		private:
+			size_t guid = 0;  
+			JUserPtr<int> index;
+		public:
+			JThreadUserHandle();
+			JThreadUserHandle(const size_t guid, const JUserPtr<int>& index);
+		public: 
+			size_t GetGuid()const noexcept;
+			int GetIndex()const noexcept;
 		};
 	}
 }

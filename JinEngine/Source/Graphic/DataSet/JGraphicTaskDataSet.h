@@ -248,16 +248,7 @@ namespace JinEngine
 		public:
 			JGraphicSsaoComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData);
 		};
-
-		struct JGraphicAAComputeSet : public JGraphicDeviceUser, public Core::JValidInterface
-		{
-		public:
-			JCommandContext* context;
-			JGraphicResourceShareData* shareData;
-		public:
-			JGraphicAAComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData);
-		};
-
+		 
 		//추후에 color curve를 변경하는 기능 추가
 		struct JGraphicConvertColorComputeSet : public JGraphicDeviceUser, public Core::JValidInterface
 		{ 
@@ -275,12 +266,13 @@ namespace JinEngine
 			JPostProcessEffectSet* ppSet;
 		public:
 			JCommandContext* context;
+			JGraphicDevice* device;
 			JGraphicResourceManager* gm;
 			JGraphicResourceShareData* shareData; 
 		public:
 			JShareDataHolderInterface* imageShareData;
 		public:
-			JPostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData);
+			JPostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicDevice* device, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData);
 		};
 
 		struct JGraphicLightCullingTaskSet : public JGraphicDeviceUser, public Core::JValidInterface
@@ -359,6 +351,7 @@ namespace JinEngine
 			std::unique_ptr<JGraphicRtAoComputeSet> rtao;
 			std::unique_ptr<JGraphicRtGiComputeSet> rtgi; 
 			std::unique_ptr<JGraphicRtDenoiseComputeSet> rtDenoiser;
+			std::unique_ptr<JGraphicVelocityComputeSet> velocity;
 		};
 
 		struct JGraphicBeginFrameSet
@@ -370,7 +363,7 @@ namespace JinEngine
 
 		struct JGraphicMidFrameSet
 		{
-		public:
+		public: 
 			std::unique_ptr<JGraphicBindSet> bind;
 			std::unique_ptr<JGraphicSceneDrawSet> sceneDraw;
 			std::unique_ptr<JGraphicHzbOccComputeSet> hzbCompute;
@@ -383,6 +376,7 @@ namespace JinEngine
 			std::unique_ptr<JGraphicRtAoComputeSet> rtao;
 			std::unique_ptr<JGraphicRtGiComputeSet> rtgi; 
 			std::unique_ptr<JGraphicRtDenoiseComputeSet> rtDenoiser;
+			std::unique_ptr<JGraphicVelocityComputeSet> velocity;
 		};
 
 		struct JGraphicEndConditonSet

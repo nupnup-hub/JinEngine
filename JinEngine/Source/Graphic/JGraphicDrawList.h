@@ -24,13 +24,13 @@ SOFTWARE.
 
 
 #pragma once
-#include"JGraphicDrawListType.h"
+#include"JGraphicDrawListType.h" 
+#include"JGraphicUpdateLog.h"
 #include"../Core/JCoreEssential.h" 
 #include"../Object/GraphicRule/JGraphicModuleType.h"
 #include"../Object/JObjectTypeStatistics.h"
 #include<deque>  
-
-struct ID3D12Device;
+ 
 namespace JinEngine
 {
 	class JComponent;
@@ -42,11 +42,8 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicResourceInfo;  
-		class JGraphicDrawList;
-		class JGraphicSingleResourceInterface;
-		class JGraphicMultoResourceInterface;
-		class JGraphic;
-		class JFrameUpdateUserAccess;
+		class JGraphicDrawList; 
+		class JGraphic;  
 
 		class JGraphicDrawTarget;
 		class JDrawRequestor
@@ -130,19 +127,16 @@ namespace JinEngine
 		public:
 			size_t GetReferenceComponentGuid()const noexcept final;
 		};
-		 
+ 
 		class JGraphicDrawTarget
 		{
-		public:
+		public: 
 			struct UpdateInfo
-			{
+			{ 
 			private: 
-				friend class JGraphicDrawTarget; 
+				friend class JGraphicDrawTarget;  
 			public:
-				uint updateCount[totalCompVariation];
-				uint hotUpdateCount[totalCompVariation];
-				uint moveCount[totalCompVariation];
-				uint thisFrameCount[totalCompVariation];
+				JGraphicUpdateLog log[totalCompVariation];
 				uint lastFrameCount[totalCompVariation];
 			public:
 				bool sceneUpdated = false;
@@ -157,7 +151,7 @@ namespace JinEngine
 			}; 
 		public:
 			JUserPtr<JScene> scene;
-			std::unique_ptr<UpdateInfo> updateInfo;
+			UpdateInfo updateInfo;
 			std::vector<std::unique_ptr<JShadowMapDrawRequestor>> shadowRequestor;
 			std::vector<std::unique_ptr<JSceneDrawRequestor>> sceneRequestor;
 			std::vector<std::unique_ptr<JSceneFrustumCullingRequestor>> frustumCullingRequestor;
@@ -168,7 +162,7 @@ namespace JinEngine
 			~JGraphicDrawTarget();
 		public:
 			void BeginUpdate();
-			void EndUpdate();
+			void EndUpdate(); 
 		};
 		 
 		class JGraphicDrawList 

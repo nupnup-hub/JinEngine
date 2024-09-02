@@ -591,8 +591,8 @@ namespace JinEngine::Graphic
 		if (helper.allowTemporalProcess)
 		{
 			velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
-			preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
-			preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
+			preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA);
+			preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA);
 			preLightPropSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 			preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 			preVelocitySet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
@@ -1180,7 +1180,7 @@ namespace JinEngine::Graphic
 					context->SetPipelineState(dx12ShaderData, (uint)J_GRAPHIC_SHADER_EXTRA_FUNCTION::STENCIL_WRITE_ALWAYS);
 				else
 					context->SetPipelineState(dx12ShaderData, 0);
-
+				 
 				context->SetGraphicsRootConstantBufferView(objCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT, objFrameIndex + j);
 				context->DrawIndexedInstanced(mesh, j);
 			}
@@ -1410,8 +1410,9 @@ namespace JinEngine::Graphic
 		if (data.condition.cullModeCondition == J_SHADER_APPLIY_CONDITION::APPLY)
 			newShaderPso.RasterizerState.CullMode = Private::ConvertD3d12CullMode(data.condition.isCullModeNone);
 
-		if (option.rendering.useMSAA)
-			newShaderPso.RasterizerState.MultisampleEnable = true;
+		//if (option.rendering.useMSAA)
+		//	newShaderPso.RasterizerState.MultisampleEnable = true; 
+		newShaderPso.RasterizerState.MultisampleEnable = option.rendering.allowDeferred;
 
 		const uint psoIndex = (uint)data.extraType;
 

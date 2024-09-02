@@ -184,17 +184,7 @@ namespace JinEngine::Graphic
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
-
-	JDx12GraphicAAComputeSet::JDx12GraphicAAComputeSet(JCommandContext* context,JGraphicResourceShareData* shareData)
-		:JGraphicAAComputeSet(context, shareData)
-	{
-		SetValid(IsAllSameDevice(context, shareData));
-	}
-	J_GRAPHIC_DEVICE_TYPE JDx12GraphicAAComputeSet::GetDeviceType()const noexcept
-	{
-		return J_GRAPHIC_DEVICE_TYPE::DX12;
-	}
-
+	 
 	JDx12GraphicConvertColorComputeSet::JDx12GraphicConvertColorComputeSet(JCommandContext* context, const JConvertColorDesc& desc, JGraphicResourceInfo* srcInfo, JGraphicResourceInfo* destInfo)
 		:JGraphicConvertColorComputeSet(context, desc), srcInfo(srcInfo), destInfo(destInfo)
 	{
@@ -205,10 +195,10 @@ namespace JinEngine::Graphic
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12PostProcessComputeSet::JDx12PostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData)
-		:JPostProcessComputeSet(ppSet, context, gm, shareData)
+	JDx12PostProcessComputeSet::JDx12PostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicDevice* device, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData)
+		:JPostProcessComputeSet(ppSet, context, device, gm, shareData)
 	{
-		SetValid(ppSet != nullptr && IsAllSameDevice(ppSet->tm, ppSet->convertColor, context, shareData));
+		SetValid(ppSet != nullptr && IsAllSameDevice(ppSet->tm, ppSet->convertColor, context, device, gm, shareData));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12PostProcessComputeSet::GetDeviceType()const noexcept
 	{

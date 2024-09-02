@@ -203,7 +203,7 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JAnimationFSMtransitionPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JAnimationFSMtransitionPrivate::AssetDataIOInterface;
-	using UpdateInterface = JAnimationFSMtransitionPrivate::UpdateInterface;
+	using AnimationUpdateInterface = JAnimationFSMtransitionPrivate::AnimationUpdateInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -297,7 +297,7 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	void UpdateInterface::Initialize(const JUserPtr<Core::JFSMtransition>& trans)noexcept
+	void AnimationUpdateInterface::Initialize(const JUserPtr<Core::JFSMtransition>& trans)noexcept
 	{
 		static_cast<JAnimationFSMtransition*>(trans.Get())->impl->Initialize();
 	}
@@ -314,7 +314,7 @@ namespace JinEngine
 	}
 	Core::JFSMtransitionPrivate::UpdateInterface& JAnimationFSMtransitionPrivate::GetUpdateInterface()const noexcept
 	{
-		static UpdateInterface pI;
+		static AnimationUpdateInterface pI;
 		return pI;
 	}
 }

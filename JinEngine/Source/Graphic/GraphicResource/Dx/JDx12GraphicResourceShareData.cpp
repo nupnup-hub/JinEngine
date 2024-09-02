@@ -146,7 +146,7 @@ namespace JinEngine::Graphic
 		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING;
 		intermediate00 = gM->CreateResource(device, desc);
 		intermediate01 = gM->CreateResource(device, desc);
-
+ 
 		uint histogramInitData[Constants::histogramBufferCount];
 		memset(histogramInitData, 0, Constants::histogramBufferCount * sizeof(uint));
 		 
@@ -247,7 +247,7 @@ namespace JinEngine::Graphic
 		gM->DestroyGraphicTextureResource(device, fxaaWorkCounter.Release());
 		gM->DestroyGraphicTextureResource(device, fxaaIndirectParameters.Release());
 		gM->DestroyGraphicTextureResource(device, fxaaWorkerQueue.Release());
-		gM->DestroyGraphicTextureResource(device, fxaaColorQueue.Release());
+		gM->DestroyGraphicTextureResource(device, fxaaColorQueue.Release()); 
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::ImageProcessingData::GetDeviceType()const noexcept
 	{
@@ -310,21 +310,9 @@ namespace JinEngine::Graphic
 		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
 		restirColorHistoryIntermediate00 = gM->CreateResource(device, desc);
 		restirColorHistoryIntermediate01 = gM->CreateResource(device, desc); 
-
+ 
 		desc.width = width;
-		desc.height = 1;
-		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
-		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
-		viewZ = gM->CreateResource(device, desc);
-
-		desc.width = width;
-		desc.height = 1;
-		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
-		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
-		preViewZ = gM->CreateResource(device, desc);
-
-		desc.width = width;
-		desc.height = 1;
+		desc.height = height;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16_UNORM;
 		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
 		restirDepthDerivative = gM->CreateResource(device, desc);
@@ -343,8 +331,6 @@ namespace JinEngine::Graphic
 	{ 
 		gM->DestroyGraphicTextureResource(device, restirColorHistoryIntermediate00.Release());
 		gM->DestroyGraphicTextureResource(device, restirColorHistoryIntermediate01.Release());
-		gM->DestroyGraphicTextureResource(device, viewZ.Release());
-		gM->DestroyGraphicTextureResource(device, preViewZ.Release());
 		gM->DestroyGraphicTextureResource(device, restirDepthDerivative.Release());
 		//for (uint i = 0; i < SIZE_OF_ARRAY(restirDenoiseMipmap); ++i)
 		//	gM->DestroyGraphicTextureResource(restirDenoiseMipmap[i].Release());

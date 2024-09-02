@@ -45,7 +45,7 @@ namespace JinEngine::Graphic
 		auto base = GetGraphicBufferBase(type);
 		if (base == nullptr)
 			return;
-		  
+		    
 		base->CopyData(elementIndex, data);
 	}
 	void JFrameResource::CopyData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint elementIndex, const uint count, const void* data, const uint dataElementSize)
@@ -53,7 +53,7 @@ namespace JinEngine::Graphic
 		auto base = GetGraphicBufferBase(type);
 		if (base == nullptr)
 			return;
-		 
+		  
 		base->CopyData(elementIndex, count, data, dataElementSize);
 	}
 	void JFrameResource::ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)

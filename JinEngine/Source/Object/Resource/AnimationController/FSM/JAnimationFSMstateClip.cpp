@@ -88,7 +88,7 @@ namespace JinEngine
 		{
 			thisPointer->Initialize();
 		}
-		void Enter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void Enter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)const
 		{
 			JUserPtr<JAnimationFSMtransition> nowTransition = updateData->diagramData[layerNumber].nowTransition;
 			const float timeOffset = nowTransition.IsValid() ? nowTransition->GetTargetStartTimeRate() : 0;
@@ -96,16 +96,16 @@ namespace JinEngine
 			if (clip.IsValid() && clip->GetClipSkeletonAsset().IsValid())
 				clip->ClipEnter(updateData, layerNumber, updateNumber, timeOffset);
 		}
-		void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)const
 		{ 
 			if (clip.IsValid() && clip->GetClipSkeletonAsset().IsValid())
 				clip->Update(updateData, layerNumber, updateNumber);
 		}
-		void Close(JAnimationUpdateData* updateData)noexcept
+		void Close(JAnimationUpdateData* updateData)const
 		{
 			clip->ClipClose();
 		}
-		void Compute(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void Compute(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)const
 		{
 			updateData->ClearSkeletonBlendRate(updateNumber);
 			if (clip.IsValid() && clip->GetClipSkeletonAsset().IsValid())
@@ -199,7 +199,7 @@ namespace JinEngine
 	using CreateInstanceInterface = JAnimationFSMstateClipPrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JAnimationFSMstateClipPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JAnimationFSMstateClipPrivate::AssetDataIOInterface;
-	using AnimationInterface = JAnimationFSMstateClipPrivate::AnimationInterface;
+	using AnimationUpdateInterface = JAnimationFSMstateClipPrivate::AnimationUpdateInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -246,27 +246,27 @@ namespace JinEngine
 		return res;
 	}
 
-	void AnimationInterface::Initialize(const JUserPtr<Core::JFSMstate>& state)noexcept
+	void AnimationUpdateInterface::Initialize(const JUserPtr<Core::JFSMstate>& state)noexcept
 	{
 		static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Initialize();
 	}
-	void AnimationInterface::Enter(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+	void AnimationUpdateInterface::Enter(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 	{
 		static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Enter(updateData, layerNumber, updateNumber);
 	}
-	void AnimationInterface::Update(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+	void AnimationUpdateInterface::Update(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 	{
 		static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Update(updateData, layerNumber, updateNumber);
 	}
-	void AnimationInterface::Close(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData)noexcept
+	void AnimationUpdateInterface::Close(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData)noexcept
 	{
 		static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Close(updateData);
 	}
-	void AnimationInterface::Compute(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+	void AnimationUpdateInterface::Compute(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 	{
 		static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Compute(updateData, layerNumber, updateNumber);
 	}
-	void AnimationInterface::GetRegisteredSkeleton(const JUserPtr<JAnimationFSMstate>& state, std::vector<JUserPtr<JSkeletonAsset>>& skeletonVec)noexcept
+	void AnimationUpdateInterface::GetRegisteredSkeleton(const JUserPtr<JAnimationFSMstate>& state, std::vector<JUserPtr<JSkeletonAsset>>& skeletonVec)noexcept
 	{
 		static_cast<JAnimationFSMstateClip*>(state.Get())->impl->GetRegisteredSkeleton(skeletonVec);
 	}
@@ -288,7 +288,7 @@ namespace JinEngine
 	}
 	Core::JFSMstatePrivate::UpdateInterface& JAnimationFSMstateClipPrivate::GetUpdateInterface()const noexcept
 	{
-		static UpdateInterface pI;
+		static AnimationUpdateInterface pI;
 		return pI;
 	}
 }

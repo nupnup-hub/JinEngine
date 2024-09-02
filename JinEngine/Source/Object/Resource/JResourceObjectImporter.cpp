@@ -38,10 +38,7 @@ namespace JinEngine
 	{
 		auto data = formatInfoMap.find(format);
 		if (data == formatInfoMap.end())
-		{
-			formatInfoMap.emplace(format, FormatInfo{});
-			data = formatInfoMap.find(format);
-		}
+			data = formatInfoMap.emplace(format, FormatInfo{}).first;
 		if (data->second.ImportCallableMap.find(rType) == data->second.ImportCallableMap.end())
 			data->second.ImportCallableMap.emplace(rType, ImportResourceF::Callable{ ptr });
 	}

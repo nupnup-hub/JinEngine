@@ -25,11 +25,13 @@ SOFTWARE.
 
 #pragma once
 #include"JFrameResource.h" 
-#include"JFrameUpdateInfo.h"
+#include"JFrameUpdateInfo.h" 
 #include"../JGraphicConstants.h"
 #include"../JGraphicSubClassInterface.h"
+#include"../JGraphicUpdateLog.h"
 #include"../DataSet/JGraphicObjectDataSet.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
+#include"../../Core/Threading/JThreadInfo.h"
   
 #ifdef _USE_FRAME_MOVE_DIRTY_OPTIMIZATION
 #define USE_FRAME_MOVE_DIRTY_OPTIMIZATION
@@ -39,33 +41,32 @@ namespace JinEngine
 	class JObject;
 	namespace Graphic
 	{ 
+		using SetUpdateThreadTaskPtr = Core::JSFunctorType<Core::JThreadUserHandle, const Core::JThreadInitInfo&, std::unique_ptr<Core::JBindHandleBase>&&>::Ptr;
 		struct JFrameUpdateOption
 		{ 
+		public:
+			SetUpdateThreadTaskPtr setUpdateThreadTask = nullptr;
+		public: 
+			bool isActivatedSceneTimer = false;
 		}; 
 		struct JFrameUpdateDataSet
 		{ 
 		public:
-			using CompVec = std::vector<JUserPtr<JComponent>>;  
+			using CompVec = std::vector<JUserPtr<JComponent>>;   
 		public:
-			struct Log
-			{
-			public:
-				uint updatedCount = 0;
-				uint hotUpdatedCount = 0;
-			public:
-				uint moveCount = 0;
-			};
+			const ObjectDataSetVec* objDataVec = nullptr;
+			const CompVec* compVec = nullptr;
 		public:
-			const ObjectDataSetVec* objDataVec;
-			const CompVec* compVec;
+			JObjectDataSetMetadata metadata;
+			JFrameUpdateOption option;  
 		public:
-			const JObjectDataSetMetadata metadata;
-			const JFrameUpdateOption option;  
+			JGraphicUpdateLog updateLog;							//Out
 		public:
-			Log updateLog;							//Out
-		public:
+			JFrameUpdateDataSet() = default;
 			JFrameUpdateDataSet(const ObjectDataSetVec* objDataVec, const JObjectDataSetMetadata& metadata, const JFrameUpdateOption& option);
 			JFrameUpdateDataSet(const CompVec* compVec, const JObjectDataSetMetadata& metadata, const JFrameUpdateOption& option);
+			JFrameUpdateDataSet(const JFrameUpdateDataSet& rhs);
+			JFrameUpdateDataSet& operator=(const JFrameUpdateDataSet& rhs);
 		public:
 			uint GetDataStorageCount()const noexcept; 
 			JGraphicObjectDataSetBase* GetDataSet(const uint index)const noexcept;
@@ -171,7 +172,7 @@ namespace JinEngine
 			* 4. copy data per dirted object
 			*/
 			virtual void Update(JFrameUpdateDataSet& set) = 0;
-			virtual void EndUpdate();  
+			virtual void EndUpdate();   
 		private: 
 			void ClearResource();
 		};

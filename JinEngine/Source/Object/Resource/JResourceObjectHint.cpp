@@ -254,7 +254,7 @@ namespace JinEngine
 	{
 		return RTypeInfo::Instance().cFuncStorage[(int)type].CallFormatIndex(format) != JResourceObject::GetInvalidFormatIndex();
 	}
-	J_RESOURCE_TYPE RTypeCommonCall::ConvertCompType(const Core::JTypeInfo& info)
+	J_RESOURCE_TYPE RTypeCommonCall::ConvertResourceType(const Core::JTypeInfo& info)
 	{
 		auto& typeMap = RTypeInfo::Instance().typeMap;
 		auto data = typeMap.find(info.TypeGuid());
@@ -270,5 +270,11 @@ namespace JinEngine
 		}
 		else
 			return data->second;
+	}
+	J_RESOURCE_TYPE RTypeCommonCall::ConvertResourceType(const size_t typeGuid)
+	{
+		auto& typeMap = RTypeInfo::Instance().typeMap;
+		auto data = typeMap.find(typeGuid);
+		return data != typeMap.end() ? data->second : (J_RESOURCE_TYPE)invalidIndex;
 	}
 }

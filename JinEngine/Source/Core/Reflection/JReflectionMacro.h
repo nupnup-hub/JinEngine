@@ -108,13 +108,13 @@ namespace JinEngine
 		protected:																						\
 			using JTypeInfo = JinEngine::Core::JTypeInfo;										\
 			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;		\
-			using JTypeInfoCallOnece = JinEngine::Core::JTypeInfo::CallOnece<typeName>;			\
+			using JTypeInfoCallOnce = JinEngine::Core::JTypeInfo::CallOnce<typeName>;			\
 			using JTypeInfoRegister = JinEngine::Core::JTypeInfoRegister<typeName>;				\
 			using JPtrUtil = JinEngine::Core::JPtrUtil;											\
 																								\
 		private:																				\
 			friend class JTypeInfoInitializer;													\
-			friend class JTypeInfoCallOnece;													\
+			friend class JTypeInfoCallOnce;													\
 			template<typename T> friend class JinEngine::Core::JOwnerPtr;						\
 			friend class JPtrUtil;																\
 																								\
@@ -215,7 +215,7 @@ namespace JinEngine
 					return Core::JPtrUtil::MakeOwnerPtr<typeName>(*static_cast<typeName::InitData*>(initData)); \
 				};																								\
 				RegisterDerivedData(StaticTypeInfo(), derivedData); /*engine defined*/							\
-				CallOneceWhenRegisterTypeData();	/*user defined*/											\
+				CallOnceWhenRegisterTypeData();	/*user defined*/											\
 			}																									\
 																												
 			 
@@ -359,8 +359,6 @@ namespace JinEngine
 
 #define REGISTER_METHOD_GUI_WIDGET(displayName, getName, setName, ...)									\
 																										\
-			REGISTER_METHOD(getName)																	\
-			REGISTER_METHOD(setName)																								\
 			template<typename Class,  typename GetPointer, GetPointer getPtr>							\
 			class JinEngine::Core::JMethodGuiWidgetRegister;											\
 																										\
@@ -392,6 +390,19 @@ namespace JinEngine
 						jMethodGuiRegisterHelper{J_STRINGIZE(displayName),J_STRINGIZE(getName), J_STRINGIZE(setName), __VA_ARGS__};\
 					}																					\
 			} J_MERGE_NAME(J_MERGE_NAME(displayName, getName),setName);									\
+
+
+#define REGISTER_GET_METHOD_EX(displayName, getMethodName, ...)											\
+		REGISTER_METHOD(getMethodName)																	\
+		REGISTER_METHOD_READONLY_GUI_WIDGET(displayName, getMethodName, __VA_ARGS__)					\
+
+
+#define REGISTER_GET_SET_METHOD_EX(displayName, getMethodName, setMethodName, ...)						\
+		REGISTER_METHOD(getMethodName)																	\
+		REGISTER_METHOD(setMethodName)																	\
+		REGISTER_METHOD_GUI_WIDGET(displayName, getMethodName, setMethodName, __VA_ARGS__)				\
+
+
 
 
 		}

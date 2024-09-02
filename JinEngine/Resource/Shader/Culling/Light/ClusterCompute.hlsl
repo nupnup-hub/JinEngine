@@ -76,18 +76,19 @@ void CS(uint3 dispatchThreadID : SV_DispatchThreadID)
 		uint indexCount = linkedLightList.IncrementCounter();
 		uint startOffsetAddress = offsetIndexBase + offsetIndexStep * i;
 		 
+		//startOffsetAddress = 현재 클러스터의 위치 
+		//preOffset = 현재 클러스터의 이전 라이트 노드
+		//InterlockedExchange으로 가장위에 리스트에 인덱스 값을 원자적으로 변경한다.		
 		uint preOffset;
 		startOffsetBuffer.InterlockedExchange(startOffsetAddress, indexCount, preOffset);
 
-		LinkedLightID linkedNode;
-		//Light type is encoded in the last CLUSTER_LIGHT_TYPE_PER_BIT of the node.
-		//lightID and lightID in the first CLUSTER_LIGHT_ID_PER_BIT.
+		LinkedLightID linkedNode; 
+		//linkedNode.lightID = ((32)라이트타입 | (24)타입별 라이트 인덱스 ) ... dispatchThreadID.z = 타입별 라이트 인덱스
 		linkedNode.lightID = (lightType << CLUSTER_LIGHT_ID_PER_BIT) | (dispatchThreadID.z & CLUSTER_LIGHT_ID_RANGE);
 		linkedNode.link = preOffset;
 
 		linkedLightList[indexCount] = linkedNode;
-	}
-	//group dim z is light count
+	} 
 	++outBuffer[dispatchThreadID.z + lightOffset];
 }
 #endif

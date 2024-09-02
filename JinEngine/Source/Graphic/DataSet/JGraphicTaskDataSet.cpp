@@ -141,17 +141,13 @@ namespace JinEngine::Graphic
 	JGraphicSsaoComputeSet::JGraphicSsaoComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
 		: context(context), shareData(shareData)
 	{}
-	 
-	JGraphicAAComputeSet::JGraphicAAComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
-		: context(context), shareData(shareData)
-	{}
-
+	  
 	JGraphicConvertColorComputeSet::JGraphicConvertColorComputeSet(JCommandContext* context, const JConvertColorDesc& desc)
 		: context(context), desc(desc)
 	{}
 
-	JPostProcessComputeSet::JPostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData)
-		: ppSet(ppSet), context(context), gm(gm), shareData(shareData)
+	JPostProcessComputeSet::JPostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicDevice* device, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData)
+		: ppSet(ppSet), context(context), device(device), gm(gm), shareData(shareData)
 	{}
 
 	JGraphicLightCullingTaskSet::JGraphicLightCullingTaskSet(JCommandContext* context)

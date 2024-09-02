@@ -81,7 +81,7 @@ namespace JinEngine
 
 				std::vector<JTypeInfo*> typeVec = GetAllTypeInfo();
 				for (auto& data : typeVec)
-					data->ExecuteTypeCallOnece();
+					data->ExecuteTypeCallOnce();
 
 				//std::set<size_t> registeredType;		debugging
 				for (auto& data : typeVec)

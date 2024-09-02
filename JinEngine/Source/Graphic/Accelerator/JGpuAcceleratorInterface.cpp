@@ -24,8 +24,8 @@ SOFTWARE.
 
 
 #include"JGpuAcceleratorInterface.h"
-#include"JGpuAcceleratorInfo.h" 
-#include"../JGraphic.h"
+#include"JGpuAcceleratorInfo.h"  
+#include"../../Object/GraphicRule/JGraphicModuleInterfaceHolder.h"
 
 namespace JinEngine::Graphic
 { 
@@ -55,6 +55,6 @@ namespace JinEngine::Graphic
 	}
 	bool JGpuAcceleratorInterface::CanBuild()const noexcept
 	{
-		return _JGraphic::Instance().CanBuildGpuAccelerator();
+		return GMI()->IsActivated(J_GRAPHIC_OPTIONAL_FEATURE::GPU_ACCELERATOR);
 	}
 }

@@ -69,7 +69,8 @@ namespace JinEngine
 				AreaData(const size_t guid);
 			};
 		private:
-			std::unordered_map<size_t, AreaData> areaData;
+			using AreaMap = std::unordered_map<size_t, AreaData>;
+			AreaMap areaData;
 		public:
 			virtual ~JCsmManager();
 		public:
@@ -86,7 +87,7 @@ namespace JinEngine
 			virtual JOwnerPtr<JCsmHandlerInfo> _CreateHandler(JCsmHandleCreationDesc& desc, JCsmAreaInfo* areInfo) = 0;
 			virtual JOwnerPtr<JCsmTargetInfo> _CreateTarget(JCsmTargetCreationDesc& desc, JCsmAreaInfo* areInfo) = 0;
 		private:
-			void CreateAreaData(const size_t guid);
+			AreaMap::iterator CreateAreaData(const size_t guid);
 		private:
 			void ClearResource();
 		};

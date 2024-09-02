@@ -462,8 +462,7 @@ namespace JinEngine
 				SetProjectFolderPath(nextProjectInfo->GetName(), nextProjectInfo->GetPath());
 				bool isValid = MakeProjectFolder();
 				isValid = isValid && MakeProjectVersionFile(JCUtil::WstrToU8Str(nextProjectInfo->GetVersion()));
-
-				//미구현
+				  
 				//빌드시스템 완성후 추가
 				//isValid = isValid && MakeProjectSolution();
 				if (isValid)

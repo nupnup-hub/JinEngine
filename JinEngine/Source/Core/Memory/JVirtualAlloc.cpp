@@ -93,6 +93,7 @@ namespace JinEngine
 			oriBlockSize = desc.dataSize;
 			allocBlockSize = oriBlockSize;
 
+			//할당할 페이지 크기와 갯수 그리고 총 Byte 크기를 구한다.
 			CalculatePageFitAllocationData(allocBlockSize,
 				reservedBlockCount,
 				pageSize,
@@ -417,13 +418,13 @@ namespace JinEngine
 				if (!isUseBlock[i])
 				{
 					bool findUseBlock = false;
-					uint movedBlockIndex = 0;
+					uint oldBlockIndex = 0;
 					for (uint j = i + 1; j < allocatedBlockCount; ++j)
 					{
 						if (isUseBlock[j])
 						{
 							findUseBlock = true;
-							movedBlockIndex = j;
+							oldBlockIndex = j;
 							break;
 						}
 					}
@@ -431,15 +432,15 @@ namespace JinEngine
 					if (!findUseBlock)
 						break;
 
-					DataPointer emptyPtr = CalPtrLocation(i);
-					DataPointer movedPtr = CalPtrLocation(movedBlockIndex);
-					memmove(emptyPtr, movedPtr, allocBlockSize);
+					DataPointer newPtr = CalPtrLocation(i);
+					DataPointer oldPtr = CalPtrLocation(oldBlockIndex);
+					memmove(newPtr, oldPtr, allocBlockSize);
 
 					isUseBlock[i] = true;
-					isUseBlock[movedBlockIndex] = false;
+					isUseBlock[oldBlockIndex] = false;
 					 
 					if (desc.notifyReAllocB != nullptr)
-						(*desc.notifyReAllocB)(emptyPtr, movedBlockIndex);
+						(*desc.notifyReAllocB)(newPtr, oldBlockIndex);
 
 					//if (desc.notifyDebugB != nullptr)
 					//	(*desc.notifyDebugB)(movedPtr, emptyPtr, i);

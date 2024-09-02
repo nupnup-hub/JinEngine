@@ -140,16 +140,6 @@ void VisualizeTangentMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchT
 	UnpackNormalAndTangentLayer(encodeNormalAndTangent, normal, tangent);
     result[dispatchThreadID.xy] = float4(tangent, 1.0f);
 }
-#elif  VELOCITY_MAP
-[numthreads(DIMX, DIMY, DIMZ)]
-void VisualizeVelocityMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
-{
-    if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
-        return;
-	  
-    uint encodeVelocity = srcMap.Load(int3(dispatchThreadID.xy, 0));
-    result[dispatchThreadID.xy] = float4(abs(UnpackVelocity(encodeVelocity).xy), 0.0f, 1.0f);
-}
 #elif  SSAO_MAP
 [numthreads(DIMX, DIMY, DIMZ)]
 void VisualizeAoMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
@@ -160,6 +150,16 @@ void VisualizeAoMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThread
 	const float ao = srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
 	result[dispatchThreadID.xy] = float4(ao, ao, ao, 1.0f);
 } 
+#elif  VELOCITY_MAP
+[numthreads(DIMX, DIMY, DIMZ)]
+void VisualizeVelocityMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+    if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
+        return;
+	  
+    uint encodeVelocity = srcMap.Load(int3(dispatchThreadID.xy, 0));
+    result[dispatchThreadID.xy] = float4(abs(UnpackVelocity(encodeVelocity).xy), 0.0f, 1.0f);
+}
 #else
 #endif 
  

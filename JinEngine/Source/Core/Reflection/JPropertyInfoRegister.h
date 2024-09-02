@@ -125,7 +125,6 @@ namespace JinEngine
 						init = true;
 					}
 				}
-
 			}
 			template<typename GetPointer, typename SetPointer, typename ...Widget>
 			JPropertyExInfoRegister(const std::string& name, GetPointer getPtr, SetPointer setPtr, Widget&&... var)
@@ -138,8 +137,10 @@ namespace JinEngine
 					static bool init = false;
 					if (!init)
 					{
-						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
-						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(JPtrUtil::MakeOwnerPtr<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
+						using WidgetHandle = JPropertyGuiWidgetInfoHandle<Field>;
+						auto& typeInfo = Type::StaticTypeInfo();
+						typeInfo.AddPropertyInfo(&jPropertyInfo);
+						typeInfo.GetOption()->AddGuiWidgetInfoHandle(JPtrUtil::MakeOwnerPtr<WidgetHandle>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}

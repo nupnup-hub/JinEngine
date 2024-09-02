@@ -82,8 +82,8 @@ namespace JinEngine
 			class ImageProcessingData : public JShareDataHolderInterface, public UserCounting
 			{
 			public:
-				JUserPtr<JGraphicResourceInfo> intermediate00;
-				JUserPtr<JGraphicResourceInfo> intermediate01; 
+				JUserPtr<JGraphicResourceInfo> intermediate00;	//linear
+				JUserPtr<JGraphicResourceInfo> intermediate01;  //linear
 				JUserPtr<JGraphicResourceInfo> histogram; 
 				JUserPtr<JGraphicResourceInfo> defaultExposure;
 				JUserPtr<JGraphicResourceInfo> lumaUnorm; 
@@ -94,7 +94,7 @@ namespace JinEngine
 				JUserPtr<JGraphicResourceInfo> fxaaWorkCounter;
 				JUserPtr<JGraphicResourceInfo> fxaaIndirectParameters;
 				JUserPtr<JGraphicResourceInfo> fxaaWorkerQueue;
-				JUserPtr<JGraphicResourceInfo> fxaaColorQueue;
+				JUserPtr<JGraphicResourceInfo> fxaaColorQueue; 
 			private:
 				JGraphicDevice* device = nullptr;
 				JGraphicResourceManager* gM = nullptr;
@@ -128,9 +128,6 @@ namespace JinEngine
 				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate01; 
 				JUserPtr<JGraphicResourceInfo> restirDepthDerivative;
 				JUserPtr<JGraphicResourceInfo> restirDenoiseMipmap[Constants::restirDenoiseMipmapCount];
-			public:
-				JUserPtr<JGraphicResourceInfo> viewZ;			//sample 연산중 중복되는 계산을 피하기 위해
-				JUserPtr<JGraphicResourceInfo> preViewZ;		//sample 연산중 중복되는 계산을 피하기 위해
 			private:
 				JGraphicDevice* device = nullptr;
 				JGraphicResourceManager* gM = nullptr;

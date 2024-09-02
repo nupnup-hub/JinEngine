@@ -145,7 +145,7 @@ namespace JinEngine::Graphic
 		JDx12CommandContext::frameResource = fm->GetCurrentDxFrameResource();
 		JDx12CommandContext::info = info;
 		JDx12CommandContext::option = option;
-		if (settingRaycastDevice && device->IsRaytracingSupported())
+		if (settingRaycastDevice && device->IsSupported(J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING))
 			cmd->QueryInterface(IID_PPV_ARGS(&raytracingCmd));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12CommandContext::GetDeviceType()const noexcept

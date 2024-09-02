@@ -34,7 +34,7 @@ SOFTWARE.
 #include<windows.h>
 #define USE_WINDOW
 #endif
-
+ 
 namespace JinEngine
 {
 	namespace Core
@@ -73,143 +73,150 @@ namespace JinEngine
 #ifdef USE_WINDOW
 			class JThreadHandle
 			{
+			private: 
+				std::unique_ptr<std::thread> thread;
+				HANDLE handle;
+				bool isWait = false;
+				bool canLoop = true;
+				//static std::vector<Data> data; 
 			public:
-				struct Data
-				{
-				public:
-					HANDLE handle;
-					bool isWait = false;
-					bool canLoop = true;
-				};
-				static std::vector<Data> data;
-			public:
-				static void Initialize()
+				void Initialize()
 				{ 
+					handle = CreateEvent(NULL, FALSE, FALSE, NULL);
 				}
-				static void Clear()
-				{ 
-					Pop(0, data.size());
-					data.clear();
+				void Clear()
+				{
+					CloseHandle(handle);
+					thread = nullptr;
 				}
 			public:
-				static void SetLoopTrigger(const uint index, const bool value)
+				void SetLoopTrigger(const bool value)
 				{
-					data[index].canLoop = value;
+					canLoop = value;
+				} 
+			public:
+				bool IsJoinable()const noexcept
+				{
+					return thread != nullptr && thread->joinable();
+				}
+				bool IsWait()const noexcept
+				{
+					return isWait;
+				}
+				bool HasThread()const noexcept
+				{
+					return thread != nullptr;
+				}
+				bool CanLoop()const noexcept
+				{
+					return canLoop;
 				}
 			public:
-				static void Add(const uint stIndex, const uint threadCount)
+				template<typename ...Param>
+				void CreateThread(void(*ptr)(Param...), Param&&... param)
 				{
-					std::vector<Data> newData(threadCount);
-					data.insert(data.begin() + stIndex, newData.begin(), newData.end());
- 
-					for (int i = 0; i < threadCount; ++i)
-						data[i + stIndex].handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+					thread = std::make_unique<std::thread>(ptr, std::forward<Param>(param)...);
 				}
-				static void Pop(const uint stIndex, const uint count)
+			public:
+				void Join()
 				{
-					for (int i = stIndex; i < count; ++i)
-						CloseHandle(data[i].handle);
+					if (thread == nullptr)
+						return;
 
-					data.erase(data.begin() + stIndex, data.begin() + stIndex + count);
-					data.shrink_to_fit();
+					thread->join();
 				}
-			public:
-				static void Wait(const uint index)
+				void Wait()
 				{
-					ResetEvent(data[index].handle);
-					data[index].isWait = true;
-					WaitForSingleObject(data[index].handle, INFINITE);
-				}
-				static void WakeUpThread(const uint index)
+					if (thread == nullptr)
+						return;
+
+					ResetEvent(handle);
+					isWait = true;
+					WaitForSingleObject(handle, INFINITE);
+				} 
+				void WakeUpThread()
 				{
-					data[index].isWait = false;
-					SetEvent(data[index].handle);
+					if (thread == nullptr)
+						return;
+
+					isWait = false;
+					SetEvent(handle);
 				}
-			public:
-				static bool IsWait(const uint index)
-				{
-					return data[index].isWait;
-				}
-				static bool CanLoop(const uint index)
-				{
-					return data[index].canLoop;
-				}
-			};
-			std::vector<JThreadHandle::Data> JThreadHandle::data;
+			}; 
 #else
 			class JThreadHandle
 			{
+			private:
+				std::unique_ptr<std::thread> thread;  
+				std::unique_ptr<std::mutex> m;
+				std::unique_ptr<std::condition_variable> cv;
+				bool isWait = false;
+				bool canLoop = true;
+				bool allowSetNewThread = false;   
 			public:
-				struct Data
-				{
-				public:
-					std::mutex m;
-					std::condition_variable cv;
-					bool isWait = false;
-					bool canLoop = true;
-					bool allowSetNewThread = false;
-				};
-			public:
-				static std::vector<std::unique_ptr<Data>> data;
-				static std::unique_ptr<JFunctor<bool, const int>> canWorkF;
-			public:
-				static void Initialize()
+				void Initialize()
 				{ 
-					canWorkF = std::make_unique<JFunctor<bool, const int>>(&CanWork);
+					m = std::make_unique<std::mutex>();
+					cv = std::make_unique<std::condition_variable>();
 				}
-				static void Clear()
-				{
-					Pop(0, data.size());
-					data.clear();
-					canWorkF.reset();
-				}
-			public:
-				static void SetLoopTrigger(const uint index, const bool value)
-				{
-					data[index]->canLoop = value;
+				void Clear()
+				{  
+					thread = nullptr;
+					m = nullptr;
+					cv = nullptr;
 				}
 			public:
-				static void Add(const uint stIndex, const uint threadCount)
+				void SetLoopTrigger(const bool value)
 				{
-					data.reserve(data.size() + threadCount);
-					for (uint i = 0; i < threadCount; ++i)
-						data.insert(data.begin() + stIndex + i, std::make_unique< Data>());				 
-				}
-				static void Pop(const uint stIndex, const uint count)
-				{ 
-					data.erase(data.begin() + stIndex, data.begin() + stIndex + count);
-					data.shrink_to_fit();
+					canLoop = value;
 				}
 			public:
-				static void Wait(const int index)
+				bool IsJoinable()const noexcept
 				{
+					return thread != nullptr && thread->joinable();
+				}
+				bool IsWait()const noexcept
+				{
+					return isWait;
+				}
+				bool CanWork()const noexcept
+				{
+					return !isWait;
+				}
+				bool CanLoop()const noexcept
+				{
+					return canLoop;
+				}
+			public:
+				template<typename ...Param>
+				void CreateThread(void(*ptr)(Param...), Param&&... param)
+				{
+					thread = std::make_unique<std::thread>(ptr, std::forward<Param>(param)...);
+				}
+			public:
+				void Join()
+				{
+					if (thread == nullptr)
+						return;
+
+					thread->join();
+				}
+				void Wait()
+				{
+					JFunctor<bool> canWorkF(&JThreadHandle::CanWork, this);
 					//생성시 lock
-					std::unique_lock<std::mutex> lk(data[index]->m);
-					data[index]->isWait = true;
+					std::unique_lock<std::mutex> lk(*m);
+					isWait = true;
 					//진입시 unlock wait 끝난후 lock
-					data[index]->cv.wait(lk, Bind(*canWorkF, index));
+					cv->wait(lk, Bind(canWorkF));
 				}
-				static void WakeUpThread(const int index)
+				void WakeUpThread()
 				{
-					data[index]->isWait = false;
-					std::lock_guard<std::mutex> lk(data[index]->m);
-					data[index]->cv.notify_one();
+					isWait = false;
+					std::lock_guard<std::mutex> lk(*m);
+					cv->notify_one();
 				}
-				static bool IsWait(const int index)
-				{
-					return data[index]->isWait;
-				}
-				static bool CanWork(const int index)
-				{
-					return !data[index]->isWait;
-				}
-				static bool CanLoop(const uint index)
-				{
-					return data[index]->canLoop;
-				}
-			};
-			std::vector<std::unique_ptr<JThreadHandle::Data>> JThreadHandle::data;
-			std::unique_ptr<JFunctor<bool, const int>> JThreadHandle::canWorkF;
+			}; 
 #endif
 		}
 
@@ -218,7 +225,8 @@ namespace JinEngine
 		public:
 			std::vector<std::unique_ptr<JThread>> waitT[priorityRange];
 			std::vector<std::unique_ptr<JThread>> workT;
-			std::vector<std::unique_ptr<std::thread>> thread;
+			std::vector<std::unique_ptr<JThreadHandle>> handle;
+			//std::vector<std::unique_ptr<std::thread>> thread;
 		public:
 			uint reservedSpace[priorityRange];
 			uint workingPoolStartIndex[priorityRange];
@@ -259,8 +267,7 @@ namespace JinEngine
 							}
 						}
 					}
-				}
-				JThreadHandle::Initialize();
+				} 
 				for (int i = 0; i < priorityRange; ++i)
 					ExtendCapacity(i, newReservedSpace[i]);
 			}
@@ -268,12 +275,14 @@ namespace JinEngine
 			{ 
 				for (uint i = 0; i < priorityRange; ++i)
 					ReduceCapacity(i, GetWorkingPoolCount(i));
- 
-				thread.clear();
+  
+				for (uint i = 0; i < handle.size(); ++i)
+					handle[i]->Clear();
+
+				handle.clear(); 
 				workT.clear();
 				for (auto& data : waitT)
-					data.clear();
-				JThreadHandle::Clear();
+					data.clear(); 
 			}
 		public:
 			int GetReservedSpaceCount(const PriorityNumber priority)const noexcept
@@ -290,7 +299,7 @@ namespace JinEngine
 			}
 			int GetWorkingPoolCount(const PriorityNumber priority)const noexcept
 			{
-				return priority == lastPriority ? (uint)thread.size() - workingPoolStartIndex[priority] :
+				return priority == lastPriority ? (uint)handle.size() - workingPoolStartIndex[priority] :
 					workingPoolStartIndex[priority + 1] - workingPoolStartIndex[priority];
 			}
 		public:
@@ -303,20 +312,28 @@ namespace JinEngine
 				const uint existCount = GetWorkingPoolCount(priority);
 				const uint stIndex = GetWorkingPoolStartIndex(priority) + existCount;
  
-				JThreadHandle::Add(stIndex, count);
-				std::vector<std::unique_ptr<JThread>> newWorkT(count);
-				std::vector<std::unique_ptr<std::thread>> newThread(count);
-
+				std::vector< std::unique_ptr<JThreadHandle>> newHandle(count);
+				handle.insert(handle.begin() + stIndex, std::move_iterator(newHandle.begin()), std::move_iterator(newHandle.end()));
+				for (uint i = 0; i < count; ++i)
+				{
+					handle[i + stIndex] = std::make_unique<JThreadHandle>();
+					handle[i + stIndex]->Initialize();
+				}
+  
+				std::vector<std::unique_ptr<JThread>> newWorkT(count);		 
 				workT.insert(workT.begin() + stIndex, std::move_iterator(newWorkT.begin()), std::move_iterator(newWorkT.end()));
-				thread.insert(thread.begin() + stIndex, std::move_iterator(newThread.begin()), std::move_iterator(newThread.end()));
-
+			   
 				threadCount += count;
 				for (uint i = 0; i < count; ++i)
 				{
-					const int index = stIndex + i;
-					workT[index] = std::make_unique<JThread>();					 
+					const uint index = stIndex + i;
+					workT[index] = std::make_unique<JThread>();	
+					*workT[index]->index = index;
 					BeginThread(index);
 				}
+
+				for (uint i = stIndex + count; i < workT.size(); ++i)
+					*workT[i]->index = i;
 
 				if (HasReservedSpace(priority))
 					reservedSpace[priority] += count;
@@ -341,11 +358,18 @@ namespace JinEngine
 				for (uint i = 0; i < count; ++i)
 					EndThread(stIndex + i);
 
-				threadCount -= count;		 
-				thread.resize(threadCount);
-				workT.resize(threadCount);
-				JThreadHandle::Pop(stIndex, count);
-				 
+				for (uint i = stIndex + count; i < workT.size(); ++i)
+					*workT[i]->index -= count;
+
+				threadCount -= count;		  
+				workT.erase(workT.begin() + stIndex, workT.begin() + stIndex + count);
+				//workT.resize(threadCount);
+
+				for (uint i = stIndex; i < count; ++i)
+					handle[i]->Clear();
+				handle.erase(handle.begin() + stIndex, handle.begin() + stIndex + count);
+				handle.shrink_to_fit();
+
 				if (HasReservedSpace(priority))
 					reservedSpace[priority] -= count;
 
@@ -358,21 +382,30 @@ namespace JinEngine
 				//	" newCount: " + std::to_string(threadCount));
 			}
 		public:
-			size_t CreateThread(std::unique_ptr<JThread>&& newThread)
+			void WaitUntilThreadEnd(const JThreadUserHandle& userHandle)
 			{
+				//OutputDebugStringA(("WaitUntilThreadEnd Index St: " + std::to_string(userHandle.GetIndex()) + " " + std::to_string(userHandle.GetGuid()) + " \n").c_str());
+				const int index = userHandle.GetIndex(); 
+				if (index == invalidIndex)
+					return;
+				
+				while (!handle[index]->IsWait())
+					; 
+				//OutputDebugStringA(("WaitUntilThreadEnd Index Ed: " + std::to_string(index) + " " + std::to_string(userHandle.GetGuid()) + " \n").c_str());
+			}
+		public:
+			JThreadUserHandle CreateThread(std::unique_ptr<JThread>&& newThread)
+			{ 
 				const PriorityNumber priorityNumber = GetOrderPriority(newThread->info.useCase);
-				const uint woringSetStIndex = GetWorkingPoolStartIndex(priorityNumber);
-				const size_t guid = newThread->info.guid;
-
+				const uint woringSetStIndex = GetWorkingPoolStartIndex(priorityNumber);  
+				const JThreadUserHandle userHandle(newThread->info.guid, newThread->index);
+				  
 				const int index = FindWaitThread(woringSetStIndex);
-				if (index != -1)
-				{
-					workT[index] = std::move(newThread);
-					JThreadHandle::WakeUpThread(index);
-				}
+				if (index != invalidIndex)
+					WakeUpThread(std::move(newThread), index);
 				else
-					waitT[priorityNumber].push_back(std::move(newThread));
-				return guid;
+					WaitThread(std::move(newThread), priorityNumber);
+				return userHandle;
 			}
 		public:
 			void Update()
@@ -380,62 +413,82 @@ namespace JinEngine
 				for (int i = 0; i < priorityRange; ++i)
 				{
 					const uint woringSetStIndex = GetWorkingPoolStartIndex(i);
-					int count = (int)waitT[i].size();
-
-					for (int j = 0; j < count; ++j)
+					for (int j = 0; j < waitT[i].size(); ++j)
 					{
 						const int index = FindWaitThread(woringSetStIndex);
 						if (index == invalidIndex)
 							return;
 
-						workT[index] = std::move(waitT[i][j]);
-						JThreadHandle::WakeUpThread(index);
-
-						waitT[i].erase(waitT[i].begin() + j);
-						count = (int)waitT[i].size();
+						MoveToWorkQueue(index, i, j);  
 						--j;
 					}
 				}
 			}
 		private:
-			void BeginThread(const int index)
+			void BeginThread(uint index)
 			{
-				auto threadFLam = [](JThreadManagerImpl* impl, const int index)
+				auto threadFLam = [](JThreadManagerImpl* impl, const uint index)
 				{
-					while (JThreadHandle::CanLoop(index))
-					{
-						JThreadHandle::Wait(index);
-						auto& thread = impl->workT[index];
-						if (thread->bind != nullptr)
-						{
-							thread->bind->InvokeCompletelyBind();
-							if (thread->info.notifyF != nullptr)
-								(*thread->info.notifyF)(thread->info.guid);
-							if (thread->info.callBindOnce)
-								thread->bind = nullptr; 
-						}
+					auto handle = impl->handle[index].get();
+					while (handle->CanLoop())
+					{ 
+						handle->Wait();
+						auto workT = impl->workT[index].get();
+						if (workT->bind != nullptr)
+						{ 
+							//할당된 작업 수행.
+							workT->bind->InvokeCompletelyBind();
+							if (workT->info.notifyF != nullptr)
+								(*workT->info.notifyF)(workT->info.guid);
+							if (workT->info.callBindOnce)
+								workT->bind = nullptr; 
+						}  
 					}
 				};
 
-				JThreadHandle::SetLoopTrigger(index, true);
-				thread[index] = std::make_unique<std::thread>(threadFLam, this, index);
+				void(*ptr)(JThreadManagerImpl*, const uint) = threadFLam;
+
+				auto curHandle = handle[index].get();
+				curHandle->SetLoopTrigger(true);
+				curHandle->CreateThread(ptr, this, std::move(index));
 			}
-			void EndThread(const int index)
+			void EndThread(const uint index)
 			{
-				JThreadHandle::SetLoopTrigger(index, false);
-				if (thread[index] != nullptr && thread[index]->joinable())
+				auto curHandle = handle[index].get();
+				curHandle->SetLoopTrigger(false);
+				if (curHandle->IsJoinable())
 				{
-					if (JThreadHandle::IsWait(index))
-						JThreadHandle::WakeUpThread(index);
-					thread[index]->join();
+					if (curHandle->IsWait())
+						curHandle->WakeUpThread();
+					curHandle->Join();
 				}
+			} 
+			void WakeUpThread(std::unique_ptr<JThread>&& newThread, const uint workQueueIndex)
+			{
+				//OutputDebugStringA(("WakeUpThread St: " + std::to_string(workQueueIndex) + "\n").c_str());
+				workT[workQueueIndex] = std::move(newThread);
+				*workT[workQueueIndex]->index = workQueueIndex; 
+				//OutputDebugStringA(("WakeUpThread Mid: " + std::to_string(workQueueIndex) + "\n").c_str());
+				handle[workQueueIndex]->WakeUpThread(); 
+				//OutputDebugStringA(("WakeUpThread Ed: " + std::to_string(workQueueIndex) + "\n").c_str());
+			}
+			void WaitThread(std::unique_ptr<JThread>&& newThread, const uint waitQueueIndex)
+			{
+				*newThread->index = invalidIndex;
+				waitT[waitQueueIndex].push_back(std::move(newThread));
+				//OutputDebugStringA(("WaitThread Index: " + std::to_string(waitQueueIndex) + "\n").c_str());
+			}
+			void MoveToWorkQueue(const uint workQueueIndex, const uint waitQueueIndex, const uint theadIndex)
+			{
+				WakeUpThread(std::move(waitT[waitQueueIndex][theadIndex]), workQueueIndex);
+				waitT[waitQueueIndex].erase(waitT[waitQueueIndex].begin() + theadIndex);
 			}
 			//work thread중 wait 상태인 thread search
-			int FindWaitThread(const int woringSetStIndex)const noexcept
+			int FindWaitThread(const uint woringSetStIndex)const noexcept
 			{
-				for (int i = woringSetStIndex; i < threadCount; ++i)
+				for (uint i = woringSetStIndex; i < threadCount; ++i)
 				{
-					if (JThreadHandle::IsWait(i))
+					if (handle[i]->IsWait())
 						return i;
 				}
 				return invalidIndex;
@@ -454,11 +507,15 @@ namespace JinEngine
 		{
 			impl->ReduceCapacity(lastPriority, count);
 		}
-		size_t JThreadManager::CreateThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind)
+		void JThreadManager::WaitUntilThreadEnd(const JThreadUserHandle& userHandle)
+		{
+			impl->WaitUntilThreadEnd(userHandle);
+		}
+		JThreadUserHandle JThreadManager::CreateThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind)
 		{
 			return DoCreateThread(initInfo, J_THREAD_USE_CASE_TYPE::COMMON, std::move(bind));
 		}
-		size_t JThreadManager::DoCreateThread(const JThreadInitInfo& initInfo, const J_THREAD_USE_CASE_TYPE useCase, std::unique_ptr<JBindHandleBase>&& bind)
+		JThreadUserHandle JThreadManager::DoCreateThread(const JThreadInitInfo& initInfo, const J_THREAD_USE_CASE_TYPE useCase, std::unique_ptr<JBindHandleBase>&& bind)
 		{
 			return impl->CreateThread(std::make_unique<JThread>(std::move(bind), JThreadInfo(initInfo, useCase)));
 		}
@@ -486,11 +543,11 @@ namespace JinEngine
 			_JThreadManager::Instance().impl->Update();
 		} 
 
-		size_t GraphicInterface::CreateUpdateThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind)
+		JThreadUserHandle GraphicInterface::SetUpdateThreadTask(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind)
 		{
 			return _JThreadManager::Instance().DoCreateThread(initInfo, J_THREAD_USE_CASE_TYPE::ENGINE_TASK_SYNC, std::move(bind));
 		}
-		size_t GraphicInterface::CreateDrawThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind)
+		JThreadUserHandle GraphicInterface::SetDrawThreadTask(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind)
 		{
 			return _JThreadManager::Instance().DoCreateThread(initInfo, J_THREAD_USE_CASE_TYPE::ENGINE_TASK_SYNC, std::move(bind));
 		}

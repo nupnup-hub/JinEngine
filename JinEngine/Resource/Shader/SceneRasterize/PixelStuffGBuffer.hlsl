@@ -107,7 +107,10 @@ PixelOut PS(PixelIn pin) : SV_Target
 	float roughness = matData.roughness;
 #endif
 #endif
- 
+	
+   // metallic = max(metallic, EPSILON);
+    //roughness = max(roughness, EPSILON);
+	
 	//deferred update후 추가필요.
 #ifdef AMBIENT_OCCLUSION_MAP
 	float ambientFactor = textureMaps[matData.ambientMapIndex].Sample(samLinearWrap, texC).x;	 

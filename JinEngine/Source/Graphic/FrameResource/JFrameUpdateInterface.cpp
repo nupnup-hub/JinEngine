@@ -93,6 +93,10 @@ namespace JinEngine
 			return dirtyChain->RemoveFrameDirtyListener(guid);
 		}
 
+		J_FRAME_DIRTY_FREQUENCY JFrameDirtyTrigger::GetDirtyFrequency()const noexcept
+		{
+			return J_FRAME_DIRTY_FREQUENCY::UPDATED;
+		}
 		int JFrameDirtyTrigger::GetFrameDirty()const noexcept
 		{
 			return 0;
@@ -120,7 +124,41 @@ namespace JinEngine
 		{ 
 		}
 
+		J_FRAME_DIRTY_FREQUENCY JFrameAlwaysDirty::GetDirtyFrequency()const noexcept
+		{
+			return J_FRAME_DIRTY_FREQUENCY::ALWAYS;
+		}
+		int JFrameAlwaysDirty::GetFrameDirty()const noexcept
+		{
+			return Constants::gNumFrameResources;
+		}
+		void JFrameAlwaysDirty::SetFrameDirty()noexcept
+		{
+			JFrameDirtyBase::SetFrameDirty();
+		}
+		bool JFrameAlwaysDirty::IsFrameDirted()const noexcept
+		{
+			return true;
+		}
+		bool JFrameAlwaysDirty::IsLastFrameUpdated()const noexcept
+		{
+			return true;
+		}
+		void JFrameAlwaysDirty::OffFrameDirty()noexcept
+		{
 
+		}
+		void JFrameAlwaysDirty::BeginUpdate()noexcept
+		{
+		}
+		void JFrameAlwaysDirty::EndUpdate()noexcept
+		{
+		}
+
+		J_FRAME_DIRTY_FREQUENCY JFrameDirty::GetDirtyFrequency()const noexcept
+		{
+			return J_FRAME_DIRTY_FREQUENCY::UPDATED;
+		}
 		int JFrameDirty::GetFrameDirty()const noexcept
 		{
 			return frameDirty;

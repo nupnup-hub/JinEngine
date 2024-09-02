@@ -32,6 +32,7 @@ SOFTWARE.
 #include"../../Resource/Scene/JScene.h" 
 #include"../../Resource/Scene/JScenePrivate.h"
 #include"../../JObjectFileIOHelper.h" 
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"

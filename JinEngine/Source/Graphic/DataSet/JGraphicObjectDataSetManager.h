@@ -46,16 +46,12 @@ namespace JinEngine
 		public:
 			virtual void Initialize(JGraphicDevice* device) = 0;
 			virtual void Clear() = 0;
-		public:  
-			//virtual const DataVec& GetDataVec(const J_COMPONENT_TYPE type)const noexcept = 0;
-			//virtual const DataVec& GetDataVec(const J_RESOURCE_TYPE type)const noexcept = 0;
+		public:   
 			virtual const DataVec& GetDataVec(const UniqueIndex index)const noexcept = 0;
-			virtual JObjectDataSetMetadata GetMetadata(const UniqueIndex index)const noexcept = 0;
-			//virtual JObjectDataSetMetadata GetMetadata(const J_COMPONENT_TYPE type)const noexcept = 0;
-			//virtual JObjectDataSetMetadata GetMetadata(const J_RESOURCE_TYPE type)const noexcept = 0;
+			virtual JObjectDataSetMetadata GetMetadata(const UniqueIndex index)const noexcept = 0; 
 		public:
-			virtual JUserPtr<JGraphicModuleManagedDataFrame> Add(const JUserPtr<JObject>& obj) = 0;
-			virtual bool Remove(JUserPtr<JGraphicModuleManagedDataFrame>& data) = 0;
+			virtual JFastPtr<JGraphicModuleManagedDataFrame> Add(const JGraphicModuleManagedDataCreationDesc& creationData) = 0;
+			virtual bool Remove(JFastPtr<JGraphicModuleManagedDataFrame>& data) = 0;
 		public:
 			virtual void NotifyGraphicResourceCreation(JGraphicObjectDataSetBase* base, const JUserPtr<JGraphicResourceInfo>& newInfo, const J_GRAPHIC_TASK_TYPE task) = 0;
 		};

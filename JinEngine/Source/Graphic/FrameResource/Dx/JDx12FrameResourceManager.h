@@ -27,16 +27,18 @@ SOFTWARE.
 #include"JDx12FrameResource.h"
 #include"JDx12FrameUpdateInfo.h"
 #include"../JFrameResourceManager.h"
-
+#include"../../../Core/Threading/JThreadInfo.h" 
 
 namespace JinEngine
-{
+{ 
 	class JTexture;
 	namespace Graphic
 	{
 		class JDx12FrameResourceManager final : public JFrameResourceManager
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JDx12FrameResourceManager)
+		private:
+			using WorkerF = Core::JMFunctorType<JDx12FrameResourceManager, void, uint>;
 		public:
 			struct CacheData
 			{
@@ -54,10 +56,11 @@ namespace JinEngine
 			public:
 				void Update();
 			};
+		public: 
+			static constexpr uint maxNumOfUpdateThread = 8;
 		private: 
 			using InfoVec = std::vector<JOwnerPtr<JDx12FrameUpdateInfo>>;
 			using AreaInfoVec = std::vector<std::unique_ptr<JFrameUpdateAreaInfo>>;
-			//test
 		public:
 			InfoVec updateInfoVec[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
 			AreaInfoVec areaInfoVec[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
@@ -65,7 +68,13 @@ namespace JinEngine
 			JDx12FrameResource resource[Constants::gNumFrameResources];
 			int currResourceIndex = 0;  
 		private:
-			CacheData cacheData;
+			std::unique_ptr<WorkerF::Functor> workerFunctor;
+			Core::JThreadUserHandle threadHandle[maxNumOfUpdateThread];
+			JFrameUpdateDataSet cacheSet[maxNumOfUpdateThread];
+		private:
+			CacheData cacheData; 
+		private:
+			bool hasRequestThreadSync = false;
 		public:
 			~JDx12FrameResourceManager();
 		public: 
@@ -107,7 +116,10 @@ namespace JinEngine
 		public:
 			void BeginUpdate()final;
 			void Update(JFrameUpdateDataSet& set)final;
-			void EndUpdate()final;
+			void EndUpdate()final; 
+		private: 
+			void WorkerThread(uint threadIndex);
+			void WaitAllThreadTaskDone(); 
 		private:
 			void BuildResource(JGraphicDevice* device);
 			void ClearResource();

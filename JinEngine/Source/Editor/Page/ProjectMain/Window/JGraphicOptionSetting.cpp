@@ -121,8 +121,7 @@ namespace JinEngine
 				isChanged |= JGui::CheckBox("Multithread##JGraphicOptionSetting", option.rendering.allowMultiThread);
 				isChanged |= JGui::CheckBox("Draw gui##JGraphicOptionSetting", option.rendering.allowDrawGui);
 				isChanged |= JGui::CheckBox("Deferred##JGraphicOptionSetting", option.rendering.allowDeferred);
-				isChanged |= JGui::CheckBox("Raytracing##JGraphicOptionSetting", option.rendering.allowRaytracing);
-				isChanged |= JGui::CheckBox("MSAA##JGraphicOptionSetting", option.rendering.useMSAA);
+				isChanged |= JGui::CheckBox("Raytracing##JGraphicOptionSetting", option.rendering.allowRaytracing); 
 				isChanged |= EnumCombo("RenderTarget Format", "##JGraphicOptionSetting", option.rendering.renderTargetFormat);
 	 
 				JGui::Text("BRDF Microfacet");
@@ -158,6 +157,7 @@ namespace JinEngine
  
 				JGui::Text("PostProcess");
 				isChanged |= JGui::CheckBox("FXAA##JGraphicOptionSetting", option.postProcess.useFxaa);
+				isChanged |= JGui::CheckBox("TAA##JGraphicOptionSetting", option.postProcess.useTaa);
 				isChanged |= JGui::CheckBox("SSAO##JGraphicOptionSetting", option.postProcess.useSsao);	
 				isChanged |= JGui::CheckBox("Use Ssao Inetrleave##JGraphicOptionSetting", option.postProcess.useSsaoInterleave);
 				isChanged |= JGui::CheckBox("Use Postprocess##JGraphicOptionSetting", option.postProcess.usePostprocess);
@@ -197,8 +197,9 @@ namespace JinEngine
 				isChanged |= JGui::CheckBox("Recompile Light Cluster Shader##JGraphicOptionSetting", option.debugging.requestRecompileLightClusterShader);
 				isChanged |= JGui::CheckBox("Recompile Ssao Shader##JGraphicOptionSetting", option.debugging.requestRecompileSsaoShader);
 				isChanged |= JGui::CheckBox("Recompile ToneMapping Shader##JGraphicOptionSetting", option.debugging.requestRecompileToneMappingShader);
-				isChanged |= JGui::CheckBox("Recompile RtGi Shader Shader##JGraphicOptionSetting", option.debugging.requestRecompileRtGiShader);
-				isChanged |= JGui::CheckBox("Recompile RtDenoise Shader Shader##JGraphicOptionSetting", option.debugging.requestRecompileRtDenoiseShader);
+				isChanged |= JGui::CheckBox("Recompile RtGi Shader##JGraphicOptionSetting", option.debugging.requestRecompileRtGiShader);
+				isChanged |= JGui::CheckBox("Recompile RtDenoise Shader##JGraphicOptionSetting", option.debugging.requestRecompileRtDenoiseShader);
+				isChanged |= JGui::CheckBox("Recompile TAA Shader##JGraphicOptionSetting", option.debugging.requestRecompileTAAShader);
 
 				isChanged |= JGui::CheckBox("Test trigger00##JGraphicOptionSetting", option.debugging.testTrigger00);
 				isChanged |= JGui::CheckBox("Test trigger01##JGraphicOptionSetting", option.debugging.testTrigger01);

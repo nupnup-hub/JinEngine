@@ -37,13 +37,17 @@ namespace JinEngine
 	* Object private data used by graphic progress
 	*/
 
+	struct JGraphicModuleManagedDataCreationDesc;
 	class JGraphicModuleManagedDataFrame
 	{
 		REGISTER_CLASS_USE_ALLOCATOR(JGraphicModuleManagedDataFrame)
+	public:
+		using NotifyReAllocPtr = Core::JSFunctorType<void, const Core::JFastPtr<JGraphicModuleManagedDataFrame>&, JObject*>::Ptr;
 	private:
 		JWeakPtr<JObject> object;
+		NotifyReAllocPtr notifyReAllocPtr = nullptr;
 	public:
-		JGraphicModuleManagedDataFrame(const JUserPtr<JObject>& object);
+		JGraphicModuleManagedDataFrame(const JGraphicModuleManagedDataCreationDesc& desc);
 		virtual ~JGraphicModuleManagedDataFrame() = default;
 	public:
 		JWeakPtr<JObject> Object()const noexcept;
@@ -61,7 +65,19 @@ namespace JinEngine
 		bool CanAccessFrameResource()const noexcept;
 		bool CanAccessGpuAccelerator()const noexcept;
 		bool CanAccessGraphicResource()const noexcept;
+	protected:
+		static void NotifyReAlloc(const Core::JFastPtr<JGraphicModuleManagedDataFrame>& newData);
 	};
 
- 
+	struct JGraphicModuleManagedDataCreationDesc
+	{
+	public:
+		using NotifyReAllocPtr = JGraphicModuleManagedDataFrame::NotifyReAllocPtr;
+	public:
+		JWeakPtr<JObject> object;
+		NotifyReAllocPtr notifyReAllocPtr = nullptr;
+	public:
+		JGraphicModuleManagedDataCreationDesc(const JWeakPtr<JObject>& object, NotifyReAllocPtr notifyReAllocPtr);
+	};
+
 }

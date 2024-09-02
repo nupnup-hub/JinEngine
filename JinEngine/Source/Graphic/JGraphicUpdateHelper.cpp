@@ -28,6 +28,7 @@ SOFTWARE.
 #include"JGraphicOption.h"
 #include"JGraphicDrawList.h"
 #include"Culling/JCullingInterface.h" 
+#include"../Core/Threading/JThreadUtil.h"
 #include"../Object/Component/JComponent.h"
 #include"../Object/Component/Camera/JCamera.h"
 #include"../Object/Component/Camera/JCameraPrivate.h"
@@ -38,11 +39,7 @@ SOFTWARE.
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		namespace
-		{  
-			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface;  
-		}
+	{ 
 		namespace
 		{
 			static uint UDataCount()noexcept
@@ -211,7 +208,13 @@ namespace JinEngine
 			allowSsao = cam->AllowSsao() && option.CanUseSSAO();
 			allowPostProcess = cam->AllowPostProcess();
 			allowRtGi = cam->AllowRaytracingGI();
-			allowTemporalProcess = allowRtGi;
+			allowTemporalProcess = allowRtGi || allowPostProcess;
+
+			//test code forward 
+			allowSsao &= option.rendering.allowDeferred;
+			allowPostProcess &= option.rendering.allowDeferred;
+			allowRtGi &= option.rendering.allowDeferred;
+			allowTemporalProcess &= option.rendering.allowDeferred;
 		}
 		void JDrawHelper::SettingFrustumCulling(const JWeakPtr<JComponent>& comp)noexcept
 		{
@@ -305,43 +308,14 @@ namespace JinEngine
 			return isPerspective;
 		}	
 		void JDrawHelper::DispatchWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept
-		{
+		{ 
 			if (!CanDispatchWorkIndex())
 			{
 				stIndex = 0;
 				edIndex = count;
 				return;
 			}
-
-			if (count == 0)
-			{
-				stIndex = 0;
-				edIndex = 0;
-				return;
-			}
-			if (count < threadCount)
-			{
-				if (threadIndex < count)
-				{
-					stIndex = threadIndex;
-					edIndex = threadIndex + 1;
-				}
-				else
-				{
-					stIndex = 0;
-					edIndex = 0;
-				}
-			}
-			else
-			{
-				const uint threadPer = count / threadCount;
-				stIndex = threadPer * threadIndex;
-
-				if (threadIndex == threadCount - 1)
-					edIndex = count;
-				else
-					edIndex = threadPer * (threadIndex + 1);
-			}
+			Core::JThreadUtil::DispatchWorkIndex(count, threadCount, threadIndex, stIndex, edIndex);
 		}
 		JDrawHelper JDrawHelper::CreateDrawSceneHelper(const JDrawHelper& ori, const JWeakPtr<JCamera>& cam)noexcept
 		{ 

@@ -26,7 +26,9 @@ SOFTWARE.
 
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Core/Math/JVectorExtend.h"
-#include"../../../Core/Time/JGameTimer.h"
+#include"../../../Core/Time/JGameTimer.h" 
+#include"../../../Core/Threading/JThreadManager.h"
+#include"../../../Core/Threading/JThreadUtil.h"
 
 #include"../../../Object/Component/RenderItem/JRenderItem.h" 
 #include"../../../Object/Component/Transform/JTransform.h"
@@ -51,10 +53,36 @@ SOFTWARE.
 
 using namespace DirectX;
 namespace JinEngine::Graphic
-{
-	//Update per object
+{ 
 	namespace
-	{
+	{ 
+		/**
+		* Multi thread rule
+		* 
+		* 적용여부는 항상 업데이트되며 업로드시간이 긴 경우로 한정한다.
+		* Light & Material (X) :  많은 갯수가 있을법하나 자주 업데이트 되지않음.
+		* Camera (X) : 갯수가 적으므로 제외.
+		* Render item (X): 업로드하는 시간이 적고 항상 업데이트 되지않으므로 제외(어림잡아 한 프레임에 250~ 500개정도 업데이트 되는게 최대가 아닐까?) 
+		* Animation (O) : 항상 업데이트되며 업로드 시간이 적지않다.
+		* 
+		* loop cost
+		* 2000 count except upload func =  0.15 ~ 0.25ms
+		* 2000 count all upload func = 2.5ms ~ 3.5ms (RenderItem)
+		* 8 Thread begin cost 0.02ms
+		* Render item upload => 0.0035ms
+		* Animation upload => Just bind pose = 0.001ms , One diagram 3 clip = 0.03ms
+		* 
+		* Animation thread apply condition
+		* 
+		* Animation timer 미작동인 경우 80개
+		* Animation timer 작동 중 인경우 4개
+		* 4개라는 숫자는 Preview scene을 제외하고 Thread cost보다 upload cost가 확실히 높다고 예상하는 숫자이다
+		*/
+
+		static constexpr uint maxNumOfUpdateThread = JDx12FrameResourceManager::maxNumOfUpdateThread; 
+		static constexpr uint aniThreadBorder = 2;
+		static constexpr uint aniOnlyBindPoseThreadBorder = 80;
+
 		struct InnerUpdateDataSet
 		{
 		public:
@@ -64,13 +92,13 @@ namespace JinEngine::Graphic
 			JDx12FrameResourceManager* fm;
 			JDx12FrameResource* frame;
 		public:
-			JDx12FrameResourceManager::CacheData* cacheData; 
+			JDx12FrameResourceManager::CacheData* cacheData;
 		public:
 			//Per object
 			JObject* obj;
 			JFrameUpdateInterface* updateInterface;
 		public:
-			int minMoveDirtyIndex[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT]; 
+			int minMoveDirtyIndex[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
 			bool isFrameDirted = false;
 			bool hasMoveDirted = false;
 		public:
@@ -80,7 +108,7 @@ namespace JinEngine::Graphic
 				JDx12FrameResourceManager::CacheData* cacheData)
 				:info(info), option(option), fm(fm), cacheData(cacheData)
 			{ 
-				frame = fm->GetCurrentDxFrameResource(); 
+				frame = fm->GetCurrentDxFrameResource();
 				memset(minMoveDirtyIndex, 0, sizeof(int) * (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT);
 			}
 		public:
@@ -139,12 +167,20 @@ namespace JinEngine::Graphic
 		{
 		public:
 			using UpdateF = JinEngine::Core::JSFunctorType<void, const InnerUpdateDataSet&>::Ptr;
-			using IsForcedUpdateF = JinEngine::Core::JSFunctorType<bool, JDx12FrameResourceManager*>::Ptr; 
+			using IsForcedUpdateF = JinEngine::Core::JSFunctorType<bool, JDx12FrameResourceManager*>::Ptr;
+			using CanUseMultiThread = JinEngine::Core::JSFunctorType<bool, const JFrameUpdateOption&, const uint>::Ptr;			 
 		public:
-			UpdateF updateF = nullptr;
+			UpdateF updateF[maxNumOfUpdateThread];
 			IsForcedUpdateF isForcedUpdateF = nullptr; 
+			CanUseMultiThread canUseMultiThread = nullptr;
+		public:
+			InnerUpdateFuncSet()
+			{
+				for (uint i = 0; i < maxNumOfUpdateThread; ++i)
+					updateF[i] = nullptr;
+			}
 		};
-
+ 
 		template<typename T>
 		static void ControlStaticConstantsSize(std::vector<T>& vec, const uint updateCount, const float resizeRate = 2.0f)
 		{
@@ -178,12 +214,13 @@ namespace JinEngine::Graphic
 		template<int threadIndex>
 		static void UpdateAnimator(const InnerUpdateDataSet& set)
 		{
+			//Just bind pose = 0.001ms, One diagram 3 clip = 0.03ms   
 			static JAnimationConstants animation;
 			JAnimator* animator = static_cast<JAnimator*>(set.obj);
+			 
 			animator->Compute(animation.set);
 			animator->Update();
-
-			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION>(&animator);
+			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION>(&animation);
 		}
 		template<int threadIndex>
 		static void UpdateBehavior(const InnerUpdateDataSet& set)
@@ -205,10 +242,10 @@ namespace JinEngine::Graphic
 			static JLightCullingCameraConstants lightCulling;
 			static JGIConstants gi;
 			static JGIDenoiserPassConstants denoise;
-		 
+
 			const size_t sceneGuid = camera->GetOwner()->GetOwnerGuid();
-			const XMMATRIX view = camera->GetView();
-			const XMMATRIX proj = camera->GetProj();
+			const XMMATRIX view = camera->GetView().LoadXM();
+			const XMMATRIX proj = camera->GetProj().LoadXM();
 			const XMMATRIX invView = camera->GetInvView();
 			const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 			//const XMMATRIX preViewProj = camera->GetPreViewProj();
@@ -225,7 +262,7 @@ namespace JinEngine::Graphic
 			const float viewHeight = camera->GetRenderViewHeight();
 
 			//DrawScene
-			if(set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA))
+			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA))
 			{
 				drawScene.invView.StoreXM(XMMatrixTranspose(invView));
 				drawScene.viewProj.StoreXM(XMMatrixTranspose(viewProj));
@@ -242,7 +279,7 @@ namespace JinEngine::Graphic
 				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA>(&drawScene);
 			}
 			//DepthTest
-			if(set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS))
+			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS))
 			{
 				if (camera->AllowHdOcclusionCulling() || camera->AllowHzbOcclusionCulling())
 				{
@@ -251,7 +288,7 @@ namespace JinEngine::Graphic
 				}
 			}
 			//HzbOccCompute
-			if(set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS))
+			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS))
 			{
 				if (camera->AllowHzbOcclusionCulling())
 				{
@@ -279,9 +316,9 @@ namespace JinEngine::Graphic
 					hzb.usePerspective = true;
 					set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS>(&hzb);
 				}
-			}		 
+			}
 			//SSAO
-			if(set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS))
+			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS))
 			{
 				if (camera->AllowSsao() && set.option.CanUseSSAO())
 				{
@@ -339,13 +376,13 @@ namespace JinEngine::Graphic
 				}
 			}
 			//LightCulling
-			if(set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS))
+			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::LIGHT_CULLING_PASS))
 			{
 				if (camera->AllowLightCulling() && set.option.culling.allowLightCluster)
 				{
 					lightCulling.camView.StoreXM(XMMatrixTranspose(view));
 					lightCulling.camProj.StoreXM(XMMatrixTranspose(proj));
- 
+
 					lightCulling.camRenderTargetSize = rtSize;
 					lightCulling.camInvRenderTargetSize = invRtSize;
 					lightCulling.camNearZ = camNear;
@@ -445,7 +482,7 @@ namespace JinEngine::Graphic
 
 			const bool isShadowMapActivated = light->IsShadowActivated();
 			const bool isCsmActivated = light->IsCsmActivated() && isShadowMapActivated;
- 
+
 			//Directional Light
 			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT))
 			{
@@ -525,9 +562,9 @@ namespace JinEngine::Graphic
 				if (isShadowMapActivated && !isCsmActivated)
 				{
 					shadowMapDraw.shadowMapTransform.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
-						set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW>(&shadowMapDraw);
+					set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW>(&shadowMapDraw);
 				}
-			} 
+			}
 			//Hzb pass
 			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS))
 			{
@@ -559,7 +596,7 @@ namespace JinEngine::Graphic
 
 			static JPointLightConstants litConstants;
 			static JShadowMapCubeDrawConstants shadowMapDraw;
- 
+
 			//shadow map index에 대한 변수가 있으므로
 			//shadow map update시 JPointLightConstants와 JShadowMapCubeDrawConstants를 동시에
 			//update해줘야한다. 
@@ -652,7 +689,7 @@ namespace JinEngine::Graphic
 				litConstants.shadowMapInvSize = 1.0f / litConstants.shadowMapSize;
 				litConstants.bias = light->GetBias();
 				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT>(&litConstants);
-			} 
+			}
 			//Shadow map
 			if (canUploadShadow)
 			{
@@ -725,6 +762,7 @@ namespace JinEngine::Graphic
 		template<int threadIndex>
 		static void UpdateRenderItem(const InnerUpdateDataSet& set)
 		{
+			//0.0015ms ~ 0.0035ms 
 			JRenderItem* rItem = static_cast<JRenderItem*>(set.obj);
 			JTransform* transform = rItem->GetOwner()->GetTransform().Get();
 			auto gUser = rItem->ModuleManagedData()->GetGraphicResourceUserInterface();
@@ -733,11 +771,11 @@ namespace JinEngine::Graphic
 			static JBoundingObjectConstants bounding;
 			static JHzbOccObjectConstants hzb;
 			static std::vector<JObjectRefereneceInfoConstants> refInfo;
-			 
+
 			const uint subMeshCount = rItem->GetSubmeshCount();
 			ControlStaticConstantsSize(object, subMeshCount);
 			ControlStaticConstantsSize(refInfo, subMeshCount);
-
+	 
 			if (set.isFrameDirted || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT) || set.HasMoveDirty(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO))
 			{
 				const JMatrix4x4 textureTransform = rItem->GetTextransform();
@@ -776,11 +814,12 @@ namespace JinEngine::Graphic
 				hzb.queryResultIndex = set.updateInterface->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT);
 
 				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT>(&hzb);
-			} 
+			}
 		}
 		template<int threadIndex>
 		static void UpdateMaterial(const InnerUpdateDataSet& set)
 		{
+			//0.001ms 
 			JMaterial* mat = static_cast<JMaterial*>(set.obj);
 
 			static JMaterialConstants matConstants;
@@ -835,7 +874,7 @@ namespace JinEngine::Graphic
 			constants.spotLitEd = constants.spotLitSt + set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT, sceneGuid);
 			constants.rectLitSt = set.fm->GetAreaRegistedOffset(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
 			constants.rectLitEd = constants.rectLitSt + set.fm->GetAreaRegistedCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT, sceneGuid);
-	 
+
 			auto missingInterface = set.cacheData->missing->ModuleManagedData()->GetGraphicResourceUserInterface();
 			auto blueNoiseInterface = set.cacheData->bluseNoise->ModuleManagedData()->GetGraphicResourceUserInterface();
 
@@ -847,161 +886,165 @@ namespace JinEngine::Graphic
 
 			set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS>(&constants);
 		}
-
-		/*
-		*
-		*/
-		static InnerUpdateFuncSet CreateUpdateFuncSet(const JObjectDataSetMetadata& metadata)
+ 												
+		template<size_t ...Is>
+		static void CreateUpdaetFunc(InnerUpdateFuncSet& set, const JObjectDataSetMetadata& metadata, std::index_sequence<Is...>)
 		{
-			static InnerUpdateFuncSet set[totalCompVariation + totalResourceVariation];
-			static bool isInit = false;
-			if (!isInit)
+			const UniqueIndex index = metadata.uniqueIndex;
+
+			switch (index)
 			{
-				for (uint i = 0; i < totalCompVariation; ++i)
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>():
+			{ 
+				((set.updateF[Is]= &UpdateAnimator<Is>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION); };
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount)
 				{
-					switch (i)
-					{
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::USER_BEHAVIOR>():
-					{
-						set[i].updateF = &UpdateBehavior<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return false; }; 
-						break;
-					}
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>():
-					{
-						//항상 Update되며 Update중에 사용되는 데이터는 독립적이므로
-						//thread로 병렬 처리가능
-						set[i].updateF = &UpdateAnimator<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::ANIMATION); };
-						break;
-					}
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>():
-					{
-						set[i].updateF = &UpdateCamera<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
-						{
-							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS);
-						};
-						break;
-					}
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL):
-					{
-						set[i].updateF = &UpdateDirctionalLight<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
-						{
-							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
-						};
-						break;
-					}
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::POINT):
-					{
-						set[i].updateF = &UpdatePointLight<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
-						{
-							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW);
-						};
-						break;
-					}
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::SPOT):
-					{
-						set[i].updateF = &UpdateSpotLight<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
-						{
-							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
-						};
-						break;
-					}
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::RECT):
-					{
-						set[i].updateF = &UpdateRectLight<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
-						{
-							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
-						};
-						break;
-					}
-					case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>():
-					{
-						set[i].updateF = &UpdateRenderItem<0>;
-						set[i].isForcedUpdateF = [](JDx12FrameResourceManager* fm)
-						{
-							return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT) ||
-								fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT);
-						};
-						break;
-					}
-					default:
-						break;
-					}
-				}
-				for (uint i = 0; i < totalResourceVariation; ++i)
+					return (option.isActivatedSceneTimer ? aniThreadBorder : aniOnlyBindPoseThreadBorder) <= taskCount;
+				}; 
+				break;
+			}
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::USER_BEHAVIOR>():
+			{
+				((set.updateF[Is] = &UpdateBehavior<0>), ...);
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return false; };
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>():
+			{
+				((set.updateF[Is]= &UpdateCamera<0>), ...);
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm)
 				{
-					UniqueIndex index = i + totalCompVariation;
-					switch (i)
-					{
-					case ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MATERIAL>():
-					{
-						set[index].updateF = &UpdateMaterial<0>;
-						set[index].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL); };
-						break;
-					}
-					case ConvertResourceUniqueIndex<J_RESOURCE_TYPE::SCENE>():
-					{
-						set[index].updateF = &UpdateScene<0>;
-						set[index].isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return true; };
-						//set.isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SCENE_PASS); };
-						break;
-					}
-					default:
-						break;
-					}
-				}
-				isInit = true;
+					return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS);
+				}; 
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL):
+			{
+				((set.updateF[Is]= &UpdateDirctionalLight<0>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+				{
+					return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
+				}; 
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::POINT):
+			{
+				((set.updateF[Is]= &UpdatePointLight<0>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+				{
+					return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_CUBE_DRAW);
+				}; 
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::SPOT):
+			{
+				((set.updateF[Is]= &UpdateSpotLight<0>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+				{
+					return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
+				}; 
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::RECT):
+			{
+				((set.updateF[Is]= &UpdateRectLight<0>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+				{
+					return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
+				};
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			case ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>():
+			{
+				((set.updateF[Is]= &UpdateRenderItem<0>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm)
+				{
+					return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT) ||
+						fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_OBJECT);
+				}; 
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			default:
+				break;
+			}
+			switch (index)
+			{
+			case ConvertResourceUniqueIndex<J_RESOURCE_TYPE::MATERIAL>(totalCompVariation):
+			{
+				((set.updateF[Is]= &UpdateMaterial<0>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return fm->IsForcedUpdate(J_FRAME_RESOURCE_UPLOAD_TYPE::MATERIAL); };
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			case ConvertResourceUniqueIndex<J_RESOURCE_TYPE::SCENE>(totalCompVariation):
+			{
+				((set.updateF[Is]= &UpdateScene<0>), ...); 
+				set.isForcedUpdateF = [](JDx12FrameResourceManager* fm) {return true; };
+				set.canUseMultiThread = [](const JFrameUpdateOption& option, const uint taskCount) {return false; };
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		static InnerUpdateFuncSet GetUpdateFuncSet(const JObjectDataSetMetadata& metadata)
+		{
+			static constexpr uint variation = totalCompVariation + totalResourceVariation;
+			static InnerUpdateFuncSet set[variation];
+			static std::bitset<variation> isInit;
+
+			if (!isInit[metadata.uniqueIndex])
+			{ 
+				CreateUpdaetFunc(set[metadata.uniqueIndex], metadata, std::make_index_sequence <maxNumOfUpdateThread>());	    
+				isInit[metadata.uniqueIndex] = true;
 			}
 			return set[metadata.uniqueIndex];
 		}
+	 
 		template<typename ObjectStucture>
-		static void DoUpdate(JDx12FrameResourceManager* fm,
-			JFrameUpdateDataSet& set,
-			InnerUpdateDataSet& dataSet,
-			InnerUpdateFuncSet& funcSet)
-		{ 
-			if (funcSet.updateF == nullptr)
-				return;
- 
+		static void DoUpdate(JDx12FrameResourceManager* fm, JFrameUpdateDataSet& set, InnerUpdateDataSet& dataSet, InnerUpdateFuncSet& funcSet)
+		{  
 			const bool isForcedUpdate = funcSet.isForcedUpdateF(fm);
 			const uint count = (uint)set.GetDataStorageCount();
-
+			 
 			for (uint i = 0; i < count; ++i)
 			{
 				JFrameUpdateInterface* frameInterface = nullptr;
 				JObject* obj = nullptr;
 				if constexpr (std::is_same_v<ObjectStucture, JFrameUpdateDataSet::CompVec>)
 				{
-					JComponent* comp = (*set.compVec)[i].Get();
+					JComponent* comp = (*set.compVec)[i].UnsafeGet();
 					frameInterface = static_cast<JFrameUpdateInterface*>(comp->ModuleManagedData()->GetFrameUpdateUserInterface());
-					obj = comp; 
+					obj = comp;
 				}
 				else
 				{
 					JGraphicObjectDataSetBase* objSet = set.objDataVec->Get(i)->Get();
 					frameInterface = objSet->GetFrameUpdateInterface();
-					obj = objSet->Object().Get(); 
+					obj = objSet->Object().UnsafeGet();
 				}
 
 				JFrameDirtyBase* frameDirty = frameInterface->GetDirtyBase();
 				frameDirty->BeginUpdate();
 
 				if (isForcedUpdate)
-					frameInterface->SetFrameDirty();	
+					frameInterface->SetFrameDirty();
 
 				frameInterface->TryExecuteObjectAlwaysUpdateBind();
 				if (frameInterface->IsDirted())
@@ -1009,23 +1052,65 @@ namespace JinEngine::Graphic
 					if (frameDirty->IsFrameHotDirted())
 					{
 						frameInterface->TryExecuteObjectHotUpdateBind();
-						++set.updateLog.hotUpdatedCount;
+						++set.updateLog.hotUpdateCount;
 					}
-					++set.updateLog.updatedCount;
+					++set.updateLog.updateCount;
 
 					dataSet.obj = obj;
 					dataSet.updateInterface = frameInterface;
 					dataSet.isFrameDirted = true;
-					funcSet.updateF(dataSet);
+					funcSet.updateF[0](dataSet);
 				}
 				else if (dataSet.hasMoveDirted)
-				{ 
-					++set.updateLog.moveCount; 
+				{
+					++set.updateLog.moveCount;
 					dataSet.obj = obj;
 					dataSet.updateInterface = frameInterface;
 					dataSet.isFrameDirted = false;
-					funcSet.updateF(dataSet);
+					funcSet.updateF[0](dataSet);
 				}
+				frameDirty->EndUpdate();
+			}
+		}
+
+		template<typename ObjectStucture>
+		static void DoAlwaysUpdate(const JFrameUpdateDataSet& set,
+			InnerUpdateDataSet dataSet,
+			const InnerUpdateFuncSet& funcSet,
+			uint threadIndex,
+			uint threadCount)
+		{
+			if (funcSet.updateF == nullptr)
+				return;
+			   
+			uint st, ed;
+			Core::JThreadUtil::DispatchWorkIndex(set.GetDataStorageCount(), threadCount, threadIndex, st, ed);
+			 
+			for (uint i = st; i < ed; ++i)
+			{ 
+				JFrameUpdateInterface* frameInterface = nullptr;
+				JObject* obj = nullptr;
+				if constexpr (std::is_same_v<ObjectStucture, JFrameUpdateDataSet::CompVec>)
+				{
+					JComponent* comp = (*set.compVec)[i].UnsafeGet();
+					frameInterface = static_cast<JFrameUpdateInterface*>(comp->ModuleManagedData()->GetFrameUpdateUserInterface());
+					obj = comp;
+				}
+				else
+				{
+					JGraphicObjectDataSetBase* objSet = set.objDataVec->Get(i)->Get();
+					frameInterface = objSet->GetFrameUpdateInterface();
+					obj = objSet->Object().UnsafeGet();
+				}
+
+				JFrameDirtyBase* frameDirty = frameInterface->GetDirtyBase();
+				frameDirty->BeginUpdate();
+				 
+				dataSet.obj = obj;
+				dataSet.updateInterface = frameInterface;
+				dataSet.isFrameDirted = true;
+				funcSet.updateF[threadIndex](dataSet);
+
 				frameDirty->EndUpdate();
 			}
 		}
@@ -1067,10 +1152,14 @@ namespace JinEngine::Graphic
 			return;
 
 		JFrameResourceManager::Initialize(device);
-		BuildResource(device);
+		BuildResource(device); 
+
+		workerFunctor = std::make_unique<WorkerF::Functor>(&JDx12FrameResourceManager::WorkerThread, this);
 	}
 	void JDx12FrameResourceManager::Clear()
 	{
+		workerFunctor = nullptr;
+
 		ClearResource();
 		JFrameResourceManager::Clear();
 	}
@@ -1150,7 +1239,7 @@ namespace JinEngine::Graphic
 	{
 		const JFrameUpdateAreaInfo* areaInfo = GetAreaInfo(type, areaGuid);
 		return areaInfo != nullptr ? areaInfo->GetStIndex() : invalidIndex;
-	} 
+	}
 	int JDx12FrameResourceManager::GetArrayIndex(const J_FRAME_RESOURCE_UPLOAD_TYPE type, JFrameUpdateInfo* ptr)const noexcept
 	{
 		const InfoVec& vec = updateInfoVec[(uint)type];
@@ -1318,29 +1407,69 @@ namespace JinEngine::Graphic
 		if (!set.metadata.isSupportedFrameResourceUpload)
 			return;
 
-		InnerUpdateFuncSet funcSet = CreateUpdateFuncSet(set.metadata);
+		InnerUpdateFuncSet funcSet = GetUpdateFuncSet(set.metadata);
 		if (funcSet.updateF == nullptr)
 			return;
-		 
-		InnerUpdateDataSet dataSet(GetGraphicInfo(), GetGraphicOption(), this, &cacheData);
-		for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
-		{
-			if (!set.metadata.supportedFrameType[i])
-				continue;
 
-			dataSet.minMoveDirtyIndex[i] = GetMoveDirtyMinIndex((J_FRAME_RESOURCE_UPLOAD_TYPE)i);
-			dataSet.hasMoveDirted |= dataSet.minMoveDirtyIndex[i] != invalidIndex;
+		if (set.option.setUpdateThreadTask != nullptr && set.metadata.isNeedToUpdateEveryFrame &&  funcSet.canUseMultiThread(set.option, set.GetDataStorageCount()))
+		{ 
+			WaitAllThreadTaskDone();
+			auto setUpdateThreadTask = set.option.setUpdateThreadTask;
+			const uint threadCount = GetGraphicInfo().frame.threadCount;
+
+			//작업분배
+			for (uint i = 0; i < threadCount; ++i)
+			{
+				cacheSet[i] = set;
+				threadHandle[i] = setUpdateThreadTask(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
+			}
+			set.updateLog.updateCount += set.GetDataStorageCount();
+			hasRequestThreadSync = true;
 		}
-		 
-		if (set.objDataVec != nullptr)
-			DoUpdate<ObjectDataSetVec>(this, set, dataSet, funcSet);
 		else
-			DoUpdate<JFrameUpdateDataSet::CompVec>(this, set, dataSet, funcSet);
+		{
+			InnerUpdateDataSet dataSet(GetGraphicInfo(), GetGraphicOption(), this, &cacheData);
+			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
+			{
+				if (!set.metadata.supportedFrameType[i])
+					continue;
+
+				dataSet.minMoveDirtyIndex[i] = GetMoveDirtyMinIndex((J_FRAME_RESOURCE_UPLOAD_TYPE)i);
+				dataSet.hasMoveDirted |= dataSet.minMoveDirtyIndex[i] != invalidIndex;
+			}
+
+			if (set.objDataVec != nullptr)
+				DoUpdate<ObjectDataSetVec>(this, set, dataSet, funcSet);
+			else
+				DoUpdate<JFrameUpdateDataSet::CompVec>(this, set, dataSet, funcSet);
+		}
 	}
 	void JDx12FrameResourceManager::EndUpdate()
 	{
 		JFrameResourceManager::EndUpdate();
+		WaitAllThreadTaskDone();
+	} 
+	void JDx12FrameResourceManager::WorkerThread(uint threadIndex)
+	{ 
+		//Always update로 한정한다.
+		InnerUpdateFuncSet funcSet = GetUpdateFuncSet(cacheSet[threadIndex].metadata);
+		InnerUpdateDataSet dataSet(GetGraphicInfo(), GetGraphicOption(), this, &cacheData);
+		 
+		if (cacheSet[threadIndex].objDataVec != nullptr)
+			DoAlwaysUpdate<ObjectDataSetVec>(cacheSet[threadIndex], dataSet, funcSet, threadIndex, dataSet.info.frame.threadCount);
+		else
+			DoAlwaysUpdate<JFrameUpdateDataSet::CompVec>(cacheSet[threadIndex], dataSet, funcSet, threadIndex, dataSet.info.frame.threadCount);
+		cacheSet[threadIndex] = JFrameUpdateDataSet();
 	}
+	void JDx12FrameResourceManager::WaitAllThreadTaskDone()
+	{
+		if (!hasRequestThreadSync)
+			return;
+		  
+		for (uint i = 0; i < maxNumOfUpdateThread; ++i)
+			_JThreadManager::Instance().WaitUntilThreadEnd(threadHandle[i]); 
+		hasRequestThreadSync = false;
+	} 
 	void JDx12FrameResourceManager::BuildResource(JGraphicDevice* device)
 	{
 		for (uint i = 0; i < SIZE_OF_ARRAY(resource); ++i)

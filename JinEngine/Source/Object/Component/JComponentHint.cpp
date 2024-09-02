@@ -151,6 +151,12 @@ namespace JinEngine
 		else
 			return data->second;
 	}
+	J_COMPONENT_TYPE CTypeCommonCall::ConvertCompType(const size_t typeGuid)
+	{
+		auto& typeMap = CTypeInfo::Instance().typeMap;
+		auto data = typeMap.find(typeGuid);
+		return data != typeMap.end() ? data->second : (J_COMPONENT_TYPE)invalidIndex;
+	}
 	bool CTypeCommonCall::NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept
 	{
 		return CTypeInfo::Instance().cFuncStorage[(uint)a.thisType].CallGetTypeInfo().Name() < CTypeInfo::Instance().cFuncStorage[(uint)b.thisType].CallGetTypeInfo().Name();

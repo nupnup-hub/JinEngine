@@ -33,6 +33,7 @@ SOFTWARE.
 #include"../../JObjectFileIOHelper.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
@@ -97,7 +98,7 @@ namespace JinEngine
 		* 하나의 GraphicResource만 소지하므로 First 함수들을 사용해도 문제가 없으나
 		* 추후 변경사항이 있을경우 수정하고 Task 혹은 할당 순서에 따른 index로 자원에 접근해야한다.
 		*/
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		J_GRAPHIC_RESOURCE_TYPE textureType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 	public:
@@ -105,17 +106,16 @@ namespace JinEngine
 		J_TEXTURE_TYPE innerTextureType = J_TEXTURE_TYPE::TEXTURE_2D;
 		REGISTER_PROPERTY_EX(resolution, GetTextureResolution, SetTextureResolution, GUI_ENUM_COMBO(J_TEXTURE_RESOLUTION, "-a {v} x {v}; -c {v} != 0;"))
 		J_TEXTURE_RESOLUTION resolution = J_TEXTURE_RESOLUTION::ORIGINAL;
-		REGISTER_METHOD(GetTextureResolutionS)
-		REGISTER_METHOD_READONLY_GUI_WIDGET(ResolutionDetail, GetTextureResolutionS, GUI_READONLY_TEXT())
+		REGISTER_GET_METHOD_EX(ResolutionDetail, GetTextureResolutionS, GUI_READONLY_TEXT())
 	public:
 		JMipmapGenerationDesc mipMapGenerateDesc = Private::InitMipmapGenerateDesc();
 		REGISTER_GUI_ENUM_CONDITION(TextureMipmapType, J_GRAPHIC_MIP_MAP_TYPE, GetMipmapType, true)
-		REGISTER_METHOD_GUI_WIDGET(MipmapType, GetMipmapType, SetMipmapType, GUI_ENUM_COMBO(J_GRAPHIC_MIP_MAP_TYPE))
-		REGISTER_METHOD_GUI_WIDGET(MipmapKernelSize, GetMipmapKernelSize, SetMipmapKernelSize, GUI_ENUM_COMBO(J_KERNEL_SIZE))
-		REGISTER_METHOD_GUI_WIDGET(MipmapSharpness, GetMipmapSharpnessFactor, SetMipmapSharpnessFactor, GUI_SLIDER(Private::minMipmapSharpness, Private::maxMipmapSharpness, true))
+		REGISTER_GET_SET_METHOD_EX(MipmapType, GetMipmapType, SetMipmapType, GUI_ENUM_COMBO(J_GRAPHIC_MIP_MAP_TYPE))
+		REGISTER_GET_SET_METHOD_EX(MipmapKernelSize, GetMipmapKernelSize, SetMipmapKernelSize, GUI_ENUM_COMBO(J_KERNEL_SIZE))
+		REGISTER_GET_SET_METHOD_EX(MipmapSharpness, GetMipmapSharpnessFactor, SetMipmapSharpnessFactor, GUI_SLIDER(Private::minMipmapSharpness, Private::maxMipmapSharpness, true))
 	public:
 		JConvertColorDesc convertDesc;
-		REGISTER_METHOD_GUI_WIDGET(ReverseY, IsReverseY, SetReverseY, GUI_CHECKBOX())
+		REGISTER_GET_SET_METHOD_EX(ReverseY, IsReverseY, SetReverseY, GUI_CHECKBOX())
 	public:
 		JTextureImpl(const InitData& initData, JTexture* thisTexRaw)
 		{
@@ -423,7 +423,7 @@ namespace JinEngine
 	public:
 		void Initialize(InitData* initData)
 		{
-			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
+			IMPL_ALLOC_GRAPHIC_MODULE_DATA();
 			//객체를 처음생성할때 initData에서 import
 			if (!thisPointer->HasFile())
 				ImportTexture(initData->oridataPath);
@@ -595,7 +595,9 @@ namespace JinEngine
 	void JTexture::DoActivate()noexcept
 	{
 		if (impl->graphicData == nullptr)
-			impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		{
+			INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
+		}
 		JResourceObject::DoActivate();
 		impl->Activate();
 	}
@@ -603,7 +605,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JResourceObject::DoDeActivate(); 
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JTexture::JTexture(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JTextureImpl>(initData, this))

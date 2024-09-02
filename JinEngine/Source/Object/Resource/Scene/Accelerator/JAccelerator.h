@@ -111,7 +111,7 @@ namespace JinEngine
 	{
 	private:
 		JGpuAcceleratorOption option;
-		JUserPtr<JGraphicModuleManagedDataFrame> sceneGraphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> sceneGraphicData;
 	public:
 		JGpuAccelerator() = default;
 	protected:
@@ -128,7 +128,7 @@ namespace JinEngine
 		JGpuAcceleratorOption GetOption()const noexcept;
 	public:
 		void SetOption(const JGpuAcceleratorOption& newOption);
-		void SetGraphicData(const JUserPtr<JGraphicModuleManagedDataFrame>& newSceneGraphicData);
+		void SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& newSceneGraphicData);
 	public:
 		bool CanBuild()noexcept; 
 	};

@@ -140,7 +140,7 @@ namespace JinEngine::Core
 		header += "		private:\n";
 		header += "			void Update()final;\n";
 		header += "		private:\n";
-		header += "			void CallOneceWhenRegisterTypeData();\n";
+		header += "			void CallOnceWhenRegisterTypeData();\n";
 		header += "		private:\n";
 		header += "			" + name + "(const InitData& initData);\n";
 		header += "			~" + name + "\n";
@@ -182,7 +182,7 @@ namespace JinEngine::Core
 		cpp += "	{\n";
 		cpp += "\n";
 		cpp += "	}\n";
-		cpp += "    void name::CallOneceWhenRegisterTypeData()\n";
+		cpp += "    void name::CallOnceWhenRegisterTypeData()\n";
 		cpp += "	{\n";
 		cpp += "\n";
 		cpp += "	}\n";

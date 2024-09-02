@@ -112,7 +112,7 @@ namespace JinEngine
 				camList->Display(dataSet);
 				selectedCam = camList->GetSelectedUser<JCamera>();
 #if DEVELOP
-				TestLight();
+				//TestLight();
 #endif
 			}
 			CloseWindow();

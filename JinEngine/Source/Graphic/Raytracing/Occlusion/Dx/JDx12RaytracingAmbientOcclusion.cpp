@@ -188,7 +188,7 @@ namespace JinEngine::Graphic
 		auto aoSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
 		auto accelSet = context->ComputeSet(aInterface);
 
-		const DirectX::XMMATRIX viewM = helper.cam->GetView();
+		const DirectX::XMMATRIX viewM = helper.cam->GetView().LoadXM();
 		JMatrix4x4 camInvView;
 		camInvView.StoreXM(XMMatrixTranspose(XMMatrixInverse(nullptr, viewM)));
 

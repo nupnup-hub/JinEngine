@@ -238,13 +238,19 @@ namespace JinEngine
 			void SetComputeRootConstantBufferView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			template<typename T>
 			void SetComputeRoot32BitConstants(const uint rootIndex, const uint offset, const T& data)
-			{
+			{ 
+				static constexpr uint byteChunkUnit = 4;
 				if constexpr (Core::JVectorDetermine<T>::value)
-					cmd->SetComputeRoot32BitConstants(rootIndex, data.GetDigitCount(), &data, offset);
+				{
+					if constexpr(T::GetElementSize() == byteChunkUnit)
+						cmd->SetComputeRoot32BitConstants(rootIndex, data.GetDigitCount(), &data, offset);
+					else
+						cmd->SetComputeRoot32BitConstants(rootIndex, JMathHelper::DivideByMultiple(sizeof(T), byteChunkUnit), &data, offset);
+				}
 				else if constexpr (Core::IsNumber_V<T>)
 					cmd->SetComputeRoot32BitConstants(rootIndex, 1, &data, offset);
 				else
-					cmd->SetComputeRoot32BitConstants(rootIndex, JMathHelper::DivideByMultiple(sizeof(T), 4), &data, offset);
+					cmd->SetComputeRoot32BitConstants(rootIndex, JMathHelper::DivideByMultiple(sizeof(T), byteChunkUnit), &data, offset);
 			}
 			template<typename T>
 			void SetComputeRoot32BitConstants(const uint rootIndex, const uint offset, const T& data, const size_t count)

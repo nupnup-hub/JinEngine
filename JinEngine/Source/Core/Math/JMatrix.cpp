@@ -203,7 +203,8 @@ namespace JinEngine
 	{}
 	JMatrix3x4::JMatrix3x4(const JVector4F v0, const JVector4F v1, const JVector4F v2)
 		: r{ v0, v1, v2 }
-	{}
+	{ 
+	}
 	float JMatrix3x4::operator() (size_t row, size_t column)const noexcept
 	{
 		return m[row][column];

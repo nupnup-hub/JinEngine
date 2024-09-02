@@ -28,11 +28,13 @@ SOFTWARE.
 #include"../../JGraphicInfo.h"
 #include"../../JGraphicOption.h" 
 #include"../../Device/Dx/JDx12GraphicDevice.h"   
+#include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
 #include"../../Culling/JCullingInfo.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../FrameResource/Dx/JDx12FrameResource.h"      
 #include"../../Utility/Dx/JDx12Utility.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"  
+#include"../../../Object/Component/Camera/JCamera.h"
 
 namespace JinEngine::Graphic
 {
@@ -42,11 +44,13 @@ namespace JinEngine::Graphic
 	}
 	namespace Velocity
 	{
-		static constexpr int passCBIndex = 0;
+		static constexpr int camCBIndex = 0;
+		static constexpr int passCBIndex = camCBIndex + 1;
 		static constexpr int depthMapIndex = passCBIndex + 1;
 		static constexpr int velocityMapIndex = depthMapIndex + 1;
 		static constexpr int rootSlotCount = velocityMapIndex + 1;
 
+		static constexpr int cb32BitCount = 16;
 		static JVector3<uint> GetThreadDim()
 		{
 			return JVector3<uint>(16, 16, 1);
@@ -59,23 +63,37 @@ namespace JinEngine::Graphic
 		return ((set.preInfo.resource.border[(uint)type] != set.newInfo.resource.border[(uint)type]) | ...);
 	}
  
-	JDx12SceneVelocity::~JDx12SceneVelocity()
+	JDx12SceneVelocity::ResourceDataSet::ResourceDataSet(JDx12CommandContext* context, const JDrawHelper& helper)
 	{
+		auto gInterface = helper.GetResourceInterface();
+		auto cInterface = helper.GetCullInterface();
+ 
+		camFrameIndex = helper.GetCamFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA);
+		 
+		rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		dsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		velocitySet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
+	
+		camPreViewProj = DirectX::XMMatrixTranspose(helper.cam->GetPreViewProj().LoadXM());
+	}
+	bool JDx12SceneVelocity::ResourceDataSet::IsValid()const noexcept
+	{
+		return rtSet.IsValid() && dsSet.IsValid() && velocitySet.IsValid();
+	}
+
+	JDx12SceneVelocity::~JDx12SceneVelocity()
+	{ 
 		ClearResource();
 	}
 	void JDx12SceneVelocity::Initialize(JGraphicDevice* device, JGraphicResourceManager* gm)
-	{
-		//수정전 024-08-19
-		return;
+	{ 
 		if (!IsSameDevice(device) || !IsSameDevice(gm))
 			return;
 
 		BuildResource(device, gm);
 	}
 	void JDx12SceneVelocity::Clear()
-	{
-		//수정전 024-08-19
-		return;
+	{ 
 		ClearResource();
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12SceneVelocity::GetDeviceType()const noexcept
@@ -87,26 +105,25 @@ namespace JinEngine::Graphic
 		if (!IsSameDevice(set) || !helper.allowTemporalProcess)
 			return;
 
-		/*
-				const JDx12GraphicVelocityComputeSet* dx12Set = static_cast<const JDx12GraphicVelocityComputeSet*>(set);
+		const JDx12GraphicVelocityComputeSet* dx12Set = static_cast<const JDx12GraphicVelocityComputeSet*>(set);
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(dx12Set->context);
 		ResourceDataSet rSet(context, helper);
 		if (!rSet.IsValid() || !rSet.velocitySet.IsValid())
 			return;
 		 
-		context->Transition(set.dsSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		context->Transition(set.velocitySet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		context->Transition(rSet.dsSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		context->Transition(rSet.velocitySet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		context->FlushResourceBarriers();
 
 		context->SetComputeRootSignature(velocityRootsignature.Get());
 		context->SetPipelineState(velocityShader.get());
 
-		context->SetComputeRootConstantBufferView(Velocity::passCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA, set.camFrameIndex);
-		context->SetComputeRootDescriptorTable(Velocity::depthMapIndex, set.dsSet.GetGpuSrvHandle());
-		context->SetComputeRootDescriptorTable(Velocity::velocityMapIndex, set.velocitySet.GetGpuUavHandle());
-
-		context->Dispatch2D(set.rtSet.info->GetResourceSize(), velocityShader->dispatchInfo.threadDim.XY());
-		*/
+		context->SetComputeRootConstantBufferView(Velocity::camCBIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA, rSet.camFrameIndex);
+		context->SetComputeRoot32BitConstants(Velocity::passCBIndex, 0, rSet.camPreViewProj);
+		context->SetComputeRootDescriptorTable(Velocity::depthMapIndex, rSet.dsSet.GetGpuSrvHandle());
+		context->SetComputeRootDescriptorTable(Velocity::velocityMapIndex, rSet.velocitySet.GetGpuUavHandle());
+		 
+		context->Dispatch2D(rSet.rtSet.info->GetResourceSize(), velocityShader->dispatchInfo.threadDim.XY());
 	}
 	void JDx12SceneVelocity::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM)
 	{
@@ -121,7 +138,8 @@ namespace JinEngine::Graphic
 	{
 		velocityRootsignature = nullptr;
 		JDx12RootSignatureBuilder<Velocity::rootSlotCount> builder;
-		builder.PushConstantsBuffer(Velocity::passCBIndex);
+		builder.PushConstantsBuffer(Velocity::camCBIndex);
+		builder.PushConstants(Velocity::cb32BitCount, Velocity::passCBIndex);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 		builder.Create(device, L"Velocity RootSignature", velocityRootsignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);

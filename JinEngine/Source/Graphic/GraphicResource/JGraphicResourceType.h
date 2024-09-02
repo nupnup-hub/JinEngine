@@ -47,7 +47,7 @@ namespace JinEngine
 					switch (rType)
 					{
 					case JinEngine::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
-						return true;
+						return true; 
 					default:
 						return false;
 					}

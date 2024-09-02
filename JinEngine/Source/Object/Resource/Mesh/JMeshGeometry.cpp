@@ -244,21 +244,18 @@ namespace JinEngine
 		JMeshGeometryImpl(const InitData& initData, JMeshGeometry* thisMeshRaw) {}
 		~JMeshGeometryImpl() {}
 	public:
-		REGISTER_METHOD(GetTotalVertexCount)
-			REGISTER_METHOD_READONLY_GUI_WIDGET(VertexCount, GetTotalVertexCount, GUI_READONLY_TEXT())
-			uint GetTotalVertexCount()const noexcept
+		REGISTER_GET_METHOD_EX(VertexCount, GetTotalVertexCount, GUI_READONLY_TEXT())
+		uint GetTotalVertexCount()const noexcept
 		{
 			return vertexCount;
 		}
-		REGISTER_METHOD(GetTotalIndexCount)
-			REGISTER_METHOD_READONLY_GUI_WIDGET(IndexCount, GetTotalIndexCount, GUI_READONLY_TEXT())
-			uint GetTotalIndexCount()const noexcept
+		REGISTER_GET_METHOD_EX(IndexCount, GetTotalIndexCount, GUI_READONLY_TEXT())
+		uint GetTotalIndexCount()const noexcept
 		{
 			return indexCount;
 		}
-		REGISTER_METHOD(GetTotalSubmeshCount)
-			REGISTER_METHOD_READONLY_GUI_WIDGET(SubMeshCount, GetTotalSubmeshCount, GUI_READONLY_TEXT())
-			uint GetTotalSubmeshCount()const noexcept
+		REGISTER_GET_METHOD_EX(SubMeshCount, GetTotalSubmeshCount, GUI_READONLY_TEXT())
+		uint GetTotalSubmeshCount()const noexcept
 		{
 			return (uint)submeshes.size();
 		}
@@ -282,8 +279,7 @@ namespace JinEngine
 		{
 			return submeshes.size() > index ? submeshes[index].GetName() : L"InValidAccess";
 		}
-		REGISTER_METHOD(GetSubMeshMaterialVec)
-		REGISTER_METHOD_READONLY_GUI_WIDGET(SubMeshMaterial, GetSubMeshMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true, false))
+		REGISTER_GET_METHOD_EX(SubMeshMaterial, GetSubMeshMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true, false))
 		std::vector<JUserPtr<JMaterial>> GetSubMeshMaterialVec()const noexcept
 		{
 			const uint count = (uint)submeshes.size();

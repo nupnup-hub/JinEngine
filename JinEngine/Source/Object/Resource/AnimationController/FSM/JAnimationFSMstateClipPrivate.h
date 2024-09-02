@@ -49,7 +49,7 @@ namespace JinEngine
 		protected:
 			void Clear(Core::JIdentifier* ptr, const bool isForced)final;
 		};
-		class AnimationInterface final : public JAnimationFSMstatePrivate::AnimationInterface
+		class AnimationUpdateInterface final : public JAnimationFSMstatePrivate::AnimationUpdateInterface
 		{
 		private:
 			void Initialize(const JUserPtr<Core::JFSMstate>& state)noexcept final;

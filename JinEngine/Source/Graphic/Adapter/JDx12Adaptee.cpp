@@ -201,17 +201,21 @@ namespace JinEngine::Graphic
 		}
 		static JDx12CommandContext* Get()
 		{
-			auto ptr = CashData()();
+			JDx12CommandContext* ptr = CashData()();
 			return ptr->CanUse() ? ptr : nullptr;
 		}
 		static JDx12CommandContext* Get(const J_MAIN_THREAD_ORDER order)
 		{
-			auto ptr = CashData()(order);
+			JDx12CommandContext* ptr = CashData()(order);
 			return ptr->CanUse() ? ptr : nullptr;
 		}
 		static JDx12CommandContext* Get(const J_THREAD_TASK_TYPE threadTask, const uint threadIndex)
 		{
-			auto ptr = CashData()(threadTask, threadIndex); 
+			JDx12CommandContext* ptr = CashData()(threadTask, threadIndex);
+			if (ptr == nullptr)
+				OutputDebugStringA(("JDx12CommandContext nullptr: " + std::to_string(threadIndex) + "\n").c_str()); 
+			else if (!ptr->CanUse())
+				OutputDebugStringA(("JDx12CommandContext !CanUse: " + std::to_string(threadIndex) + "\n").c_str()); 
 			return ptr->CanUse() ? ptr : nullptr;
 		}
 		static void Claer()
@@ -279,7 +283,7 @@ namespace JinEngine::Graphic
 		set.ssao = std::make_unique<JDx12Ssao>();
 		set.tm = std::make_unique<JDx12ToneMapping>();
 		set.bloom = std::make_unique<JDx12Bloom>();
-		set.aa = std::make_unique<JDx12Antialise>();
+		set.aa = std::make_unique<JDx12Antialise>(shareData.pushGraphicEventPtr);
 		set.histogram = std::make_unique<JDx12PostProcessHistogram>();
 		set.exposure = std::make_unique<JDx12PostProcessExposure>();
 		set.convertColor = std::make_unique<JDx12ConvertColor>();
@@ -344,12 +348,13 @@ namespace JinEngine::Graphic
 		dataSet.debugCompute = std::make_unique<JDx12GraphicDebugRsComputeSet>(context);
 		dataSet.outline = std::make_unique<JDx12GraphicOutlineDrawSet>(context);
 		dataSet.ssao = std::make_unique<JDx12GraphicSsaoComputeSet>(context, dx12Share);
-		dataSet.postPrcess = std::make_unique<JDx12PostProcessComputeSet>(drawRefSet.postSet, context, dx12Gm, dx12Share);
+		dataSet.postPrcess = std::make_unique<JDx12PostProcessComputeSet>(drawRefSet.postSet, context, dx12Device, dx12Gm, dx12Share);
 		dataSet.litCulling = std::make_unique<JDx12GraphicLightCullingTaskSet>(context);
 		dataSet.litCullingDebug = std::make_unique<JDx12GraphicLightCullingDebugDrawSet>(context);
 		dataSet.rtao = std::make_unique<JDx12GraphicRtAoComputeSet>(context);
 		dataSet.rtgi = std::make_unique<JDx12GraphicRtGiComputeSet>(context, dx12Device, dx12Share);
 		dataSet.rtDenoiser = std::make_unique<JDx12GraphicRtDenoiseComputeSet>(context, dx12Device, dx12Gm, dx12Share);
+		dataSet.velocity = std::make_unique<JDx12GraphicVelocityComputeSet>(context, dx12Device);
 		return true;
 	}
 	bool JDx12Adaptee::EndDrawSceneSingeThread(const JGraphicDrawReferenceSet& drawRefSet)
@@ -375,8 +380,7 @@ namespace JinEngine::Graphic
 	{
 		if (!IsValid(drawRefSet))
 			return false;
-
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
+		 
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 
@@ -434,11 +438,12 @@ namespace JinEngine::Graphic
 		dataSet.debugCompute = std::make_unique<JDx12GraphicDebugRsComputeSet>(context);
 		dataSet.outline = std::make_unique<JDx12GraphicOutlineDrawSet>(context);
 		dataSet.ssao = std::make_unique<JDx12GraphicSsaoComputeSet>(context, dx12Share);
-		dataSet.postPrcess = std::make_unique<JDx12PostProcessComputeSet>(drawRefSet.postSet, context, dx12Gm, dx12Share);
+		dataSet.postPrcess = std::make_unique<JDx12PostProcessComputeSet>(drawRefSet.postSet, context, dx12Device, dx12Gm, dx12Share);
 		dataSet.litCullingDebug = std::make_unique<JDx12GraphicLightCullingDebugDrawSet>(context);
 		dataSet.rtao = std::make_unique<JDx12GraphicRtAoComputeSet>(context);
 		dataSet.rtgi = std::make_unique<JDx12GraphicRtGiComputeSet>(context, dx12Device, dx12Share);
 		dataSet.rtDenoiser = std::make_unique<JDx12GraphicRtDenoiseComputeSet>(context, dx12Device, dx12Gm, dx12Share);
+		dataSet.velocity = std::make_unique<JDx12GraphicVelocityComputeSet>(context, dx12Device);
 		return true;
 	}
 	bool JDx12Adaptee::ExecuteMidFrame(const JGraphicDrawReferenceSet& drawRefSet)
@@ -636,7 +641,7 @@ namespace JinEngine::Graphic
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ID3D12CommandQueue* commandQueue = dx12Device->GetCommandQueue();
-
+		 
 		WaitForMultipleObjects(drawRefSet.info.frame.threadCount, dx12Frame->GetHandle(J_THREAD_TASK_TYPE::OCC), true, INFINITE);
 		commandQueue->ExecuteCommandLists(drawRefSet.info.frame.threadCount, dx12Frame->GetBatchCmd(J_THREAD_TASK_TYPE::OCC));
 		return true;
@@ -660,7 +665,7 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-	JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
+		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ID3D12CommandQueue* commandQueue = dx12Device->GetCommandQueue();
 
 		WaitForMultipleObjects(drawRefSet.info.frame.threadCount, dx12Frame->GetHandle(J_THREAD_TASK_TYPE::SCENE), true, INFINITE);

@@ -42,7 +42,7 @@ namespace JinEngine
 		using SearchEqualScenePtr = bool(*)(const JUserPtr< JScene>&, const size_t);
 	}
 
-	class JSceneManager::JSceneManagerImpl : public JResourceObjectUserInterface
+	class JSceneManager::JSceneManagerImpl  
 	{
 	public:
 		size_t implGuid = Core::MakeGuid();
@@ -53,11 +53,11 @@ namespace JinEngine
 	public:
 		JSceneManagerImpl()
 		{
-			AddEventListener(*JResourceObject::EvInterface(), implGuid, J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+			//AddEventListener(*JResourceObject::EvInterface(), implGuid, J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
 		~JSceneManagerImpl()
 		{
-			RemoveListener(*JResourceObject::EvInterface(), implGuid);
+			//RemoveListener(*JResourceObject::EvInterface(), implGuid);
 		}
 	public:
 		uint GetActivatedSceneCount()const noexcept
@@ -85,9 +85,7 @@ namespace JinEngine
 				return false;
 
 			if (!IsRegistered(scene->GetGuid()))
-			{
-				//has dependency
-				//order 1. AddDrawList, 2. activate 
+			{  
 				JGraphicSceneRegisterDesc desc;
 				GMI()->RegisterScene(scene->ModuleManagedData(), desc);
 				activatedScene.push_back(scene);
@@ -115,14 +113,15 @@ namespace JinEngine
 			return scene->ModuleManagedData()->GetFrameUpdateUserInterface()->TryRegisterDirtyListener(object);
 		}
 	public:
+		/*
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == implGuid)
 				return;
 
-			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE && jRobj->GetResourceType() == J_RESOURCE_TYPE::SCENE)
-				DeRegisterScene(Core::GetUserPtr<JScene>(jRobj));
-		}
+			//if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE && jRobj->GetResourceType() == J_RESOURCE_TYPE::SCENE)
+			//	DeRegisterScene(Core::GetUserPtr<JScene>(jRobj));
+		}*/
 	};
 
 	uint JSceneManager::GetActivatedSceneCount()const noexcept

@@ -384,6 +384,10 @@ namespace JinEngine
 		static constexpr uint GetDigitCount()noexcept
 		{
 			return 2;
+		} 
+		static constexpr uint GetElementSize()noexcept
+		{
+			return sizeof(T);
 		}
 		T GetMaxElemet()const noexcept
 		{
@@ -740,6 +744,10 @@ namespace JinEngine
 		static constexpr uint GetDigitCount()noexcept
 		{
 			return 3;
+		}
+		static constexpr uint GetElementSize()noexcept
+		{
+			return sizeof(T);
 		}
 		T GetMaxElemet()const noexcept
 		{
@@ -1128,6 +1136,10 @@ namespace JinEngine
 		static constexpr uint GetDigitCount()noexcept
 		{
 			return 4;
+		}
+		static constexpr uint GetElementSize()noexcept
+		{
+			return sizeof(T);
 		}
 		T GetMaxElemet()const noexcept
 		{

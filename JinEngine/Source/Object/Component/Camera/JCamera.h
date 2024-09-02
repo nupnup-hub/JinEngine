@@ -63,13 +63,12 @@ namespace JinEngine
 			return J_COMPONENT_TYPE::ENGINE_CAMERA;
 		} 	  
 		JUserPtr<JTransform> GetTransform()noexcept;
-		DirectX::XMMATRIX GetView()const noexcept;
-		JMatrix4x4 GetView4x4()const noexcept;
+		JMatrix4x4 GetView()const noexcept; 
 		DirectX::XMMATRIX GetInvView()const noexcept;  
-		DirectX::XMMATRIX GetProj()const noexcept;  
-		JMatrix4x4 GetProj4x4()const noexcept; 
+		JMatrix4x4 GetProj()const noexcept; 
+		JMatrix4x4 GetPreView()const noexcept;
 		DirectX::XMMATRIX GetPreInvView()const noexcept;
-		DirectX::XMMATRIX GetPreViewProj()const noexcept;
+		JMatrix4x4 GetPreViewProj()const noexcept;
 		void GetUvToView(JVector2F& a, JVector2F& b)const noexcept;
 		void GetPreUvToView(JVector2F& a, JVector2F& b)const noexcept;
 		/*

@@ -113,7 +113,8 @@ namespace JinEngine
 		static uint8 CallFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format);
 		static bool CallIsValidFormat(const J_RESOURCE_TYPE type, const std::wstring& format);
 	public:
-		static J_RESOURCE_TYPE ConvertCompType(const Core::JTypeInfo& info);
+		static J_RESOURCE_TYPE ConvertResourceType(const Core::JTypeInfo& info);
+		static J_RESOURCE_TYPE ConvertResourceType(const size_t typeGuid);
 	};
 	 
 }

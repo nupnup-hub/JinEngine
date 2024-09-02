@@ -26,13 +26,14 @@ SOFTWARE.
 #include"JBehavior.h"  
 #include"JBehaviorPrivate.h"
 #include"../JComponentHint.h"
+#include"../JComponentPrivate.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../GameObject/JGameObject.h"  
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h" 
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
  
-#include"../JComponentPrivate.h"
 namespace JinEngine
 { 
 	namespace Private
@@ -48,7 +49,7 @@ namespace JinEngine
 	public:
 		JWeakPtr<JBehavior> thisPointer;
 	public:
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
 	public:
 		JBehaviorImpl(const InitData& initData, JBehavior* thisBehaviorRaw)
 		{}
@@ -141,7 +142,7 @@ namespace JinEngine
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JComponent::DoActivate();
 
 		impl->Activate();
@@ -155,7 +156,7 @@ namespace JinEngine
 		impl->DeActivate();
 
 		JComponent::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA()
 	}
 	void JBehavior::NotifyActivate(){}
 	void JBehavior::NotifyDeActivate(){}

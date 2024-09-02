@@ -206,15 +206,17 @@ namespace JinEngine
 				auto listenerData = listenerDic.find(iden);
 				if (listenerData == listenerDic.end())
 				{
-					listenerDic.emplace(iden, std::make_unique<ListenerInfo>(ptr, listener, iden));
-					listenerData = listenerDic.find(iden);
+					//listenerDic.emplace(iden, std::make_unique<ListenerInfo>(ptr, listener, iden));
+					//listenerData = listenerDic.find(iden);
+					listenerData = listenerDic.emplace(iden, std::make_unique<ListenerInfo>(ptr, listener, iden)).first;
 				}
 
 				auto vec = eventDic.find(eventType);
 				if (vec == eventDic.end())
 				{
-					eventDic.emplace(eventType, std::vector<ListenerInfo*>());
-					vec = eventDic.find(eventType);
+					//eventDic.emplace(eventType, std::vector<ListenerInfo*>());
+					//vec = eventDic.find(eventType);
+					vec = eventDic.emplace(eventType, std::vector<ListenerInfo*>()).first;
 				}
 				else
 				{

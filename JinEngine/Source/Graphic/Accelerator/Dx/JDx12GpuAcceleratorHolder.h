@@ -71,15 +71,17 @@ namespace JinEngine
          
         //instance per component(rItem, light) submesh
         //one component can allocate multiple instance
-        class JInstanceCache 
+        class JComponentInstanceCache 
         {
         public:
             JUserPtr<JComponent> comp;
         public: 
+            //per component count
             uint index = 0;
+            //per submesh count
             uint descStIndex = 0;   
         public:
-            JInstanceCache(const JUserPtr<JComponent>& comp, const uint index, const uint descStIndex);
+            JComponentInstanceCache(const JUserPtr<JComponent>& comp, const uint index, const uint descStIndex);
         };
 
         /*
@@ -100,17 +102,17 @@ namespace JinEngine
             JDx12GraphicBufferT<D3D12_RAYTRACING_INSTANCE_DESC> instanceData;
         private:
             //for fast rebuild
-            std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instanceDescVec;        
-            std::vector<std::unique_ptr<JInstanceCache>> instanceCacheVec;
-            std::unordered_map<size_t, JInstanceCache*> instanceCacheMap;       //key = component guid
+            std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instanceDescCacheVec;        
+            std::vector<std::unique_ptr<JComponentInstanceCache>> compCacheVec;
+            std::unordered_map<size_t, JComponentInstanceCache*> compCacheMap;       //key = component guid
         public:
             JDx12GpuAcceleratorHolder(std::unique_ptr<JTlasHolder>&& tlas,
                 std::vector<std::unique_ptr<JBlasHolder>>&& blasVec,
                 std::unordered_map<size_t, JBlasHolder*>&& blasMap,
                 JDx12GraphicBufferT<D3D12_RAYTRACING_INSTANCE_DESC>&& instanceData,
-                std::vector<D3D12_RAYTRACING_INSTANCE_DESC>&& instanceDescVec,
-                std::vector<std::unique_ptr<JInstanceCache>>&& instanceCacheVec,
-                std::unordered_map<size_t, JInstanceCache*>&& instanceCacheMap);
+                std::vector<D3D12_RAYTRACING_INSTANCE_DESC>&& instanceDescCacheVec,
+                std::vector<std::unique_ptr<JComponentInstanceCache>>&& compCacheVec,
+                std::unordered_map<size_t, JComponentInstanceCache*>&& compCacheMap);
             ~JDx12GpuAcceleratorHolder();
         public:
             void Clear()noexcept final;

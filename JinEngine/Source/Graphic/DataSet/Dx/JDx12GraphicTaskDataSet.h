@@ -156,15 +156,7 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
-
-		struct JDx12GraphicAAComputeSet : public JGraphicAAComputeSet
-		{ 
-		public:
-			JDx12GraphicAAComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData);
-		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
-		};
-
+		 
 		struct JDx12GraphicConvertColorComputeSet : public JGraphicConvertColorComputeSet
 		{
 		public:
@@ -179,7 +171,7 @@ namespace JinEngine
 		struct JDx12PostProcessComputeSet : public JPostProcessComputeSet
 		{ 
 		public:
-			JDx12PostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData);
+			JDx12PostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicDevice* device, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 

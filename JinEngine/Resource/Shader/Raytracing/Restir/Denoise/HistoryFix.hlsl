@@ -35,8 +35,8 @@ SOFTWARE.
 #define DIMY 16
 #endif 
    
-#define BLUR_RADIUS 3
-#define TAB_DISTANCE 9
+#define BLUR_RADIUS 2
+#define TAB_DISTANCE 4
 
 Texture2D srcColorHistory : register(t0);
 Texture2D scrFastColorHistory : register(t1);
@@ -58,7 +58,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float2 centerUv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
     uint currHistoryLength = historyLength[pixelCoord];
  
-    if (currHistoryLength < FIXED_FRAME_COUNT) // not enough temporal history available
+    if (currHistoryLength <= FIXED_FRAME_COUNT) // not enough temporal history available
     {
         float4 centerHistory = srcColorHistory.SampleLevel(samLinearClmap, centerUv, 0);
         float3 centerNormal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, centerUv, 0));
@@ -75,20 +75,19 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
         float3 colorSum = float3(0, 0, 0);
         //float momentSum = 0;
         float weightSum = 0.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
- 
-        float distanceRate = (FIXED_FRAME_COUNT - currHistoryLength) * (1.0f / float(FIXED_FRAME_COUNT));
+        
         [unroll]
-        for (int i = -BLUR_RADIUS; i <= BLUR_RADIUS; ++i)
+        for (int y = -BLUR_RADIUS; y <= BLUR_RADIUS; ++y)
         {
             [unroll]
-            for (int j = -BLUR_RADIUS; j <= BLUR_RADIUS; ++j)
+            for (int x = -BLUR_RADIUS; x <= BLUR_RADIUS; ++x)
             {
                 //if(i == 0 && j == 0)
                 //    continue;
                 
                 //Per pixel kernel rotation
                 //Input signal is already noisy  
-                int2 offset = int2(i, j) * TAB_DISTANCE * distanceRate;
+                int2 offset = int2(x, y) * TAB_DISTANCE;
                 float2 uv = centerUv + offset * cb.invRtSize;
                 //uv = max(uv, float2(0, 0));
         

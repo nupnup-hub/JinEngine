@@ -27,13 +27,17 @@ SOFTWARE.
 
 namespace JinEngine
 {
-	JGraphicModuleManagedDataFrame::JGraphicModuleManagedDataFrame(const JUserPtr<JObject>& object)
-		:object(object)
+	JGraphicModuleManagedDataCreationDesc::JGraphicModuleManagedDataCreationDesc(const JWeakPtr<JObject>& object, NotifyReAllocPtr notifyReAllocPtr)
+		:object(object), notifyReAllocPtr(notifyReAllocPtr)
+	{}
+
+	JGraphicModuleManagedDataFrame::JGraphicModuleManagedDataFrame(const JGraphicModuleManagedDataCreationDesc& desc)
+		:object(desc.object), notifyReAllocPtr(desc.notifyReAllocPtr)
 	{}
 	JWeakPtr<JObject> JGraphicModuleManagedDataFrame::Object()const noexcept
 	{
 		return object;
-	}
+	} 
 	bool JGraphicModuleManagedDataFrame::CanAccessCsmHandle()const noexcept
 	{
 		return GetCsmHandleUserInterface() != nullptr;
@@ -57,5 +61,9 @@ namespace JinEngine
 	bool JGraphicModuleManagedDataFrame::CanAccessGraphicResource()const noexcept
 	{
 		return GetGraphicResourceUserInterface() != nullptr;
+	}
+	void JGraphicModuleManagedDataFrame::NotifyReAlloc(const Core::JFastPtr<JGraphicModuleManagedDataFrame>& newData)
+	{
+		(*newData->notifyReAllocPtr)(newData, newData->object.Get());
 	}
 }

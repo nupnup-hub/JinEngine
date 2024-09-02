@@ -38,7 +38,7 @@ namespace JinEngine::Graphic
 		: index(index), buffer(std::move(buffer))
 	{}
 	 
-	JInstanceCache::JInstanceCache(const JUserPtr<JComponent>& comp, const uint index, const uint descStIndex)
+	JComponentInstanceCache::JComponentInstanceCache(const JUserPtr<JComponent>& comp, const uint index, const uint descStIndex)
 		: comp(comp), index(index), descStIndex(descStIndex)
 	{
 
@@ -48,16 +48,16 @@ namespace JinEngine::Graphic
 		std::vector<std::unique_ptr<JBlasHolder>>&& blasVec,
 		std::unordered_map<size_t, JBlasHolder*>&& blasMap,
 		JDx12GraphicBufferT<D3D12_RAYTRACING_INSTANCE_DESC>&& instanceData,
-		std::vector<D3D12_RAYTRACING_INSTANCE_DESC>&& instanceDescVec,
-		std::vector<std::unique_ptr<JInstanceCache>>&& instanceCacheVec,
-		std::unordered_map<size_t, JInstanceCache*>&& instanceCacheMap)
+		std::vector<D3D12_RAYTRACING_INSTANCE_DESC>&& instanceDescCacheVec,
+		std::vector<std::unique_ptr<JComponentInstanceCache>>&& compCacheVec,
+		std::unordered_map<size_t, JComponentInstanceCache*>&& compCacheMap)
 		: tlas(std::move(tlas)), 
 		blasVec(std::move(blasVec)),
 		blasMap(std::move(blasMap)), 
 		instanceData(std::move(instanceData)),
-		instanceDescVec(std::move(instanceDescVec)),
-		instanceCacheVec(std::move(instanceCacheVec)),
-		instanceCacheMap(std::move(instanceCacheMap))
+		instanceDescCacheVec(std::move(instanceDescCacheVec)),
+		compCacheVec(std::move(compCacheVec)),
+		compCacheMap(std::move(compCacheMap))
 	{}
 	JDx12GpuAcceleratorHolder::~JDx12GpuAcceleratorHolder()
 	{
@@ -70,9 +70,9 @@ namespace JinEngine::Graphic
 	void JDx12GpuAcceleratorHolder::ClearResource()noexcept
 	{
 		instanceData.Clear();
-		instanceDescVec.clear();
-		instanceCacheVec.clear();
-		instanceCacheMap.clear();
+		instanceDescCacheVec.clear();
+		compCacheVec.clear();
+		compCacheMap.clear();
 		blasMap.clear();
 		blasVec.clear();
 		tlas = nullptr;

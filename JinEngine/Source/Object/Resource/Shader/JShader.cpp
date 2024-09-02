@@ -32,6 +32,7 @@ SOFTWARE.
 #include"../../JObjectFileIOHelper.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h" 
 #include"../../../Core/Platform/JHardwareInfo.h" 
@@ -100,7 +101,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JShaderImpl)
 	public:
 		JWeakPtr<JShader> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		//graphic forward
 		JOwnerPtr<JShaderDataHolder> gFShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
@@ -210,7 +211,7 @@ namespace JinEngine
 					gFShaderData[i][j] = GMI()->CreateGraphicShader(initHelper);
 				}
 			}
-			if (!GMI()->IsActivatedDeferredRendering())
+			if (!GMI()->IsActivated(J_GRAPHIC_OPTIONAL_FEATURE::DEFERRED_RENDERING))
 				return;
 
 			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
@@ -321,7 +322,7 @@ namespace JinEngine
 	public:
 		void Initialize()
 		{
-			graphicData = GraphicModuleInterface()->Allocate(thisPointer);
+			IMPL_ALLOC_GRAPHIC_MODULE_DATA(); 
 			if (IsComputeShader())
 				SetComputeShaderFunctionFlag((J_COMPUTE_SHADER_FUNCTION)cFunctionFlag);
 			else
@@ -459,7 +460,9 @@ namespace JinEngine
 	void JShader::DoActivate()noexcept
 	{
 		if (impl->graphicData == nullptr)
-			impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		{
+			INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
+		}
 		JResourceObject::DoActivate();
 		impl->CompileShdaer();
 		SetValid(true);
@@ -469,7 +472,7 @@ namespace JinEngine
 		impl->ClearShaderData();
 		SetValid(false);
 		JResourceObject::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JShader::JShader(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JShaderImpl>(initData, this))

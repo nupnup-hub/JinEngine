@@ -25,6 +25,7 @@ SOFTWARE.
 
 #pragma once
 #include"../../Core/Reflection/JReflection.h"
+#include"../JObjectType.h"
 
 namespace JinEngine
 {  
@@ -139,8 +140,27 @@ namespace JinEngine
 		JGraphicRequestCreationDesc(const J_GRAPHIC_REQUEST_TYPE type,
 			const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY frequency = J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 			:type(type), frequency(frequency)
-		{
-
-		}
+		{}
 	};
+
+	enum class J_GRAPHIC_OPTIONAL_FEATURE
+	{
+		DEFERRED_RENDERING = 0,
+		RAYTRACING,
+		RAYTRACING_GI,
+		POST_PROCESSING,
+		GPU_ACCELERATOR, 
+		COUNT,
+	};
+
+	class JObject;
+	using NotifyGraphicFeatureChangedPtr = Core::JSFunctorType<void, JObject*, const bool>::Ptr;
+	struct JGraphicOptionalFeatureObserverDesc
+	{
+	public:
+		UniqueIndex uniqueIndex;
+		J_GRAPHIC_OPTIONAL_FEATURE type;
+		NotifyGraphicFeatureChangedPtr ptr;
+	};
+
 }

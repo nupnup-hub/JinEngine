@@ -431,6 +431,7 @@ namespace JinEngine
 					b = bucketCount - 1;
 				return b <= minCostSplitBucket;
 			});
+
 			int mid = (int)(pmid - &objectList[0]);
 			if (mid == end)
 				mid = (start + end) / 2;

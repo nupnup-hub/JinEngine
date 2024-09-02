@@ -119,7 +119,7 @@ namespace JinEngine
 				ImplTypeInfo(Core::JTypeInfo& implType, const ConvertImplBasePtr convertPtr); 
 			};
 		private: 
-			using CallOnecePtr = void(*)();
+			using CallOncePtr = void(*)();
 		public:
 			//함수가 존재해도
 			//basic template 인수가 specialize template인수와 다르면 특수화 되지않음
@@ -144,7 +144,7 @@ namespace JinEngine
 			struct IsLazyDestructionUser<T, std::void_t<decltype(&T::InitLazyDestructionInfo)>> : std::true_type
 			{};
 			template<typename Type>
-			class CallOnece
+			class CallOnce
 			{
 			public:
 				static void Execute()
@@ -198,7 +198,7 @@ namespace JinEngine
 			std::unique_ptr<JTypeInstanceData> instanceData;
 			std::unique_ptr<JTypeMemberData> memberData; 
 		private:
-			CallOnecePtr callOncePtr = nullptr;
+			CallOncePtr callOncePtr = nullptr;
 		private:
 			std::unique_ptr<ExtraFunctionInitInfo> extraInitInfo;		//CallOnce 이후 nullptr
 		private:
@@ -339,7 +339,7 @@ namespace JinEngine
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
 			bool AddMethodInfo(JMethodInfo* newMethod); 
 		private:
-			void ExecuteTypeCallOnece();
+			void ExecuteTypeCallOnce();
 		private:
 			//if allocation option is nullptr
 			//set default allocation option
@@ -368,15 +368,15 @@ namespace JinEngine
 				  
 				JReflectionInfoPrivate::TypeInterface::AddType(this);
 				extraInitInfo = std::make_unique<ExtraFunctionInitInfo>();
-				if constexpr (CallOnece<Type>::IsDefinedInitAllocatorInfo())
+				if constexpr (CallOnce<Type>::IsDefinedInitAllocatorInfo())
 				{
 					extraInitInfo->canUseAlloc = true;
 					extraInitInfo->allocInitInfo = std::make_unique<AllocationInitInfo>();
 				}
-				if constexpr (CallOnece<Type>::IsDefinedInitLazyDestructionInfo())
+				if constexpr (CallOnce<Type>::IsDefinedInitLazyDestructionInfo())
 					extraInitInfo->canUseLazy = true;
 
-				callOncePtr = &CallOnece<Type>::Execute;
+				callOncePtr = &CallOnce<Type>::Execute;
 				if (parent != nullptr)
 					parent->isLeafType = false;
 			}

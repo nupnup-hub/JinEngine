@@ -48,23 +48,25 @@ namespace JinEngine
 			uint GetReservedSpaceCount(const J_THREAD_USE_CASE_TYPE type);
 		public:
 			void ExtendCommonThreadCapacity(const uint count);
-			void ReduceCommonThreadCapacity(const uint count);
+			void ReduceCommonThreadCapacity(const uint count); 
+		public:
+			void WaitUntilThreadEnd(const JThreadUserHandle& userHandle);
 		public:
 			template<typename Pointer, typename ...Param>
-			size_t CreateThread(const JThreadInitInfo& initInfo, Pointer pointer, Param&&... param)
+			JThreadUserHandle CreateThread(const JThreadInitInfo& initInfo, Pointer pointer, Param&&... param)
 			{
 				auto bind = UniqueBind(std::make_unique<JFunctor<void, Param...>>(pointer), std::forward<Param>(param)...);
 				return DoCreateThread(initInfo, J_THREAD_USE_CASE_TYPE::COMMON, std::move(bind));
 			}
 			template<typename Pointer, typename Object, typename ...Param>
-			size_t CreateThread(const JThreadInitInfo& initInfo, Pointer pointer, Object* obj, Param&&... param)
+			JThreadUserHandle CreateThread(const JThreadInitInfo& initInfo, Pointer pointer, Object* obj, Param&&... param)
 			{
 				auto bind = UniqueBind(std::make_unique<JFunctor<void, Param...>>(pointer, obj), std::forward<Param>(param)...);
 				return DoCreateThread(initInfo, J_THREAD_USE_CASE_TYPE::COMMON, std::move(bind));
 			}
-			size_t CreateThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
+			JThreadUserHandle CreateThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
 		private:
-			size_t DoCreateThread(const JThreadInitInfo& initInfo, const J_THREAD_USE_CASE_TYPE useCase, std::unique_ptr<JBindHandleBase>&& bind);
+			JThreadUserHandle DoCreateThread(const JThreadInitInfo& initInfo, const J_THREAD_USE_CASE_TYPE useCase, std::unique_ptr<JBindHandleBase>&& bind);
 		private:
 			JThreadManager();
 			~JThreadManager();

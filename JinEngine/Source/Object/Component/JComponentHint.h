@@ -104,6 +104,7 @@ namespace JinEngine
 			std::unique_ptr<Core::JDITypeDataBase>&& parentInitData = nullptr);
 	public:
 		static J_COMPONENT_TYPE ConvertCompType(const Core::JTypeInfo& info);
+		static J_COMPONENT_TYPE ConvertCompType(const size_t typeGuid);
 	public:
 		static bool NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept; 
 	};

@@ -24,6 +24,7 @@ SOFTWARE.
  
 #pragma once  
 #include"../../../Core/Reflection/JReflection.h"
+
 namespace JinEngine
 {
 	//HZB_OCC_OBJECT count is same as BOUNDING_OBJECT

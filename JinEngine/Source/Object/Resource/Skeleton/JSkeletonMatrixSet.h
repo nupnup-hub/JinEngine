@@ -33,11 +33,13 @@ namespace JinEngine
     public:
         JMatrix4x4 boneTransforms[JSkeletonFixedData::maxJointCount];
     public:
-        void StuffIdentity()noexcept
+        JSkeletonMatrixSet()
         {
-            const JMatrix4x4 iden = JMatrix4x4::Identity();
-            for (uint i = 0; i < JSkeletonFixedData::maxJointCount; ++i)
-                boneTransforms[i] = iden;
+            StuffIdentity(); 
+        }
+        void StuffIdentity()noexcept
+        {    
+            std::fill(boneTransforms, &boneTransforms[JSkeletonFixedData::maxJointCount], JMatrix4x4::Identity());
         }
     };
 }

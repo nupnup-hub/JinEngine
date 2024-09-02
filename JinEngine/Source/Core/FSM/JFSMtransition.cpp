@@ -80,7 +80,7 @@ namespace JinEngine
 			{
 				conditionVec = vec;
 			}
-			REGISTER_METHOD_GUI_WIDGET(Condition, GetConditionVec, SetConditionVec, GUI_LIST(J_GUI_LIST_TYPE::DYNAMIC, true, CreateCondition))
+			REGISTER_GET_SET_METHOD_EX(Condition, GetConditionVec, SetConditionVec, GUI_LIST(J_GUI_LIST_TYPE::DYNAMIC, true, CreateCondition))
 		public:
 			bool HasSatisfiedCondition()const noexcept
 			{

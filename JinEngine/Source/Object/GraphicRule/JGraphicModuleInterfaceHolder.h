@@ -24,8 +24,7 @@ SOFTWARE.
 
 #pragma once
 #include"JGraphicModuleInterface.h"
-#include"../../Core/Singleton/JSingletonHolder.h"
-
+#include"../../Core/Singleton/JSingletonHolder.h" 
 namespace JinEngine
 {
 	namespace Rule
@@ -49,5 +48,5 @@ namespace JinEngine
 	static Rule::JGraphicModuleInterface* GMI()
 	{
 		return JGraphicModuleInterfaceHolder::Instance().Get();
-	} 
+	}  
 }

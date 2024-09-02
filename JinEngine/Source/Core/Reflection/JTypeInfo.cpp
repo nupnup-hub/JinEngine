@@ -371,7 +371,7 @@ namespace JinEngine
 			else
 				return false;
 		} 
-		void JTypeInfo::ExecuteTypeCallOnece()
+		void JTypeInfo::ExecuteTypeCallOnce()
 		{
 			for (const auto& data : option.widgetHandleVec)
 			{
@@ -397,20 +397,22 @@ namespace JinEngine
 			if (extraInitInfo->allocInitInfo == nullptr)
 				extraInitInfo->allocInitInfo = std::make_unique<AllocationInitInfo>();
 
-			if (extraInitInfo->allocInitInfo->option == nullptr)
+			auto allocInitInfo = extraInitInfo->allocInitInfo.get();
+			if (allocInitInfo->option == nullptr)
 				RegisterEngineDefaultAllocationOption();
 
-			bool useDefaultAllocation = extraInitInfo->allocInitInfo->option->allocationType == J_ALLOCATION_TYPE::DEFAULT;
+			//J_ALLOCATION_TYPE::DEFAULT = Custom x
+			//J_ALLOCATION_TYPE::VIRTUAL = Use window virtual function 
+			bool useDefaultAllocation = allocInitInfo->option->allocationType == J_ALLOCATION_TYPE::DEFAULT;
 			if (allocationInterface != nullptr || useDefaultAllocation)
 				return;
 
-			if (extraInitInfo->allocInitInfo->creator == nullptr)
-				extraInitInfo->allocInitInfo->creator = std::make_unique<JTypeAllocationCreator>();
+			if (allocInitInfo->creator == nullptr)
+				allocInitInfo->creator = std::make_unique<JTypeAllocationCreator>();		 
+			auto creator = allocInitInfo->creator.get();
 
-			//if (extraInitInfo->allocInitInfo->option->canReAlloc)
-			//	extraInitInfo->allocInitInfo->option->canReAlloc = instanceData != nullptr;
-
-			if (extraInitInfo->allocInitInfo->option->canReAlloc && extraInitInfo->allocInitInfo->option->notifyReAllocB == nullptr)
+			//Register reallocation(Extend, Free) notification function bind handle
+			if (allocInitInfo->option->canReAlloc && allocInitInfo->option->notifyReAllocB == nullptr)
 			{
 				using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;
 				using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;
@@ -430,17 +432,19 @@ namespace JinEngine
 					typeInfo->instanceData->classInstanceVec[vecIndex] = ownerPtr.Get();
 				};
 				auto reAllocF = std::make_unique<NotifyReAllocF>(notifyPtr);
-				extraInitInfo->allocInitInfo->option->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(this), empty, empty);
+				allocInitInfo->option->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(this), empty, empty);
 			}
 
-			if (extraInitInfo->allocInitInfo->option->dataCount == 0)
-				extraInitInfo->allocInitInfo->option->dataCount = JAllocationDesc::initDataCount;
-			if (extraInitInfo->allocInitInfo->option->dataSize < dataSize)
-				extraInitInfo->allocInitInfo->option->dataSize = dataSize;
+
+			//dataCount는 한번에 할당하는 Chunk계산에 사용된다.
+			if (allocInitInfo->option->dataCount == 0)
+				allocInitInfo->option->dataCount = JAllocationDesc::initDataCount;
+			if (allocInitInfo->option->dataSize < dataSize)
+				allocInitInfo->option->dataSize = dataSize;
 			 
-			extraInitInfo->allocInitInfo->option->name = Name();
-			allocationInterface = extraInitInfo->allocInitInfo->creator->CreateAlloc(extraInitInfo->allocInitInfo->option.get());
-			allocationInterface->Initialize(std::move(*extraInitInfo->allocInitInfo->option));
+			allocInitInfo->option->name = Name();
+			allocationInterface = creator->CreateAlloc(allocInitInfo->option.get());
+			allocationInterface->Initialize(std::move(*allocInitInfo->option));
 		}
 		void JTypeInfo::DeRegisterAllocation()
 		{

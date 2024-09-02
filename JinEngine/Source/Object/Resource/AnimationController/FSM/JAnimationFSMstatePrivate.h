@@ -55,7 +55,7 @@ namespace JinEngine
 		protected:
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept override;
 		};
-		class AnimationInterface : public JFSMstatePrivate::UpdateInterface
+		class AnimationUpdateInterface : public JFSMstatePrivate::UpdateInterface
 		{
 		private:
 			friend class JAnimationFSMdiagram;

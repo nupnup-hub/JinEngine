@@ -465,10 +465,7 @@ namespace JinEngine
 
 				auto result = handleResult.find(updateData.handleBase->GetName());
 				if (result == handleResult.end())
-				{
-					handleResult.emplace(updateData.handleBase->GetName(), 0);
-					result = handleResult.find(updateData.handleBase->GetName());
-				}
+					result = handleResult.emplace(updateData.handleBase->GetName(), 0).first;
 
 				const bool canUpdate = result->second < (INT64)tableUserInfo->GetUseColumnCount();
 				if (canUpdate && canDisplayWidget)
@@ -2774,9 +2771,8 @@ namespace JinEngine
 				{
 					std::unique_ptr<JGuiWidgetDisplayHandle> newHandle = MakeGuiHandle(updateData.handleBase->GetFieldHint(), updateData.GetWidgetInfo());
 					if (newHandle != nullptr)
-					{
-						userData->guiWidgetHandleMap.emplace(widgetMapKey, std::move(newHandle));
-						widgetHandle = userData->guiWidgetHandleMap.find(widgetMapKey);
+					{ 
+						widgetHandle = userData->guiWidgetHandleMap.emplace(widgetMapKey, std::move(newHandle)).first;
 						widgetHandle->second->Initialize(updateData, userData);
 					}
 				}
@@ -2799,8 +2795,8 @@ namespace JinEngine
 					{
 						std::unique_ptr<JGuiWidgetExtraHandle> extraHandle = MakeExtraGroupHandle(updateData);
 						if (extraHandle != nullptr)
-							userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle));
-						extraData = userData->guiExtraHandleMap.find(extraMapKey);
+							extraData = userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle)).first;
+						//extraData = userData->guiExtraHandleMap.find(extraMapKey);
 					}
 
 					if (extraData != userData->guiExtraHandleMap.end())
@@ -2818,8 +2814,8 @@ namespace JinEngine
 					{
 						std::unique_ptr<JGuiWidgetExtraHandle> extraHandle = MakeExtraTableHandle(updateData.GetWidgetInfo());
 						if (extraHandle != nullptr)
-							userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle));
-						extraData = userData->guiExtraHandleMap.find(extraMapKey);
+							extraData = userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle)).first;
+						//extraData = userData->guiExtraHandleMap.find(extraMapKey);
 					}
 
 					if (extraData != userData->guiExtraHandleMap.end())

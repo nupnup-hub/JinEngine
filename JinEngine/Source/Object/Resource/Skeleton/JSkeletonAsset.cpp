@@ -32,6 +32,7 @@ SOFTWARE.
 #include"../../Directory/JDirectory.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Utility/JCommonUtility.h"
@@ -52,7 +53,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSkeletonAssetImpl)
 	public:
 		JWeakPtr<JSkeletonAsset> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public: 
 		JOwnerPtr<JSkeleton> skeleton;
 		JOwnerPtr<JAvatar> avatar;
@@ -136,7 +137,7 @@ namespace JinEngine
 			for (uint i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
 			{
 				const uint8 jointIndex = avatar->jointReference[i];
-				const uint8 parentRefIndex = avatar->jointReferenceParent[i];
+				const uint8 parentRefIndex = avatar->GetJointReferenceParent(i);
 				avatar->jointBackReferenceMap[jointIndex].refIndex = i;
 				avatar->jointBackReferenceMap[jointIndex].allottedParentRefIndex = avatar->FindReferenceIndexEndToRoot(parentRefIndex, 0);
 			}
@@ -457,7 +458,7 @@ namespace JinEngine
 	} 
 	void JSkeletonAsset::DoActivate()noexcept
 	{
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JResourceObject::DoActivate();
 		impl->Activate();
 	}
@@ -465,7 +466,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JResourceObject::DoDeActivate(); 
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JSkeletonAsset::JSkeletonAsset(InitData& initData)
 		:JResourceObject(initData), impl(std::make_unique<JSkeletonAssetImpl>(initData, this))

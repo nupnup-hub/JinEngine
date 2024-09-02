@@ -26,8 +26,7 @@ SOFTWARE.
 #pragma once  
 #include"GraphicResource/JGraphicResourceType.h"
 #include"JGraphicOption.h" 
-#include"JGraphicInfo.h" 
-#include"JGraphicEvent.h" 
+#include"JGraphicInfo.h"  
 #include"../Core/Event/JEventManager.h"   
 #include"Command/JCommandContextLog.h"
 
@@ -39,13 +38,7 @@ namespace JinEngine
 	}
 	namespace Graphic
 	{
-		class JGraphicPrivate; 
-		 
-		using GraphicEventManager = Core::JEventManager<size_t, J_GRAPHIC_EVENT_TYPE, JGraphicEventStruct*>;
-		using GraphicEventInterface = GraphicEventManager::Interface;
-		using GraphicEventPtr = GraphicEventInterface::OnEventPtr;
-		using GraphicEventListener = GraphicEventInterface::Listener;
-	 
+		class JGraphicPrivate;  
 		class JGraphic
 		{
 		private:
@@ -65,12 +58,7 @@ namespace JinEngine
 			void GetLastDeviceErrorInfo(_Out_ std::wstring& errorCode, _Out_ std::wstring& errorMsg)const noexcept;
 			std::vector<JCommandContextLog> GetCpuDrawingLog()const noexcept;
 		public:
-			void SetGraphicOption(JGraphicOption newGraphicOption)noexcept;
-		public:
-			bool IsRaytracingSupported()const noexcept;
-			bool CanBuildGpuAccelerator()const noexcept;
-		public: 
-			GraphicEventInterface* EventInterface()noexcept; 
+			void SetGraphicOption(JGraphicOption newGraphicOption)noexcept;  
 		private:
 			JGraphic();
 			~JGraphic();

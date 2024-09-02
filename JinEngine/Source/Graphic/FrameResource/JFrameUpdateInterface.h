@@ -32,6 +32,12 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		enum class J_FRAME_DIRTY_FREQUENCY
+		{
+			UPDATED,
+			ALWAYS
+		};
+
 		class JFrameDirtyChain
 		{
 		private:
@@ -52,6 +58,7 @@ namespace JinEngine
 		protected:
 			virtual ~JFrameDirtyBase() = default;
 		public:
+			virtual J_FRAME_DIRTY_FREQUENCY GetDirtyFrequency()const noexcept = 0;
 			virtual int GetFrameDirty()const noexcept = 0; 
 			uint GetListenerCount()const noexcept;
 		public:
@@ -75,6 +82,7 @@ namespace JinEngine
 		class JFrameDirtyTrigger : public JFrameDirtyBase
 		{
 		public:
+			J_FRAME_DIRTY_FREQUENCY GetDirtyFrequency()const noexcept final;
 			int GetFrameDirty()const noexcept override; 
 		public:
 			void SetFrameDirty()noexcept override;
@@ -88,12 +96,29 @@ namespace JinEngine
 			void EndUpdate()noexcept override;
 		};
 
+		class JFrameAlwaysDirty : public JFrameDirtyBase
+		{
+		public:
+			J_FRAME_DIRTY_FREQUENCY GetDirtyFrequency()const noexcept final;
+			int GetFrameDirty()const noexcept override;
+		public:
+			void SetFrameDirty()noexcept override;
+		public:
+			bool IsFrameDirted()const noexcept override;
+			bool IsLastFrameUpdated()const noexcept override;
+		public:
+			void OffFrameDirty()noexcept override;
+		public:
+			void BeginUpdate()noexcept override;
+			void EndUpdate()noexcept override;
+		};
 		class JFrameDirty : public JFrameDirtyBase
 		{
 		private:
 			int frameDirty = 0;
 			bool isLastFrameUpdated = false;
 		public:
+			J_FRAME_DIRTY_FREQUENCY GetDirtyFrequency()const noexcept final;
 			int GetFrameDirty()const noexcept override; 
 		public:
 			void SetFrameDirty()noexcept override;
@@ -152,6 +177,7 @@ namespace JinEngine
 		public:
 			static constexpr bool isSupportedFrameUpload = true;
 			static constexpr bool isSupportedFrameDirty = std::is_base_of_v<JFrameDirtyBase, FrameDirty>;
+			static constexpr bool isNeedToUpdateEveryFrame = std::is_base_of_v<JFrameAlwaysDirty, FrameDirty>;
 		private:
 			static constexpr uint count = TypeSequence::count;
 		private:
@@ -173,16 +199,6 @@ namespace JinEngine
 			bool Add(const JUserPtr<JFrameUpdateInfo>& newInfo)
 			{
 				const J_FRAME_RESOURCE_UPLOAD_TYPE type = newInfo->GetType();
-				/*
-				if(type == J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT || 
-					type == J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO ||
-					type == J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW)
-				{
-					Develop::JDevelopDebug::PushLog(Core::GetName(type) + " " + std::to_string(GetTypeIndex(type)) + ": Add " + std::to_string(uint64(updateInfo[GetTypeIndex(type)].Get())) + " -> " + std::to_string(uint64(newInfo.Get())));
-					Develop::JDevelopDebug::Write();
-				}
-
-				*/
 				if (!HasSpace(type))
 					return false;
 
@@ -192,15 +208,6 @@ namespace JinEngine
 			JFrameUpdateInfo* Release(const J_FRAME_RESOURCE_UPLOAD_TYPE type)
 			{
 				int typeIndex = GetTypeIndex(type);
-				/*
-				if (type == J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT || 
-					type == J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO ||
-					type == J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW)
-				{  
-					Develop::JDevelopDebug::PushLog(Core::GetName(type) + " " + std::to_string(typeIndex) + ": Release " + std::to_string(uint64(updateInfo[typeIndex].Get())));
-					Develop::JDevelopDebug::Write();
-				} 
-				*/
 				return typeIndex != invalidIndex ? updateInfo[typeIndex].Release() : nullptr;
 			}
 		public:
@@ -239,6 +246,7 @@ namespace JinEngine
 		public:
 			static constexpr bool isSupportedFrameUpload = false;
 			static constexpr bool isSupportedFrameDirty = std::is_base_of_v<JFrameDirtyBase, FrameDirty>;
+			static constexpr bool isNeedToUpdateEveryFrame = std::is_base_of_v<JFrameAlwaysDirty, FrameDirty>;
 		private:
 			mutable FrameDirty dirty;
 		public:

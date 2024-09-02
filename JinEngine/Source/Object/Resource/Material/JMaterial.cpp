@@ -35,6 +35,7 @@ SOFTWARE.
 #include"../../JObjectFileIOHelper.h"
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
@@ -63,7 +64,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JMaterialImpl)
 	public:
 		JWeakPtr<JMaterial> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		JUserPtr<JShader> shader;
 	public:
@@ -79,19 +80,19 @@ namespace JinEngine
 	public:
 		//Texture
 		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JTexture> albedoMap;
+		JUserPtr<JTexture> albedoMap;
 		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JTexture> normalMap;
+		JUserPtr<JTexture> normalMap;
 		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JTexture> heightMap;
+		JUserPtr<JTexture> heightMap;
 		REGISTER_PROPERTY_EX(metallicMap, GetMetallicMap, SetMetallicMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JTexture>metallicMap;
+		JUserPtr<JTexture>metallicMap;
 		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JTexture>roughnessMap;
+		JUserPtr<JTexture>roughnessMap;
 		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JTexture> ambientOcclusionMap;
+		JUserPtr<JTexture> ambientOcclusionMap;
 		REGISTER_PROPERTY_EX(specularMap, GetSpecularMap, SetSpecularMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
-			JUserPtr<JTexture> specularMap;
+		JUserPtr<JTexture> specularMap;
 	public:
 		//Shader function option
 		//수정필요
@@ -1002,7 +1003,7 @@ namespace JinEngine
 	}
 	void JMaterial::DoActivate() noexcept
 	{
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JResourceObject::DoActivate();
 		impl->Activate();
 	}
@@ -1010,7 +1011,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JResourceObject::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JMaterial::JMaterial(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JMaterialImpl>(initData, this))

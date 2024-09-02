@@ -93,10 +93,8 @@ namespace JinEngine
 				//Rendering
 				bool allowMultiThread = true;
 				bool allowDrawGui = true;
-				bool allowDeferred = false;
-				bool allowRaytracing = false;
-			public:
-				bool useMSAA = false;			//deferred에서 미구현
+				bool allowDeferred = true;
+				bool allowRaytracing = false; 
 			public:
 				J_GRAPHIC_FORMAT renderTargetFormat = J_GRAPHIC_FORMAT::R8G8B8A8_UNORM;
 			public:
@@ -129,6 +127,7 @@ namespace JinEngine
 			{
 			public:
 				bool useFxaa = false;
+				bool useTaa = false;
 				bool useSsao = false;
 				bool useSsaoInterleave = true;
 				bool usePostprocess = false;
@@ -170,6 +169,7 @@ namespace JinEngine
 				bool requestRecompileToneMappingShader = false;		//for debugging
 				bool requestRecompileRtGiShader = false;			//for debugging 
 				bool requestRecompileRtDenoiseShader = false;		//for debugging 
+				bool requestRecompileTAAShader = false;		//for debugging
 				bool testTrigger00 = false;
 				bool testTrigger01 = false;
 				bool testTrigger02 = false;
@@ -184,7 +184,7 @@ namespace JinEngine
 			PostProcess postProcess;
 			Debugging debugging;
 		public:
-			J_GRAPHIC_DEVICE_TYPE deviceType = J_GRAPHIC_DEVICE_TYPE::DX12;
+			J_GRAPHIC_DEVICE_TYPE deviceType = J_GRAPHIC_DEVICE_TYPE::DX12;  
 		public:
 			uint GetClusterTotalCount()const noexcept;
 			uint GetClusterIndexCount()const noexcept;
@@ -192,6 +192,7 @@ namespace JinEngine
 			uint GetClusterYCount()const noexcept;
 			uint GetClusterZCount()const noexcept;
 			uint GetLightPerCluster()const noexcept;
+			bool* GetOptionalFeatureValuePtr(const J_GRAPHIC_OPTIONAL_FEATURE type)const noexcept; 
 		public:
 			bool IsOcclusionActivated()const noexcept;  
 			bool IsPostProcessActivated()const noexcept;

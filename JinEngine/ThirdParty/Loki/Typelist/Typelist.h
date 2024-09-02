@@ -22,6 +22,11 @@
 
 namespace JinEngine
 {
+    /*
+        Typelist의 유용한점은 여러 타입들을 구조화시켜서 쉽게 특정지점의 타입과 인덱스를 얻을 수 있어
+        template작성시 type_trait와 같은 기능 혹은 typename ...Param와 같은 가변인자를 다루기 쉽게한다. 
+    */
+
     ////////////////////////////////////////////////////////////////////////////////
     // class template Typelist
     // The building block of typelists of any length

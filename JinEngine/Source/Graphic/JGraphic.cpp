@@ -90,39 +90,13 @@ SOFTWARE.
 #include"../Core/Math/JMathHelper.h"
 
 #include"../Object/GameObject/JGameObject.h"
-#include"../Object/Component/RenderItem/JRenderItem.h"
-#include"../Object/Component/RenderItem/JRenderItemPrivate.h"
-#include"../Object/Component/Transform/JTransform.h"
-#include"../Object/Component/Camera/JCamera.h"
-#include"../Object/Component/Camera/JCameraPrivate.h"
-#include"../Object/Component/Animator/JAnimator.h"
-#include"../Object/Component/Animator/JAnimatorPrivate.h"
-#include"../Object/Component/Light/JLight.h"
-#include"../Object/Component/Light/JLightPrivate.h"
-#include"../Object/Component/Light/JDirectionalLight.h"
-#include"../Object/Component/Light/JDirectionalLightPrivate.h"
-#include"../Object/Component/Light/JPointLight.h"
-#include"../Object/Component/Light/JPointLightPrivate.h"
-#include"../Object/Component/Light/JSpotLight.h"
-#include"../Object/Component/Light/JSpotLightPrivate.h"
-#include"../Object/Component/Light/JRectLight.h"
-#include"../Object/Component/Light/JRectLightPrivate.h"
-
-#include"../Object/Resource/JResourceObjectDefualtData.h"
-#include"../Object/Resource/JResourceManager.h"
-#include"../Object/Resource/Scene/JScene.h"
-#include"../Object/Resource/Scene/JScenePrivate.h"
-#include"../Object/Resource/Mesh/JMeshGeometry.h"
-#include"../Object/Resource/Mesh/JMeshGeometryPrivate.h"
-#include"../Object/Resource/Material/JMaterial.h"
-#include"../Object/Resource/Material/JMaterialPrivate.h"
-#include"../Object/Resource/Shader/JShader.h"
-#include"../Object/Resource/Shader/JShaderPrivate.h" 
-#include"../Object/Resource/AnimationClip/JAnimationClip.h"
-#include"../Object/Resource/Scene/JSceneManager.h"
-#include"../Object/Resource/Scene/Preview/JPreviewSceneGroup.h"
-#include"../Object/Resource/Scene/Preview/JPreviewScene.h"
-#include"../Object/Resource/Texture/JTexture.h" 
+#include"../Object/Component/RenderItem/JRenderItem.h"  
+#include"../Object/Component/Camera/JCamera.h"  
+#include"../Object/Component/Light/JLight.h"  
+ 
+#include"../Object/Resource/Scene/JScene.h" 
+#include"../Object/Resource/Scene/JSceneManager.h" 
+#include"../Object/Resource/Shader/JShader.h" 
 
 #include"../Object/GraphicRule/JGraphicModuleInterface.h"
 #include"../Object/GraphicRule/JGraphicModuleInterfaceHolder.h"
@@ -134,9 +108,10 @@ SOFTWARE.
 #include"../Application/Engine/JApplicationEnginePrivate.h"
 #include"../Application/Project/JApplicationProject.h"  
 
-#ifdef DEVELOP
-#include"../Develop/Debug/JDevelopDebug.h"  
-#endif
+#include"../Core/Time/JStopWatch.h"
+//#ifdef DEVELOP
+//#include"../Develop/Debug/JDevelopDebug.h"  
+//#endif
 
 namespace JinEngine
 {
@@ -294,8 +269,7 @@ namespace JinEngine
 		}
 		 
 		namespace
-		{
-			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface;
+		{ 
 			using GraphicThreadInteface = Core::JThreadManagerPrivate::GraphicInterface;
 			using WindowEventListener = Core::JEventListener<size_t, Window::J_WINDOW_EVENT>;
 		}
@@ -350,7 +324,7 @@ namespace JinEngine
 
 
 #pragma region Impl
-		class JGraphic::JGraphicImpl : public WindowEventListener, public GraphicEventManager
+		class JGraphic::JGraphicImpl : public WindowEventListener
 		{
 		private:
 			using WorkerThreadF = Core::JMFunctorType<JGraphicImpl, void, uint>;
@@ -392,8 +366,7 @@ namespace JinEngine
 			bool canDraw = true;
 		public:
 			JGraphicImpl(const size_t guid, JGraphic* thisGraphic)
-				:GraphicEventManager([](const size_t& a, const size_t& b) {return a == b; }),
-				guid(guid), thisGraphic(thisGraphic)
+				:guid(guid), thisGraphic(thisGraphic)
 			{
 				IntializeGraphicInfo();
 				InitializeGameObjectBuffer();
@@ -402,7 +375,7 @@ namespace JinEngine
 			~JGraphicImpl()
 			{ }
 		private:
-			//CallOnece
+			//CallOnce
 			void IntializeGraphicInfo()
 			{
 				const uint occMipmapViewCapa = Constants::occlusionMipmapViewCapacity;
@@ -413,7 +386,7 @@ namespace JinEngine
 				info.resource.occlusionMapCount = JMathHelper::Log2Int(info.resource.occlusionWidth) - JMathHelper::Log2Int(Constants::minOcclusionSize) + 1;
 				info.frame.threadCount = _JThreadManager::Instance().GetReservedSpaceCount(Core::J_THREAD_USE_CASE_TYPE::ENGINE_TASK_SYNC);
 			}
-			//CallOnece
+			//CallOnce
 			void InitializeGameObjectBuffer()
 			{
 				alignedObject.common.resize(info.minCapacity);
@@ -483,9 +456,12 @@ namespace JinEngine
 			}
 			void SetOption(JGraphicOption newGraphicOption)noexcept
 			{
+#pragma region PreProcess
 				bool changedMask[(uint)JGraphicOption::TYPE::COUNT];
 				memset(&changedMask, false, sizeof(bool) * SIZE_OF_ARRAY(changedMask));
-
+				 
+#pragma endregion
+#pragma region  Restrict Value
 				newGraphicOption.culling.clusterXIndex = std::clamp(newGraphicOption.culling.clusterXIndex, (uint)0, Constants::litClusterXVariation - 1);
 				newGraphicOption.culling.clusterYIndex = std::clamp(newGraphicOption.culling.clusterYIndex, (uint)0, Constants::litClusterYVariation - 1);
 				newGraphicOption.culling.clusterZIndex = std::clamp(newGraphicOption.culling.clusterZIndex, (uint)0, Constants::litClusterZVariation - 1);
@@ -495,12 +471,34 @@ namespace JinEngine
 				newGraphicOption.culling.clusterSpotLightRangeOffset = std::clamp(newGraphicOption.culling.clusterSpotLightRangeOffset, Constants::litClusterRangeOffsetMin, Constants::litClusterRangeOffsetMax);
 				newGraphicOption.culling.clusterRectLightRangeOffset = std::clamp(newGraphicOption.culling.clusterRectLightRangeOffset, Constants::litClusterRangeOffsetMin, Constants::litClusterRangeOffsetMax);
 
+				for (uint i = 0; i < (uint)J_GRAPHIC_OPTIONAL_FEATURE::COUNT; ++i)
+				{
+					const J_GRAPHIC_OPTIONAL_FEATURE type = (J_GRAPHIC_OPTIONAL_FEATURE)i;
+					bool* ptr = newGraphicOption.GetOptionalFeatureValuePtr(type);
+					if (ptr == nullptr)
+						continue;
+
+					if(*ptr) 
+						*ptr &= device->IsSupported(type);
+				}
+
+				bool isClusterXIndexChanged = false;
+				bool isClusterYIndexChanged = false;
+				isClusterXIndexChanged = (option.culling.clusterXIndex != newGraphicOption.culling.clusterXIndex);
+				isClusterYIndexChanged = (option.culling.clusterYIndex != newGraphicOption.culling.clusterYIndex);
+
+				//x, y는 항상 2:1 resolution을 유지하기위해 각자 다른 배열에 같은 index위치에
+				//2:1 비율이 되는 값을 할당한다.
+				if (isClusterXIndexChanged)
+					newGraphicOption.culling.clusterYIndex = newGraphicOption.culling.clusterXIndex;
+				if (isClusterYIndexChanged)
+					newGraphicOption.culling.clusterXIndex = newGraphicOption.culling.clusterYIndex;
+
+#pragma endregion
+#pragma region Mask
 				changedMask[(uint)JGraphicOption::TYPE::RENDERING] |= (option.rendering.allowMultiThread != newGraphicOption.rendering.allowMultiThread);
 				changedMask[(uint)JGraphicOption::TYPE::RENDERING] |= (option.rendering.allowDeferred != newGraphicOption.rendering.allowDeferred);
-				if (newGraphicOption.rendering.allowRaytracing)
-					newGraphicOption.rendering.allowRaytracing &= device->IsRaytracingSupported();
 				changedMask[(uint)JGraphicOption::TYPE::RENDERING] |= (option.rendering.allowRaytracing != newGraphicOption.rendering.allowRaytracing);
-				changedMask[(uint)JGraphicOption::TYPE::RENDERING] |= (option.rendering.useMSAA != newGraphicOption.rendering.useMSAA);
 				changedMask[(uint)JGraphicOption::TYPE::RENDERING] |= (option.rendering.renderTargetFormat != newGraphicOption.rendering.renderTargetFormat);
 
 				changedMask[(uint)JGraphicOption::TYPE::RENDERING] |= (option.rendering.useGGXMicrofacet != newGraphicOption.rendering.useGGXMicrofacet);
@@ -519,19 +517,6 @@ namespace JinEngine
 				changedMask[(uint)JGraphicOption::TYPE::SHAODW] |= (option.shadow.useMiddleQualityShadow != newGraphicOption.shadow.useMiddleQualityShadow);
 				changedMask[(uint)JGraphicOption::TYPE::SHAODW] |= (option.shadow.useLowQualityShadow != newGraphicOption.shadow.useLowQualityShadow);
 
-				//cluster
-				bool isClusterXIndexChanged = false;
-				bool isClusterYIndexChanged = false;
-				isClusterXIndexChanged = (option.culling.clusterXIndex != newGraphicOption.culling.clusterXIndex);
-				isClusterYIndexChanged = (option.culling.clusterYIndex != newGraphicOption.culling.clusterYIndex);
-
-				//x, y는 항상 2:1 resolution을 유지하기위해 각자 다른 배열에 같은 index위치에
-				//2:1 비율이 되는 값을 할당한다.
-				if (isClusterXIndexChanged)
-					newGraphicOption.culling.clusterYIndex = newGraphicOption.culling.clusterXIndex;
-				if (isClusterYIndexChanged)
-					newGraphicOption.culling.clusterXIndex = newGraphicOption.culling.clusterYIndex;
-
 				changedMask[(uint)JGraphicOption::TYPE::CULLING] |= (option.culling.isLightCullingActivated != newGraphicOption.culling.isLightCullingActivated);
 				changedMask[(uint)JGraphicOption::TYPE::CULLING] |= (option.culling.allowLightCluster != newGraphicOption.culling.allowLightCluster);
 				changedMask[(uint)JGraphicOption::TYPE::CULLING] |= (isClusterXIndexChanged || isClusterYIndexChanged);
@@ -547,6 +532,7 @@ namespace JinEngine
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useSsaoInterleave != newGraphicOption.postProcess.useSsaoInterleave);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useHdr != newGraphicOption.postProcess.useHdr);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useFxaa != newGraphicOption.postProcess.useFxaa);
+				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useTaa != newGraphicOption.postProcess.useTaa);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useToneMapping != newGraphicOption.postProcess.useToneMapping);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useBloom != newGraphicOption.postProcess.useBloom);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useBlur != newGraphicOption.postProcess.useBlur);
@@ -557,10 +543,13 @@ namespace JinEngine
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileLightClusterShader;
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileSsaoShader; ; ;
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileToneMappingShader;
-				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileRtGiShader;
+				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileRtGiShader;		
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileRtDenoiseShader;
+				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileTAAShader;
 				//dependencyOption[RECOMPILE_SSAO] |= (option.drawSsaoByComputeShader != newGraphicOption.drawSsaoByComputeShader);
 #endif 
+#pragma endregion
+#pragma region Switch
 				static constexpr uint shadowSwitchCount = 3;
 				bool* newShadowSwitch[shadowSwitchCount]
 				{
@@ -611,7 +600,8 @@ namespace JinEngine
 					&option.rendering.useLambertianDiffuse
 				};
 				Private::SwitchBoolValue<bxdfDiffuseCount>(newBxdfDiffuseSwitch, oldBxdfDiffuseSwitch);
-
+#pragma endregion
+#pragma region  Reflect option changed
 				JGraphicOption preOption = option;
 				option = newGraphicOption;
 
@@ -630,33 +620,37 @@ namespace JinEngine
 						notifySet->changedPart = (JGraphicOption::TYPE)i;
 						for (const auto& data : optionChangedListener[i])
 							data->NotifyGraphicOptionChanged(*notifySet);
-					}
+					} 
 
 					if (preOption.rendering.renderTargetFormat != newGraphicOption.rendering.renderTargetFormat)
 					{
-						auto hdrChangeLam = [](JGraphicImpl* impl)
+						auto formatDependencyLam = [](JGraphicImpl* impl)
 						{
 							impl->device->FlushCommandQueue();
 							impl->device->StartPublicCommand();
-							impl->device->NotifyChangedBackBufferFormat(JGraphicDeviceInitSet(impl->resourceManage.graphic.get()));
+							impl->device->NotifyChangedBackBufferFormat(JGraphicDeviceInitSet(impl->resourceManage.graphic.get()));						
 							impl->guiBackendInterface->ReBuildGraphicBackend(impl->GetGuiInitData());
 							impl->device->EndPublicCommand();
 							impl->device->FlushCommandQueue();
-						};
-						AddInnerEvent(Core::UniqueBind(std::make_unique<InnerEventF::Functor>(hdrChangeLam), this));
-					}
-					NotifyEvent<J_GRAPHIC_EVENT_TYPE::OPTION_CHANGED>(guid, preOption, option);
+						}; 
+						AddInnerEvent(Core::UniqueBind(std::make_unique<InnerEventF::Functor>(formatDependencyLam), this));
+					} 
 					device->EndPublicCommand();
 					device->FlushCommandQueue();
 				}
+#pragma endregion
+#pragma region PostProcess
 #ifdef DEVELOP
 				option.debugging.requestRecompileGraphicShader =
 					option.debugging.requestRecompileLightClusterShader =
 					option.debugging.requestRecompileSsaoShader =
 					option.debugging.requestRecompileToneMappingShader =
 					option.debugging.requestRecompileRtGiShader =
-					option.debugging.requestRecompileRtDenoiseShader = false;
+					option.debugging.requestRecompileRtDenoiseShader = 
+					option.debugging.requestRecompileTAAShader =false;
 #endif
+#pragma endregion
+
 			}
 			bool SetCustomMipmap(const JUserPtr<JGraphicResourceInfo>& srcInfo, JTextureCreationDesc& creationDesc)
 			{
@@ -805,14 +799,29 @@ namespace JinEngine
 				return true;
 			}	
 		public:
-			bool IsRaytracingSupported()const noexcept
+			bool IsSupported(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept
 			{
-				return device->IsRaytracingSupported();
+				return device->IsSupported(featureType);
 			}
-			bool CanBuildGpuAccelerator()const noexcept
+			bool IsActivated(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept
 			{
-				return device->CanBuildGpuAccelerator();
-			}
+				switch (featureType)
+				{
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::DEFERRED_RENDERING:
+					return option.rendering.allowDeferred;
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING:
+					return option.rendering.allowRaytracing;
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING_GI:
+					return option.CanUseRtGi();
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::POST_PROCESSING:
+					return option.postProcess.usePostprocess;
+				case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::GPU_ACCELERATOR:
+					return IsSupported(featureType); 
+				default:
+					break;
+				}
+				return false; 
+			} 
 		private:
 			bool IsEntryUpdateLoop()
 			{
@@ -1008,7 +1017,7 @@ namespace JinEngine
 		public:
 			JUserPtr<JGpuAcceleratorInfo> CreateGpuAccelerator(const JGpuAcceleratorBuildDesc& desc)
 			{
-				if (!device->CanBuildGpuAccelerator())
+				if (!IsActivated(J_GRAPHIC_OPTIONAL_FEATURE::GPU_ACCELERATOR))
 					return nullptr;
 
 				return resourceManage.accelerator->Create(device.get(), resourceManage.graphic.get(), desc);
@@ -1219,7 +1228,7 @@ namespace JinEngine
 				JGraphicInfo newInfo = info;
 				updateHelper.WriteGraphicInfo(newInfo);
 				if (updateHelper.hasUploadDataDirty)
-				{
+				{ 
 					device->FlushCommandQueue();
 					device->StartPublicCommand();
 					for (uint i = 0; i < (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT; ++i)
@@ -1231,7 +1240,7 @@ namespace JinEngine
 							updateHelper.uData[i].capacity = resourceManage.frame->GetFrameResourceCapacity(type);
 						}
 					}
-					//Has sequency dependency
+					 
 					updateHelper.WriteGraphicInfo(newInfo);
 					SetGraphicInfo(newInfo, true, updateHelper.hasBindingDataDirty, false);
 					device->EndPublicCommand();
@@ -1252,30 +1261,33 @@ namespace JinEngine
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					drawTarget->BeginUpdate();
+					drawTarget->BeginUpdate(); 
+
+					JFrameUpdateOption updateOption; 
+					if(option.debugging.testTrigger00)
+						updateOption.setUpdateThreadTask = &GraphicThreadInteface::SetUpdateThreadTask;
+					updateOption.isActivatedSceneTimer = drawTarget->scene->IsActivatedSceneTime();
+
 					for (uint j = 0; j < totalCompVariation; ++j)
 					{
 						const JObjectDataSetMetadata meta = resourceManage.objectData->GetMetadata(j);
 						if (!meta.isSupportedFrameResourceUpload)
-							continue;
+							continue; 
 
 						auto& compVec = drawTarget->scene->GetComponentCacheVec(j);
 
-						JFrameUpdateOption option;
-						JFrameUpdateDataSet updateSet(&compVec, meta, option);
-						resourceManage.frame->Update(updateSet);
-
-						drawTarget->updateInfo->updateCount[j] = updateSet.updateLog.updatedCount;
-						drawTarget->updateInfo->hotUpdateCount[j] = updateSet.updateLog.hotUpdatedCount;
-						drawTarget->updateInfo->moveCount[j] = updateSet.updateLog.moveCount;
-						drawTarget->updateInfo->thisFrameCount[j] = (uint)compVec.size();
+						JFrameUpdateDataSet updateSet(&compVec, meta, updateOption);
+						//Update & Upload
+						resourceManage.frame->Update(updateSet); 
+						 
+						drawTarget->updateInfo.log[j] = updateSet.updateLog;
 					}
 					UpdateSceneRequestor(drawTarget);
 					UpdateShadowRequestor(drawTarget);
 					UpdateFrustumCullingRequestor(drawTarget);
 					UpdateOccCullingRequestor(drawTarget);
 					drawTarget->EndUpdate();
-				}
+				} 
 				for (uint j = 0; j < totalResourceVariation; ++j)
 				{
 					const uint index = totalCompVariation + j;
@@ -1284,10 +1296,12 @@ namespace JinEngine
 						continue;
 
 					const ObjectDataSetVec& dataVec = resourceManage.objectData->GetDataVec(index);
-					JFrameUpdateOption option;
+					JFrameUpdateOption option; 
 					JFrameUpdateDataSet updateSet(&dataVec, meta, option);
 					resourceManage.frame->Update(updateSet);
 				}
+
+				//동기화 시도
 				resourceManage.frame->EndUpdate();
 				updateHelper.End();
 #ifdef USE_DEBUG
@@ -1614,8 +1628,9 @@ namespace JinEngine
 				BeginFrame();
 				ComputeCpuFrustumCulling();
 
+				//작업분배
 				for (uint i = 0; i < info.frame.threadCount; ++i)
-					GraphicThreadInteface::CreateDrawThread(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
+					GraphicThreadInteface::SetDrawThreadTask(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
 
 				adapter->ExecuteDrawOccTask(option.deviceType, *drawRefSet);
 				adapter->ExecuteDrawShadowMapTask(option.deviceType, *drawRefSet);
@@ -1819,6 +1834,19 @@ namespace JinEngine
 				auto& registeredHzbOccCullingRequestor = JGraphicDrawList::GetRegisteredHzbOccCullingRequestor();
 				auto& registeredHdOccCullingRequestor = JGraphicDrawList::GetRegisteredHdOccCullingRequestor();
 
+				/*
+				if (option.CanUsePostProcess() || option.CanUseRtGi())
+				{
+					for (const auto& data : registeredSceneRequestor)
+					{
+						helper.SetDrawTarget(data->GetOwnerTarget());
+						if (!data->canDrawThisFrame)
+							continue;
+
+						drawing.velocity->Compute(dataSet.velocity.get(), JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
+					}
+				}
+				*/
 				if (option.CanUseSSAO() || option.CanUseRtGi())
 				{
 					for (const auto& data : registeredSceneRequestor)
@@ -2130,11 +2158,7 @@ namespace JinEngine
 					}
 				}
 			}
-		public:
-			JEventInterface* EvInterface()final
-			{
-				return this;
-			}
+		public: 
 			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
 			{
 				if (senderGuid == guid)
@@ -2154,19 +2178,6 @@ namespace JinEngine
 					canDraw = false;
 				}
 			}
-		private:
-			template<J_GRAPHIC_EVENT_TYPE evType, typename ...Param>
-			void NotifyEvent(const size_t guid, Param... var)
-			{
-				std::unique_ptr<JGraphicEventStruct> evStruct = nullptr;
-				if constexpr (evType == J_GRAPHIC_EVENT_TYPE::OPTION_CHANGED)
-					evStruct = std::make_unique<JGraphicOptionChangedEvStruct>(var...);
-
-				if (evStruct == nullptr)
-					return;
-
-				GraphicEventManager::NotifyEvent(guid, evType, evStruct.get());
-			}
 		};
 		class JGraphic::JGraphicModuleImpl : public Rule::JGraphicModuleInterface
 		{
@@ -2179,11 +2190,11 @@ namespace JinEngine
 
 			}
 		public:
-			JUserPtr<JGraphicModuleManagedDataFrame> Allocate(const JUserPtr<JObject>& object) final
+			JFastPtr<JGraphicModuleManagedDataFrame> Allocate(const JGraphicModuleManagedDataCreationDesc& desc) final
 			{
-				return impl->resourceManage.objectData->Add(object);
+				return impl->resourceManage.objectData->Add(desc);
 			}
-			void DeAllocate(JUserPtr<JGraphicModuleManagedDataFrame>& data)final
+			void DeAllocate(JFastPtr<JGraphicModuleManagedDataFrame>& data)final
 			{
 				impl->resourceManage.objectData->Remove(data);
 			}
@@ -2268,7 +2279,7 @@ namespace JinEngine
 			}
 		public:
 			bool CreateGraphicResource(JGraphicModuleManagedDataFrame* data, const JGraphicResourceCreationDesc& desc, const uint count = 1)final
-			{
+			{  
 				JGraphicObjectDataSetBase* base = static_cast<JGraphicObjectDataSetBase*>(data);
 				if (count == 0 || base == nullptr)
 					return false;
@@ -2287,13 +2298,12 @@ namespace JinEngine
 					JUserPtr<JGraphicResourceInfo> newInfo = impl->CreateResource(desc);
 					if (newInfo == nullptr)
 						continue;
-					  
-					//objectData->NotifyGraphicResourceCreation()
+					   
 					gInterface->AddInfo(newInfo, nextIndex);
 					++successCount;
 
 					impl->resourceManage.objectData->NotifyGraphicResourceCreation(base, newInfo, desc.type.task);
-				} 
+				}  
 				return successCount > 0;
 			}
 			bool DestroyGraphicResource(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint localIndex = 0, const uint count = 1)final
@@ -2348,7 +2358,7 @@ namespace JinEngine
 				if (fInterface == nullptr || !fInterface->HasSpace(desc.type))
 					return false;
 
-				auto newUser = _JGraphic::Instance().impl->CreateFrameUploadData(desc);
+				auto newUser = impl->CreateFrameUploadData(desc);
 				if (newUser == nullptr)
 					return false;
 
@@ -2364,7 +2374,7 @@ namespace JinEngine
 				if (existUser == nullptr)
 					return false;
 
-				return 	_JGraphic::Instance().impl->DestroyFrameUploadData(existUser);
+				return impl->DestroyFrameUploadData(existUser);
 			}
 		public:
 			bool CreateCullingData(JGraphicModuleManagedDataFrame* data, const JCullingTypeSet& typeSet) final
@@ -2568,21 +2578,14 @@ namespace JinEngine
 				_JGraphic::Instance().impl->RemoveComponent(info.Get(), comp);
 			}
 		public:
-			bool IsActivatedDeferredRendering()const noexcept
+			//Return whether it can be implemented with the current graphical api device
+			bool IsSupported(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept
 			{
-				return impl->option.rendering.allowDeferred;
+				return impl->IsSupported(featureType);
 			}
-			bool IsActivatedRaytracing()const noexcept final
+			bool IsActivated(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept
 			{
-				return impl->option.rendering.allowRaytracing;
-			}
-			bool IsActivatedRaytracingGI()const noexcept final
-			{
-				return impl->option.CanUseRtGi();
-			}
-			bool IsActivatedPostprocessing()const noexcept final
-			{
-				return impl->option.CanUsePostProcess();
+				return impl->IsActivated(featureType);
 			}
 		private:
 			JUserPtr<JGraphicResourceInfo> GetGraphicResourceInfo(JGraphicModuleManagedDataFrame* data, const JGraphicResourceTypeSet& typeSet, const uint localIndex)
@@ -2652,19 +2655,7 @@ namespace JinEngine
 		void JGraphic::SetGraphicOption(JGraphicOption newGraphicOption)noexcept
 		{
 			impl->SetOption(newGraphicOption);
-		}
-		bool JGraphic::IsRaytracingSupported()const noexcept
-		{
-			return impl->IsRaytracingSupported();
-		}
-		bool JGraphic::CanBuildGpuAccelerator()const noexcept
-		{
-			return impl->CanBuildGpuAccelerator();
-		}
-		GraphicEventInterface* JGraphic::EventInterface()noexcept
-		{
-			return impl->EvInterface();
-		}
+		}  
 		JGraphic::JGraphic()
 			:impl(std::make_unique<JGraphicImpl>(Core::MakeGuid(), this)),
 			moduleImpl(std::make_unique<JGraphicModuleImpl>(impl.get()))
@@ -2709,7 +2700,7 @@ namespace JinEngine
 			JinEngine::JGraphic::Instance().impl->Update();
 		}
 		void MainAccess::Draw(const bool allowDrawScene)
-		{
+		{ 
 			JinEngine::JGraphic::Instance().impl->Draw(allowDrawScene);
 		}
 		void MainAccess::FlushCommandQueue()

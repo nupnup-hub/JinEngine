@@ -46,7 +46,8 @@ namespace JinEngine::Graphic
 		BLOOM = 1 << 1,
 		BLUR = 1 << 2,
 		FXAA = 1 << 3,
-		EXPOSURE= 1 << 4
+		EXPOSURE= 1 << 4,
+		TAA = 1 << 5
 	};
 	void JPostProcessPipeline::ApplyPostProcess(JPostProcessComputeSet* computeSet, const JDrawHelper& helper, const bool isUpdatedThisFrame)
 	{ 
@@ -66,6 +67,12 @@ namespace JinEngine::Graphic
 		computeSet->imageShareData->UpdateBegin();
 		computeSet->ppSet->convertColor->ApplyToLinearColor(computeSet, helper);
 
+		if (helper.option.postProcess.useTaa)
+		{
+			computeSet->ppSet->aa->ApplyTAA(computeSet, helper);
+			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::TAA);
+		}
+
 		if (helper.option.postProcess.useBloom)
 		{
 			computeSet->ppSet->bloom->ApplyBloom(computeSet, helper);
@@ -81,13 +88,13 @@ namespace JinEngine::Graphic
 		}
 		if(helper.option.postProcess.useFxaa)
 		{
-			computeSet->ppSet->aa->ApplyFxaa(computeSet, helper);
+			computeSet->ppSet->aa->ApplyFXAA(computeSet, helper);
 			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::FXAA);
 		}
  
+		computeSet->ppSet->convertColor->ApplyToDisplayColor(computeSet, helper);
 		if (appliedType != POST_PROCESSING_TYPE::NONE)
 		{
-			computeSet->ppSet->convertColor->ApplyToDisplayColor(computeSet, helper);
 			if (helper.option.postProcess.exposureType == J_EXPOSURE_TYPE::AUTO)
 			{
 				computeSet->ppSet->histogram->CreateHistogram(computeSet, helper);
@@ -99,6 +106,7 @@ namespace JinEngine::Graphic
 		}
 		if (helper.option.postProcess.useBlur)
 		{
+			//¹Ì±¸Çö
 			computeSet->ppSet->blur->ApplyBlur(computeSet, helper);
 			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::BLUR);
 		}

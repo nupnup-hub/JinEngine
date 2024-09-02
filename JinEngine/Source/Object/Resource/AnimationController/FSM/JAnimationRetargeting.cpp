@@ -99,7 +99,7 @@ namespace JinEngine
 			bindTargetWorldT[tarIndex] = bindTarT;
 			if (i != JSkeletonFixedData::rootJointIndex)
 			{
-				const uint8 parentRefIndex = tarAvatar->jointReferenceParent[i];
+				const uint8 parentRefIndex = tarAvatar->GetJointReferenceParent(i);
 				const uint8 srcParentIndex = srcAvatar->jointReference[parentRefIndex];
 				const uint8 tarParentIndex = tarAvatar->jointReference[parentRefIndex];
 
@@ -157,11 +157,11 @@ namespace JinEngine
 			tarIndex == JSkeletonFixedData::incorrectJointIndex)
 			return;
 
-		auto data = JAvatar::jointReferenceChildren.find(refIndex);
-		if (data == JAvatar::jointReferenceChildren.end())
+		auto data = JAvatar::GetJointReferenceChildren(refIndex);
+		if (data.size() == 0)
 			return;
 
-		for (const auto& childRefIndex : data->second)
+		for (const auto& childRefIndex : data)
 		{
 			const uint8 srcChildIndex = srcAvatar->jointReference[childRefIndex];
 			const uint8 tarChildIndex = tarAvatar->jointReference[childRefIndex];
@@ -265,7 +265,7 @@ namespace JinEngine
 				srcIndex == JSkeletonFixedData::incorrectJointIndex)
 				continue;
 
-			const uint8 parentRef = JAvatar::jointReferenceParent[i];
+			const uint8 parentRef = JAvatar::GetJointReferenceParent(i);
 			const uint8 tarParentIndex = tarAvatar->jointReference[parentRef];
 			const uint8 srcParentIndex = srcAvatar->jointReference[parentRef];
 
@@ -298,51 +298,51 @@ namespace JinEngine
 		const XMVECTOR offsetDir = XMVectorSet(0, 0, 1, 0);
 		const std::vector<uint8> restrictIndex
 		{
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::JAW)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_EYE)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_EYE)->second,
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::JAW),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_EYE),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_EYE),
 		};
 		const std::unordered_map<uint8, std::vector<uint8>> multiJointOrder
 		{
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_HAND)->second,
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_HAND),
 				{
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_MIDDLE_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_THUMB_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_LITTLE_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_INDEX_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_RING_PROXIMAL)->second,
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_MIDDLE_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_THUMB_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_LITTLE_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_INDEX_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_RING_PROXIMAL),
 				}
 			},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_HAND)->second,
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_HAND),
 				{
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_MIDDLE_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_THUMB_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_LITTLE_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_INDEX_PROXIMAL)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_RING_PROXIMAL)->second,
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_MIDDLE_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_THUMB_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_LITTLE_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_INDEX_PROXIMAL),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_RING_PROXIMAL),
 				}
 			},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::HIPS)->second,
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::HIPS),
 				{
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::SPINE)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_UPPER_LEG)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_UPPER_LEG)->second,
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::SPINE),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_UPPER_LEG),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_UPPER_LEG),
 				}
 			},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::UPPER_CHEST)->second,
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::UPPER_CHEST),
 				{
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::NECK)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_SHOULDER)->second,
-					JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_SHOULDER)->second,
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::NECK),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_SHOULDER),
+					JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_SHOULDER),
 				}
 			}
 		};
 
-		const uint8 handL = JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_HAND)->second;
-		const uint8 handR = JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_HAND)->second;
+		const uint8 handL = JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_HAND);
+		const uint8 handR = JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_HAND);
 
 		const uint8 srcJointCount = (uint8)srcSkeleton->GetJointCount();
 		const uint8 tarJointCount = (uint8)tarSkeleton->GetJointCount();
@@ -369,8 +369,8 @@ namespace JinEngine
 			if (isRestrictIndex)
 				continue;
 
-			auto avatarChildren = JAvatar::jointReferenceChildren.find(nowRefIndex);
-			if (avatarChildren == JAvatar::jointReferenceChildren.end())
+			auto avatarChildren = JAvatar::GetJointReferenceChildren(nowRefIndex);
+			if (avatarChildren.size() == 0)
 			{
 				bool hasSrcChild = false;
 				bool hasTarChild = false;
@@ -400,7 +400,7 @@ namespace JinEngine
 
 				RotateJointByWorldQuaternionGap(srcSkeletonAsset, tarSkeletonAsset, srcIndex, tarIndex, srcChildIndex, tarChildIndex, modBindPose);
 			}
-			else if (avatarChildren->second.size() > 2)
+			else if (avatarChildren.size() > 2)
 			{
 				auto avatarChildrenOrder = multiJointOrder.find(nowRefIndex);
 				if (avatarChildrenOrder == multiJointOrder.end())
@@ -427,11 +427,11 @@ namespace JinEngine
 			}
 			else
 			{
-				//if (nowRefIndex == JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_FOOT)->second ||
-				//	nowRefIndex == JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_FOOT)->second)
+				//if (nowRefIndex == JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_FOOT) ||
+				//	nowRefIndex == JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_FOOT))
 				//	continue;
 
-				const uint8 childRefIndex = avatarChildren->second[0];
+				const uint8 childRefIndex = avatarChildren[0];
 				const uint8 srcChildIndex = srcAvatar->jointReference[childRefIndex];
 				const uint8 tarChildIndex = tarAvatar->jointReference[childRefIndex];
 				if (srcChildIndex == JSkeletonFixedData::incorrectJointIndex ||
@@ -619,32 +619,32 @@ namespace JinEngine
 
 		std::vector<std::vector<uint8>>refIndex
 		{
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::HIPS)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_UPPER_LEG)->second},
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::HIPS),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_UPPER_LEG)},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::HIPS)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_UPPER_LEG)->second},
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::HIPS),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_UPPER_LEG)},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::HIPS)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::SPINE)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::CHEST)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::UPPER_CHEST)->second},
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::HIPS),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::SPINE),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::CHEST),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::UPPER_CHEST)},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::UPPER_CHEST)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_SHOULDER)->second},
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::UPPER_CHEST),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_SHOULDER)},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::UPPER_CHEST)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_SHOULDER)->second},
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::UPPER_CHEST),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_SHOULDER)},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_SHOULDER)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_UPPER_ARM)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_LOWER_ARM)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_HAND)->second},
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_SHOULDER),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_UPPER_ARM),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_LOWER_ARM),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_HAND)},
 
-			{JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_SHOULDER)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_UPPER_ARM)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_LOWER_ARM)->second,
-			JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_HAND)->second},
+			{JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_SHOULDER),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_UPPER_ARM),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_LOWER_ARM),
+			JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_HAND)},
 		};
 		const XMVECTOR idenQ = XMVectorSet(0, 0, 0, 1);
 
@@ -732,11 +732,11 @@ namespace JinEngine
 		const XMVECTOR y90V = JMathHelper::EulerToQuaternion(0, 90, 45).ToXmV();
 		const XMMATRIX y90M = XMMatrixRotationQuaternion(y90V);
 
-		const uint8 leftShoulderRef = JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::LEFT_SHOULDER)->second;
-		const uint8 rightShoulderRef = JAvatar::jointReferenceMap.find(J_AVATAR_JOINT::RIGHT_SHOULDER)->second;
+		const uint8 leftShoulderRef = JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::LEFT_SHOULDER);
+		const uint8 rightShoulderRef = JAvatar::GetJointReferenceIndex(J_AVATAR_JOINT::RIGHT_SHOULDER);
 
-		const uint8 leftShoulderParentRef = JAvatar::jointReferenceParent[leftShoulderRef];
-		const uint8 rightShoulderParentRef = JAvatar::jointReferenceParent[rightShoulderRef];
+		const uint8 leftShoulderParentRef = JAvatar::GetJointReferenceParent(leftShoulderRef);
+		const uint8 rightShoulderParentRef = JAvatar::GetJointReferenceParent(rightShoulderRef);
 
 		const uint8 leftShoulderParentIndex = srcAvatar->jointReference[leftShoulderParentRef];
 		const uint8 rightShoulderParentIndex = srcAvatar->jointReference[rightShoulderParentRef];
@@ -781,7 +781,7 @@ namespace JinEngine
 				srcIndex == JSkeletonFixedData::incorrectJointIndex)
 				continue;
 
-			const uint8 parentRef = JAvatar::jointReferenceParent[i];
+			const uint8 parentRef = JAvatar::GetJointReferenceParent(i);
 			const uint8 tarParentIndex = tarAvatar->jointReference[parentRef];
 			const uint8 srcParentIndex = srcAvatar->jointReference[parentRef];
 

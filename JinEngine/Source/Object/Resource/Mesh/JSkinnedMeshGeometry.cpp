@@ -35,6 +35,7 @@ SOFTWARE.
 #include"../../Directory/JDirectory.h"  
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h"  
@@ -56,7 +57,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSkinnedMeshGeometryImpl)
 	public:
 		JWeakPtr<JSkinnedMeshGeometry> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	private:
 		const size_t privateGuid = Core::MakeGuid();
 	public:
@@ -354,7 +355,9 @@ namespace JinEngine
 	void JSkinnedMeshGeometry::DoActivate()noexcept
 	{
 		if (impl->graphicData == nullptr)
-			impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		{
+			INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
+		}
 		JMeshGeometry::DoActivate();
 		impl->Activate();
 	}
@@ -362,7 +365,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JMeshGeometry::DoDeActivate(); 
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JSkinnedMeshGeometry::JSkinnedMeshGeometry(InitData& initData)
 		:JMeshGeometry(initData), impl(std::make_unique<JSkinnedMeshGeometryImpl>(initData))
@@ -383,8 +386,8 @@ namespace JinEngine
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
 		JSkinnedMeshGeometry* mesh = static_cast<JSkinnedMeshGeometry*>(createdPtr);
-		mesh->impl->RegisterThisPointer(mesh);
-		mesh->impl->graphicData = GraphicModuleInterface()->Allocate(mesh->impl->thisPointer);
+		mesh->impl->RegisterThisPointer(mesh); 
+		ALLOC_GRAPHIC_MODULE_DATA(JSkinnedMeshGeometry, mesh->impl->graphicData, mesh->impl->thisPointer);
 
 		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData); 
 		mesh->impl->RegisterPostCreation();

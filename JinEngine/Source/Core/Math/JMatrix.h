@@ -201,6 +201,6 @@ namespace JinEngine
 		static DirectX::XMMATRIX Inverse(const JMatrix4x4& m)noexcept;
 		static DirectX::XMMATRIX InverseTranspose(const JMatrix4x4& m)noexcept;
 	public:
-		std::string ToString()const noexcept;
+		std::string ToString()const noexcept; 
 	};
 }

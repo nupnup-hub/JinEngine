@@ -129,13 +129,13 @@ namespace JinEngine
 					std::make_unique<ClearAvatarF::CompletelyBind>(*setting->clearAvatarFunctor)));
 			}
 			if (hasAvatar)
-			{
+			{ 
 				JGui::SetCursorPosX(JGui::GetCursorPosX() + xPadding);
 				if(JGui::BeginTabBar("AvatarSetting"))
 				{
 					for (int i = 0; i < tabs.size(); ++i)
 					{
-						if (JGui::BeginTabItem(JAvatar::tabName[i]))
+						if (JGui::BeginTabItem(JAvatar::GetJointCategoryName(i)))
 						{
 							int doIndex = i;
 							JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Select avatar part",
@@ -199,13 +199,15 @@ namespace JinEngine
 					textCal.Update(label[i], alignCal.GetInnerContentsSize(), false);
 					JGui::Text(textCal.LeftAligned());
 				}
-				for (int i = 0; i < JAvatar::jointGuide[index].size(); ++i)
+
+				auto& jointGuide = JAvatar::GetJointCategoryGuide(index);
+				for (int i = 0; i < jointGuide.size(); ++i)
 				{
 					alignCal.SetNextContentsPosition();
-					textCal.Update(JAvatar::jointGuide[index][i].guideName, alignCal.GetInnerContentsSize(), true);
+					textCal.Update(jointGuide[i].guideName, alignCal.GetInnerContentsSize(), true);
 					JGui::Text(textCal.LeftAligned());
 
-					int jointRefIndex = JAvatar::jointGuide[index][i].index;
+					int jointRefIndex = jointGuide[i].index;
 					int nowRefValue = targetAvatar.jointReference[jointRefIndex];
 
 					std::string nowRefJointName;
@@ -374,18 +376,20 @@ namespace JinEngine
 		{
 			JUserPtr<JSkeleton> skeleton = targetSkeleton->GetSkeleton();
 			uint32 maxJoint = (uint32)skeleton->GetJointCount();
-			uint32 partCount = (uint32)JAvatar::jointGuide.size();
+
+			auto& jointGuide = JAvatar::GetAllJointGuide();
+			uint32 partCount = (uint32)jointGuide.size();
 
 			for (uint32 i = 0; i < partCount; ++i)
 			{
-				uint32 jointCount = (uint32)JAvatar::jointGuide[i].size();
+				uint32 jointCount = (uint32)jointGuide[i].size();
 				for (uint32 j = 0; j < jointCount; ++j)
 				{
 					for (uint32 k = 0; k < maxJoint; ++k)
 					{ 
-						if (JCUtil::Contain(skeleton->GetJointName(k), JCUtil::StrToWstr(JAvatar::jointGuide[i][j].defaultJointName), false))
+						if (JCUtil::Contain(skeleton->GetJointName(k), JCUtil::StrToWstr(jointGuide[i][j].defaultJointName), false))
 						{
-							int referenceIndex = JAvatar::jointGuide[i][j].index;
+							int referenceIndex = jointGuide[i][j].index;
 							targetAvatar.jointReference[referenceIndex] = (uint8)k; 
 						}
 					}
@@ -429,7 +433,7 @@ namespace JinEngine
 					continue;
 				}
 				uint8 parentSeletIndex = JSkeletonFixedData::incorrectJointIndex;
-				uint8 parentIndex = targetAvatar.jointReferenceParent[i];
+				uint8 parentIndex = targetAvatar.GetJointReferenceParent(i);
 				while (parentIndex != JSkeletonFixedData::incorrectJointIndex)
 				{
 					if (targetAvatar.jointReference[parentIndex] != JSkeletonFixedData::incorrectJointIndex)
@@ -437,7 +441,7 @@ namespace JinEngine
 						parentSeletIndex = targetAvatar.jointReference[parentIndex];
 						break;
 					}
-					parentIndex = JAvatar::jointReferenceParent[parentIndex];
+					parentIndex = JAvatar::GetJointReferenceParent(parentIndex);
 				}
 				if (parentSeletIndex == JSkeletonFixedData::incorrectJointIndex)
 				{

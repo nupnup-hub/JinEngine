@@ -58,7 +58,7 @@ namespace JinEngine::Editor
 			const size_t guid = JCUtil::CalculateGuid(typeid(JGuiImpl).name());
 		private:
 			std::unique_ptr<JGuiBehaviorAdapter> adapter;
-			JGuiBehaviorAdaptee* adaptee = nullptr;		//cash
+			JGuiBehaviorAdaptee* adaptee = nullptr;		//cache
 		private:
 			std::vector<JGuiWindowInfo> displayedWndInfo;	//sorted back to front
 			std::vector<JGuiWindowInfo> lastDisplayedWndInfo;	//sorted displayed back to front

@@ -27,11 +27,11 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 { 
-	JGraphicObjectDataSetBase::JGraphicObjectDataSetBase(const JUserPtr<JObject>& object)
-		:JGraphicModuleManagedDataFrame(object)
+	JGraphicObjectDataSetBase::JGraphicObjectDataSetBase(const JGraphicModuleManagedDataCreationDesc& desc)
+		:JGraphicModuleManagedDataFrame(desc)
 	{}
 	JCsmHandleUserInterface* JGraphicObjectDataSetBase::GetCsmHandleUserInterface()const noexcept
-	{
+	{ 
 		return GetCsmHandleInterface();
 	}
 	JCsmTargetUserInterface* JGraphicObjectDataSetBase::GetCsmTargetUserInterface()const noexcept

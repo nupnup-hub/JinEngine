@@ -35,8 +35,8 @@ SOFTWARE.
 
 Texture2D depthMap : register(t0);
 Texture2D preDepthMap : register(t1);
-RWTexture2D<float> linearDepthMap : register(u0);
-RWTexture2D<float> preLinearDepthMap : register(u1);
+RWTexture2D<float> viewZMap : register(u0);
+RWTexture2D<float> preViewZMap : register(u1);
 RWTexture2D<float2> depthDerivative : register(u2);
  
 [numthreads(DIMX, DIMY, 1)]
@@ -47,11 +47,11 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
        
     float depth = depthMap[dispatchThreadID.xy].x; 
     float viewZ = NdcToViewPZ(depth, cb.camNearMulFar, cb.camNearFar);
-    linearDepthMap[dispatchThreadID.xy] = viewZ;
+    viewZMap[dispatchThreadID.xy] = viewZ;
      
     float preDepth = preDepthMap[dispatchThreadID.xy].x; 
     float preViewZ = NdcToViewPZ(preDepth, cb.camNearMulFar, cb.camNearFar);
-    preLinearDepthMap[dispatchThreadID.xy] = preViewZ;
+    preViewZMap[dispatchThreadID.xy] = preViewZ;
     
     //                x
     //        ----------------->

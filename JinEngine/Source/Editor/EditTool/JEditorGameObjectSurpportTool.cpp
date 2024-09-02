@@ -125,7 +125,7 @@ namespace JinEngine
 			const JVector2F clipSpace = (fixedScale / wndSize) * 0.5f;
 
 			//cam to seleceted distance
-			const JVector3F posV = XMVector3Transform(posW.ToXmV(), cam->GetView());
+			const JVector3F posV = XMVector3Transform(posW.ToXmV(), cam->GetView().LoadXM());
 			const float z = posV.z;
 
 			//clipSpace to world space

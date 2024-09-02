@@ -24,8 +24,8 @@ SOFTWARE.
 
 
 #pragma once
+#include"JThreadInfo.h"
 #include"../Func/Functor/JFunctor.h" 
-
 namespace JinEngine
 {
 	namespace Graphic
@@ -34,8 +34,7 @@ namespace JinEngine
 	} 
 	class JMain;
 	namespace Core
-	{
-		struct JThreadInitInfo;
+	{ 
 		class JThreadManagerPrivate
 		{
 		public:
@@ -54,8 +53,8 @@ namespace JinEngine
 			private:
 				friend class Graphic::JGraphic;
 			private:
-				static size_t CreateUpdateThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
-				static size_t CreateDrawThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
+				static JThreadUserHandle SetUpdateThreadTask(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
+				static JThreadUserHandle SetDrawThreadTask(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
 			};
 		};
 	}

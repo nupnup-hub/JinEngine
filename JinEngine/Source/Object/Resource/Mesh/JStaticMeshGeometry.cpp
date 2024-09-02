@@ -31,6 +31,7 @@ SOFTWARE.
 #include"../../Directory/JDirectory.h" 
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h" 
@@ -51,7 +52,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JStaticMeshGeometryImpl)
 	public:
 		JWeakPtr<JStaticMeshGeometry> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		JStaticMeshGeometryImpl(const InitData& initData)
 		{ 
@@ -266,7 +267,9 @@ namespace JinEngine
 	void JStaticMeshGeometry::DoActivate()noexcept
 	{ 
 		if (impl->graphicData == nullptr)
-			impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		{
+			INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
+		}
 		JMeshGeometry::DoActivate();
 		impl->Activate();
 	}
@@ -274,7 +277,7 @@ namespace JinEngine
 	{
 		impl->DeActivate();
 		JMeshGeometry::DoDeActivate(); 
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 
 	JStaticMeshGeometry::JStaticMeshGeometry(InitData& initData)
@@ -296,7 +299,7 @@ namespace JinEngine
 	{
 		JStaticMeshGeometry* mesh = static_cast<JStaticMeshGeometry*>(createdPtr);
 		mesh->impl->RegisterThisPointer(mesh);
-		mesh->impl->graphicData = GraphicModuleInterface()->Allocate(mesh->impl->thisPointer);
+		ALLOC_GRAPHIC_MODULE_DATA(JStaticMeshGeometry, mesh->impl->graphicData, mesh->impl->thisPointer);
 
 		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		mesh->impl->Initialize();

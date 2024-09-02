@@ -28,11 +28,7 @@ SOFTWARE.
 #include"../JComponentPrivate.h"
  
 namespace JinEngine
-{ 
-	namespace Editor
-	{
-		class JSceneObserver;
-	}
+{  
 	class JCamera;
 	class JScene;
 	class JFrameDirtyBase;
@@ -60,14 +56,6 @@ namespace JinEngine
 		{
 		private:
 			void Clear(Core::JIdentifier* ptr, const bool isForced)noexcept final;
-		};
-		class EditorSettingInterface final
-		{
-		private: 
-			friend class Editor::JSceneObserver;
-		private:
-			static void SetReflectAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept;
-			static bool AllowReflectAllCullingResult(const JUserPtr<JCamera>& cam)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

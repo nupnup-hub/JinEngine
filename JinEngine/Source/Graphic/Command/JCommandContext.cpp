@@ -39,7 +39,10 @@ namespace JinEngine::Graphic
 	bool JCommandContext::Begin()
 	{
 		if (!canUse)
+		{
+			MessageBoxA(0, "JCommandContext Can'Use", 0, 0);
 			return false;
+		}
 		isLastFrameUpdated = true; 	
 #ifdef USE_DEBUG
 		if (canWriteLog)

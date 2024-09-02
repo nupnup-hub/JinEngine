@@ -107,7 +107,7 @@ namespace JinEngine::Graphic
 			}
 		}
 		for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
-		{
+		{ 
 			for (uint j = 0; j < gInfo.frame.threadCount; ++j)
 				threadTaskHandle[i][j] = CreateEvent(NULL, FALSE, FALSE, NULL);
 		}

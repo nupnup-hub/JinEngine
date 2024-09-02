@@ -39,6 +39,7 @@ SOFTWARE.
 #include"../../../Core/Math/JMathHelper.h" 
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 #include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include<Windows.h>
 #include<fstream>
 
@@ -135,7 +136,7 @@ namespace JinEngine
 		JVector3F direction;
 	public:
 		JWeakPtr<JSpotLight> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::localLightMinDistance, Constants::localLightMaxDistance, true, false))
 		float range = 32.0f;
@@ -607,7 +608,7 @@ namespace JinEngine
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JLight::DoActivate();
 		impl->Activate(); 
 		RegisterComponent(impl->thisPointer, GetLitTypeComparePtr());
@@ -617,7 +618,7 @@ namespace JinEngine
 		DeRegisterComponent(impl->thisPointer);
 		impl->DeActivate(); 
 		JLight::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JSpotLight::JSpotLight(const InitData& initData)
 		:JLight(initData), impl(std::make_unique<JSpotLightImpl>(initData, this))

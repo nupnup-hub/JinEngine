@@ -39,10 +39,10 @@ namespace JinEngine
 	};
 	struct JAvatarJointGuide
 	{
-	public:
+	public: 
 		std::string guideName;
-		std::string defaultJointName;
-		uint8 index;
+		std::string defaultJointName; 
+		uint8 index; 
 	public:
 		JAvatarJointGuide(const std::string& guideName, const std::string& defaultJointName, uint8 index);
 	};

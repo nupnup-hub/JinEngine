@@ -46,8 +46,8 @@ namespace JinEngine
 		public:
 			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 		public:
-			virtual void ApplyAA(JGraphicAAComputeSet* computeSet, const JDrawHelper& helper) = 0;
-			virtual void ApplyFxaa(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) = 0;
+			virtual void ApplyFXAA(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) = 0;
+			virtual void ApplyTAA(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) = 0;
 		};
 	}
 }

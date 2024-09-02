@@ -32,12 +32,14 @@ SOFTWARE.
 #include"../../Resource/AnimationController/FSM/JAnimationUpdateData.h"
 #include"../../Resource/Skeleton/JSkeletonAsset.h"
 #include"../../Resource/Skeleton/JSkeletonFixedData.h" 
+#include"../../Resource/Skeleton/JSkeletonMatrixSet.h" 
 #include"../../Resource/JResourceObject.h" 
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/JResourceObjectUserInterface.h" 
 #include"../../GameObject/JGameObject.h" 
 #include"../../JObjectFileIOHelper.h" 
 #include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/FSM/JFSMparameter.h" 
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/Guid/JGuidCreator.h"
@@ -58,7 +60,7 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimatorImpl) 
 	public:
 		JWeakPtr<JAnimator> thisPointer;
-		JUserPtr<JGraphicModuleManagedDataFrame> graphicData;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false));
 		JUserPtr<JSkeletonAsset> skeletonAsset;
@@ -144,10 +146,19 @@ namespace JinEngine
 	public:
 		void Update()
 		{
+			if (animationController == nullptr || animationUpdateData == nullptr)
+				return;
+			 
 			AnimationControllerInterfaced::Update(animationController.Get(), animationUpdateData.get()); 
 		}
 		void Compute(JSkeletonMatrixSet& set)
-		{
+		{ 
+			if (animationController == nullptr || animationUpdateData == nullptr)
+			{
+				set.StuffIdentity();
+				return;
+			}
+			
 			AnimationControllerInterfaced::Compute(animationController.Get(), animationUpdateData.get(), set);
 		}
 		void ClearAnimationUpdateData()noexcept
@@ -193,7 +204,7 @@ namespace JinEngine
 					SetSkeletonAsset(JUserPtr<JSkeletonAsset>{});
 				else if (animationController.IsValid() && animationController->GetGuid() == jRobj->GetGuid())
 					SetAnimatorController(JUserPtr<JAnimationController>{});
-			}
+			} 
 		}
 	public:
 		void NotifyReAlloc()
@@ -317,12 +328,12 @@ namespace JinEngine
 		impl->Compute(set);
 	}
 	void JAnimator::DoActivate()noexcept
-	{
+	{   
 		//Caution 
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
-		impl->graphicData = GraphicModuleInterface()->Allocate(impl->thisPointer);
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JComponent::DoActivate();
 		impl->Activate();
 		RegisterComponent(impl->thisPointer);
@@ -332,7 +343,7 @@ namespace JinEngine
 		DeRegisterComponent(impl->thisPointer);
 		impl->DeActivate();
 		JComponent::DoDeActivate();
-		GraphicModuleInterface()->DeAllocate(impl->graphicData);
+		DEALLOC_GRAPHIC_MODULE_DATA() 
 	}
 	JAnimator::JAnimator(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JAnimatorImpl>(initData, this))

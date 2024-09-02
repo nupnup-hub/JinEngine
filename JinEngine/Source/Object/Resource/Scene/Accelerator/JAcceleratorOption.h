@@ -25,12 +25,12 @@ SOFTWARE.
 
 #pragma once
 #include"JAcceleratorType.h"
+#include"../../../GraphicRule/GpuAccelerator/JGraphicModuleGpuAcceleratorType.h"
+#include"../../../GraphicRule/Culling/JGraphicModuleCullingUserAccess.h"
 #include"../../../../Core/Pointer/JOwnerPtr.h" 
 #include"../../../../Core/Geometry/JRay.h" 
 #include"../../../../Core/Geometry/JGeometryEnum.h" 
-#include"../../../../Core/JCoreEssential.h"
-#include"../../../../Graphic/Culling/JCullingInterface.h"
-#include"../../../../Graphic/Accelerator/JGpuAcceleratorType.h"
+#include"../../../../Core/JCoreEssential.h" 
 #include<fstream>
 #include<DirectXCollision.h>
 

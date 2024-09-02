@@ -35,7 +35,7 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JDx12GraphicObjectDataSetManager)
 		public:
-			using DataVec = JGraphicObjectDataSetManager::DataVec;
+			using DataVec = JGraphicObjectDataSetManager::DataVec; 
 		private:
 			DataVec set[totalCompAndResourceVariation];
 			JObjectDataSetMetadata metadata[totalCompAndResourceVariation];
@@ -45,12 +45,12 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final; 
 			const DataVec& GetDataVec(const UniqueIndex index)const noexcept final;
-			JObjectDataSetMetadata GetMetadata(const UniqueIndex index)const noexcept final; 
+			JObjectDataSetMetadata GetMetadata(const UniqueIndex index)const noexcept final;  
 		private:
 			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final; 
 		public:
-			JUserPtr<JGraphicModuleManagedDataFrame> Add(const JUserPtr<JObject>& obj) final;
-			bool Remove(JUserPtr<JGraphicModuleManagedDataFrame>& data)final;
+			JFastPtr<JGraphicModuleManagedDataFrame> Add(const JGraphicModuleManagedDataCreationDesc& creationData) final;
+			bool Remove(JFastPtr<JGraphicModuleManagedDataFrame>& data)final;
 		private:
 			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;
 			void NotifyGraphicResourceCreation(JGraphicObjectDataSetBase* base, const JUserPtr<JGraphicResourceInfo>& newInfo, const J_GRAPHIC_TASK_TYPE task)final;
