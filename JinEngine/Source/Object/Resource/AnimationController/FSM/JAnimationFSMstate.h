@@ -41,7 +41,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JAnimationFSMstateImpl> impl;
 	public:
-		virtual J_ANIMATION_STATE_TYPE GetStateType()const noexcept = 0;
+		virtual J_ANIMATION_STATE_TYPE GetStateType()const noexcept = 0; 
 		JUserPtr<JAnimationFSMtransition> GetTransitionByIndex(uint index)noexcept;
 	public:
 		virtual bool CanLoop()const noexcept = 0;

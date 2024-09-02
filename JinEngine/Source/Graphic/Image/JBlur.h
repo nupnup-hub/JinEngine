@@ -45,6 +45,7 @@ namespace JinEngine
 			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 		public:
 			virtual void ApplyBlur(JGraphicBlurComputeSet* computeSet, const JDrawHelper& helper) = 0;
+			virtual void ApplyBlur(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) = 0;
 		};
 	}
 }

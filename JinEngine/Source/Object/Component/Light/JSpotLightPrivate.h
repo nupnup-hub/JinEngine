@@ -54,36 +54,9 @@ namespace JinEngine
 		private:
 			void Clear(Core::JIdentifier* ptr, const bool isForced)final;
 		};
-		class FrameUpdateInterface final : public JLightPrivate::FrameUpdateInterface
-		{
-		private:
-			friend class Graphic::JGraphic;
-		private:
-			bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept final;
-			void UpdateFrame(JLight* lit, Graphic::JLightConstantsSet& set)noexcept final;
-			void UpdateEnd(JLight* lit)noexcept final;
-		private:
-			int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept final;
-			int GetFrameIndexSize(JLight* lit, const uint layerIndex)noexcept final;
-			int GetShadowFrameLayerIndex(JLight* lit)noexcept final;
-		private:
-			//valid updating
-			bool IsFrameHotDirted(JLight* lit)noexcept final;
-			//valid after update end
-			bool IsLastFrameHotUpdated(JLight* lit)noexcept final;
-			bool IsLastUpdated(JLight* lit)noexcept final; 
-		};
-		class FrameIndexInterface final : public JLightPrivate::FrameIndexInterface
-		{ 
-		private:
-			int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept final; 
-			int GetShadowFrameLayerIndex(JLight* lit)noexcept final;
-		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;
 		JComponentPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;
-		JLightPrivate::FrameUpdateInterface& GetFrameUpdateInterface()const noexcept final;
-		JLightPrivate::FrameIndexInterface& GetFrameIndexInterface()const noexcept final;
 	};
 }

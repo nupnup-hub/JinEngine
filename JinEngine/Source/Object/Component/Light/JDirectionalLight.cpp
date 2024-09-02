@@ -31,61 +31,30 @@ SOFTWARE.
 #include"../JComponentHint.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../GameObject/JGameObject.h" 
-#include"../../Resource/Scene/JScene.h" 
-#include"../../Resource/Scene/JScenePrivate.h"
+#include"../../Resource/Scene/JScene.h"  
 #include"../../Resource/JResourceManager.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Func/JFuncList.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Geometry/JDirectXCollisionEx.h"
-#include"../../../Core/Math/JMathHelper.h"
-#include"../../../Graphic/JGraphic.h"  
-#include"../../../Graphic/Frameresource/JLightConstants.h"    
-#include"../../../Graphic/Frameresource/JFrameUpdate.h"
-#include"../../../Graphic/Culling/JCullingInterface.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../../Graphic/JGraphicDrawListInterface.h" 
-#include"../../../Graphic/ShadowMap/JCsmHandlerInterface.h"  
+#include"../../../Core/Math/JMathHelper.h"   
 #include<Windows.h>
-#include<fstream>
+#include<fstream> 
 
 using namespace DirectX;
 namespace JinEngine
 {
-	namespace
-	{
-		using LitFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder6 <
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT, Graphic::JDirectionalLightConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, Graphic::JCsmConstants&, const uint>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, Graphic::JShadowMapArrayDrawConstants&, const uint>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, Graphic::JShadowMapDrawConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS, Graphic::JDepthTestConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS, Graphic::JHzbOccComputeConstants&, const uint, const uint>>,
-			Graphic::JFrameDirty>;
-
-		static constexpr uint multiResourceCount = 2;	//shadow map(csm(multi) + ssm(single)) + debug
-		static constexpr uint singleResourceCount = 3;	// depth + mip + debug
-
-		using JGraphicWideSingleAndRestrictMultiResourceHolder = Graphic::JGraphicWideSingleAndRestrictMultiResourceHolder<singleResourceCount, true,
-			Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY,
-			Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP>;
-
-		using JCullingSingleTargetHolder = Graphic::JCullingSingleTargetHolder<Graphic::J_CULLING_TARGET::RENDERITEM>;
-	}
-	namespace
-	{
-		static auto isAvailableoverlapLam = []() {return true; };
-		static JDirectionalLightPrivate lPrivate;
-	}
 	namespace Private
 	{
-		static constexpr float initDirBias = 0.0025f;
+		//static auto isAvailableoverlapLam = []() {return false; };
+		static JDirectionalLightPrivate instance;
+
 		static constexpr float minPower = 0.1f;
 		static constexpr float maxPower = 4.0f;
-
-		using GetFrameDataPtr = Graphic::JFrameUpdateData* (*)(JLight*);
-		static GetFrameDataPtr getFrameDataPtr[Graphic::LightFrameLayer::setCount];
 
 		static XMVECTOR GetInitDir()
 		{
@@ -177,24 +146,24 @@ namespace JinEngine
 			JVector3<float> maxV3;
 			return CalProj(sceneBBox, view, mapSize, minV3, maxV3);
 		}
+
+		static JGraphicResourceTypeSet ShadowMapTypeSet() noexcept
+		{
+			return JGraphicResourceTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		}
+		static JGraphicResourceTypeSet ShadowMapArrayTypeSet() noexcept
+		{
+			return JGraphicResourceTypeSet(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, J_GRAPHIC_TASK_TYPE::SHADOW_MAP_DRAW);
+		}
+		static JGraphicResourceTypeSet DebugTypeSet() noexcept
+		{
+			return JGraphicResourceTypeSet(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
+		}
 	}
 
-	class JDirectionalLight::JDirectionalLightImpl : public Core::JTypeImplBase,
-		public LitFrameUpdate,
-		public JGraphicWideSingleAndRestrictMultiResourceHolder,
-		//public Graphic::JGraphicMultiResourceHolder,
-		public Graphic::JGraphicDrawListCompInterface,
-		public JCullingSingleTargetHolder,
-		public Graphic::JCsmHandlerInterface
+	class JDirectionalLight::JDirectionalLightImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JDirectionalLightImpl)
-	public:
-		using DirLitFrame = JFrameInterface1;
-		using CsmInfoFrame = JFrameInterface2;
-		using CsmDrawFrame = JFrameInterface3;
-		using ShadowMapNormalDrawFrame = JFrameInterface4;
-		using DepthTestFrame = JFrameInterface5;
-		using HzbOccComputeFrame = JFrameInterface6;
 	private:
 		enum MANAGED_SET
 		{
@@ -217,8 +186,10 @@ namespace JinEngine
 			{}
 		};
 		using ManageFuncList = Core::JFuncList<MANAGED_SET_COUNT, JDirectionalLight::JDirectionalLightImpl, SetParam>;
+		using CONDTION_MASK = ManageFuncList::CONDITION_MASK;
 	public:
-		JWeakPtr<JDirectionalLight> thisPointer;
+		JWeakPtr<JDirectionalLight> thisPointer = nullptr;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData = nullptr;
 	public:
 		JVector3<float> vSceneBBoxMinF;
 		JVector3<float> vSceneBBoxMaxF;
@@ -228,16 +199,15 @@ namespace JinEngine
 	public:
 		//REGISTER_PROPERTY_EX(onCsm, IsCsmActivated, SetCsm, GUI_CHECKBOX(GUI_BOOL_CONDITION_REF_USER(OnShadow, true)))
 		REGISTER_GUI_BOOL_CONDITION(OnShadow, IsShadowActivated, true)
-			REGISTER_GUI_BOOL_CONDITION(OnCsm, onCsm, false)
-			REGISTER_PROPERTY_EX(onCsm, IsCsmActivated, SetCsm, GUI_CHECKBOX(GUI_BOOL_CONDITION_USER(OnShadow, true)))
-			bool onCsm = false;
+		REGISTER_GUI_BOOL_CONDITION(OnCsm, onCsm, false)
+		REGISTER_PROPERTY_EX(onCsm, IsCsmActivated, SetCsm, GUI_CHECKBOX(GUI_BOOL_CONDITION_USER(OnShadow, true)))
+		bool onCsm = false;
 	public:
 		bool allowDisplayOccCullingDepthMap = false;
 		bool allowHzbOcclusionCulling = false;
 		bool allowHdOcclusionCulling = false;
 	public:
 		JDirectionalLightImpl(const InitData& initData, JDirectionalLight* thisLitRaw)
-			:Graphic::JCsmHandlerInterface()
 		{
 		}
 		~JDirectionalLightImpl()
@@ -296,14 +266,6 @@ namespace JinEngine
 		{
 			return thisPointer->GetOwner()->GetTransform();
 		}
-		size_t GetCsmHandlerGuid()const noexcept final
-		{
-			return thisPointer->GetGuid();
-		}
-		size_t GetCsmAreaGuid()const noexcept final
-		{
-			return thisPointer->GetOwner()->GetOwnerGuid();
-		}
 		BoundingBox GetSceneBBox()const noexcept
 		{
 			return thisPointer->GetOwner()->GetOwnerScene()->GetSceneBBox();
@@ -323,38 +285,24 @@ namespace JinEngine
 		}
 		uint GetSplitCount()const noexcept
 		{
-			return GetCsmOptionRef().GetSplitCount();
+			return graphicData->GetCsmHandleUserInterface()->GetOption().GetSplitCount();
 		}
 		float GetSplitBlendRate()const noexcept
 		{
-			return GetCsmOptionRef().GetSplitBlendRate();
+			return graphicData->GetCsmHandleUserInterface()->GetOption().GetSplitBlendRate();
 		}
 		float GetShadowDistance()const noexcept
 		{
-			return GetCsmOptionRef().GetShadowDistance();
+			return graphicData->GetCsmHandleUserInterface()->GetOption().GetShadowDistance();
 		}
 		float GetLevelBlendRate()const noexcept
 		{
-			return GetCsmOptionRef().GetLevelBlendRate();
-		}
-		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
-		{
-			switch (rType)
-			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
-				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
-				return 0;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
-				return 0;
-			default:
-				return invalidIndex;
-			}
+			return graphicData->GetCsmHandleUserInterface()->GetOption().GetLevelBlendRate();
 		}
 	public:
 		void SetShadow(bool value)noexcept
 		{
-			SetFuncList().InvokePassCondition(MANAGED_SET_SHADOW_MAP, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_SHADOW_MAP, this, SetParam(value, false));
 		}
 		void SetShadowResolution(const J_SHADOW_RESOLUTION newShadowResolution)noexcept
 		{
@@ -363,7 +311,7 @@ namespace JinEngine
 				DestroyShadowMapResource();
 				CreateShadowMapResource(CanAllocateCsm());
 			}
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetCsm(bool value)noexcept
 		{
@@ -371,19 +319,19 @@ namespace JinEngine
 				return;
 
 			onCsm = value;
-			SetFuncList().InvokePassCondition(MANAGED_SET_CSM, this, SetParam(value, false));
-			SetFrameDirty();
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_CSM, this, SetParam(value, false));
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetAllowDisplayShadowMap(bool value)
 		{
-			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_SHADOW_MAP, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_SHADOW_MAP, this, SetParam(value, false));
 		}
 		void SetAllowDisplayOccCullingDepthMap(bool value)noexcept
 		{
 			if (allowDisplayOccCullingDepthMap == value)
 				return;
 
-			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, this, SetParam(value, false));
 		}
 		void SetAllowHzbOcclusionCulling(bool value)noexcept
 		{
@@ -393,7 +341,7 @@ namespace JinEngine
 			if (AllowHdOcclusionCulling())
 				SetAllowHdOcclusionCulling(false);
 
-			SetFuncList().InvokePassCondition(MANAGED_SET_HZB_CULLING, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_HZB_CULLING, this, SetParam(value, false));
 		}
 		void SetAllowHdOcclusionCulling(bool value)noexcept
 		{
@@ -403,32 +351,32 @@ namespace JinEngine
 			if (AllowHzbOcclusionCulling())
 				SetAllowHzbOcclusionCulling(false);
 
-			SetFuncList().InvokePassCondition(MANAGED_SET_HD_CULLING, this, SetParam(value, false));
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_HD_CULLING, this, SetParam(value, false));
 		}
 		void SetSplitCount(const uint newCount)noexcept
 		{
-			GetCsmOptionRef().SetSplitCount(newCount);
+			graphicData->GetCsmHandleUserInterface()->GetOption().SetSplitCount(newCount);
 			if (CanAllocateCsm())
 			{
 				DestroyShadowMapResource();
 				CreateShadowMapResource(CanAllocateCsm());
 			}
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetSplitBlendRate(const float value)noexcept
 		{
-			GetCsmOptionRef().SetSplitBlendRate(value);
-			SetFrameDirty();
+			graphicData->GetCsmHandleUserInterface()->GetOption().SetSplitBlendRate(value);
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetShadowDistance(const float value)noexcept
 		{
-			GetCsmOptionRef().SetShadowDistance(std::clamp(value, Constants::minCamFrustumNear, Constants::maxCamFrustumFar));
-			SetFrameDirty();
+			graphicData->GetCsmHandleUserInterface()->GetOption().SetShadowDistance(std::clamp(value, Constants::minCamFrustumNear, Constants::maxCamFrustumFar));
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void SetLevelBlendRate(const float value)noexcept
 		{
-			GetCsmOptionRef().SetLevelBlendRate(value);
-			SetFrameDirty();
+			graphicData->GetCsmHandleUserInterface()->GetOption().SetLevelBlendRate(value);
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		static ManageFuncList& SetFuncList()
 		{
@@ -436,11 +384,15 @@ namespace JinEngine
 			return setFuncList;
 		}
 	public:
-		REGISTER_METHOD_GUI_WIDGET(CsmSplitCount, GetSplitCount, SetSplitCount, GUI_SLIDER(Graphic::JCsmOption::minCountOfSplit, Graphic::JCsmOption::maxCountOfSplit, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmSplitBlendRate, GetSplitBlendRate, SetSplitBlendRate, GUI_SLIDER(Graphic::JCsmOption::minSplitRate, Graphic::JCsmOption::maxSplitRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmShadowDistance, GetShadowDistance, SetShadowDistance, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmLevelBlendRate, GetLevelBlendRate, SetLevelBlendRate, GUI_SLIDER(Graphic::JCsmOption::minLevelRate, Graphic::JCsmOption::maxLevelRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmSplitCount, GetSplitCount, SetSplitCount, GUI_SLIDER(JCsmOption::minCountOfSplit, JCsmOption::maxCountOfSplit, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmSplitBlendRate, GetSplitBlendRate, SetSplitBlendRate, GUI_SLIDER(JCsmOption::minSplitRate, JCsmOption::maxSplitRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmShadowDistance, GetShadowDistance, SetShadowDistance, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_GET_SET_METHOD_EX(CsmLevelBlendRate, GetLevelBlendRate, SetLevelBlendRate, GUI_SLIDER(JCsmOption::minLevelRate, JCsmOption::maxLevelRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
 	public:
+		bool IsActivated()const noexcept
+		{
+			return thisPointer->IsActivated();
+		}
 		REGISTER_METHOD(IsShadowActivated)
 		bool IsShadowActivated()const noexcept
 		{
@@ -459,7 +411,7 @@ namespace JinEngine
 		//return IsCsmActivated() && CanUseCsm()
 		bool CanAllocateCsm()const noexcept
 		{
-			return IsCsmActivated() && CanUseCsm() && GetCsmTargetCount() > 0;
+			return IsCsmActivated() && CanUseCsm() && graphicData->GetCsmHandleUserInterface()->GetTargetCount() > 0;
 		}
 		bool AllowDisplayShadowMap()const noexcept
 		{
@@ -477,7 +429,7 @@ namespace JinEngine
 		{
 			return allowHdOcclusionCulling;
 		}
-	public:
+	private:
 		void CreateShadowMapResource(const bool canAllocCsm)noexcept
 		{
 			if (canAllocCsm)
@@ -485,194 +437,137 @@ namespace JinEngine
 				//has order dependency 
 				//1. RegisterCsmHandlerface();
 				//2. RegisterCsmFrameData
-				RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO);
-				const uint targetCount = GetCsmTargetCount();
+
+				const uint targetCount = graphicData->GetCsmHandleUserInterface()->GetTargetCount();
+				const JCsmOption csmOption = graphicData->GetCsmHandleUserInterface()->GetOption();
+				const uint width = thisPointer->GetShadowMapSize();
+				const uint arrayCount = csmOption.GetSplitCount();
+
+				JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW, thisPointer->GetAreaGuid(), targetCount);
+				JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO, thisPointer->GetAreaGuid(), targetCount);
+
+				JGraphicResourceTypeSet typeSet = Private::ShadowMapArrayTypeSet();
+				JGraphicResourceCreationDesc desc(typeSet, width, width, arrayCount);
+
 				for (uint i = 0; i < targetCount; ++i)
-				{
-					const uint width = thisPointer->GetShadowMapSize();
-					const uint arrayCount = GetCsmOptionRef().GetSplitCount();
-					CreateResource({ width, width, arrayCount }, Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY);
-				}
+					GMI()->CreateGraphicResource(graphicData.Get(), desc);
 			}
 			else
-				CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP);
+			{
+				JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW, thisPointer->GetAreaGuid());
+
+				JGraphicResourceTypeSet typeSet = Private::ShadowMapTypeSet();
+				JGraphicResourceCreationDesc desc(typeSet, JVector2F(thisPointer->GetShadowMapSize()));
+
+				GMI()->CreateGraphicResource(graphicData.Get(), desc);
+			}
 
 			if (thisPointer->AllowDisplayShadowMap())
 				CreateShadowMapDebugResource(canAllocCsm);
-
-			RegisterLightFrameData(JLightType::SmToFrameR(GetLightType(), canAllocCsm));
-			AddDrawShadowRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+	
+			JGraphicRequestCreationDesc desc(J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP, J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::UPDATED);
+			GMI()->RequestExecutableGraphicFeature(graphicData.Get(), desc);
 		}
 		void DestroyShadowMapResource()noexcept
 		{
+			GMI()->CancelExecutableGraphicFeature(graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP);
+
+			DestroyShadowMapDebugResource();
+
+			JGraphicResourceTypeSet smSet = Private::ShadowMapTypeSet();
+			JGraphicResourceTypeSet smaSet = Private::ShadowMapArrayTypeSet();
+
+			GMI()->DestroyGraphicResource(graphicData.Get(), smSet);
+			GMI()->DestroyAllGraphicsResourcesOfType(graphicData.Get(), smaSet.resouce);
+
+			//GMI()->DestroyAllGraphicsResources(graphicData.Get());
 			//DeRegisterCsmHandlerface();
-			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO);
-			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW);
-			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW);
-
-			DestroyAllTexture();
-
-			DestroyCullingData(Graphic::J_CULLING_TYPE::FRUSTUM);
-			PopDrawShadowRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO);
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW);
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_DRAW);
 		};
 		void CreateShadowMapDebugResource(const bool canAllocCsm)
 		{
-			uint targetCount = 1; 
-			if (canAllocCsm)
-				targetCount = GetCsmTargetCount();
-
-			if (GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP) != 0)
-				return;
+			auto csmUser = graphicData->GetCsmHandleUserInterface();
+			auto gUser = graphicData->GetGraphicResourceUserInterface();
 			 
-			const uint debugResourceCount = GetCsmOption().GetSplitCount() * targetCount;
+			//already exist handle
+			if (gUser->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE))
+				return;
+
+			JGraphicResourceCreationDesc desc(Private::DebugTypeSet(), JVector2F(thisPointer->GetShadowMapSize()));
+			const uint debugResourceCount = canAllocCsm ? (csmUser->GetOption().GetSplitCount() * csmUser->GetTargetCount()) : 1;
 			for (uint i = 0; i < debugResourceCount; ++i)
-				CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+				GMI()->CreateGraphicResource(graphicData.Get(), desc);
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+			GMI()->DestroyAllGraphicsResourcesOfType(graphicData.Get(), Private::DebugTypeSet().resouce);
 		}
 	public:
 		void Activate()
-		{
+		{ 
+			IMPL_REGISTER_FRAME_UPDATE_ACTION_HOT();
+
 			if (AllowHdOcclusionCulling() && AllowHzbOcclusionCulling())
 				allowHdOcclusionCulling = allowHzbOcclusionCulling = false;
 
-			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
-			SetFuncList().InvokeAll(this, true, SetParam(true, true)); 
+			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT, thisPointer->GetAreaGuid());
+			SetFuncList().InvokeAll(this, CONDTION_MASK::PASS_NONE, SetParam(true, true));
+
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void DeActivate()
 		{ 
-			//has order dependency
-			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
-			SetFuncList().InvokeAllReverse(this, true, SetParam(false, true));
-			DestroyAllCullingData();
-			DestroyAllTexture();
-		}
-	public:
-		void UpdateFrame(Graphic::JDirectionalLightConstants& constant) noexcept final
-		{
-			const XMMATRIX viewM = view.LoadXM();
-			const XMMATRIX projM = proj.LoadXM();
+			//has order dependency 
+			SetFuncList().InvokeAllReverse(this, CONDTION_MASK::PASS_NONE, SetParam(false, true));
+			GMI()->CancelExecutableGraphicFeature(graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::DRAW_SHADOW_MAP);
 
-			constant.view.StoreXM(XMMatrixTranspose(viewM));
-			constant.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
-			if (CanAllocateCsm())
-			{
-				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
-				//constant.shadowMapTransform.StoreXM(XMMatrixTranspose(viewM));
-				constant.shadowMapIndex = GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, 0);
-				constant.csmDataIndex = CsmInfoFrame::GetFrameIndex();
-			}
-			else if (thisPointer->IsShadowActivated())
-			{
-				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
-				constant.shadowMapIndex = GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0);
-			}
-
-			constant.shadowMapType = (uint)GetShadowMapType();
-			constant.color = thisPointer->GetColor();
-			constant.power = thisPointer->GetPower();
-			constant.direction = direction;
-			constant.frustumSize = JVector2F(abs(vSceneBBoxMaxF.x - vSceneBBoxMinF.x), abs(vSceneBBoxMaxF.y - vSceneBBoxMinF.y));
-			constant.frustumNear = vSceneBBoxMinF.z;
-			constant.frustumFar = vSceneBBoxMaxF.z;
-			constant.penumbraScale = thisPointer->GetPenumbraWidth();
-			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
-			constant.shadowMapSize = thisPointer->GetShadowMapSize();
-			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
-			constant.tanAngle = XMVectorGetX(DirectX::XMVector3AngleBetweenNormals(constant.direction.ToXmV(), Private::GetInitDir()));
-			constant.bias = thisPointer->GetBias();
-			if (constant.direction == Private::GetInitDir())
-				constant.bias -= Private::initDirBias;
-			DirLitFrame::MinusMovedDirty();
+			GMI()->DestroyAllGraphicsResources(graphicData.Get());
+			GMI()->DestroyAllCullingData(graphicData.Get());
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT);
+			IMPL_DEREGISTER_FRAME_UPDATE_ACTION();
 		}
-		void UpdateFrame(Graphic::JCsmConstants& constant, const uint index)noexcept final
+	private:
+		void HotUpdate()
 		{
-			const auto& result = GetCsmComputeResult(index);
-			for (uint i = 0; i < result.subFrustumCount; ++i)
-			{
-				constant.scale[i] = result.scale[i];
-				constant.posOffset[i] = result.posOffset[i];
-				constant.frustumNear[i] = result.fNear[i];
-				constant.frustumFar[i] = result.fFar[i];
-			}
-			constant.mapMinBorder = (float)(1.0f / (float)thisPointer->GetShadowMapSize());
-			constant.mapMaxBorder = (float)(((float)thisPointer->GetShadowMapSize() - 1.0f) / (float)thisPointer->GetShadowMapSize());
-			constant.levelBlendRate = GetCsmOptionRef().GetLevelBlendRate();
-			constant.count = result.subFrustumCount;
-			CsmInfoFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JShadowMapArrayDrawConstants& constant, const uint index)noexcept final
-		{
-			const auto& result = GetCsmComputeResult(index);
-			const XMMATRIX viewM = view.LoadXM();
-			for (uint i = 0; i < result.subFrustumCount; ++i)
-			{
-				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM,
-					result.shadowProjM[i].LoadXM())));
-			}
-			CsmDrawFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JShadowMapDrawConstants& constant)noexcept final
-		{
-			//for draw shadow map
-			constant.shadowMapTransform.StoreXM(XMMatrixTranspose(XMMatrixMultiply(view.LoadXM(), proj.LoadXM())));
-			ShadowMapNormalDrawFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JDepthTestConstants& constants)noexcept final
-		{
-			//for draw depth map
-			constants.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(view.LoadXM(), proj.LoadXM())));
-			DepthTestFrame::MinusMovedDirty();
-		}
-		void UpdateFrame(Graphic::JHzbOccComputeConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
-		{
-			//only directional light  can execute occ
-			auto info = JGraphic::Instance().GetGraphicInfo();
-			auto option = JGraphic::Instance().GetGraphicOption();
-
-			const XMMATRIX viewM = view.LoadXM();
-			const XMMATRIX projM = proj.LoadXM();
-
-			constant.view.StoreXM(XMMatrixTranspose(viewM));
-			constant.proj.StoreXM(XMMatrixTranspose(projM)); 
-
-			constant.viewWidth = vSceneBBoxMaxF.x - vSceneBBoxMinF.x;
-			constant.viewHeight = vSceneBBoxMaxF.y - vSceneBBoxMinF.y;
-			constant.camNear = vSceneBBoxMinF.z;
-			constant.camFar = vSceneBBoxMaxF.z;
-			constant.validQueryCount = queryCount;
-			constant.validQueryOffset = queryOffset;
-			constant.occMapCount = info.resource.occlusionMapCount;
-			constant.occIndexOffset = JMathHelper::Log2Int(info.resource.occlusionMinSize);
-			constant.correctFailTrigger = (int)option.culling.allowHZBCorrectFail;
-			constant.usePerspective = false;	//use ortho
-			HzbOccComputeFrame::MinusMovedDirty();
+			UpdateLightTransform();
 		}
 		void UpdateLightTransform()noexcept
 		{
 			const XMMATRIX viewM = Private::CalView(GetTransform());
 			view.StoreXM(viewM);
 			proj.StoreXM(Private::CalProj(GetSceneBBox(), view, thisPointer->GetShadowResolution(), vSceneBBoxMinF, vSceneBBoxMaxF));
-			if (CanAllocateCsm())
-				CsmUpdate(viewM, GetSceneBBox(), thisPointer->GetShadowMapSize());
 			direction = Private::CalLightWorldDir(GetTransform());
+
+			if (CanAllocateCsm())
+				graphicData->GetCsmHandleUserInterface()->Update(viewM, GetSceneBBox(), thisPointer->GetShadowMapSize());
 		}
 		void UpdateCsmTargetCount(const uint index, const bool isRegister)
 		{
 			//can alloc csm = true
-			const int smArrayCount = GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY);
-			const int targetCount = GetCsmTargetCount();
+			auto csmUser = graphicData->GetCsmHandleUserInterface();
+			auto gUser = graphicData->GetGraphicResourceUserInterface();
+
+			const int smArrayCount = gUser->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY);
+			const int targetCount = csmUser->GetTargetCount();
 			const bool isSameCount = smArrayCount == targetCount;
 
-			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW);
-			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO);
-			CsmDrawFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, (CsmDrawFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), GetCsmTargetCount());
-			CsmInfoFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, (CsmInfoFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), GetCsmTargetCount());
+			//DestroyShadowMapResource();
+			//CreateShadowMapResource(CanAllocateCsm());
 
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW);
+			GMI()->DestroyFrameUploadData(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO);
+
+			//Reflect new target count
+			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::SHADOW_MAP_ARRAY_DRAW, thisPointer->GetAreaGuid(), targetCount);
+			JGMUtil::CreateFrame(graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::CASCADE_SHADOW_MAP_INFO, thisPointer->GetAreaGuid(), targetCount);
+
+			JGraphicResourceTypeSet smaTypeSet = Private::ShadowMapArrayTypeSet();
+			JGraphicResourceTypeSet debugTypeSet = Private::DebugTypeSet();
 			if (isRegister)
 			{
+				//add case
 				if (!isSameCount)
 				{
 					if (smArrayCount == 0 && targetCount == 1)
@@ -682,28 +577,32 @@ namespace JinEngine
 					}
 					else
 					{
+						const JCsmOption csmOption = graphicData->GetCsmHandleUserInterface()->GetOption();
 						const uint width = thisPointer->GetShadowMapSize();
-						const uint arrayCount = GetCsmOptionRef().GetSplitCount();
-						CreateResource({ width, width, arrayCount }, Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY);
+						const uint arrayCount = csmOption.GetSplitCount();
 
-						//GetDataCount(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP
+						//add one target
+						JGraphicResourceCreationDesc desc(smaTypeSet, width, width, arrayCount);
+						GMI()->CreateGraphicResource(graphicData.Get(), desc);
+
+						//add one debugMap
 						if (thisPointer->AllowDisplayShadowMap())
-							CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
+						{
+							JGraphicResourceCreationDesc debugDesc(debugTypeSet, JVector2F(thisPointer->GetShadowMapSize()));
+							GMI()->CreateGraphicResource(graphicData.Get(), debugDesc, csmUser->GetOption().GetSplitCount());
+						}
 					}
 				}
 			}
-			else
+			else if (!isSameCount)
 			{
-				CsmInfoFrame::SetMovedDirty();
-				CsmDrawFrame::SetMovedDirty();
-				if (!isSameCount)
-				{
-					DestroyMultiTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, index);
-					if (thisPointer->AllowDisplayShadowMap())
-						DestroyMultiTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, index);
-				}
+				//subtract case
+				const uint debugResourceIndex = csmUser->GetOption().GetSplitCount() * index;
+				GMI()->DestroyGraphicResource(graphicData.Get(), smaTypeSet, index);
+				if (thisPointer->AllowDisplayShadowMap())
+					GMI()->DestroyGraphicResource(graphicData.Get(), J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP, debugResourceIndex, csmUser->GetOption().GetSplitCount());
 			}
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 	public:
 		static bool DoCopy(JDirectionalLight* from, JDirectionalLight* to)
@@ -713,126 +612,53 @@ namespace JinEngine
 			from->impl->SetAllowHdOcclusionCulling(to->impl->AllowHdOcclusionCulling());
 			from->impl->SetAllowDisplayOccCullingDepthMap(to->impl->AllowDisplayOccCullingDepthMap());
 
-			to->impl->SetFrameDirty();
+			JGMUtil::SetFrameDirty(to->impl->graphicData.Get());
 			return true;
 		}
 	public:
 		void NotifyReAlloc()
-		{
-			if (thisPointer.IsValid())
-			{
-				JLightPrivate::ChildInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
-				JLightPrivate::ChildInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
-			}
-			RegisterInterfacePointer();
-
-			JFrameUpdateData::ReRegisterFrameData(JLightType::LitToFrameR(GetLightType()), CastLightFrameInteface());
-			JFrameUpdateData::ReRegisterFrameData(JLightType::SmToFrameR(GetLightType(), CanAllocateCsm()), CastShadowMapFrameInteface());
-			if (CanAllocateCsm())
-				JFrameUpdateData::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, (CsmInfoFrame*)this);
-			JFrameUpdateData::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS, (DepthTestFrame*)this);
-			JFrameUpdateData::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS, (HzbOccComputeFrame*)this);
-		}
-		void NotifyAddCsmTarget(const uint index)final
-		{
-			UpdateCsmTargetCount(index, true);
-		}
-		void NotifyPopCsmTarget(const uint index)final
-		{
-			UpdateCsmTargetCount(index, false);
-		}
-		void NotifyCsmTargetZero()final
-		{
-			SetCsm(false);
-		}
-	public:
-		//util
-		JFrameUpdateData* CastLightFrameInteface()
-		{
-			return (DirLitFrame*)this;
-		}
-		JFrameUpdateData* CastShadowMapFrameInteface()
-		{
-			if (!thisPointer->IsShadowActivated())
-				return nullptr;
-
-			if (CanAllocateCsm())
-				return (CsmDrawFrame*)this;
-			else
-				return (ShadowMapNormalDrawFrame*)this;
-		}
-		JFrameUpdateData* CastFrameInterface(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
-		{
-			switch (type)
-			{
-			case Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT:
-				return (DirLitFrame*)this;
-			case Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO:
-				return (CsmInfoFrame*)this;
-			case Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW:
-				return (CsmDrawFrame*)this;
-			case Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW:
-				return (ShadowMapNormalDrawFrame*)this;
-			case Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS:
-				return (DepthTestFrame*)this;
-			case Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS:
-				return (HzbOccComputeFrame*)this;
-			default:
-				break;
-			}
-			return nullptr;
-		}
+		{}
 	public:
 		void RegisterThisPointer(JDirectionalLight* lit)
 		{
 			thisPointer = Core::GetWeakPtr(lit);
 		}
-		void RegisterInterfacePointer()
-		{
-			Graphic::JGraphicResourceInterface::SetInterfacePointer(this);
-			Graphic::JCullingInterface::SetInterfacePointer(this);
-			Graphic::JCsmHandlerInterface::SetInterfacePointer(this);
-		}
 		void RegisterPostCreation()
 		{
-			JLightPrivate::ChildInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
-		}
-		void RegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
-		{
-			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT)
-				DirLitFrame::RegisterFrameData(type, (DirLitFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO)
-				CsmInfoFrame::RegisterFrameData(type, (CsmInfoFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), GetCsmTargetCount());
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW)
-				CsmDrawFrame::RegisterFrameData(type, (CsmDrawFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), GetCsmTargetCount());
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW)
-				ShadowMapNormalDrawFrame::RegisterFrameData(type, (ShadowMapNormalDrawFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS)
-				DepthTestFrame::RegisterFrameData(type, (DepthTestFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS)
-				HzbOccComputeFrame::RegisterFrameData(type, (HzbOccComputeFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), 1);
 		}
 		void DeRegisterPreDestruction()
 		{
-			if (thisPointer != nullptr)
-				JLightPrivate::ChildInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
-		}
-		void DeRegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
-		{
-			JFrameUpdateData::DeRegisterFrameData(type, CastFrameInterface(type));
 		}
 		static void RegisterTypeData()
 		{
-			Core::JIdentifier::RegisterPrivateInterface(JDirectionalLight::StaticTypeInfo(), lPrivate);
-			IMPL_REALLOC_BIND(JDirectionalLight::JDirectionalLightImpl, thisPointer)
-				SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
+			Core::JIdentifier::RegisterPrivateInterface(JDirectionalLight::StaticTypeInfo(), Private::instance);
+			IMPL_REALLOC_BIND()
+			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
 
 			auto setCsmLam = [](JDirectionalLightImpl* impl, SetParam p)
 			{
 				if (p.value)
-					impl->RegisterCsmHandlerface();
+				{
+					auto notifyAddLam = [](JUserPtr<JObject> obj, int index)
+					{
+						static_cast<JDirectionalLight*>(obj.Get())->impl->UpdateCsmTargetCount(index, true);
+					};
+					auto notifySubtractLam = [](JUserPtr<JObject> obj, int index)
+					{
+						static_cast<JDirectionalLight*>(obj.Get())->impl->UpdateCsmTargetCount(index, false);
+					};
+
+					NotifyAddCsmTargetF::Ptr addPtr = notifyAddLam;
+					NotifySubtractCsmTargetF::Ptr subtractPtr = notifySubtractLam;
+
+					JCsmHandleCreationDesc desc(impl->thisPointer->GetGuid(), impl->thisPointer->GetOwner()->GetOwnerGuid());
+					desc.notifyAddCsmTargetB = Core::UniqueBind(addPtr, JUserPtr<JObject>(impl->thisPointer), Core::JEmptyType());
+					desc.notifySubtractCsmTargetB = Core::UniqueBind(subtractPtr, JUserPtr<JObject>(impl->thisPointer), Core::JEmptyType());
+
+					GMI()->CreateCsmHandler(impl->graphicData.Get(), desc);
+				}
 				else
-					impl->DeRegisterCsmHandlerface();
+					GMI()->DestroyCsmHandler(impl->graphicData.Get());
 
 				//has order dependency in activate processs
 				//csm -> shadow map
@@ -841,25 +667,29 @@ namespace JinEngine
 					impl->DestroyShadowMapResource();
 					impl->CreateShadowMapResource(impl->CanAllocateCsm());
 				}
-				impl->SetFrameDirty();
+				JGMUtil::SetFrameDirty(impl->graphicData.Get());
 			};
 			auto setShadowMapLam = [](JDirectionalLightImpl* impl, SetParam p)
 			{
+				auto gUser = impl->graphicData->GetGraphicResourceUserInterface();
+				JGraphicResourceTypeSet smSet = Private::ShadowMapTypeSet();
+				JGraphicResourceTypeSet smaSet = Private::ShadowMapArrayTypeSet();
+
 				if (p.value)
 				{
-					if (impl->HasHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP) || impl->HasHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY))
+					if (gUser->IsValidHandle(smSet.resouce, smSet.task) || gUser->IsValidHandle(smaSet.resouce, smaSet.task))
 						return;
 
 					impl->CreateShadowMapResource(impl->CanAllocateCsm());
 				}
 				else
 				{
-					if (!impl->HasHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP) && !impl->HasHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY))
+					if (!gUser->IsValidHandle(smSet.resouce, smSet.task) && !gUser->IsValidHandle(smaSet.resouce, smaSet.task))
 						return;
 
 					impl->DestroyShadowMapResource();
 				}
-				impl->SetFrameDirty();
+				JGMUtil::SetFrameDirty(impl->graphicData.Get());
 			};
 			auto setDisplayShadowMapLam = [](JDirectionalLightImpl* impl, SetParam p)
 			{
@@ -867,68 +697,127 @@ namespace JinEngine
 					impl->CreateShadowMapDebugResource(impl->CanAllocateCsm());
 				else
 					impl->DestroyShadowMapDebugResource();
-				impl->SetFrameDirty();
+				JGMUtil::SetFrameDirty(impl->graphicData.Get());
 			};
 			auto setDisplayOccDepthMapLam = [](JDirectionalLightImpl* impl, SetParam p)
 			{
+				const JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
 				if (p.value)
 				{
-					auto gInfo = JGraphic::Instance().GetGraphicInfo();
-					Graphic::JGraphicResourceCreationDesc desc(JVector2F(gInfo.resource.occlusionWidth, gInfo.resource.occlusionHeight));
-					if (impl->AllowDisplayOccCullingDepthMap())
-						desc.bindDesc.allowMipmapBind = true;
-					impl->CreateResource(desc, Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
+					const bool hasHandle = impl->graphicData.Get()->GetGraphicResourceUserInterface()->IsValidHandle(typeSet.resouce, typeSet.task);
+					if (hasHandle)
+						return;
+
+					JGraphicResourceCreationDesc desc(typeSet);
+					desc.useEngineDefine = true;
+					desc.bindDesc.allowMipmapBind = impl->allowHzbOcclusionCulling;
+					GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
 				}
 				else
-					impl->DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
-				impl->SetFrameDirty();
+					GMI()->DestroyGraphicResource(impl->graphicData.Get(), typeSet);
+				JGMUtil::SetFrameDirty(impl->graphicData.Get());
 			};
 			auto setHzbCullingLam = [](JDirectionalLightImpl* impl, SetParam p)
 			{
+				const JCullingTypeSet cullingTypeSet(J_CULLING_TYPE::HZB_OCCLUSION, J_CULLING_TARGET::RENDERITEM);
 				if (p.value)
 				{
-					auto gInfo = JGraphic::Instance().GetGraphicInfo();
-					impl->RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS);
-					impl->RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS);
-					impl->CreateResource(JVector2F(gInfo.resource.occlusionWidth, gInfo.resource.occlusionHeight), Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
-					impl->CreateResource(JVector2F(gInfo.resource.occlusionWidth, gInfo.resource.occlusionHeight), Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP);
-					impl->CreateHzbOccCullingData();
-					impl->AddHzbOccCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
-					impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+					JGMUtil::CreateFrame(impl->graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS, impl->thisPointer->GetAreaGuid());
+					JGMUtil::CreateFrame(impl->graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS, impl->thisPointer->GetAreaGuid());
+
+					JGraphicResourceTypeSet typeSet;
+					JGraphicResourceCreationDesc desc(typeSet);
+					desc.useEngineDefine = true;
+
+					desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP;
+					desc.type.task = J_GRAPHIC_TASK_TYPE::HZB_CULLING;
+					GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
+
+					desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP;
+					desc.type.task = J_GRAPHIC_TASK_TYPE::HZB_CULLING;
+					GMI()->CreateGraphicResource(impl->graphicData.Get(), desc);
+
+					GMI()->CreateCullingData(impl->graphicData.Get(), cullingTypeSet);
+
+					JGraphicRequestCreationDesc requestDesc(J_GRAPHIC_REQUEST_TYPE::HZB_OCCLUSION_CULLING, J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::UPDATED);
+					GMI()->RequestExecutableGraphicFeature(impl->graphicData.Get(), requestDesc);
+
+					auto gUser = impl->graphicData.Get()->GetGraphicResourceUserInterface();
+
+					const uint mipSrvCount = gUser->GetViewCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, J_GRAPHIC_BIND_TYPE::SRV, J_GRAPHIC_TASK_TYPE::HZB_CULLING);
+					const uint debugSrvCount = gUser->GetViewCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, J_GRAPHIC_BIND_TYPE::SRV, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
+					const bool hasDebug = debugSrvCount != 0;
+
+					if (!hasDebug)
+						impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+					else if (mipSrvCount != debugSrvCount)
+					{
+						impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
+						impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+					}
 				}
 				else
 				{
-					if (p.isCalledByAct || (!impl->AllowHzbOcclusionCulling() && !impl->AllowHdOcclusionCulling()))
-						impl->DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS);
 
-					impl->DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS);
-					impl->DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
-					impl->DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP);
-					impl->DestroyCullingData(Graphic::J_CULLING_TYPE::HZB_OCCLUSION);
-					impl->PopHzbOccCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer);
-					impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
+					GMI()->CancelExecutableGraphicFeature(impl->graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::HZB_OCCLUSION_CULLING);
+					GMI()->DestroyCullingData(impl->graphicData.Get(), cullingTypeSet);
+
+					JGraphicResourceTypeSet typeSet;
+					typeSet.resouce = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP;
+					typeSet.task = J_GRAPHIC_TASK_TYPE::HZB_CULLING;
+					GMI()->DestroyGraphicResource(impl->graphicData.Get(), typeSet);
+
+					typeSet.resouce = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP;
+					typeSet.task = J_GRAPHIC_TASK_TYPE::HZB_CULLING;
+					GMI()->DestroyGraphicResource(impl->graphicData.Get(), typeSet);
+
+					GMI()->DestroyFrameUploadData(impl->graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::HZB_OCC_COMPUTE_PASS);
+					if (p.isCalledByAct || (!impl->AllowHzbOcclusionCulling() && !impl->AllowHdOcclusionCulling()))
+						GMI()->DestroyFrameUploadData(impl->graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS);
+
+					if (!impl->AllowHdOcclusionCulling())
+						impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
 				}
-				impl->SetFrameDirty();
+				JGMUtil::SetFrameDirty(impl->graphicData.Get());
 			};
 			auto setHdCullingLam = [](JDirectionalLightImpl* impl, SetParam p)
 			{
+				const JCullingTypeSet cullingTypeSet(J_CULLING_TYPE::HD_OCCLUSION, J_CULLING_TARGET::RENDERITEM);
 				if (p.value)
 				{
-					impl->RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS);
-					impl->CreateHdOccCullingData();
-					AddHdOccCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
-					impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+					JGMUtil::CreateFrame(impl->graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS, impl->thisPointer->GetAreaGuid());
+					GMI()->CreateCullingData(impl->graphicData.Get(), cullingTypeSet);
+
+					JGraphicRequestCreationDesc requestDesc(J_GRAPHIC_REQUEST_TYPE::HARD_WARE_OCCLUSION_CULLING, J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::UPDATED);
+					GMI()->RequestExecutableGraphicFeature(impl->graphicData.Get(), requestDesc);
+
+					if (impl->AllowDisplayOccCullingDepthMap())
+					{
+						auto gUser = impl->graphicData->GetGraphicResourceUserInterface();
+						const uint debugSrvCount = gUser->GetViewCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, J_GRAPHIC_BIND_TYPE::SRV, J_GRAPHIC_TASK_TYPE::DEPTH_MAP_VISUALIZE);
+						const bool hasDebug = debugSrvCount != 0;
+
+						if (!hasDebug)
+							impl->SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+						else if (debugSrvCount > 1)
+						{
+							//이전 hzb occ를 사용했고 debug map이 남아있을 경우 재생성
+							impl->SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
+							impl->SetFuncList().InvokePassLocalCondition(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(true, p.isCalledByAct));
+						}
+					}
 				}
 				else
 				{
-					if (p.isCalledByAct || (!impl->AllowHzbOcclusionCulling() && !impl->AllowHdOcclusionCulling()))
-						impl->DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS);
+					GMI()->CancelExecutableGraphicFeature(impl->graphicData.Get(), J_GRAPHIC_REQUEST_TYPE::HARD_WARE_OCCLUSION_CULLING);
+					GMI()->DestroyCullingData(impl->graphicData.Get(), cullingTypeSet);
 
-					impl->DestroyCullingData(Graphic::J_CULLING_TYPE::HD_OCCLUSION);
-					impl->PopHdOccCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer);
-					impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
+					if (p.isCalledByAct || (!impl->AllowHzbOcclusionCulling() && !impl->AllowHdOcclusionCulling()))
+						GMI()->DestroyFrameUploadData(impl->graphicData.Get(), J_FRAME_RESOURCE_UPLOAD_TYPE::DEPTH_TEST_PASS);
+					if (!impl->AllowHzbOcclusionCulling())
+						impl->SetFuncList().Invoke(MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP, impl, SetParam(false, p.isCalledByAct));
 				}
-				impl->SetFrameDirty();
+				JGMUtil::SetFrameDirty(impl->graphicData.Get());
 			};
 			using SetCallable = Core::JStaticCallable<void, JDirectionalLightImpl*, SetParam>;
 			using CondCallable = Core::JMemberCNCallable<JDirectionalLightImpl, bool>;
@@ -939,20 +828,7 @@ namespace JinEngine
 			SetFuncList().Register(std::make_unique<SetCallable>(setDisplayOccDepthMapLam), std::make_unique<CondCallable>(&JDirectionalLightImpl::AllowDisplayOccCullingDepthMap), MANAGED_SET_DISPLAY_OCC_CULLING_DEPTH_MAP);
 			SetFuncList().Register(std::make_unique<SetCallable>(setHzbCullingLam), std::make_unique<CondCallable>(&JDirectionalLightImpl::AllowHzbOcclusionCulling), MANAGED_SET_HZB_CULLING);
 			SetFuncList().Register(std::make_unique<SetCallable>(setHdCullingLam), std::make_unique<CondCallable>(&JDirectionalLightImpl::AllowHdOcclusionCulling), MANAGED_SET_HD_CULLING);
-		
-			auto getDirFrameLam = [](JLight* lit)->JFrameUpdateData* {return (DirLitFrame*)(static_cast<JDirectionalLight*>(lit)->impl.get()); };
-			auto getCsmInfoFrameLam = [](JLight* lit)->JFrameUpdateData* {return (CsmInfoFrame*)(static_cast<JDirectionalLight*>(lit)->impl.get()); };
-			auto getCsmDrawFrameLam = [](JLight* lit)->JFrameUpdateData* {return (CsmDrawFrame*)(static_cast<JDirectionalLight*>(lit)->impl.get()); };
-			auto getShadowMapNormalFrameLam = [](JLight* lit)->JFrameUpdateData* {return (ShadowMapNormalDrawFrame*)(static_cast<JDirectionalLight*>(lit)->impl.get()); };
-			auto getDepthTestFrameLam = [](JLight* lit)->JFrameUpdateData* {return (DepthTestFrame*)(static_cast<JDirectionalLight*>(lit)->impl.get()); };
-			auto getHzbFrameLam = [](JLight* lit)->JFrameUpdateData* {return (HzbOccComputeFrame*)(static_cast<JDirectionalLight*>(lit)->impl.get()); };
- 
-			Private::getFrameDataPtr[Graphic::LightFrameLayer::light] = getDirFrameLam;
-			Private::getFrameDataPtr[Graphic::LightFrameLayer::csm] = getCsmInfoFrameLam;
-			Private::getFrameDataPtr[Graphic::LightFrameLayer::shadowMapArray] = getCsmDrawFrameLam;
-			Private::getFrameDataPtr[Graphic::LightFrameLayer::shadowMap] = getShadowMapNormalFrameLam;
-			Private::getFrameDataPtr[Graphic::LightFrameLayer::depthTest] = getDepthTestFrameLam;
-			Private::getFrameDataPtr[Graphic::LightFrameLayer::hzb] = getHzbFrameLam;
+			SetFuncList().RegisterGlobalCond(std::make_unique<CondCallable>(&JDirectionalLightImpl::IsActivated));
 		}
 	};
 
@@ -965,15 +841,11 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JDirectionalLight::PrivateInterface()const noexcept
 	{
-		return lPrivate;
+		return Private::instance;
 	}
-	const Graphic::JGraphicResourceUserInterface JDirectionalLight::GraphicResourceUserInterface()const noexcept
+	JGraphicModuleManagedDataFrame* JDirectionalLight::ModuleManagedData()const noexcept
 	{
-		return Graphic::JGraphicResourceUserInterface(impl.get());
-	}
-	const Graphic::JCullingUserInterface JDirectionalLight::CullingUserInterface()const noexcept
-	{
-		return Graphic::JCullingUserInterface(impl.get());
+		return impl->graphicData.Get();
 	}
 	J_LIGHT_TYPE JDirectionalLight::GetLightType()const noexcept
 	{
@@ -998,6 +870,26 @@ namespace JinEngine
 	float JDirectionalLight::GetFrustumFar()const noexcept
 	{
 		return impl->GetFrustumFar();
+	} 
+	JVector3F JDirectionalLight::GetInitWorldDirection()const noexcept
+	{
+		return Private::GetInitDir();
+	}
+	JVector3F JDirectionalLight::GetWorldDirection()const noexcept
+	{
+		return Private::CalLightWorldDir(impl->GetTransform());
+	}
+	JVector3F JDirectionalLight::GetCachedWorldDirection()const noexcept
+	{
+		return impl->direction;
+	}
+	JVector3F JDirectionalLight::GetFrustumMinPoint()const noexcept
+	{
+		return impl->vSceneBBoxMinF;
+	}
+	JVector3F JDirectionalLight::GetFrustumMaxPoint()const noexcept
+	{
+		return impl->vSceneBBoxMaxF;
 	}
 	DirectX::BoundingBox JDirectionalLight::GetBBox()const noexcept
 	{
@@ -1010,6 +902,18 @@ namespace JinEngine
 	DirectX::XMMATRIX JDirectionalLight::GetMeshWorldM(const bool restrictScaledZ)const noexcept
 	{
 		return impl->GetMeshWorldM(restrictScaledZ);
+	}
+	DirectX::XMMATRIX JDirectionalLight::GetShadowMapTransform()const noexcept
+	{
+		return impl->GetShadowMapTransform();
+	}
+	JMatrix4x4 JDirectionalLight::GetView()const noexcept
+	{
+		return impl->view;
+	}
+	JMatrix4x4 JDirectionalLight::GetProj()const noexcept
+	{
+		return impl->proj;
 	}
 	uint JDirectionalLight::GetCsmSplitCount()const noexcept
 	{
@@ -1071,10 +975,6 @@ namespace JinEngine
 	{
 		impl->SetLevelBlendRate(value);
 	}
-	bool JDirectionalLight::IsFrameDirted()const noexcept
-	{
-		return impl->IsFrameDirted();
-	}
 	bool JDirectionalLight::IsCsmActivated()const noexcept
 	{
 		return impl->IsCsmActivated();
@@ -1112,17 +1012,17 @@ namespace JinEngine
 		//Activate와 RegisterComponent는 순서에 종속성을 가진다.
 		//RegisterComponent는 Scene과 가속구조에 Component에 대한 정보를 추가하는 작업으로
 		//Activate Process중에 자기자신과 관련된 Scene component vector, Scene As관련 data에 대한 호출은 에러를 일으킬 수 있다.
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JLight::DoActivate();
 		impl->Activate();
-		impl->SetFrameDirty();
 		RegisterComponent(impl->thisPointer, GetLitTypeComparePtr());
 	}
 	void JDirectionalLight::DoDeActivate()noexcept
 	{
 		DeRegisterComponent(impl->thisPointer);
 		impl->DeActivate();
-		impl->OffFrameDirty();
 		JLight::DoDeActivate();
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JDirectionalLight::JDirectionalLight(const InitData& initData)
 		:JLight(initData), impl(std::make_unique<JDirectionalLightImpl>(initData, this))
@@ -1135,8 +1035,6 @@ namespace JinEngine
 	using CreateInstanceInterface = JDirectionalLightPrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JDirectionalLightPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JDirectionalLightPrivate::AssetDataIOInterface;
-	using FrameUpdateInterface = JDirectionalLightPrivate::FrameUpdateInterface;
-	using FrameIndexInterface = JDirectionalLightPrivate::FrameIndexInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -1147,7 +1045,6 @@ namespace JinEngine
 		JLightPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JDirectionalLight* lit = static_cast<JDirectionalLight*>(createdPtr);
 		lit->impl->RegisterThisPointer(lit);
-		lit->impl->RegisterInterfacePointer();
 		lit->impl->RegisterPostCreation();
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
@@ -1192,11 +1089,11 @@ namespace JinEngine
 
 		auto loadData = static_cast<JDirectionalLight::LoadData*>(data);
 		JFileIOTool& tool = loadData->tool;
-		Graphic::JCsmOption csmOption;
+		JCsmOption csmOption;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
 		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
-		auto idenUser = lPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JDirectionalLight::InitData>(guid, flag, owner), &lPrivate);
+		auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::make_unique<JDirectionalLight::InitData>(guid, flag, owner), &Private::instance);
 		JUserPtr<JDirectionalLight> litUser;
 		litUser.ConnnectChild(idenUser);
 
@@ -1214,7 +1111,7 @@ namespace JinEngine
 		litUser->impl->SetLevelBlendRate(sLevelBlendRate);
 		if (!isActivated)
 			litUser->DeActivate();
- 
+
 		return litUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -1231,7 +1128,7 @@ namespace JinEngine
 
 		JDirectionalLight::JDirectionalLightImpl* impl = lit->impl.get();
 		JFileIOTool& tool = storeData->tool;
-		auto option = impl->GetCsmOption();
+		auto option = impl->graphicData->GetCsmHandleUserInterface()->GetOption();
 
 		JObjectFileIOHelper::StoreComponentIden(tool, lit.Get());
 		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit);
@@ -1241,166 +1138,6 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreAtomicData(tool, option.GetShadowDistance(), "CsmShadowDistance:");
 		JObjectFileIOHelper::StoreAtomicData(tool, option.GetLevelBlendRate(), "CsmLevelBlendRate:");
 		return Core::J_FILE_IO_RESULT::SUCCESS;
-	}
-
-	bool FrameUpdateInterface::UpdateStart(JLight* lit, const bool isUpdateForced)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::DIRECTIONAL)
-			return false;
-
-		JDirectionalLight* dLit = static_cast<JDirectionalLight*>(lit);
-		if (isUpdateForced)
-			dLit->impl->SetFrameDirty();
-
-		dLit->impl->SetLastFrameUpdatedTrigger(false);
-		dLit->impl->SetLastFrameHotUpdatedTrigger(false);
-		if (dLit->impl->IsFrameHotDirted())
-			dLit->impl->UpdateLightTransform();
-		return dLit->impl->IsFrameDirted();
-	}
-	void FrameUpdateInterface::UpdateFrame(JLight* lit, Graphic::JLightConstantsSet& set)noexcept
-	{
-		auto impl = static_cast<JDirectionalLight*>(lit)->impl.get();
-		if (set.updateStart)
-		{
-			impl->UpdateFrame(set.directionalLight);
-			set.SetUpdated(Graphic::LightFrameLayer::light, impl->DirLitFrame::GetFrameIndex());
-
-			if (impl->CsmInfoFrame::HasValidFrameIndex() && impl->CsmDrawFrame::HasValidFrameIndex())
-			{
-				int targetCount = impl->CsmInfoFrame::GetFrameIndexSize();
-				if (set.csm.size() < targetCount)
-				{
-					set.csm.resize(targetCount);
-					set.shadowMapArray.resize(targetCount);
-				}
-				for (uint i = 0; i < targetCount; ++i)
-				{
-					impl->UpdateFrame(set.csm[i], i);
-					impl->UpdateFrame(set.shadowMapArray[i], i);
-				}		 
-				set.SetUpdated(Graphic::LightFrameLayer::csm, impl->CsmInfoFrame::GetFrameIndex());
-				set.SetUpdated(Graphic::LightFrameLayer::shadowMapArray, impl->CsmDrawFrame::GetFrameIndex());
-			} 
-			if (impl->ShadowMapNormalDrawFrame::HasValidFrameIndex())
-			{
-				impl->UpdateFrame(set.shadowMap);
-				set.SetUpdated(Graphic::LightFrameLayer::shadowMap, impl->ShadowMapNormalDrawFrame::GetFrameIndex());
-			}
-			if (impl->DepthTestFrame::HasValidFrameIndex())
-			{
-				impl->UpdateFrame(set.depthTest);
-				set.SetUpdated(Graphic::LightFrameLayer::depthTest, impl->DepthTestFrame::GetFrameIndex());
-			}
-			if (impl->HzbOccComputeFrame::HasValidFrameIndex())
-			{
-				impl->UpdateFrame(set.hzb, set.hzbQueryCount, set.hzbQueryOffset);
-				set.SetUpdated(Graphic::LightFrameLayer::hzb, impl->HzbOccComputeFrame::GetFrameIndex());
-			}
-		}
-		else
-		{
-			if (impl->CsmInfoFrame::HasMovedDirty() || impl->CsmDrawFrame::HasMovedDirty())
-			{
-				int targetCount = impl->CsmInfoFrame::GetFrameIndexSize();
-				if (set.csm.size() < targetCount)
-				{
-					set.csm.resize(targetCount);
-					set.shadowMapArray.resize(targetCount);
-				}
-				for (uint i = 0; i < targetCount; ++i)
-				{
-					impl->UpdateFrame(set.csm[i], i);
-					impl->UpdateFrame(set.shadowMapArray[i], i);
-				}
-				set.SetUpdated(Graphic::LightFrameLayer::csm, impl->CsmInfoFrame::GetFrameIndex());
-				set.SetUpdated(Graphic::LightFrameLayer::shadowMapArray, impl->CsmDrawFrame::GetFrameIndex());
-			} 
-			if (impl->ShadowMapNormalDrawFrame::HasMovedDirty())
-			{
-				impl->UpdateFrame(set.shadowMap);
-				set.SetUpdated(Graphic::LightFrameLayer::shadowMap, impl->ShadowMapNormalDrawFrame::GetFrameIndex());
-			}
-			if (impl->DepthTestFrame::HasMovedDirty())
-			{
-				impl->UpdateFrame(set.depthTest);
-				set.SetUpdated(Graphic::LightFrameLayer::depthTest, impl->DepthTestFrame::GetFrameIndex());
-			}
-			if (impl->HzbOccComputeFrame::HasMovedDirty())
-			{
-				impl->UpdateFrame(set.hzb, set.hzbQueryCount, set.hzbQueryOffset);
-				set.SetUpdated(Graphic::LightFrameLayer::hzb, impl->HzbOccComputeFrame::GetFrameIndex());
-			}
-			if (impl->DirLitFrame::HasMovedDirty() || 
-				set.isUpdated[Graphic::LightFrameLayer::shadowMapArray] ||
-				set.isUpdated[Graphic::LightFrameLayer::shadowMap])
-			{
-				/*
-				* 	light constants에는 shadow map index에 대한 변수가 있으므로
-				*	shadow map update시 light constants와 shadow constants를 동시에
-				*	Update해줄 필요가 있다. ex)graphic resource destroy인한 index변경 반영
-				*/
-				impl->UpdateFrame(set.directionalLight);
-				set.SetUpdated(Graphic::LightFrameLayer::light, impl->DirLitFrame::GetFrameIndex());
-			}
-		}
-	}
-	void FrameUpdateInterface::UpdateEnd(JLight* lit)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::DIRECTIONAL)
-			return;
-
-		JDirectionalLight* dLit = static_cast<JDirectionalLight*>(lit);
-		if (dLit->impl->IsFrameHotDirted())
-			dLit->impl->SetLastFrameHotUpdatedTrigger(true);
-		dLit->impl->SetLastFrameUpdatedTrigger(true);
-		dLit->impl->UpdateFrameEnd();
-	} 
-	int FrameUpdateInterface::GetFrameIndex(JLight* lit, const uint layerIndex)noexcept
-	{
-		return Private::getFrameDataPtr[layerIndex](lit)->GetFrameIndex(); 
-	}  
-	int FrameUpdateInterface::GetFrameIndexSize(JLight* lit, const uint layerIndex)noexcept
-	{
-		return Private::getFrameDataPtr[layerIndex](lit)->GetFrameIndexSize(); 
-	}
-	int FrameUpdateInterface::GetShadowFrameLayerIndex(JLight* lit)noexcept
-	{		 
-		return static_cast<JDirectionalLight*>(lit)->impl->CsmDrawFrame::HasValidFrameIndex() ?
-			Graphic::LightFrameLayer::shadowMapArray :
-			Graphic::LightFrameLayer::shadowMap;
-	}
-	bool FrameUpdateInterface::IsFrameHotDirted(JLight* lit)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::DIRECTIONAL)
-			return false;
-
-		return static_cast<JDirectionalLight*>(lit)->impl->IsFrameHotDirted();
-	}
-	bool FrameUpdateInterface::IsLastFrameHotUpdated(JLight* lit)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::DIRECTIONAL)
-			return false;
-
-		return static_cast<JDirectionalLight*>(lit)->impl->IsLastFrameHotUpdated();
-	}
-	bool FrameUpdateInterface::IsLastUpdated(JLight* lit)noexcept
-	{
-		if (lit->GetLightType() != J_LIGHT_TYPE::DIRECTIONAL)
-			return false;
-
-		return static_cast<JDirectionalLight*>(lit)->impl->IsLastFrameUpdated();
-	}
-	
-	int FrameIndexInterface::GetFrameIndex(JLight* lit, const uint layerIndex)noexcept
-	{
-		return Private::getFrameDataPtr[layerIndex](lit)->GetFrameIndex(); 
-	}
-	int FrameIndexInterface::GetShadowFrameLayerIndex(JLight* lit)noexcept
-	{
-		return static_cast<JDirectionalLight*>(lit)->impl->CsmDrawFrame::HasValidFrameIndex() ?
-			Graphic::LightFrameLayer::shadowMapArray :
-			Graphic::LightFrameLayer::shadowMap;
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JDirectionalLightPrivate::GetCreateInstanceInterface()const noexcept
@@ -1416,16 +1153,6 @@ namespace JinEngine
 	JComponentPrivate::AssetDataIOInterface& JDirectionalLightPrivate::GetAssetDataIOInterface()const noexcept
 	{
 		static AssetDataIOInterface pI;
-		return pI;
-	}
-	JLightPrivate::FrameUpdateInterface& JDirectionalLightPrivate::GetFrameUpdateInterface()const noexcept
-	{
-		static FrameUpdateInterface pI;
-		return pI;
-	}
-	JLightPrivate::FrameIndexInterface& JDirectionalLightPrivate::GetFrameIndexInterface()const noexcept
-	{
-		static FrameIndexInterface pI;
 		return pI;
 	}
 }

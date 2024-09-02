@@ -24,21 +24,18 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JResourceObjectPrivate.h" 
-
+#include"../JResourceObjectPrivate.h"  
 namespace JinEngine
 {
 	namespace Core
 	{
 		class JFSMdiagram;
-	}
-	namespace Graphic
-	{
-		struct JAnimationConstants;
-	}
+	} 
 	class JAnimator;
 	class JAnimationController;
 	class JAnimationUpdateData;
+	struct JSkeletonMatrixSet;
+
 	class JAnimationControllerPrivate final : public JResourceObjectPrivate
 	{
 	public:
@@ -48,8 +45,8 @@ namespace JinEngine
 			JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) final;
 			Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) final;
 		private:
-			Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetaData
-			Core::J_FILE_IO_RESULT StoreMetaData(Core::JDITypeDataBase* data)final;	//use storeData	 
+			Core::J_FILE_IO_RESULT LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetadata
+			Core::J_FILE_IO_RESULT StoreMetadata(Core::JDITypeDataBase* data)final;	//use storeData	 
 		};
 		class CreateInstanceInterface final : public JResourceObjectPrivate::CreateInstanceInterface
 		{
@@ -60,13 +57,14 @@ namespace JinEngine
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
 		};
-		class FrameUpdateInterface final
+		class AnimationInterface final
 		{
 		private:
 			friend class JAnimator;
 		private:
 			static void Initialize(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept;
-			static void Update(JAnimationController* aniCont, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept;
+			static void Update(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept;
+			static void Compute(JAnimationController* aniCont, JAnimationUpdateData* updateData, JSkeletonMatrixSet& set)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

@@ -106,11 +106,10 @@ namespace JinEngine
 			void SetFenceValue(const GraphicFence value)noexcept;
 			void SetBackBufferIndex(const int value)noexcept;
 		public: 
-			bool IsSupportPublicCommand()const noexcept final; 
-			bool IsPublicCommandStared()const noexcept final;
-			bool IsRaytracingSupported()const noexcept final;
-			bool CanStartPublicCommand()const noexcept final;
-			bool CanBuildGpuAccelerator()const noexcept final;
+			bool IsSupported(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept final;
+			bool IsSupportedPublicCommand()const noexcept final; 
+			bool IsPublicCommandStared()const noexcept final; 
+			bool CanStartPublicCommand()const noexcept final; 
 		public:
 			void CalViewportAndRect(const JVector2F rtSize, const bool restrictRange, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept;
 		public: 

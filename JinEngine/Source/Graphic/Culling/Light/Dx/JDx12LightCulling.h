@@ -37,7 +37,7 @@ namespace JinEngine
 		class JGraphicResourceInfo;
 		class JDx12GraphicResourceManager;
 		class JDx12FrameResource;
-		class JDx12CullingManager;  
+		class JDx12CullingManager;
 		class JDx12CommandContext;
 
 		//referenced by gpu pro7  ch 2.1 by Kevin Ortegren and Emil Persson
@@ -58,7 +58,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JDx12GraphicBufferT<uint>> resultOutBuffer;
 			std::unique_ptr<JDx12GraphicBufferT<uint>> resultOutClearBuffer;
-			std::unique_ptr<JDx12GraphicBufferT<uint>> counterClearBuffer; 	 
+			std::unique_ptr<JDx12GraphicBufferT<uint>> counterClearBuffer;
 		private:
 			//for debugging
 			std::unique_ptr<JDx12GraphicBufferT<uint>> offsetDebugBuffer;
@@ -69,25 +69,28 @@ namespace JinEngine
 			std::unique_ptr<JDx12GraphicBufferT<uint>> counterClearUploadBuffer;
 		private:
 			JUserPtr<JGraphicResourceInfo> lightRt[(uint)JLightType::GetLocalLightCount()];
-		/*
 		private:
-			JUserPtr<JGraphicResourceInfo> lowSphereVertex;
-			JUserPtr<JGraphicResourceInfo> lowSphereIndex;
-			JUserPtr<JGraphicResourceInfo> lowConeVertex;
-			JUserPtr<JGraphicResourceInfo> lowConeIndex;
-		private: 
-			uint lowSphereVertexCount;
-			uint lowSphereIndexCount;
-			uint lowConeVertexCount;
-			uint lowConeIndexCount;
-		*/
+			JDx12GraphicDevice* cachedDevice;
+			JDx12GraphicResourceManager* cachedGm;
+			/*
+			private:
+				JUserPtr<JGraphicResourceInfo> lowSphereVertex;
+				JUserPtr<JGraphicResourceInfo> lowSphereIndex;
+				JUserPtr<JGraphicResourceInfo> lowConeVertex;
+				JUserPtr<JGraphicResourceInfo> lowConeIndex;
+			private:
+				uint lowSphereVertexCount;
+				uint lowSphereIndexCount;
+				uint lowConeVertexCount;
+				uint lowConeIndexCount;
+			*/
 		public:
 			~JDx12LightCulling();
 		public:
 			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM) final;
 			void Clear() final;
 		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;  
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		private:
 			bool HasDependency(const JGraphicInfo::TYPE type)const noexcept final;
 			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final;
@@ -98,17 +101,17 @@ namespace JinEngine
 			void NotifyNewClusterOption(JGraphicDevice* device) final;
 			void NotifyLocalLightCapacityChanged(JGraphicDevice* device, JGraphicResourceManager* gM, const size_t capacity) final;
 		public:
-			void BindDrawResource(const JGraphicBindSet* bindSet) final; 
+			void BindDrawResource(const JGraphicBindSet* bindSet) final;
 			void BindDebugResource(const JGraphicBindSet* bindSet) final;
 		public:
 			void ExecuteLightClusterTask(const JGraphicLightCullingTaskSet* taskSet, const JDrawHelper& helper)final;
 			void ExecuteLightClusterDebug(const JGraphicLightCullingDebugDrawSet* drawSet, const JDrawHelper& helper)final;
-		public: 
+		public:
 			void StreamOutDebugInfo(const std::wstring& path)final;
 		public:
 			void RecompileShader(const JGraphicShaderCompileSet& dataSet)final;
 		private:
-			void DrawLight(JDx12CommandContext* context, const JDrawHelper& helper); 
+			void DrawLight(JDx12CommandContext* context, const JDrawHelper& helper);
 			void DrawLightClusterDebug(JDx12CommandContext* context, const JDrawHelper& helper);
 		private:
 			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);

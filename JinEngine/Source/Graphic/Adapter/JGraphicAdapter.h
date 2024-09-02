@@ -27,7 +27,7 @@ SOFTWARE.
 #include"JGraphicAdaptee.h"
 #include"../JGraphicConstants.h"
 #include"../Device/JGraphicDeviceUser.h"
-#include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicTaskDataSet.h"
 #include"../DataSet/JGraphicIndirectDataSet.h"
 #include"../../Core/JCoreEssential.h" 
 
@@ -49,7 +49,7 @@ namespace JinEngine
 		public:
 			std::unique_ptr<JGraphicDevice> CreateDevice(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData);
 			void CreateResourceManageSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JResourceManageSubclassSet& set);
-			void CreateDrawSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set);
+			void CreateDrawSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JSceneDrawingSubclassSet& set);
 			void CreateCullingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JCullingSubclassSet& set);
 			void CreateImageProcessingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JImageProcessingSubclassSet& set);
 			void CreateRaytracingSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JRaytracingSubclassSet& set);

@@ -35,10 +35,12 @@ namespace JinEngine
 		class JImGuiAdaptee : public JGuiBehaviorAdaptee
 		{
 		private:
-			std::unique_ptr<JImGuiPrivateData> data;
+			std::unique_ptr<JImGuiPrivateData> data; 
 		public:
 			void Initialize(std::unique_ptr<Graphic::JGuiInitData>&& initData) final;
 			void Clear() final; 
+		private:
+			void ClearResource();
 		protected:
 			virtual void IntiailizeBackend(JImGuiInitData* initData) = 0;
 			virtual void ClearBackend() = 0;
@@ -49,15 +51,15 @@ namespace JinEngine
 			J_GUI_TYPE GetGuiType()const noexcept final;
 #pragma region Color
 		public:
-			JVector4<float> GetColor(const J_GUI_COLOR flag)noexcept final;
-			uint GetUColor(const J_GUI_COLOR flag)const noexcept final; 
-			void SetColor(const J_GUI_COLOR flag, const JVector4<float>& color)noexcept final;
+			Core::JRGBVector GetColor(const J_GUI_COLOR flag)noexcept final;
+			Core::JRGBUint GetUColor(const J_GUI_COLOR flag)const noexcept final; 
+			void SetColor(const J_GUI_COLOR flag, const Core::JRGBVector& color)noexcept final;
 			//Set widget color to default
 			void SetColorToDefault(const J_GUI_COLOR flag)noexcept final;
-			void SetAllColorToSoft(const JVector4<float>& factor)noexcept final;
+			void SetAllColorToSoft(const Core::JRGBVector& factor)noexcept final;
 			//Set all widget color to default
 			void SetAllColorToDefault()noexcept final; 
-			void PushColor(const J_GUI_COLOR colType, const JVector4<float>& color) final;
+			void PushColor(const J_GUI_COLOR colType, const Core::JRGBVector& color) final;
 			void PopColor(const uint count)final;
 #pragma endregion
 #pragma region Style
@@ -197,21 +199,21 @@ namespace JinEngine
 			void EndListBox() final;
 		public:
 			bool ColorPicker(const std::string& name, JVector3<float>& color, J_GUI_COLOR_EDIT_FALG_ flags)final;
-			bool ColorPicker(const std::string& name, JVector4<float>& color, J_GUI_COLOR_EDIT_FALG_ flags)final;
+			bool ColorPicker(const std::string& name, Core::JRGBVector& color, J_GUI_COLOR_EDIT_FALG_ flags)final;
 			void Tooltip(const std::string& message)noexcept final;
 		public:
 			//Image  
 			void InvalidImage(const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
-				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
-				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0)) final;
+				const Core::JRGBVector& tintCol = Core::JRGBVector(1, 1, 1, 1),
+				const Core::JRGBVector& borderCol = Core::JRGBVector(0, 0, 0, 0)) final;
 			void Image(const JGuiImageInfo& info,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
-				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
-				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0)) final;
+				const Core::JRGBVector& tintCol = Core::JRGBVector(1, 1, 1, 1),
+				const Core::JRGBVector& borderCol = Core::JRGBVector(0, 0, 0, 0)) final;
 			//Use ImGui::ImageButtonEx
 			//display one image
 			bool ImageButton(const std::string name,
@@ -220,13 +222,13 @@ namespace JinEngine
 				const JVector2<float>& uv0,
 				const JVector2<float>& uv1,
 				float framePadding,
-				const JVector4<float>& bgCol,
-				const JVector4<float>& tintCol) final;
+				const Core::JRGBVector& bgCol,
+				const Core::JRGBVector& tintCol) final;
 			void AddImage(const JGuiImageInfo& info,
 				const JVector2<float>& pMin,
 				const JVector2<float>& pMax,
 				const bool isFront,
-				const JVector4<float>& color,
+				const Core::JRGBVector& color,
 				const JVector2<float>& uvMin,
 				const JVector2<float>& uvMax) final;
 			void AddRoundedImage(const JGuiImageInfo& info,
@@ -235,7 +237,7 @@ namespace JinEngine
 				const bool isFront,
 				const float rounding,
 				J_GUI_DRAW_FLAG_ flag,
-				const JVector4<float>& color,
+				const Core::JRGBVector& color,
 				const JVector2<float>& uvMin,
 				const JVector2<float>& uvMax) final;
 		public:
@@ -257,16 +259,16 @@ namespace JinEngine
 				bool& pressed,
 				bool changeValueIfPreesd,
 				const JVector2<float>& size,
-				const JVector4<float>& bgColor, 
-				const JVector4<float>& frameColor,
+				const Core::JRGBVector& bgColor, 
+				const Core::JRGBVector& frameColor,
 				const float frameThickness) final;
 			//Use ImGui::Selectable and ImGui::Image
 			//display one image
 			bool ImageButton(const std::string name,
 				JGuiImageInfo info,
 				const JVector2<float>& size,
-				const JVector4<float>& bgColor, 
-				const JVector4<float>& frameColor,
+				const Core::JRGBVector& bgColor, 
+				const Core::JRGBVector& frameColor,
 				const float frameThickness) final;
 			bool MaximizeButton(const bool isLocatedCloseBtnLeftSide) final;
 			bool MinimizeButton(const bool isLocatedCloseBtnLeftSide, const bool isLocatedMaximizeBtnLeftSize)  final;
@@ -275,22 +277,22 @@ namespace JinEngine
 			//use wolrd cursor pos 
 			void DrawRectFilledMultiColor(const JVector2<float>& pos,
 				const JVector2<float>& size,
-				const JVector4<float>& upLeftCol,
-				const JVector4<float>& upRightCol,
-				const JVector4<float>& downLeftCol,
-				const JVector4<float>& downRightCol,
+				const Core::JRGBVector& upLeftCol,
+				const Core::JRGBVector& upRightCol,
+				const Core::JRGBVector& downLeftCol,
+				const Core::JRGBVector& downRightCol,
 				const float rounding,
 				const J_GUI_DRAW_FLAG_ drawFlag,
 				const bool useRestoreCursorPos)noexcept final;
 			void DrawRectFilledColor(const JVector2<float>& pos,
 				const JVector2<float>& size,
-				const JVector4<float>& color,
+				const Core::JRGBVector& color,
 				const float rounding,
 				const J_GUI_DRAW_FLAG_ drawFlag,
 				const bool useRestoreCursorPos)noexcept final;
 			void DrawRectFrame(const JVector2<float>& pos,
 				const JVector2<float>& size,
-				const JVector4<float>& color,
+				const Core::JRGBVector& color,
 				const float thickness,
 				const float rounding,
 				const J_GUI_DRAW_FLAG_ drawFlag,
@@ -309,18 +311,18 @@ namespace JinEngine
 				const bool useRestoreCursorPos) final;
 			void DrawCircleFilledColor(const JVector2<float>& centerPos,
 				const float radius,
-				const JVector4<float>& color,
+				const Core::JRGBVector& color,
 				const bool useRestoreCursorPos) final;
 			void DrawCircle(const JVector2<float>& centerPos,
 				const float radius,
-				const JVector4<float>& color,
+				const Core::JRGBVector& color,
 				const bool useRestoreCursorPos,
 				const float thickness) final;
 		public:
 			void PushClipRect(const JVector2<float>& rectMinP, const JVector2<float>& rectMaxP, const bool intersectWithCurrentClipRect)final;
-			void AddLine(const JVector2<float>& p1, const JVector2<float>& p2, const JVector4<float>& color, const float thickness)final;
-			void AddTriangle(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const JVector4<float>& color, const float thickness)final;
-			void AddTriangleFilled(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const JVector4<float>& color) final;
+			void AddLine(const JVector2<float>& p1, const JVector2<float>& p2, const Core::JRGBVector& color, const float thickness)final;
+			void AddTriangle(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const Core::JRGBVector& color, const float thickness)final;
+			void AddTriangleFilled(const JVector2<float>& p1, const JVector2<float>& p2, const JVector2<float>& p3, const Core::JRGBVector& color) final;
 			//Widget End 
 		public:
 			void NewLine()noexcept final;

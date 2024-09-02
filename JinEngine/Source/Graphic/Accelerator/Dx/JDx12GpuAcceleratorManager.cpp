@@ -31,8 +31,7 @@ SOFTWARE.
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../Utility/Dx/JDx12Utility.h" 
 #include"../../GraphicResource/JGraphicResourceInterface.h" 
-#include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
-#include"../../FrameResource/JLightConstants.h" 
+#include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../Raytracing/Dx/JDx12RaytracingConstants.h"
 #include"../../../Object/Resource/JResourceManager.h"
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h"
@@ -43,14 +42,14 @@ SOFTWARE.
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Core/Geometry/Mesh/JMeshStruct.h"
 #include<set> 
- 
+
 using namespace DirectX;
 namespace JinEngine::Graphic
 {
 	static constexpr uint defaultHitGroupIndex = 0;
 	static constexpr uint fixedElementCount = 8;
 
-	using GeometryDesc = D3D12_RAYTRACING_GEOMETRY_DESC; 
+	using GeometryDesc = D3D12_RAYTRACING_GEOMETRY_DESC;
 	using InstanceDesc = D3D12_RAYTRACING_INSTANCE_DESC;
 	using AcceleratorBuildDesc = D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC;
 
@@ -59,8 +58,8 @@ namespace JinEngine::Graphic
 	using BlasHolderVec = std::vector<std::unique_ptr<JBlasHolder>>;
 	using BlasHolderMap = std::unordered_map <size_t, JBlasHolder*>;
 	using InstanceDescVec = std::vector<InstanceDesc>;
-	using InstanceCacheVec = std::vector<std::unique_ptr<JInstanceCache>>;
-	using InstanceCacheMap = std::unordered_map<size_t, JInstanceCache*>;
+	using ComponentCacheVec = std::vector<std::unique_ptr<JComponentInstanceCache>>;
+	using ComponentCacheMap = std::unordered_map<size_t, JComponentInstanceCache*>;
 
 	struct AccelerationStructureBuffers
 	{
@@ -78,11 +77,11 @@ namespace JinEngine::Graphic
 		J_COMPONENT_TYPE compType;
 		Core::JEnum detailType;
 	public:
-		ObjectData() {} 
+		ObjectData() {}
 		ObjectData(const JUserPtr<JComponent>& comp)
 		{
-			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-				Set(Core::ConnectChildUserPtr<JLight>(comp)); 
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_LIGHT)
+				Set(Core::ConnectChildUserPtr<JLight>(comp));
 			else
 				Set(Core::ConnectChildUserPtr<JRenderItem>(comp));
 		}
@@ -97,37 +96,39 @@ namespace JinEngine::Graphic
 	public:
 		XMMATRIX GetTransformMatrix()const noexcept
 		{
-			if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			if (compType == J_COMPONENT_TYPE::ENGINE_LIGHT)
 				return XMMatrixTranspose(static_cast<JLight*>(instanceComp.Get())->GetMeshWorldM(true));
 			else
 				return XMMatrixTranspose(instanceComp->GetOwner()->GetTransform()->GetWorldMatrix().LoadXM());
-		} 
-		uint GetInstanceID(JFrameIndexAccess* access, const uint subMeshIndex)const noexcept
-		{
-			return GetInstanceID(access, instanceComp.Get(), subMeshIndex);
 		}
-		static uint GetInstanceID(JFrameIndexAccess* access, JComponent* comp, const uint subMeshIndex)noexcept
-		{ 
-			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
-				return access->GetRefInfoFrameIndex(static_cast<JRenderItem*>(comp)) + subMeshIndex;
+		uint GetInstanceID(const uint subMeshIndex)const noexcept
+		{
+			return GetInstanceID(instanceComp.Get(), subMeshIndex);
+		}
+		static uint GetInstanceID(JComponent* comp, const uint subMeshIndex)noexcept
+		{
+			auto fUser = comp->ModuleManagedData()->GetFrameUpdateUserInterface();
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_RENDERITEM)
+				return fUser->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO) + subMeshIndex;
 			else
 			{
 				//light shape는 submesh = 1이여야 한다.
 				JLight* lit = static_cast<JLight*>(comp);
 				J_LIGHT_TYPE type = lit->GetLightType();
+				uint offset = fUser->GetFrameIndex(JLightType::LitToFrameR(type));
 				if (type == J_LIGHT_TYPE::POINT)
-					return access->GetLitFrameIndex(lit, LightFrameLayer::light) + Constants::pointLightAsInstanceIdOffset;
+					return offset + Constants::pointLightAsInstanceIdOffset;
 				else if (type == J_LIGHT_TYPE::SPOT)
-					return access->GetLitFrameIndex(lit, LightFrameLayer::light) + Constants::spotLightAsInstanceIdOffset;
-				if (type == J_LIGHT_TYPE::RECT)
-					return access->GetLitFrameIndex(lit, LightFrameLayer::light) + Constants::rectLightAsInstanceIdOffset;
+					return offset + Constants::spotLightAsInstanceIdOffset;
+				else if (type == J_LIGHT_TYPE::RECT)
+					return offset + Constants::rectLightAsInstanceIdOffset;
 				else
 					return invalidIndex;
 			}
 		}
 		uint GetInstanceMask()const noexcept
 		{
-			if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			if (compType == J_COMPONENT_TYPE::ENGINE_LIGHT)
 			{
 				if (detailType == (uint)J_LIGHT_TYPE::POINT)
 					return Constants::pointLightMask;
@@ -150,16 +151,16 @@ namespace JinEngine::Graphic
 		{
 			return XMMATRIX();
 		}
-	public: 
+	public:
 		void Set(const JUserPtr<JRenderItem>& rItem)
 		{
-			compType = J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM;
+			compType = J_COMPONENT_TYPE::ENGINE_RENDERITEM;
 			instanceComp = rItem;
 			mesh = rItem->GetOwner()->GetRenderItem()->GetMesh();
 		}
 		void Set(const JUserPtr<JLight>& localLight)
 		{
-			compType = J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
+			compType = J_COMPONENT_TYPE::ENGINE_LIGHT;
 			instanceComp = localLight;
 
 			detailType = (uint)localLight->GetLightType();
@@ -175,8 +176,8 @@ namespace JinEngine::Graphic
 		{
 			//Test
 			//Skinned buf fix후 수정필요
-			return mesh != nullptr && mesh->GetMeshGeometryType() != Core::J_MESHGEOMETRY_TYPE::SKINNED;
-			//return mesh != nullptr;
+			//return mesh != nullptr && mesh->GetMeshGeometryType() != Core::J_MESHGEOMETRY_TYPE::SKINNED;
+			return mesh != nullptr;
 		}
 	};
 	struct JDx12GpuAcceleratorManager::BuildData
@@ -184,7 +185,6 @@ namespace JinEngine::Graphic
 	public:
 		JDx12GraphicDevice* device;
 		JDx12GraphicResourceManager* gm;
-		JFrameIndexAccess* frameAccess;
 		ID3D12Device5* raytracingDevice;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> raytracingCommandList;
 	public:
@@ -196,23 +196,21 @@ namespace JinEngine::Graphic
 		std::vector<ObjectData> objectData;
 		std::set<size_t> meshSet;
 		uint instanceCount = 0;
-		uint geometryCount = 0;
+		uint newInstanceCount = 0;
 		uint blasHolderCount = 0;
 	public:
 		bool isStatic = false;
 		bool isOpaque = false;
 		bool allowBuildLightShape = false;
-		bool allowReBuild = false;
+		bool allowReBuild = false;  
 	public:
 		BuildData(JGraphicDevice* newDevice,
 			JGraphicResourceManager* newGm,
-			JFrameIndexAccess* frameAccess,
 			const J_GPU_ACCELERATOR_BUILD_OPTION optionFlag)
 			:device(static_cast<JDx12GraphicDevice*>(newDevice)),
 			gm(static_cast<JDx12GraphicResourceManager*>(newGm)),
-			frameAccess(frameAccess),
 			optionFlag(optionFlag)
-		{
+		{ 
 			raytracingDevice = device->GetRaytracingDevice();
 			device->GetPublicCmdList()->QueryInterface(IID_PPV_ARGS(&raytracingCommandList));
 			isStatic = Core::HasSQValueEnum(optionFlag, J_GPU_ACCELERATOR_BUILD_OPTION_STATIC);
@@ -233,17 +231,17 @@ namespace JinEngine::Graphic
 			//objectData.resize(totalCount);
 			for (uint i = 0; i < objCount; ++i)
 				PushObjectData(ObjectData(desc.obj[i]->GetRenderItem()));;
-				//PushObjectData(ObjectData(desc.obj[i]->GetRenderItem()), i);
+			//PushObjectData(ObjectData(desc.obj[i]->GetRenderItem()), i);
 			if (allowBuildLightShape)
 			{
 				for (uint i = 0; i < litCount; ++i)
 					PushObjectData(ObjectData(desc.localLight[i]->GetComponent<JLight>()));
-					//PushObjectData(ObjectData(desc.localLight[i]->GetComponent<JLight>()), i + objCount);
+				//PushObjectData(ObjectData(desc.localLight[i]->GetComponent<JLight>()), i + objCount);
 			}
-		} 
+		}
 		void PushObjectData(const JUserPtr<JComponent>& comp)
 		{
-			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_LIGHT)
 			{
 				if (allowBuildLightShape)
 					PushObjectData(ObjectData(Core::ConnectChildUserPtr<JLight>(comp)));
@@ -261,7 +259,7 @@ namespace JinEngine::Graphic
 			if (meshSet.find(data.mesh->GetGuid()) == meshSet.end())
 			{
 				meshSet.emplace(data.mesh->GetGuid());
-				geometryCount += totalSubmesh;
+				newInstanceCount += totalSubmesh;
 				blasHolderCount += 1;
 			}
 			instanceCount += totalSubmesh;
@@ -276,7 +274,7 @@ namespace JinEngine::Graphic
 			if (meshSet.find(data.mesh->GetGuid()) == meshSet.end())
 			{
 				meshSet.emplace(data.mesh->GetGuid());
-				geometryCount += totalSubmesh;
+				newInstanceCount += totalSubmesh;
 				blasHolderCount += 1;
 			}
 			instanceCount += totalSubmesh;
@@ -285,7 +283,7 @@ namespace JinEngine::Graphic
 	public:
 		bool IsValid()const noexcept
 		{
-			return raytracingDevice != nullptr && raytracingCommandList != nullptr && frameAccess != nullptr && objectData.size() > 0;
+			return raytracingDevice != nullptr && raytracingCommandList != nullptr && objectData.size() > 0;
 		}
 	};
 
@@ -304,12 +302,12 @@ namespace JinEngine::Graphic
 		const auto flag = buildData.isOpaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
 		const JUserPtr<JMeshGeometry>& mesh = buildData.objectData[dataIndex].mesh;
 
-		auto gInterface = mesh->GraphicResourceUserInterface();
-		auto vertexHolder = buildData.gm->GetDxHolder(J_GRAPHIC_RESOURCE_TYPE::VERTEX, gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::VERTEX, 0));
-		auto indexHolder = buildData.gm->GetDxHolder(J_GRAPHIC_RESOURCE_TYPE::INDEX, gInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::INDEX, 0));
-		 
-		const bool useStaticMeshByte = mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::STATIC || mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::SKINNED;
-		 
+		auto gInterface = mesh->ModuleManagedData()->GetGraphicResourceUserInterface();
+		auto vertexHolder = buildData.gm->GetDxHolder(J_GRAPHIC_RESOURCE_TYPE::VERTEX, gInterface->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::VERTEX, 0));
+		auto indexHolder = buildData.gm->GetDxHolder(J_GRAPHIC_RESOURCE_TYPE::INDEX, gInterface->GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::INDEX, 0));
+
+		const bool useStaticMeshByte = mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::STATIC;
+		//|| mesh->GetMeshGeometryType() == Core::J_MESHGEOMETRY_TYPE::SKINNED
 		desc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 		desc.Flags = flag;
 		desc.Triangles.VertexBuffer.StartAddress = vertexHolder->GetResource()->GetGPUVirtualAddress() + mesh->GetVertexByteSize() * mesh->GetSubmeshBaseVertexLocation(submeshIndex);
@@ -320,7 +318,7 @@ namespace JinEngine::Graphic
 		desc.Triangles.IndexBuffer = indexHolder->GetResource()->GetGPUVirtualAddress() + mesh->GetIndexByteSize() * mesh->GetSubmeshStartIndexLocation(submeshIndex);
 		desc.Triangles.IndexCount = mesh->GetSubmeshIndexCount(submeshIndex);
 		desc.Triangles.IndexFormat = mesh->GetIndexByteSize() == sizeof(uint16) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-		desc.Triangles.Transform3x4 = NULL;  
+		desc.Triangles.Transform3x4 = NULL; 
 	}
 	static void BuildInstanceDesc(const BuildData& buildData,
 		const JDx12GraphicBuffer& blasBuffer,
@@ -328,18 +326,18 @@ namespace JinEngine::Graphic
 		const uint subMeshIndex,
 		const uint hitGroupShaderIndex,
 		InstanceDesc& desc)
-	{ 
+	{
 		JMatrix4x4 matrix;
 		matrix.StoreXM(data.GetTransformMatrix());
 
 		memcpy(desc.Transform, matrix.m, sizeof(float) * 12);
 		desc.AccelerationStructure = blasBuffer.GetResource()->GetGPUVirtualAddress();
 		desc.Flags = 0;
-		desc.InstanceID = data.GetInstanceID(buildData.frameAccess, subMeshIndex);
+		desc.InstanceID = data.GetInstanceID(subMeshIndex);
 		desc.InstanceMask = data.GetInstanceMask();
 		desc.InstanceContributionToHitGroupIndex = hitGroupShaderIndex;
 
-		matrix.StoreXM(data.GetTransformMatrix());  
+		matrix.StoreXM(data.GetTransformMatrix());
 	}
 	static void BuildInstanceDesc(const BuildData& buildData,
 		const JDx12GraphicBuffer& blasBuffer,
@@ -350,28 +348,25 @@ namespace JinEngine::Graphic
 	{
 		BuildInstanceDesc(buildData, blasBuffer, buildData.objectData[objIndex], subMeshIndex, hitGroupShaderIndex, desc);
 	}
-	static void UpdateInstanceID(const BuildData& buildData, 
+	static void UpdateInstanceID(const BuildData& buildData,
 		_Inout_ InstanceDescVec& instanceDesc,
-		_Inout_ InstanceCacheVec& instanceCacheVec, 
-		const uint descStIndex,
+		_Inout_ ComponentCacheVec& compCacheVec, 
 		const uint cacheStIndex,
 		const uint removedInstanceDescCount,
-		const uint removedInstanceCacheCount)
+		const uint removedObjectCount)
 	{ 
-		uint descIndex = descStIndex;
-		for (uint i = cacheStIndex; i < instanceCacheVec.size(); ++i)
+		for (uint i = cacheStIndex; i < compCacheVec.size(); ++i)
 		{
-			instanceCacheVec[i]->descStIndex -= removedInstanceDescCount;
-			instanceCacheVec[i]->index -= removedInstanceCacheCount;
+			compCacheVec[i]->descStIndex -= removedInstanceDescCount;
+			compCacheVec[i]->index -= removedObjectCount;
 
-			ObjectData data(instanceCacheVec[i]->comp);
+			ObjectData data(compCacheVec[i]->comp);
 			const uint subMeshCount = data.mesh->GetTotalSubmeshCount();
+
+			const uint descIndex = compCacheVec[i]->descStIndex;
 			for (uint j = 0; j < subMeshCount; ++j)
-			{
-				instanceDesc[descIndex].InstanceID = data.GetInstanceID(buildData.frameAccess, j);
-				++descIndex;
-			}
-		} 
+				instanceDesc[descIndex + j].InstanceID = data.GetInstanceID(j);
+		}
 	}
 	static void BuildBottomLevelAS(BuildData& buildData, const GeometryDesc& geometryDescs, AcceleratorBuildDesc& blasDesc, AccelerationStructureBuffers& buffers)
 	{
@@ -389,7 +384,7 @@ namespace JinEngine::Graphic
 
 		auto& bottomLevelPrebuildInfo = buffers.preBuildInfo;
 		buildData.raytracingDevice->GetRaytracingAccelerationStructurePrebuildInfo(&bottomLevelInputs, &bottomLevelPrebuildInfo);
-
+		 
 		buffers.scratch = JDx12GraphicBuffer(L"AcceleratiorScratch", J_GRAPHIC_BUFFER_TYPE::UNORDERED_ACCEESS, bottomLevelPrebuildInfo.ScratchDataSizeInBytes);
 		//buffers[i].scratch.SetFixedInitState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		buffers.scratch.Build(buildData.device, 1);
@@ -416,28 +411,29 @@ namespace JinEngine::Graphic
 		_Inout_ BlasHolderVec& blasVec,
 		_Inout_ BlasHolderMap& blasMap,
 		_Inout_ InstanceDescVec& instanceDesc,
-		_Inout_ InstanceCacheVec& instanceCacheVec,
-		_Inout_ InstanceCacheMap& instanceCacheMap)
+		_Inout_ ComponentCacheVec& compCacheVec,
+		_Inout_ ComponentCacheMap& compCacheMap)
 	{
 		auto& geometryDescs = buildData.geometryDescs;
 		auto& intermediateBuffer = buildData.intermediateBuffer;
 
-		geometryDescs.resize(buildData.geometryCount);
-		blasDesc.resize(buildData.geometryCount);
-	 
+		geometryDescs.resize(buildData.newInstanceCount);
+		intermediateBuffer.resize(buildData.newInstanceCount);
+		blasDesc.resize(buildData.newInstanceCount);
+
 		const uint existBlasHolder = (uint)blasVec.size();
 		blasVec.resize(existBlasHolder + buildData.blasHolderCount);
 		blasMap.reserve(existBlasHolder + buildData.blasHolderCount);
-		intermediateBuffer.resize(existBlasHolder + buildData.blasHolderCount);
 
 		const uint existInstanceDesc = (uint)instanceDesc.size();
-		const uint existInstanceCache = (uint)instanceCacheVec.size();
+		const uint existInstanceCache = (uint)compCacheVec.size();
 		instanceDesc.resize(existInstanceDesc + buildData.instanceCount);
-		instanceCacheVec.resize(existInstanceCache + buildData.objectData.size());
-		instanceCacheMap.reserve(existInstanceCache + buildData.objectData.size()); 
+		compCacheVec.resize(existInstanceCache + buildData.objectData.size());
+		compCacheMap.reserve(existInstanceCache + buildData.objectData.size());
 
 		int blasIndex = 0;
 		int blasHolderIndex = existBlasHolder;
+		int intermediateIndex = existBlasHolder;
 		int instanceDescIndex = existInstanceDesc;
 		int instanceCompIndex = existInstanceCache;
 
@@ -464,7 +460,7 @@ namespace JinEngine::Graphic
 					++blasIndex;
 				}
 				existHolder = newHolder;
-				blasMap.emplace(objData.mesh->GetGuid(), newHolder); 
+				blasMap.emplace(objData.mesh->GetGuid(), newHolder);
 				++blasHolderIndex;
 			}
 			else
@@ -472,10 +468,10 @@ namespace JinEngine::Graphic
 				existHolder = existData->second;
 				++existHolder->refInstanceCount;
 			}
-			 
-			auto instanceCache = std::make_unique<JInstanceCache>(objData.instanceComp, instanceCompIndex, instanceDescIndex);
-			instanceCacheMap.emplace(objData.instanceComp->GetGuid(), instanceCache.get());
-			instanceCacheVec[instanceCompIndex] = std::move(instanceCache);
+
+			auto compCache = std::make_unique<JComponentInstanceCache>(objData.instanceComp, instanceCompIndex, instanceDescIndex);
+			compCacheMap.emplace(objData.instanceComp->GetGuid(), compCache.get());
+			compCacheVec[instanceCompIndex] = std::move(compCache);
 			++instanceCompIndex;
 
 			for (uint j = 0; j < subMeshCount; ++j)
@@ -526,7 +522,7 @@ namespace JinEngine::Graphic
 		buffer.CopyData(0, (int)instanceDesc.size(), instanceDesc.data());
 		return std::move(buffer);
 	}
-	
+
 	static void SubmitBuildBottomLevelASCommand(const BuildData& buildData, const AcceleratorBuildDesc& desc)
 	{
 		//리소스는 NULL일 수 있으며, 이는 모든 UAV 액세스에 장벽이 필요할 수 있음을 나타냅니다.
@@ -548,10 +544,24 @@ namespace JinEngine::Graphic
 		buildData.raytracingCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
 		buildData.raytracingCommandList->ResourceBarrier(1, &barrier);
 	}
-	 
-	JDx12GpuAcceleratorManager::JDx12GpuAcceleratorManager(JFrameIndexAccess* frameAccess)
-		:frameAccess(frameAccess)
-	{}
+
+	JDx12GpuAcceleratorManager::~JDx12GpuAcceleratorManager()
+	{
+		ClearResource();
+	}
+	void JDx12GpuAcceleratorManager::Initialize(JGraphicDevice* device)
+	{
+		if (!IsSameDevice(device))
+			return;
+
+		JGpuAcceleratorManager::Initialize(device);
+		BuildResource(device);
+	}
+	void JDx12GpuAcceleratorManager::Clear()
+	{
+		ClearResource();
+		JGpuAcceleratorManager::Clear();
+	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GpuAcceleratorManager::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
@@ -566,15 +576,15 @@ namespace JinEngine::Graphic
 	}
 	JUserPtr<JGpuAcceleratorInfo> JDx12GpuAcceleratorManager::Create(JGraphicDevice* device, JGraphicResourceManager* gm, const JGpuAcceleratorBuildDesc& desc)
 	{
-		BuildData buildData(device, gm, frameAccess, desc.flag);
+		BuildData buildData(device, gm, desc.flag);
 		buildData.PushObjectData(desc);
 
 		std::unique_ptr<JDx12GpuAcceleratorHolder> holder = BuildAcceleratorStructure(buildData);
 		if (holder == nullptr)
 			return nullptr;
 
-		JOwnerPtr<JGpuAcceleratorInfo> owner = CreateInfo(std::move(holder), desc);
-		JUserPtr<JGpuAcceleratorInfo> user = owner;
+		JOwnerPtr<JDx12GpuAcceleratorInfo> owner = CreateInfo(std::move(holder), desc);
+		JUserPtr<JDx12GpuAcceleratorInfo> user = owner;
 		user->SetArrayIndex((uint)infoVec.size());
 
 		infoVec.push_back(std::move(owner));
@@ -597,7 +607,7 @@ namespace JinEngine::Graphic
 		if (info == nullptr)
 			return;
 
-		BuildData buildData(device, gm, frameAccess, info->GetBuildOption());
+		BuildData buildData(device, gm, info->GetBuildOption());
 		buildData.PushObjectData(comp);
 		if (!buildData.allowReBuild)
 			return;
@@ -609,7 +619,7 @@ namespace JinEngine::Graphic
 		if (info == nullptr)
 			return;
 
-		BuildData buildData(device, gm, frameAccess, info->GetBuildOption());
+		BuildData buildData(device, gm, info->GetBuildOption());
 		buildData.PushObjectData(comp);
 
 		if (!buildData.allowReBuild)
@@ -622,7 +632,7 @@ namespace JinEngine::Graphic
 		if (info == nullptr)
 			return;
 
-		BuildData buildData(device, gm, frameAccess, info->GetBuildOption());
+		BuildData buildData(device, gm, info->GetBuildOption());
 		buildData.PushObjectData(comp);
 
 		if (!buildData.allowReBuild)
@@ -630,9 +640,9 @@ namespace JinEngine::Graphic
 
 		RemoveBottomLevelAs(buildData, static_cast<JDx12GpuAcceleratorHolder*>(GetHolder(info)));
 	}
-	JOwnerPtr<JGpuAcceleratorInfo> JDx12GpuAcceleratorManager::CreateInfo(std::unique_ptr<JGpuAcceleratorHolder>&& holder, const JGpuAcceleratorBuildDesc& desc)
+	JOwnerPtr<JDx12GpuAcceleratorInfo> JDx12GpuAcceleratorManager::CreateInfo(std::unique_ptr<JGpuAcceleratorHolder>&& holder, const JGpuAcceleratorBuildDesc& desc)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JGpuAcceleratorInfo>(this, desc.flag, std::move(holder));
+		return Core::JPtrUtil::MakeOwnerPtr<JDx12GpuAcceleratorInfo>(desc.flag, std::move(holder), this);
 	}
 	std::unique_ptr<JDx12GpuAcceleratorHolder> JDx12GpuAcceleratorManager::BuildAcceleratorStructure(BuildData& buildData)
 	{
@@ -646,9 +656,9 @@ namespace JinEngine::Graphic
 		BlasHolderVec blasVec;
 		BlasHolderMap blasMap;
 		InstanceDescVec instanceDesc;
-		InstanceCacheVec instanceCacheVec;
-		InstanceCacheMap instanceCacheMap;
-		BuildBottomLevelAS(buildData, blasDesc, blasVec, blasMap, instanceDesc, instanceCacheVec, instanceCacheMap);
+		ComponentCacheVec compCacheVec;
+		ComponentCacheMap compCacheMap;
+		BuildBottomLevelAS(buildData, blasDesc, blasVec, blasMap, instanceDesc, compCacheVec, compCacheMap);
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC tlasDesc;
 		AccelerationStructureBuffers tlasBuffers;
@@ -662,24 +672,24 @@ namespace JinEngine::Graphic
 		SubmitBuildBottomLevelASCommand(buildData, blasDesc);
 		SubmitBuildTopLevelASCommand(buildData, tlasBuffers, tlasDesc);
 		buildData.device->EndPublicCommandSet(startCommandThisCreation, true);
- 
+
 		std::unique_ptr<JTlasHolder> tlas = std::make_unique<JTlasHolder>(std::move(tlasBuffers.accelerationStructure));
 		return std::make_unique<JDx12GpuAcceleratorHolder>(std::move(tlas),
 			std::move(blasVec),
 			std::move(blasMap),
 			std::move(instanceBuffer),
 			std::move(instanceDesc),
-			std::move(instanceCacheVec),
-			std::move(instanceCacheMap));
+			std::move(compCacheVec),
+			std::move(compCacheMap));
 	}
 	void JDx12GpuAcceleratorManager::UpdateInstance(const BuildData& buildData, JDx12GpuAcceleratorHolder* holder, const J_GPU_ACCELERATOR_BUILD_OPTION preBuildOption)
 	{
 		if (!buildData.IsValid())
 			return;
 
-		InstanceDescVec& instanceDesc = holder->instanceDescVec;
-		InstanceCacheVec& instanceCacheVec = holder->instanceCacheVec;
-		InstanceCacheMap& instanceCacheMap = holder->instanceCacheMap;
+		InstanceDescVec& instanceDesc = holder->instanceDescCacheVec;
+		ComponentCacheVec& compCacheVec = holder->compCacheVec;
+		ComponentCacheMap& compCacheMap = holder->compCacheMap;
 
 		uint updatedStDescIndex = UINT_MAX;
 		uint updatedStCompIndex = UINT_MAX;
@@ -692,11 +702,11 @@ namespace JinEngine::Graphic
 			if (blasPtr == nullptr)
 				continue;
 
-			JInstanceCache* instanceCache = instanceCacheMap.find(objData.instanceComp->GetGuid())->second;
-			if (updatedStCompIndex > instanceCache->index)
+			JComponentInstanceCache* compCache = compCacheMap.find(objData.instanceComp->GetGuid())->second;
+			if (updatedStCompIndex > compCache->index)
 			{
-				updatedStCompIndex = instanceCache->index;
-				updatedStDescIndex = instanceCache->descStIndex;
+				updatedStCompIndex = compCache->index;
+				updatedStDescIndex = compCache->descStIndex;
 			}
 		}
 		if (updatedStDescIndex == UINT_MAX)
@@ -705,8 +715,8 @@ namespace JinEngine::Graphic
 		bool startCommandThisCreation = false;
 		buildData.device->StartPublicCommandSet(startCommandThisCreation);
 
-		const uint existInstanceCount = (uint)holder->instanceDescVec.size();
-		const uint existInstanceCacheCount = (uint)holder->instanceCacheVec.size();
+		const uint existInstanceCount = (uint)holder->instanceDescCacheVec.size();
+		const uint existInstanceCacheCount = (uint)holder->compCacheVec.size();
 		const uint copyStIndex = updatedStDescIndex;
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC tlasDesc;
@@ -718,7 +728,7 @@ namespace JinEngine::Graphic
 		uint updatedCount = 0;
 		for (uint i = updatedStCompIndex; i < existInstanceCacheCount; ++i)
 		{
-			ObjectData data(instanceCacheVec[i]->comp);
+			ObjectData data(compCacheVec[i]->comp);
 			auto blasPtr = holder->GetBlas(data.mesh->GetGuid());
 			const uint subMeshCount = (uint)data.mesh->GetTotalSubmeshCount();
 			for (uint j = 0; j < subMeshCount; ++j)
@@ -727,7 +737,7 @@ namespace JinEngine::Graphic
 				++updatedStDescIndex;
 				++updatedCount;
 			}
-		} 
+		}
 		instanceData->CopyData(copyStIndex, updatedCount, &instanceDesc[copyStIndex]);
 
 		tlasDesc.Inputs.InstanceDescs = instanceData->GetResource()->GetGPUVirtualAddress();
@@ -751,23 +761,23 @@ namespace JinEngine::Graphic
 			buildData.device->StartPublicCommandSet(startCommandThisCreation);
 
 			const uint existBlasCount = (uint)holder->blasVec.size();
-			const uint existInstanceCount = (uint)holder->instanceDescVec.size();
+			const uint existInstanceCount = (uint)holder->instanceDescCacheVec.size();
 			const uint newInstanceCount = (uint)existInstanceCount + buildData.instanceCount;
-			 
+
 			BlasDescVec blasDesc;
 			BlasHolderVec& blasVec = holder->blasVec;
 			BlasHolderMap& blasMap = holder->blasMap;
-			InstanceDescVec& instanceDesc = holder->instanceDescVec;
-			InstanceCacheVec& instanceCacheVec = holder->instanceCacheVec;
-			InstanceCacheMap& instanceCacheMap = holder->instanceCacheMap;
+			InstanceDescVec& instanceDesc = holder->instanceDescCacheVec;
+			ComponentCacheVec& compCacheVec = holder->compCacheVec;
+			ComponentCacheMap& compCacheMap = holder->compCacheMap;
 
-			BuildBottomLevelAS(buildData, blasDesc, blasVec, blasMap, instanceDesc, instanceCacheVec, instanceCacheMap);
+			BuildBottomLevelAS(buildData, blasDesc, blasVec, blasMap, instanceDesc, compCacheVec, compCacheMap);
 			holder->blasVec.resize(holder->blasMap.size());
 
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC tlasDesc;
 			AccelerationStructureBuffers tlasBuffers;
 			BuildTopLevelAS(buildData, newInstanceCount, tlasDesc, tlasBuffers);
-			 
+
 			JDx12GraphicBuffer* instanceData = &holder->instanceData;
 			if (instanceData->GetElementCount() < newInstanceCount)
 			{
@@ -780,11 +790,11 @@ namespace JinEngine::Graphic
 			tlasDesc.Inputs.InstanceDescs = instanceData->GetResource()->GetGPUVirtualAddress();
 			tlasDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 
-			if(existBlasCount != holder->blasVec.size())
+			if (existBlasCount != holder->blasVec.size())
 				SubmitBuildBottomLevelASCommand(buildData, blasDesc);
 			SubmitBuildTopLevelASCommand(buildData, tlasBuffers, tlasDesc);
 			buildData.device->EndPublicCommandSet(startCommandThisCreation, true);
-			 
+
 			holder->Swap(std::make_unique<JTlasHolder>(std::move(tlasBuffers.accelerationStructure)));
 		}
 	}
@@ -796,17 +806,17 @@ namespace JinEngine::Graphic
 		bool startCommandThisCreation = false;
 		buildData.device->StartPublicCommandSet(startCommandThisCreation);
 		 
-		uint updatedStDescIndex = UINT_MAX;
-		uint updatedStCompIndex = UINT_MAX;
-		uint removedInstanceDescCount = 0;
-		uint removedInstanceCacheCount = (uint)buildData.objectData.size();
-  
-		InstanceDescVec& instanceDesc = holder->instanceDescVec;
-		InstanceCacheVec& instanceCacheVec = holder->instanceCacheVec;
-		InstanceCacheMap& instanceCacheMap = holder->instanceCacheMap;
+		uint removedObjectCount = (uint)buildData.objectData.size();
+		uint removedInstanceCount = buildData.instanceCount;
+
+		InstanceDescVec& instanceDesc = holder->instanceDescCacheVec;
+		ComponentCacheVec& compCacheVec = holder->compCacheVec;
+		ComponentCacheMap& compCacheMap = holder->compCacheMap;
 		uint existDescCount = (uint)instanceDesc.size();
 
-		if (removedInstanceCacheCount >= instanceCacheVec.size())
+		//remove하는 obj count가 현개 cache된 count보다 같거나 많을 경우 Clear
+		//Gpu Acc에 등록되는 경우와 Remove되는 경우의 Object type이 같아야한다.
+		if (removedInstanceCount >= compCacheVec.size())
 		{
 			holder->Clear();
 			return;
@@ -814,36 +824,33 @@ namespace JinEngine::Graphic
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC tlasDesc;
 		AccelerationStructureBuffers tlasBuffers;
-		BuildTopLevelAS(buildData, instanceDesc.size() - removedInstanceCacheCount, tlasDesc, tlasBuffers);
-
-		for (uint i = 0; i < removedInstanceCacheCount; ++i)
-		{
-			auto& objData = buildData.objectData[i]; 
-			auto blasPtr = holder->GetBlas(objData.mesh->GetGuid());
-			if (blasPtr == nullptr)
-				continue;
-
-			const uint subMeshCount = objData.mesh->GetTotalSubmeshCount();
-			JInstanceCache* instanceCache = instanceCacheMap.find(objData.instanceComp->GetGuid())->second;
-	 
-			if (updatedStCompIndex > instanceCache->index)
-			{
-				updatedStCompIndex = instanceCache->index;
-				updatedStDescIndex = instanceCache->descStIndex;
-			}
-			removedInstanceDescCount += subMeshCount;
-
-			instanceDesc.erase(instanceDesc.begin() + instanceCache->descStIndex, instanceDesc.begin() + instanceCache->descStIndex + subMeshCount);
-			instanceCacheMap.erase(objData.instanceComp->GetGuid());
-			instanceCacheVec.erase(instanceCacheVec.begin() + instanceCache->index);
-
-			--blasPtr->refInstanceCount;
-			if (blasPtr->refInstanceCount == 0)
-				holder->RemoveBlas(blasPtr->index, objData.mesh->GetGuid());
-		}
-		if (updatedStDescIndex != UINT_MAX)
-			UpdateInstanceID(buildData, instanceDesc, instanceCacheVec, updatedStDescIndex, updatedStCompIndex, removedInstanceDescCount, removedInstanceCacheCount);
+		BuildTopLevelAS(buildData, instanceDesc.size() - removedInstanceCount, tlasDesc, tlasBuffers);
  
+		auto& objData = buildData.objectData[0];
+		auto blasPtr = holder->GetBlas(objData.mesh->GetGuid());
+		if (blasPtr == nullptr)
+			return;
+		 
+		JComponentInstanceCache* compCache = compCacheMap.find(objData.instanceComp->GetGuid())->second;
+
+		const uint updatedStCompIndex = compCache->index;
+		const uint updatedStDescIndex = compCache->descStIndex;
+
+		const bool hasNext = uint(compCacheVec.size()) > updatedStCompIndex + 1;
+		const uint removedInstanceDescCount = hasNext ? compCacheVec[updatedStCompIndex + 1]->descStIndex - updatedStCompIndex : compCacheVec.size() - updatedStCompIndex;
+
+		instanceDesc.erase(instanceDesc.begin() + compCache->descStIndex, instanceDesc.begin() + compCache->descStIndex + removedInstanceDescCount);
+		compCacheMap.erase(objData.instanceComp->GetGuid());
+		compCacheVec.erase(compCacheVec.begin() + compCache->index);
+
+		--blasPtr->refInstanceCount;
+		if (blasPtr->refInstanceCount == 0)
+			holder->RemoveBlas(blasPtr->index, objData.mesh->GetGuid()); 
+
+		//Update desc & cache unique data(ID or Index)
+		if (updatedStDescIndex != UINT_MAX)
+			UpdateInstanceID(buildData, instanceDesc, compCacheVec, updatedStCompIndex, removedInstanceDescCount, 1);
+
 		JDx12GraphicBuffer* instanceData = &holder->instanceData;
 		uint downCapcityBorder = (instanceData->GetElementCount() / 2);
 		if (downCapcityBorder > (uint)instanceDesc.size())
@@ -852,7 +859,7 @@ namespace JinEngine::Graphic
 			instanceData->Build(buildData.device, newCapacity);
 			instanceData->CopyData(0, (uint)instanceDesc.size(), instanceDesc.data());
 		}
-		else if(instanceDesc.size() - updatedStDescIndex > 0)
+		else if (instanceDesc.size() - updatedStDescIndex > 0)
 			instanceData->CopyData(updatedStDescIndex, instanceDesc.size() - updatedStDescIndex, &instanceDesc[updatedStDescIndex]);
 
 		tlasDesc.Inputs.InstanceDescs = instanceData->GetResource()->GetGPUVirtualAddress();
@@ -861,14 +868,48 @@ namespace JinEngine::Graphic
 		SubmitBuildTopLevelASCommand(buildData, tlasBuffers, tlasDesc);
 
 		holder->Swap(std::make_unique<JTlasHolder>(std::move(tlasBuffers.accelerationStructure)));
-		buildData.device->EndPublicCommandSet(startCommandThisCreation, true); 
+		buildData.device->EndPublicCommandSet(startCommandThisCreation, true);
+	} 
+	void JDx12GpuAcceleratorManager::BuildResource(JGraphicDevice* device)
+	{
+
 	}
- 
+	void JDx12GpuAcceleratorManager::ClearResource()
+	{
+		infoVec.clear();
+	}
+	void JDx12GpuAcceleratorManager::RegisterTypeData()
+	{
+		using JAllocationDesc = JinEngine::Core::JAllocationDesc;
+		using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;
+		using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;
+		using ReceiverPtr = JAllocationDesc::ReceiverPtr;
+		using ReAllocatedPtr = JAllocationDesc::ReAllocatedPtr;
+		using MemIndex = JAllocationDesc::MemIndex;
+
+		NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
+		{
+			JDx12GpuAcceleratorInfo* movedInfo = static_cast<JDx12GpuAcceleratorInfo*>(movedPtr);
+			JDx12GpuAcceleratorManager* manager = movedInfo->manager;
+
+			//Release를 먼저하지않으면 Reset시 유효한 pointer를 소유하므로 pointer 파괴를 시도하며
+			//현재 alloc class에서 메모리를 재배치하는 과정에서 에러를 일으킬수 있으므로
+			//Release() 한다음 Reset()을 호출해야한다. 
+			//2024-08-15 수정 포인터만 변경하는 Swap 사용
+			manager->infoVec[movedInfo->GetArrayIndex()].Swap(movedInfo);
+		};
+		auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);
+		std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();
+
+		desc->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);
+		JDx12GpuAcceleratorInfo::StaticTypeInfo().SetAllocationOption(std::move(desc));
+	}
+
 	JDx12AcceleratorResourceComputeSet::JDx12AcceleratorResourceComputeSet(JDx12GpuAcceleratorManager* am, const JUserPtr<JGpuAcceleratorInfo>& aInfo)
 		:am(am), info(aInfo.Get()), holder(info != nullptr ? am->GetDx12Holder(info) : nullptr)
 	{}
-	JDx12AcceleratorResourceComputeSet::JDx12AcceleratorResourceComputeSet(JDx12GpuAcceleratorManager* am, const JGpuAcceleratorUserInterface& user)
-		: am(am), info(am->GetInfo(user.HasInfo() ? user.GetArrayIndex() : invalidIndex)), holder(info != nullptr ? am->GetDx12Holder(info) : nullptr)
+	JDx12AcceleratorResourceComputeSet::JDx12AcceleratorResourceComputeSet(JDx12GpuAcceleratorManager* am, JGpuAcceleratorInterface* user)
+		: am(am), info(am->GetInfo(user->HasInfo() ? user->GetArrayIndex() : invalidIndex)), holder(info != nullptr ? am->GetDx12Holder(info) : nullptr)
 	{}
 	bool JDx12AcceleratorResourceComputeSet::IsValid()const noexcept
 	{

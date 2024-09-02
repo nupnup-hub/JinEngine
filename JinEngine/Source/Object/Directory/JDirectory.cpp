@@ -188,26 +188,24 @@ namespace JinEngine
 			auto copyD = children;
 			for(auto& data: copyD)
 				Core::JIdentifier::BeginForcedDestroy(data.Get());
+			children.clear();
 
 			std::vector<JUserPtr<JResourceObject>> rVec;
 			auto copyF = fileList;
 		 
 			for (auto& data : copyF)
 			{
-				auto rawPtr = data->GetResource().Get();
-				if (rawPtr != nullptr)
-					Core::JIdentifier::BeginForcedDestroy(rawPtr);
-
 				//Resource Destory시 File이 소유하는 Data만 Act에서 DeAct로 컨버트하나
 				//Shader같이 Resource Destory시 File도 Destory하는 경우도 존재함 
+				if (data->IsExistingResource())
+					JResourceObject::BeginForcedDestroy(data->GetResource().Get());
+
 				if (data.IsValid())
 				{
 					InstanceInterface::RemoveInstance(data.Get());
 					data.Clear();
 				}
-			}
- 
-			children.clear();
+			} 
 			fileList.clear();
 		}
 	public:
@@ -235,7 +233,7 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{   
 			Core::JIdentifier::RegisterPrivateInterface(JDirectory::StaticTypeInfo(), dPrivate);  
-			IMPL_REALLOC_BIND(JDirectory::JDirectoryImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -272,6 +270,10 @@ namespace JinEngine
 	J_OBJECT_TYPE JDirectory::GetObjectType()const noexcept
 	{
 		return J_OBJECT_TYPE::DIRECTORY_OBJECT;
+	}
+	uint JDirectory::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	std::wstring JDirectory::GetPath()const noexcept
 	{
@@ -518,7 +520,7 @@ namespace JinEngine
 	using AssetDataIOInterface = JDirectoryPrivate::AssetDataIOInterface;
 	using FileInterface = JDirectoryPrivate::FileInterface;
 	using ActivationInterface = JDirectoryPrivate::ActivationInterface;
-	using RawDirectoryInterface = JDirectoryPrivate::RawDirectoryInterface;
+	using RawDirectoryInterface = JDirectoryPrivate::RawDirectoryInterface; 
 	using DestroyInstanceInterfaceEx = JDirectoryPrivate::DestroyInstanceInterfaceEx;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
@@ -596,7 +598,7 @@ namespace JinEngine
 			return nullptr;
 
 		std::unique_ptr<JDirectory::InitData> initData = std::make_unique<JDirectory::InitData>(loadData->parent);
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetaData(tool, initData.get());
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(tool, initData.get());
 		tool.Close();
 		  
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
@@ -620,11 +622,11 @@ namespace JinEngine
 		if (!tool.Begin(dirUser->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		Core::J_FILE_IO_RESULT res = StoreMetaData(tool, storeData);
+		Core::J_FILE_IO_RESULT res = StoreMetadata(tool, storeData);
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return res;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JDirectory::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -636,7 +638,7 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadObjectIden(tool, dirInit->guid, dirInit->flag);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JDirectory::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -692,7 +694,7 @@ namespace JinEngine
 	{
 		dir->DeActivate();
 	}
-
+ 
 	void RawDirectoryInterface::MoveDirectory(const JUserPtr<JDirectory>& dir, const JUserPtr<JDirectory>& newParent)noexcept
 	{
 		dir->impl->MoveDirectory(newParent.Get());

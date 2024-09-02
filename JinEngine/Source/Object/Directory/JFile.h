@@ -61,7 +61,7 @@ namespace JinEngine
 		virtual std::wstring GetCacheFilePath()const noexcept = 0;
 	public:
 		virtual JUserPtr<JDirectory> GetOwnerDirectory()const noexcept = 0;
-		virtual JUserPtr<JResourceObject> GetResource()const noexcept = 0;
+		virtual JUserPtr<JResourceObject> GetResource()const noexcept = 0; 
 	};
 
 	//Jasset file class 
@@ -91,7 +91,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> GetOwnerDirectory()const noexcept;
 		JUserPtr<JResourceObject> GetResource()const noexcept;
 		//if resource isn't exist load
-		JUserPtr<JResourceObject> TryGetResourceUser()const noexcept;
+		JUserPtr<JResourceObject> TryGetResourceUser()const noexcept; 
 	public: 
 		static void RegisterTypeData();
 	private:

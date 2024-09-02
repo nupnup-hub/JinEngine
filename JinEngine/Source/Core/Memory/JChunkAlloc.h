@@ -24,43 +24,39 @@ SOFTWARE.
 
 
 #pragma once
+#include"JAllocationInterface.h"
 
 namespace JinEngine
 {
     namespace Core
-    {
-		//수정필요
+    { 
+		//unuse
 		class JChunkAlloc
 		{
-		public:
+		private:
 			/// Pointer to array of allocated blocks.
-			unsigned char* pData;
+			BYTE* pData;
 			/// Index of first empty block.
-			unsigned char firstAvailableBlock;
+			BYTE firstAvailableBlock;
 			/// Count of empty blocks.
-			unsigned char blocksAvailable;
+			BYTE allocableBlockCount;
+		private:
+			size_t allocBlockSize;
 		public:
-			bool Init(size_t blockSize, unsigned char blocks);
+			bool Initialize(BYTE* newData, BYTE blocks, const size_t blockSize);
+			void Clear();
+		public:
 			void* Allocate(size_t blockSize);
 			void Deallocate(void* p, size_t blockSize);
-			void Reset(size_t blockSize, unsigned char blocks);
-			void Release();
-			bool IsCorrupt(unsigned char numBlocks, size_t blockSize, bool checkIndexes) const;
-			bool IsBlockAvailable(void* p, unsigned char numBlocks, size_t blockSize) const;
-
+		private:
+			uint GetBlockIndex(void* p)const noexcept;
+		public: 
+			bool CanAllocate(const uint blockCount)const noexcept;
 			/// Returns true if block at address P is inside this Chunk.
 			inline bool HasBlock(void* p, size_t chunkLength) const
 			{
-				unsigned char* pc = static_cast<unsigned char*>(p);
+				BYTE* pc = static_cast<BYTE*>(p);
 				return (pData <= pc) && (pc < pData + chunkLength);
-			}
-			inline bool HasAvailable(unsigned char numBlocks) const
-			{
-				return (blocksAvailable == numBlocks);
-			}
-			inline bool IsFilled(void) const
-			{
-				return (0 == blocksAvailable);
 			}
 		};
     }

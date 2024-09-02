@@ -23,58 +23,53 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once
-#include"JCullingType.h"
-#include"JCullingInfo.h" 
+#pragma once 
+#include"JCullingInfo.h"  
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Reflection/JTypeImplBase.h" 
+#include"../../Object/GraphicRule/Culling/JGraphicModuleCullingUserAccess.h"
 
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		class JCullingInfo;
-		class JGraphicMultiResourceInterface;
-		class JGraphic;
-		class JCullingUserInterface;
-		class JCullingUpdaterInterface;
-
+	{   
 		/**
 		* 주로 impl class가 해당 interface을 상속한다
 		* interface는 info를 소유하는 wrapper로 culling manager와 impl간의 중간역할을 한다
 		* impl이 직접 JCullingInfo를 상속하지 않은건 외부로 노출할 수 없기때문이다.
 		*/
-		class JCullingInterface : public Core::JTypeImplInterfacePointerHolder<JCullingInterface>
-		{   
-		protected:
-			bool CreateFrustumCullingData(const J_CULLING_TARGET target);
-			bool CreateHzbOccCullingData();
-			bool CreateHdOccCullingData();  
-		protected: 
-			void DestroyCullingData(JUserPtr<JCullingInfo>& info)noexcept;
-			virtual void DestroyAllCullingData()noexcept = 0;
-		private:
+		//수정 Impl의 상위 interfacae가아닌 Graphic module내에서 관리하는 객체로 수정하고자
+		//기존의 public Core::JTypeImplInterfacePointerHolder<JGraphicResourceInterface> 상속받는 코드는 수정한다.
+		//2024-07-27
+
+		class JCullingInterface : public JCullingUserInterface
+		{
+		public:
+			using DestoryInfoF = Core::JSFunctorType<void, JCullingInfo*>::Functor; 
+		public:
 			virtual void AddInfo(const JUserPtr<JCullingInfo>& newInfo) = 0;
+			virtual void RemoveInfo(DestoryInfoF& destroyF, const J_CULLING_TYPE type, const J_CULLING_TARGET target)noexcept = 0;
+			virtual void RemoveInfoOfType(DestoryInfoF& destroyF, const J_CULLING_TYPE type)noexcept = 0;
+			virtual void RemoveInfoAll(DestoryInfoF& destroyF)noexcept = 0;
 		public: 
-			int GetArrayIndex(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept;
-			uint GetResultBufferSize(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept;
-			float GetUpdateFrequency(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept; 
+			int GetArrayIndex(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final;
+			uint GetResultBufferSize(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final;
+			float GetUpdateFrequency(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final;
 		protected:
 			virtual JUserPtr<JCullingInfo> GetCullingInfo(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept = 0;
 		public:
-			void SetCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept;
-			void OffCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept;
+			void SetCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept final;
+			void OffCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept final;
 			//off user culling
-			void OffCullingArray(const J_CULLING_TYPE type, const J_CULLING_TARGET target)noexcept;
+			void OffCullingArray(const J_CULLING_TYPE type, const J_CULLING_TARGET target)noexcept final;
 		public:  
 			/**
 			* @return all culling type &&...
-			*/
-			virtual bool IsCulled(const J_CULLING_TARGET target, const uint index)const noexcept = 0;
-			bool IsCulled(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)const noexcept;
-			virtual bool IsUpdateEnd(const J_CULLING_TYPE type)const noexcept = 0;
-			bool IsUpdateEnd(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept;
-			bool HasCullingData(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept;
+			*/ 
+			JCullingUserInterface::IsCulled;
+			bool IsCulled(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)const noexcept final;
+			bool IsUpdateEnd(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final;
+			bool HasCullingData(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final;
 			virtual bool HasSpace(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept = 0;
 		protected:
 			virtual bool IsValidType(const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget)const noexcept = 0;
@@ -115,20 +110,28 @@ namespace JinEngine
 			{
 				return JCullingInterface::CreateFrustumCullingData(target);
 			}
-		public:
-			void DestroyCullingData(const J_CULLING_TYPE cType)noexcept
-			{
-				if(type == cType)
-					JCullingInterface::DestroyCullingData(info);
-			}
-			void DestroyAllCullingData()noexcept final
-			{
-				JCullingInterface::DestroyCullingData(info);
-			}
 		private:
 			void AddInfo(const JUserPtr<JCullingInfo>& newInfo)final
 			{
 				info = newInfo;
+			}
+			void RemoveInfo(DestoryInfoF& destroyF, const J_CULLING_TYPE _type, const J_CULLING_TARGET _target)noexcept final
+			{
+				if (type != _type || target != _target)
+					return;
+
+				destroyF(info.Release());
+			}
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_CULLING_TYPE _type)noexcept final
+			{
+				if (type != _type)
+					return;
+
+				destroyF(info.Release());
+			}
+			void RemoveInfoAll(DestoryInfoF& destroyF)noexcept final
+			{
+				destroyF(info.Release());
 			}
 		public:
 			JUserPtr<JCullingInfo> GetCullingInfo(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final
@@ -159,21 +162,27 @@ namespace JinEngine
 		{
 		private:
 			JUserPtr<JCullingInfo> info[(uint)J_CULLING_TYPE::COUNT];
-		public:
-			void DestroyCullingData(const J_CULLING_TYPE type)noexcept
-			{
-				JCullingInterface::DestroyCullingData(info[(uint)type]);
-			}
-			void DestroyAllCullingData()noexcept final
-			{
-				for(uint i = 0; i < (uint)J_CULLING_TYPE::COUNT; ++i)
-					JCullingInterface::DestroyCullingData(info[i]);
-			}
 		private:
 			void AddInfo(const JUserPtr<JCullingInfo>& newInfo)final
 			{
 				const J_CULLING_TYPE newType = newInfo->GetCullingType();
 				info[(uint)newType] = newInfo;
+			}
+			void RemoveInfo(DestoryInfoF& destroyF, const J_CULLING_TYPE type, const J_CULLING_TARGET _target)noexcept final
+			{
+				if (target != _target)
+					return;
+
+				destroyF(info[(uint)type].Release());
+			}
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_CULLING_TYPE type)noexcept final
+			{ 
+				destroyF(info[(uint)type].Release());
+			}
+			void RemoveInfoAll(DestoryInfoF& destroyF)noexcept final
+			{
+				for(uint i = 0; i < (uint)J_CULLING_TYPE::COUNT; ++i)
+					destroyF(info[i].Release());
 			}
 		public:
 			JUserPtr<JCullingInfo> GetCullingInfo(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final
@@ -213,12 +222,11 @@ namespace JinEngine
 		{
 		private:
 			JUserPtr<JCullingInfo> info[(uint)J_CULLING_TYPE::COUNT][(uint)J_CULLING_TARGET::COUNT];
-		public:
-			//void DestroyCullingData(const J_CULLING_TYPE type)noexcept;
-			void DestroyCullingData(const J_CULLING_TYPE type, const J_CULLING_TARGET target)noexcept;
-			void DestroyAllCullingData()noexcept final;
 		private:
 			void AddInfo(const JUserPtr<JCullingInfo>& newInfo)final;
+			void RemoveInfo(DestoryInfoF& destroyF, const J_CULLING_TYPE type, const J_CULLING_TARGET target)noexcept final;
+			void RemoveInfoOfType(DestoryInfoF& destroyF, const J_CULLING_TYPE type)noexcept final;
+			void RemoveInfoAll(DestoryInfoF& destroyF)noexcept final;
 		public:
 			JUserPtr<JCullingInfo> GetCullingInfo(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final;
 		public:
@@ -227,32 +235,6 @@ namespace JinEngine
 			bool HasSpace(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept final;
 		protected:
 			bool IsValidType(const J_CULLING_TYPE type, const J_CULLING_TARGET target) const noexcept final;
-		};
-
-		using JCullingIntefacePointer = Core::JTypeImplInterfacePointer<JCullingInterface>;
-
-		class JCullingUserInterface final
-		{ 
-		private:
-			JUserPtr<JCullingIntefacePointer> cPtrWrapper;
-		public: 
-			JCullingUserInterface() = default;
-			JCullingUserInterface(JCullingInterface* currInterface);
-		public: 
-			int GetArrayIndex(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept;
-			uint GetResultBufferSize(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept;
-			float GetUpdateFrequency(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept; 
-		public:
-			void SetCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept;
-			void OffCulling(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)noexcept;
-			void OffCullingArray(const J_CULLING_TYPE type, const J_CULLING_TARGET target)noexcept;
-		public: 
-			bool IsCulled(const J_CULLING_TARGET target, const uint index)const noexcept;	//culling array is ordered by frame index
-			bool IsCulled(const J_CULLING_TYPE type, const J_CULLING_TARGET target, const uint index)const noexcept;
-			bool IsValid()const noexcept; 
-			bool IsUpdateEnd(const J_CULLING_TYPE type)const noexcept;
-			bool IsUpdateEnd(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept;
-			bool HasCullingData(const J_CULLING_TYPE type, const J_CULLING_TARGET target)const noexcept; 												//culling array is ordered by render item mesh number
 		};
 	}
 }

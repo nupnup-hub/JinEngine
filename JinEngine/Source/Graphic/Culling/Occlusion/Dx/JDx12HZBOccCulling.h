@@ -24,9 +24,9 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JHZBOccCulling.h" 
-#include"../../../FrameResource/JOcclusionConstants.h" 
+#include"../JHZBOccCulling.h"  
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
+#include"../../../FrameResource/Dx/JOcclusionConstants.h"
 #include"../../../Culling/Dx/JDx12CullingManager.h"
 #include"../../../Buffer/Dx/JHlslDebug.h" 
 #include"../../../Shader/Dx/JDx12ShaderDataHolder.h"
@@ -119,6 +119,7 @@ namespace JinEngine
 			void OcclusionCulling(JDx12CommandContext* context,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle,
 				const uint passCBIndex,
+				const uint computeCBOffset,
 				const JDx12CullingResourceComputeSet& cSet,
 				const bool isPerspective);
 		private:

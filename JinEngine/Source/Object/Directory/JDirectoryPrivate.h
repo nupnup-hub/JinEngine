@@ -51,8 +51,8 @@ namespace JinEngine
 		private:
 			static JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data);
 			static Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data);
-			static Core::J_FILE_IO_RESULT LoadMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data);	//use initData
-			static Core::J_FILE_IO_RESULT StoreMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data);	//use storeData
+			static Core::J_FILE_IO_RESULT LoadMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data);	//use initData
+			static Core::J_FILE_IO_RESULT StoreMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data);	//use storeData
 		};
 		class CreateInstanceInterface final : public JObjectPrivate::CreateInstanceInterface
 		{
@@ -105,7 +105,7 @@ namespace JinEngine
 			static void MoveDirectory(const JUserPtr<JDirectory>& dir, const JUserPtr<JDirectory>& newParent)noexcept;
 			static void DeleteDirectory(const JUserPtr<JDirectory>& dir)noexcept;
 		};
-		class DestroyInstanceInterfaceEx
+		class DestroyInstanceInterfaceEx final
 		{
 		private:
 			friend class JResourceManager;

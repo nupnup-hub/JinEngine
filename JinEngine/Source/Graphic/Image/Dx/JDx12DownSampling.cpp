@@ -28,7 +28,7 @@ SOFTWARE.
 #include"../JImageProcessingFilter.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"  
 #include"../../Utility/Dx/JDx12ObjectCreation.h" 
@@ -167,10 +167,10 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 	}
-	void JDx12DownSampling::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12DownSampling::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildDownSampleRootSignature(device);
 	}

@@ -23,20 +23,19 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-#include"JGpuAcceleratorType.h"
+#pragma once  
+#include"JGpuAcceleratorInterface.h"
 #include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"
-#include"../DataSet/JGraphicDataSet.h" 
-#include"../../Core/Math/JVector.h"
-#include"../../Core/Reflection/JReflection.h"  
+#include"../DataSet/JGraphicTaskDataSet.h" 
+#include"../../Core/Math/JVector.h" 
 
 namespace JinEngine
-{  
+{
 	class JComponent;
 	class JGameObject;
 	namespace Graphic
-	{  
+	{
 		class JGraphicDevice;
 		class JGraphicResourceManager;
 		class JGpuAcceleratorInfo;
@@ -44,10 +43,14 @@ namespace JinEngine
 
 		class JGpuAcceleratorManager : public JGraphicDeviceUser, public JGraphicSubClassInterface
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JGpuAcceleratorManager)  
+		public:
+			virtual void Initialize(JGraphicDevice* device);
+			virtual void Clear();
 		public:
 			JGpuAcceleratorHolder* GetHolder(JGpuAcceleratorInfo* info)const noexcept;
 			virtual JGpuAcceleratorInfo* GetInfo(const uint index)const noexcept = 0;
-		public: 
+		public:
 			virtual JUserPtr<JGpuAcceleratorInfo> Create(JGraphicDevice* device, JGraphicResourceManager* gm, const JGpuAcceleratorBuildDesc& desc) = 0;
 			virtual bool Destroy(JGraphicDevice* device, JGraphicResourceManager* gm, JGpuAcceleratorInfo* info) = 0;
 		public:

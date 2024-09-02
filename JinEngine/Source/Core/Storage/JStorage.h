@@ -86,33 +86,31 @@ namespace JinEngine
 				return objectVec.cbegin();
 			}
 			Type* Add(Type&& obj)noexcept
-			{
+			{ 
 				objectVec.push_back(std::move(obj));
 				return &objectVec[objectVec.size()-1];
 			}
 			bool Remove(const int index)
 			{
-				if (Get(index) != nullptr)
-				{
-					objectVec.erase(objectVec.begin() + index);
-					return true;
-				}
-				else
+				if (index < 0 || index >= objectVec.size())
 					return false;
+
+				objectVec.erase(objectVec.begin() + index);
+				return true;
 			}
 			int Remove(Type* obj, EqualPtr equal)noexcept
 			{
 				if (obj == nullptr)
-					return -1;
+					return invalidIndex;
 
 				int index = GetIndex(obj, equal);
-				if (index != -1)
+				if (index != invalidIndex)
 				{
 					objectVec.erase(objectVec.begin() + index);
 					return index;
 				}
 				else
-					return -1;
+					return invalidIndex;
 			}
 			template<typename Ret, typename ...Param>
 			int Remove(Type* obj, EqualPtr equal, JStaticCallable<Ret, Type*, Param...> afProccessCallable, Param&&... var)noexcept
@@ -377,7 +375,7 @@ namespace JinEngine
 					return -1;
 
 				int index = GetIndex(obj, equal);
-				if (index != -1)
+				if (index != invalidIndex)
 				{
 					const uint objectCount = (uint)objectVec.size();
 					for (uint i = index + 1; i < objectCount; ++i)
@@ -386,7 +384,7 @@ namespace JinEngine
 					return index;
 				}
 				else
-					return -1;
+					return invalidIndex;
 			}
 			template<typename Ret, typename ...Param>
 			void ApplyFunc(const uint index, JStaticCallable<Ret, Type&, Param...> callable, Param&&... var)

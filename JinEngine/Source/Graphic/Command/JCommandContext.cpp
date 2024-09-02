@@ -31,26 +31,32 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 {  
-	JCommandContext::JCommandContext(const std::string& name, const bool isAlwausActivated)
-		:name(name), isAlwausActivated(isAlwausActivated)
-	{
-		log.name = name;
+	JCommandContext::JCommandContext(const std::string& name, const uint threadNumber, const bool isAlwausActivated)
+		:name(name), threadNumber(threadNumber), isAlwausActivated(isAlwausActivated)
+	{ 
+		log.name = name + "_" + std::to_string(threadNumber);
 	}
 	bool JCommandContext::Begin()
 	{
 		if (!canUse)
+		{
+			MessageBoxA(0, "JCommandContext Can'Use", 0, 0);
 			return false;
+		}
 		isLastFrameUpdated = true; 	
-#ifdef _DEBUG
+#ifdef USE_DEBUG
 		if (canWriteLog)
-			stopWatch.Reset();
+			stopWatch.Reset(); 
+#ifdef USE_PIX
+		BeginDebuggingCapture(name, Core::JRGBColorDefine::FixedColor(threadNumber));
+#endif
 #endif
 		return true;
 	}
 	void JCommandContext::End()
 	{
 		uint logUpdateBorder = Core::JGameTimer::FramePerSecond() * 2.5f;
-#ifdef _DEBUG
+#ifdef USE_DEBUG
 		if (canWriteLog)
 		{
 			stopWatch.Stop(); 
@@ -62,6 +68,9 @@ namespace JinEngine::Graphic
 			else
 				++logUpdateCount;
 		}
+#ifdef USE_PIX
+		EndDebuggingCapture();
+#endif
 #endif
 	} 
 	JCommandContextLog JCommandContext::GetContextLog()const noexcept

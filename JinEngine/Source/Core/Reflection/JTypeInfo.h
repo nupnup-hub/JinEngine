@@ -119,9 +119,9 @@ namespace JinEngine
 				ImplTypeInfo(Core::JTypeInfo& implType, const ConvertImplBasePtr convertPtr); 
 			};
 		private: 
-			using CallOnecePtr = void(*)();
+			using CallOncePtr = void(*)();
 		public:
-			//멤버 함수가 존재해도
+			//함수가 존재해도
 			//basic template 인수가 specialize template인수와 다르면 특수화 되지않음
 			//basic == template<typename T, typename = int> 일시 call<A> => call<A, int>가된다.
 			//그러므로 std::void_t에 타입인 void로 디폴트 설정
@@ -144,7 +144,7 @@ namespace JinEngine
 			struct IsLazyDestructionUser<T, std::void_t<decltype(&T::InitLazyDestructionInfo)>> : std::true_type
 			{};
 			template<typename Type>
-			class CallOnece
+			class CallOnce
 			{
 			public:
 				static void Execute()
@@ -185,20 +185,20 @@ namespace JinEngine
 					else
 						return false;
 				}
-			};
+			};  
 		private:
 			//name is class Name except namespace and class
 			const std::string name;
 			//typeid(T).name()
 			const std::string fullName;
 			const size_t hashCode;
-			const size_t dataSize;
+			const size_t dataSize; 
 			JTypeInfo* parent; 
 			JTypeInfoGuiOption option;
 			std::unique_ptr<JTypeInstanceData> instanceData;
-			std::unique_ptr<JTypeMemberData> memberData;
+			std::unique_ptr<JTypeMemberData> memberData; 
 		private:
-			CallOnecePtr callOncePtr = nullptr;
+			CallOncePtr callOncePtr = nullptr;
 		private:
 			std::unique_ptr<ExtraFunctionInitInfo> extraInitInfo;		//CallOnce 이후 nullptr
 		private:
@@ -217,7 +217,8 @@ namespace JinEngine
 			//typeid name	for guid
 			std::string FullName()const noexcept;
 			//created by fullname 
-			size_t TypeGuid()const noexcept;
+			size_t TypeGuid()const noexcept; 
+			size_t DataSize()const noexcept;
 		public:
 			const PropertyVec GetPropertyVec()const noexcept;
 			const MethodVec GetMethodVec()const noexcept;
@@ -226,7 +227,7 @@ namespace JinEngine
 			JMethodInfo* GetMethod(const std::string& name)const noexcept;
 			JTypeInfoGuiOption* GetOption()noexcept;
 			uint GetInstanceCount()const noexcept;
-			int GetInstanceIndex(IdentifierType iden)const noexcept;
+			int GetInstanceIndex(IdentifierType iden)const noexcept; 
 		public:
 			JTypeBase* GetInstanceRawPtr(IdentifierType iden)const noexcept;
 			JUserPtr<JTypeBase> GetInstanceUserPtr(IdentifierType iden)const noexcept; 
@@ -285,7 +286,7 @@ namespace JinEngine
 			JTypeInfo* GetImplTypeInfo()const noexcept;			//for has impl class
 		public:
 			//is valid until CallOnce 
-			bool SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept;
+			bool SetAllocationCreator(std::unique_ptr<JTypeAllocationCreatorInterface>&& newCreator)noexcept;
 			bool SetAllocationOption(std::unique_ptr<JAllocationDesc>&& newOption)noexcept;
 			bool SetDestructionInfo(std::unique_ptr<JLazyDestructionInfo>&& newDesInfo)noexcept;
 		public:
@@ -338,7 +339,7 @@ namespace JinEngine
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
 			bool AddMethodInfo(JMethodInfo* newMethod); 
 		private:
-			void ExecuteTypeCallOnece();
+			void ExecuteTypeCallOnce();
 		private:
 			//if allocation option is nullptr
 			//set default allocation option
@@ -358,7 +359,7 @@ namespace JinEngine
 				:name(initializer.name),
 				fullName(initializer.fullName),
 				hashCode(initializer.hashCode),
-				dataSize(sizeof(Type)),
+				dataSize(sizeof(Type)), 
 				parent(initializer.parent),
 				isAbstractType(std::is_abstract_v<Type>)
 			{
@@ -367,15 +368,15 @@ namespace JinEngine
 				  
 				JReflectionInfoPrivate::TypeInterface::AddType(this);
 				extraInitInfo = std::make_unique<ExtraFunctionInitInfo>();
-				if constexpr (CallOnece<Type>::IsDefinedInitAllocatorInfo())
+				if constexpr (CallOnce<Type>::IsDefinedInitAllocatorInfo())
 				{
 					extraInitInfo->canUseAlloc = true;
 					extraInitInfo->allocInitInfo = std::make_unique<AllocationInitInfo>();
 				}
-				if constexpr (CallOnece<Type>::IsDefinedInitLazyDestructionInfo())
+				if constexpr (CallOnce<Type>::IsDefinedInitLazyDestructionInfo())
 					extraInitInfo->canUseLazy = true;
 
-				callOncePtr = &CallOnece<Type>::Execute;
+				callOncePtr = &CallOnce<Type>::Execute;
 				if (parent != nullptr)
 					parent->isLeafType = false;
 			}

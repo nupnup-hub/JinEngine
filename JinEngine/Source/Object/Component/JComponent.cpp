@@ -75,7 +75,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			IMPL_REALLOC_BIND(JComponent::JComponentImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -115,6 +115,10 @@ namespace JinEngine
 	JUserPtr<JGameObject> JComponent::GetOwner()const noexcept
 	{
 		return impl->owner;
+	}
+	size_t JComponent::GetAreaGuid()const noexcept
+	{
+		return impl->owner->GetOwnerGuid();
 	}
 	bool JComponent::PassDefectInspection()const noexcept
 	{

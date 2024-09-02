@@ -63,15 +63,15 @@ namespace JinEngine
 			bool IsValidData()const noexcept final; 
 		};
 	protected: 
-		class LoadMetaData final : public JResourceObject::InitData
+		class LoadMetadata final : public JResourceObject::InitData
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			JUserPtr<JSkeletonAsset> clipSkeletonAsset = nullptr;
 			float updateFramePerSecond = 0;
 			bool isLooping = false;
 		public:
-			LoadMetaData(const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JAnimationClipPrivate;
@@ -80,6 +80,8 @@ namespace JinEngine
 		std::unique_ptr<JAnimationClipImpl> impl;
 	public:  
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		JUserPtr<JSkeletonAsset> GetClipSkeletonAsset()const noexcept;
 		float GetUpdateFPS()const noexcept;
 		uint GetSampleCount()const noexcept;
@@ -103,6 +105,7 @@ namespace JinEngine
 		void ClipEnter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept;
 		void ClipClose()noexcept; 
 		void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
+		void Compute(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

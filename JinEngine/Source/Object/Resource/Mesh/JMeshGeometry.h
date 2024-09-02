@@ -25,8 +25,7 @@ SOFTWARE.
 
 #pragma once
 #include"../JResourceObject.h" 
-#include"../JResourceObjectImporter.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"../JResourceObjectImporter.h" 
 #include"../../../Core/Geometry/Mesh/JMeshType.h" 
 #include<DirectXCollision.h> 
 
@@ -50,8 +49,7 @@ namespace JinEngine
 		JMeshGeometryImportDesc(const Core::JFileImportPathData& importPathData);
 	};
 
-	class JMeshGeometry : public JResourceObject,
-		public Graphic::JGraphicResourceUserAccess
+	class JMeshGeometry : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JMeshGeometry) 
 	public: 
@@ -81,21 +79,21 @@ namespace JinEngine
 			bool IsValidData()const noexcept override;
 		};
 	protected: 
-		class LoadMetaData : public JResourceObject::InitData
+		class LoadMetadata : public JResourceObject::InitData
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			Core::J_MESHGEOMETRY_TYPE meshType;
 		public:
-			LoadMetaData(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JMeshGeometryPrivate;
 		class JMeshGeometryImpl;
 	private:
 		std::unique_ptr<JMeshGeometryImpl> impl;
-	public:  
-		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
+	public:   
+		uint GetSubTypeIndex()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{

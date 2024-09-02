@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once 
 #include"JGraphicResourceType.h" 
 #include"JGraphicResourceConstants.h"
-#include"../DataSet/JGraphicDataSet.h"
+#include"../DataSet/JGraphicTaskDataSet.h"
 #include"../JGraphicConstants.h"
 #include"../JGraphicSubClassInterface.h"
 #include"../Device/JGraphicDeviceUser.h"  
@@ -43,8 +43,8 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicDevice;
-		class JGraphicResourceInfo;  
-		class JGraphicResourceUserAccess;
+		class JGraphicResourceInfo;   
+		class JGraphicResourceInterface;
 
 		//multi puerpose bind
 		struct MPBInfo
@@ -89,8 +89,8 @@ namespace JinEngine
 				bool HasSpace()const noexcept;
 			}; 
 		public:
-			virtual void Initialize(JGraphicDevice* device) = 0;
-			virtual void Clear() = 0;  
+			virtual void Initialize(JGraphicDevice* device);
+			virtual void Clear();  
 		public: 
 			virtual uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
 			virtual uint GetResourceCapacity(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0; 
@@ -104,10 +104,6 @@ namespace JinEngine
 			virtual ResourceHandle GetMPBResourceGpuHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
 			virtual JGraphicResourceInfo* GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept = 0;		
 			virtual JGraphicResourceInfo* GetMPBInfo(const Core::JDataHandle& handle)const noexcept = 0;
-			/**
-			* @brief Try get JGraphicResourceInfo releated task
-			*/
-			JGraphicResourceInfo* GetInfo(JGraphicResourceUserAccess* access, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE task)const noexcept;
 		protected:
 			//has platform dependency!
 			//추후에 window이외에 platform을 사용한다면 수정필요!
@@ -116,7 +112,7 @@ namespace JinEngine
 			virtual bool CanCreateResource(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
 			virtual bool CanCreateOptionResource(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
 		public:
-			virtual JUserPtr<JGraphicResourceInfo> CreateResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc) = 0;
 			virtual bool CreateOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo> info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType) = 0;
 			virtual bool DestroyGraphicTextureResource(JGraphicDevice* device, JGraphicResourceInfo* info) = 0;
 			virtual bool DestroyGraphicOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype) = 0;
@@ -124,7 +120,7 @@ namespace JinEngine
 			//reflect exist resource desc
 			virtual bool ReAllocTypePerAllResource(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType) = 0;
 			//reflect new desc
-			virtual bool ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType) = 0;
+			virtual bool ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc) = 0;
 		public: 
 			virtual bool CopyResource(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& from, const JUserPtr<JGraphicResourceInfo>& to) = 0;
 		public:
@@ -136,9 +132,9 @@ namespace JinEngine
 			virtual bool SettingMipmapBind(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& info, const bool isReadOnly,_Out_ std::vector<Core::JDataHandle>& handle) = 0;
 			virtual void DestroyMPB(JGraphicDevice* device, Core::JDataHandle& handle) = 0;
 		public:
-			virtual void ResizeWindow(JGraphicDevice* device) = 0;
+			virtual void ResizeWindow(JGraphicDevice* device) = 0; 
 		public:
-			virtual void StoreTexture(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType, const int index, const std::wstring& path) = 0;
-		};
+			virtual void StoreTexture(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType, const int index, const std::wstring& path) = 0;		
+		};		 
 	}
 }

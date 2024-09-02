@@ -47,6 +47,8 @@ namespace JinEngine
 		{
 			if constexpr (JTypeInfoDetermine<T>::value)
 				return RemoveAll_T<T>::TypeName();
+			else if constexpr (IsPointer_V<T>)
+				return "Pointer";
 			else if constexpr (IsEnum_V<T>)
 			{
 				JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
@@ -55,6 +57,29 @@ namespace JinEngine
 				else
 					return "UnKnown";
 			} 
+			else if constexpr (IsNumber_V<RemoveAll_T<T>>)
+			{
+				if constexpr (std::is_same_v<RemoveAll_T<T>, char>)
+					return "char";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, BYTE>)
+					return "BYTE";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, short>)
+					return "short";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, ushort>)
+					return "ushort";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, int>)
+					return "int";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, uint>)
+					return "uint";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, int64>)
+					return "int64";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, uint64>)
+					return "uint64";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, float>)
+					return "float";
+				else if constexpr (std::is_same_v<RemoveAll_T<T>, double>)
+					return "double";
+			}
 			else
 				return "UnKnown";
 		}
@@ -69,7 +94,9 @@ namespace JinEngine
 			if (ptr == nullptr)
 				return "UnKnown";
 
-			if constexpr (JTypeInfoDetermine<T>::value)
+			if constexpr (std::is_base_of_v<JIdentifier, T>)
+				return JCUtil::WstrToU8Str(ptr->GetName());
+			else if constexpr (JTypeInfoDetermine<T>::value)
 				return ptr->GetTypeInfo()->Name();
 			else if constexpr (IsEnum_V<T>)
 			{
@@ -79,6 +106,8 @@ namespace JinEngine
 				else
 					return "UnKnown";
 			}
+			else if constexpr (IsNumber_V<T>)
+				return std::to_string(*ptr);
 			else
 				return "UnKnown";
 		}
@@ -104,6 +133,8 @@ namespace JinEngine
 				else
 					return "UnKnown";
 			}
+			else if constexpr (IsNumber_V<T>)
+				return std::to_string(value);
 			else
 				return "UnKnown";
 		} 

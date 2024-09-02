@@ -61,7 +61,7 @@ namespace JinEngine
 			void UpdateExposure(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) final;
 		private:
 			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);
-			void BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
+			void BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 		private:
 			void BuildExtractRootSignature(ID3D12Device* device);

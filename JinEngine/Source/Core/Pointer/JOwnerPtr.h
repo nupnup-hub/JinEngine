@@ -58,12 +58,12 @@ namespace JinEngine
 
 		class JTypeBase;
 		class JTypeInfo;
+
+		template<typename T>
 		class JPtrData
-		{
-		private:
-			using VoidPointer = void*;
+		{ 
 		public:
-			VoidPointer ptr = nullptr;
+			T* ptr = nullptr;
 			std::atomic<uint> userCount = 0;
 			std::atomic<uint> weakCount = 0;
 		};
@@ -71,34 +71,40 @@ namespace JinEngine
 		template<typename T> class JOwnerPtrInterface;
 		template<typename T> class JUserPtrInterface;
 		template<typename T> class JWeakPtrInterface;
+		//template<typename T> class JFastPtrInterface;
 
 		template<typename T>
-		class JPtrBase
+		class JOwnerPtrBase
 		{
 		private:
-			template<typename T> friend class JPtrBase;
+			template<typename T> friend class JOwnerPtrBase;
 			template<typename T> friend class JOwnerPtrInterface;
 			template<typename T> friend class JUserPtrInterface;
 			template<typename T> friend class JWeakPtrInterface;
+			//template<typename T> friend class JFastPtrInterface;
 		private:
-			JPtrData* ptrData = nullptr;
+			JPtrData<T>* ptrData = nullptr;
 		public:
-			T& operator*()
+			T& operator*() noexcept
+			{
+				return *Get();
+			}
+			const T& operator*() const noexcept
 			{
 				return *Get();
 			}
 			T* operator->() const noexcept
 			{
-				return IsValid() ? static_cast<T*>(ptrData->ptr) : nullptr;
+				return (ptrData != nullptr && ptrData->ptr != nullptr) ? ptrData->ptr : nullptr;
 			}
 		public:
 			T* Get()const noexcept
 			{
-				return IsValid() ? static_cast<T*>(ptrData->ptr) : nullptr;
+				return (ptrData != nullptr && ptrData->ptr != nullptr) ? ptrData->ptr : nullptr;
 			}
-			T* UnsafeGet()noexcept
+			T* UnsafeGet()const noexcept
 			{
-				return static_cast<T*>(ptrData->ptr);
+				return ptrData->ptr;
 			}
 			uint GetUserCount()const noexcept
 			{
@@ -109,12 +115,15 @@ namespace JinEngine
 				return ptrData != nullptr ? ptrData->weakCount.load() : 0;
 			}
 		protected:
+			/**
+			* @brief 호출하는 클래스에서 타입에 대한 유효성검사를 해야한다.
+			*/
 			template<typename U>
-			void SetValidPtrData(const JPtrBase<U>& otherPtrBase)
+			void SetValidPtrData(const JOwnerPtrBase<U>& otherPtrBase)
 			{
-				ptrData = otherPtrBase.ptrData;
+				ptrData = static_cast<JPtrData<T>*>(static_cast<void*>(otherPtrBase.ptrData));
 			}
-			void SetValidPtrData(JPtrData* newPtrData)
+			void SetValidPtrData(JPtrData<T>* newPtrData)
 			{
 				ptrData = newPtrData;
 			}
@@ -146,12 +155,12 @@ namespace JinEngine
 		};
 
 		template<typename T>
-		class JOwnerPtrInterface : public JPtrBase<T>
+		class JOwnerPtrInterface : public JOwnerPtrBase<T>
 		{
 		private:
 			friend class JTypeInfo;
 		protected:
-			using PtrBase = JPtrBase<T>;
+			using PtrBase = JOwnerPtrBase<T>;
 		protected:
 			void SetValidPointer(T* ptr)
 			{
@@ -163,10 +172,10 @@ namespace JinEngine
 			}
 		};
 		template<typename T>
-		class JUserPtrInterface : public JPtrBase<T>
+		class JUserPtrInterface : public JOwnerPtrBase<T>
 		{
 		protected:
-			using PtrBase = JPtrBase<T>;
+			using PtrBase = JOwnerPtrBase<T>;
 		protected:
 			void AddUserCount()noexcept
 			{
@@ -178,10 +187,10 @@ namespace JinEngine
 			}
 		};
 		template<typename T>
-		class JWeakPtrInterface : public JPtrBase<T>
+		class JWeakPtrInterface : public JOwnerPtrBase<T>
 		{
 		protected:
-			using PtrBase = JPtrBase<T>;
+			using PtrBase = JOwnerPtrBase<T>;
 		protected:
 			void AddWeakCount()noexcept
 			{
@@ -191,7 +200,7 @@ namespace JinEngine
 			{
 				--PtrBase::ptrData->weakCount;
 			}
-		};
+		}; 
 
 		template<typename T>
 		class JOwnerPtr final : public JOwnerPtrInterface<T>
@@ -213,11 +222,13 @@ namespace JinEngine
 			JOwnerPtr& operator=(const JOwnerPtr& rhs) = delete;
 			JOwnerPtr(T* newPtr)noexcept
 			{
-				OwnerConnect(newPtr);
+				if(newPtr != nullptr)
+					OwnerConnect(newPtr);
 			}
 			JOwnerPtr(T* newPtr, CustomDestructionPtr newDestructionPtr)noexcept
 			{
-				OwnerConnect(newPtr);
+				if (newPtr != nullptr)
+					OwnerConnect(newPtr);
 				destructionPtr = newDestructionPtr;
 			}
 			JOwnerPtr(JOwnerPtr&& rhs)noexcept
@@ -249,11 +260,7 @@ namespace JinEngine
 			{
 				Clear();
 			}
-		public:
-			T* operator->() const noexcept
-			{
-				return PtrBase::Get();
-			}
+		public: 
 			bool operator==(nullptr_t) const noexcept
 			{
 				return !PtrBase::IsValid();
@@ -261,11 +268,6 @@ namespace JinEngine
 			bool operator!=(nullptr_t) const noexcept
 			{
 				return PtrBase::IsValid();
-			}
-		public:
-			T* Get()const noexcept
-			{
-				return PtrBase::Get();
 			}
 		public:
 			void SetDestructionPtr(CustomDestructionPtr newDestructionPtr)
@@ -282,14 +284,6 @@ namespace JinEngine
 				else
 					OwnerConnect(newPtr);
 			}
-			/*
-			template<typename ...Param>
-			void Reset(Param&&... var)
-			{
-				T* newPtr = new T(std::forward<Param>(var)...);
-				Reset(newPtr);
-			}
-			*/
 			T* Release()noexcept
 			{
 				T* ptr = PtrBase::Get();
@@ -297,36 +291,43 @@ namespace JinEngine
 					Owner::SetInValidPointer();
 				return ptr;
 			}
+			T* Swap(T* newPtr)
+			{ 
+				T* exist = PtrBase::Get();
+				if (newPtr != nullptr)
+					Owner::SetValidPointer(newPtr); 
+				return exist;
+			}
 			void Clear()noexcept
 			{
 				OwnerDisConnect();
 			}
 		public:
 			//For JTypeBase
-			template<typename ChildType>
-			static JOwnerPtr ConvertChild(JOwnerPtr<ChildType>&& child)
+			template<typename ParentType>
+			static JOwnerPtr ConvertChild(JOwnerPtr<ParentType>&& owner)
 			{
 				if constexpr (!CanConvertChildType<T>())
 					return nullptr;
 
-				if (!child.IsValid())
+				if (!owner.IsValid())
 					return nullptr;
 
 				if constexpr (HasTypeInfo<T>::value)
 				{
-					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					if (owner->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 					{
 						JOwnerPtr newOwner;
-						newOwner.OwnerMove(child);
+						newOwner.OwnerMove(owner);
 						return newOwner;
 					}
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
-					if (child->IsChildOf(T::TypeGuid()))
+					if (owner->IsChildOf(T::TypeGuid()))
 					{
 						JOwnerPtr newOwner;
-						newOwner.OwnerMove(child);
+						newOwner.OwnerMove(owner);
 						return newOwner;
 					}
 				}
@@ -343,7 +344,7 @@ namespace JinEngine
 			}
 			void OwnerConnect(T* ptr)noexcept
 			{
-				PtrBase::SetValidPtrData(new JPtrData());
+				PtrBase::SetValidPtrData(new JPtrData<T>());
 				Owner::SetValidPointer(ptr);
 			}
 			void OwnerDisConnect()noexcept
@@ -354,7 +355,7 @@ namespace JinEngine
 				ExchangePointer(nullptr);
 			}
 			void ExchangePointer(T* newPtr = nullptr)noexcept
-			{ 
+			{
 				if (PtrBase::IsValid())
 				{
 					T* ptr = PtrBase::UnsafeGet();
@@ -376,7 +377,6 @@ namespace JinEngine
 				}
 			}
 		};
-
 		template<typename T>
 		class JUserPtr final : public JUserPtrInterface<T>
 		{
@@ -403,13 +403,13 @@ namespace JinEngine
 				//rhs.UserDisConnect();
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr(const JPtrBase<NewType>& rhs)noexcept
+			JUserPtr(const JOwnerPtrBase<NewType>& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr& operator=(const JPtrBase<NewType>& rhs)noexcept
+			JUserPtr& operator=(const JOwnerPtrBase<NewType>& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
@@ -468,17 +468,17 @@ namespace JinEngine
 			template<typename OtherType>
 			bool operator==(JUserPtr<OtherType> rhs) const noexcept
 			{
-				return Get() != rhs.Get();
+				return PtrBase::Get() != rhs.Get();
 			}
 			template<typename OtherType>
 			bool operator!=(JUserPtr<OtherType> rhs) const noexcept
 			{
-				return !(Get() == rhs.Get());
+				return PtrBase::Get() != rhs.Get();
 			}
 			template<typename OtherType>
 			bool operator!=(OtherType* rhs) const noexcept
 			{
-				return !(Get() == rhs);
+				return (PtrBase::Get() != rhs);
 			}
 			bool operator==(nullptr_t) const noexcept
 			{
@@ -487,16 +487,8 @@ namespace JinEngine
 			bool operator!=(nullptr_t) const noexcept
 			{
 				return PtrBase::IsValid();
-			}
-			T* operator->() const noexcept
-			{
-				return PtrBase::Get();
-			}
-		public:
-			T* Get()const noexcept
-			{
-				return PtrBase::Get();
-			}
+			} 
+		public: 
 			void Clear()
 			{
 				UserDisConnect();
@@ -514,30 +506,30 @@ namespace JinEngine
 			}
 		public:
 			//For JTypeBase
-			template<typename ChildType>
-			static JUserPtr<T> CreateChild(JPtrBase<ChildType>& child)
+			template<typename ParentType>
+			static JUserPtr<T> CreateChild(JOwnerPtrBase<ParentType>& user)
 			{
 				if constexpr (!CanConvertChildType<T>())
 					return nullptr;
 
-				if (!child.IsValid())
+				if (!user.IsValid())
 					return nullptr;
 
 				if constexpr (HasTypeInfo<T>::value)
 				{
-					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					if (user->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 					{
 						JUserPtr<T> newUser;
-						newUser.UserConnect(child);
+						newUser.UserConnect(user);
 						return newUser;
 					}
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
-					if (child->IsChildOf(T::TypeGuid()))
+					if (user->IsChildOf(T::TypeGuid()))
 					{
 						JUserPtr<T> newUser;
-						newUser.UserConnect(child);
+						newUser.UserConnect(user);
 						return newUser;
 					}
 				}
@@ -545,69 +537,69 @@ namespace JinEngine
 			}
 			//For JTypeBase
 			//Connect base user ... is same downcast base to t
-			template<typename ChildType>
-			static JUserPtr<T> ConvertChild(JUserPtr<ChildType>&& child)
+			template<typename ParentType>
+			static JUserPtr<T> ConvertChild(JUserPtr<ParentType>&& user)
 			{
 				if constexpr (!CanConvertChildType<T>())
 					return nullptr;
 
-				if (!child.IsValid())
+				if (!user.IsValid())
 					return nullptr;
 
 				if constexpr (HasTypeInfo<T>::value)
 				{
-					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					if (user->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 					{
 						JUserPtr<T> newUser;
-						newUser.UserConnect(child);
-						child.Clear();
+						newUser.UserConnect(user);
+						user.Clear();
 						return newUser;
 					}
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
-					if (child->IsChildOf(T::TypeGuid()))
+					if (user->IsChildOf(T::TypeGuid()))
 					{
 						JUserPtr<T> newUser;
-						newUser.UserConnect(child);
-						child.Clear();
+						newUser.UserConnect(user);
+						user.Clear();
 						return newUser;
 					}
 				}
 				return nullptr;
 			}
-			template<typename ChildType>
-			bool ConnnectChild(const JUserPtr<ChildType>& child)
+			template<typename ParentType>
+			bool ConnnectChild(const JUserPtr<ParentType>& user)
 			{
 				if constexpr (!CanConvertChildType<T>())
 					return false;
 
-				if (!child.IsValid())
+				if (!user.IsValid())
 					return false;
 
 				if constexpr (HasTypeInfo<T>::value)
 				{
-					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					if (user->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 					{
 						UserDisConnect();
-						UserConnect(child);
+						UserConnect(user);
 						return true;
-					} 
+					}
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
-					if (child->IsChildOf(T::TypeGuid()))
+					if (user->IsChildOf(T::TypeGuid()))
 					{
 						UserDisConnect();
-						UserConnect(child);
+						UserConnect(user);
 						return true;
 					}
-				} 
+				}
 				return false;
 			}
 		private:
 			template<typename NewType>
-			void UserConnect(const JPtrBase<NewType>& ptrBase)noexcept
+			void UserConnect(const JOwnerPtrBase<NewType>& ptrBase)noexcept
 			{
 				PtrBase::SetValidPtrData(ptrBase);
 				if (PtrBase::HasPtrData())
@@ -636,7 +628,6 @@ namespace JinEngine
 				}
 			}
 		};
-
 		template<typename T>
 		class JWeakPtr final : public JWeakPtrInterface<T>
 		{
@@ -663,13 +654,13 @@ namespace JinEngine
 				//rhs.WeakDisConnect();
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr(const JPtrBase<NewType>& rhs)noexcept
+			JWeakPtr(const JOwnerPtrBase<NewType>& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr& operator=(const JPtrBase<NewType>& rhs)noexcept
+			JWeakPtr& operator=(const JOwnerPtrBase<NewType>& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
@@ -724,20 +715,21 @@ namespace JinEngine
 			{
 				Clear();
 			}
+		public:
 			template<typename OtherType>
 			bool operator==(JWeakPtr<OtherType> rhs) const noexcept
 			{
-				return Get() != rhs.Get();
+				return PtrBase::Get() != rhs.Get();
 			}
 			template<typename OtherType>
 			bool operator!=(JWeakPtr<OtherType> rhs) const noexcept
 			{
-				return !(Get() == rhs.Get());
+				return PtrBase::Get() != rhs.Get();
 			}
 			template<typename OtherType>
 			bool operator!=(OtherType* rhs) const noexcept
 			{
-				return !(Get() == rhs);
+				return !PtrBase::Get() != rhs;
 			}
 			bool operator==(nullptr_t) const noexcept
 			{
@@ -746,16 +738,8 @@ namespace JinEngine
 			bool operator!=(nullptr_t) const noexcept
 			{
 				return PtrBase::IsValid();
-			}
-			T* operator->() const noexcept
-			{
-				return PtrBase::Get();
-			}
-		public:
-			T* Get()const noexcept
-			{
-				return PtrBase::Get();
-			}
+			} 
+		public: 
 			void Clear()
 			{
 				WeakDisConnect();
@@ -773,30 +757,30 @@ namespace JinEngine
 			}
 		public:
 			//For JTypeBase
-			template<typename ChildType>
-			static JWeakPtr<T> CreateChild(JPtrBase<ChildType>& child)
+			template<typename ParentType>
+			static JWeakPtr<T> CreateChild(JOwnerPtrBase<ParentType>& weak)
 			{
 				if constexpr (!CanConvertChildType<T>())
 					return nullptr;
 
-				if (!child.IsValid())
+				if (!weak.IsValid())
 					return nullptr;
 
 				if constexpr (HasTypeInfo<T>::value)
 				{
-					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					if (weak->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 					{
 						JWeakPtr<T> newUser;
-						newUser.WeakConnect(child);
+						newUser.WeakConnect(weak);
 						return newUser;
 					}
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
-					if (child->IsChildOf(T::TypeGuid()))
+					if (weak->IsChildOf(T::TypeGuid()))
 					{
 						JWeakPtr<T> newUser;
-						newUser.WeakConnect(child);
+						newUser.WeakConnect(weak);
 						return newUser;
 					}
 				}
@@ -804,61 +788,61 @@ namespace JinEngine
 			}
 			//For JTypeBase
 			//Connect base user ... is same downcast base to t
-			template<typename ChildType>
-			static JWeakPtr<T> ConvertChild(JWeakPtr<ChildType>&& child)
+			template<typename ParentType>
+			static JWeakPtr<T> ConvertChild(JWeakPtr<ParentType>&& weak)
 			{
 				if constexpr (!CanConvertChildType<T>())
 					return nullptr;
 
-				if (!child.IsValid())
+				if (!weak.IsValid())
 					return nullptr;
 
 				if constexpr (HasTypeInfo<T>::value)
 				{
-					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					if (weak->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 					{
 						JWeakPtr<T> newUser;
-						newUser.WeakConnect(child);
-						child.Clear();
+						newUser.WeakConnect(weak);
+						weak.Clear();
 						return newUser;
 					}
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
-					if (child->IsChildOf(T::TypeGuid()))
+					if (weak->IsChildOf(T::TypeGuid()))
 					{
 						JWeakPtr<T> newUser;
-						newUser.WeakConnect(child);
-						child.Clear();
+						newUser.WeakConnect(weak);
+						weak.Clear();
 						return newUser;
 					}
 				}
 				return nullptr;
 			}
-			template<typename ChildType>
-			bool ConnnectChild(const JWeakPtr<ChildType>& child)
+			template<typename ParentType>
+			bool ConnnectChild(const JWeakPtr<ParentType>& weak)
 			{
-				if constexpr (!std::is_base_of_v<JTypeBase, ChildType> || !std::is_base_of_v<JTypeBase, T>)
+				if constexpr (!std::is_base_of_v<JTypeBase, ParentType> || !std::is_base_of_v<JTypeBase, T>)
 					return false;
 
-				if (!child.IsValid())
+				if (!weak.IsValid())
 					return false;
 
 				if constexpr (HasTypeInfo<T>::value)
 				{
-					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					if (weak->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 					{
 						WeakDisConnect();
-						WeakConnect(child);
+						WeakConnect(weak);
 						return true;
 					}
 				}
 				else if constexpr (HasTypeList<T>::value)
 				{
-					if (child->IsChildOf(T::TypeGuid()))
+					if (weak->IsChildOf(T::TypeGuid()))
 					{
 						WeakDisConnect();
-						WeakConnect(child);
+						WeakConnect(weak);
 						return true;
 					}
 				}
@@ -866,7 +850,7 @@ namespace JinEngine
 			}
 		private:
 			template<typename NewType>
-			void WeakConnect(const JPtrBase<NewType>& ptrBase)noexcept
+			void WeakConnect(const JOwnerPtrBase<NewType>& ptrBase)noexcept
 			{
 				PtrBase::SetValidPtrData(ptrBase);
 				if (PtrBase::HasPtrData())
@@ -879,6 +863,523 @@ namespace JinEngine
 					Weak::MinusWeakCount();
 					PtrBase::TryDestroyPtrData();
 				}
+			}
+		};
+		 
+		template<typename T>
+		class JUniquePtrBase
+		{ 
+		private:
+			T* ptr = nullptr;  
+		public:
+			T& operator*()
+			{
+				return *ptr;
+			}
+			const T& operator*()const noexcept
+			{
+				return *ptr;
+			}
+			T* operator->() const noexcept
+			{
+				return ptr;
+			}
+		public:
+			T* Get()const noexcept
+			{ 
+				return ptr;
+			}
+			T** GetAddress()noexcept
+			{
+				return &ptr;
+			} 
+		protected:
+			template<typename U>
+			void SetValidPointer(JUniquePtrBase<U>& otherPtrBase)
+			{
+				ptr = static_cast<T*>(otherPtrBase.Get());  
+			} 
+			void SetValidPointer(T* newPtr)
+			{
+				ptr = newPtr;
+			}
+			void SetInvalidPointer()
+			{
+				ptr = nullptr; 
+			}
+		public:
+			bool IsValid()const noexcept
+			{ 
+				return ptr != nullptr;
+			} 
+		protected: 
+			void DestroyPointer()
+			{
+				delete ptr;
+				ptr = nullptr;
+			}
+		};
+
+		template<typename T>
+		class JUniquePtr final : public JUniquePtrBase<T>
+		{
+		public:
+			using ElementType = T; 
+		private:
+			template<typename T> friend class JUniquePtr;
+		private:
+			using PtrBase = typename JUniquePtrBase<T>; 
+		public:
+			JUniquePtr() = default;
+			JUniquePtr(nullptr_t)noexcept {}
+			JUniquePtr(const JUniquePtr & rhs) = delete;
+			JUniquePtr& operator=(const JUniquePtr & rhs) = delete;
+			JUniquePtr(T * newPtr)noexcept
+			{
+				UniqueConnect(newPtr);
+			} 
+			JUniquePtr(JUniquePtr&& rhs)noexcept
+			{
+				UniqueMove(std::move(rhs));
+			}
+			JUniquePtr& operator=(JUniquePtr&& rhs)noexcept
+			{
+				UniqueMove(std::move(rhs));
+				return *this;
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JUniquePtr(JUniquePtr<NewType>&& rhs)noexcept
+			{
+				UniqueMove(std::move(rhs));
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JUniquePtr& operator=(JUniquePtr<NewType>&& rhs)noexcept
+			{
+				UniqueMove(std::move(rhs));
+				return *this;
+			}
+			JUniquePtr& operator=(nullptr_t)noexcept
+			{
+				UniqueDisConnect();
+				return *this;
+			}
+			~JUniquePtr()noexcept
+			{
+				Clear();
+			}
+		public: 
+			bool operator==(nullptr_t) const noexcept
+			{
+				return !PtrBase::IsValid();
+			}
+			bool operator!=(nullptr_t) const noexcept
+			{
+				return PtrBase::IsValid();
+			} 
+		public:
+			void Reset(T * newPtr)noexcept
+			{
+				if (newPtr == nullptr)
+					Clear();
+				else if (PtrBase::IsValid())
+					ExchangePointer(newPtr);
+				else
+					UniqueConnect(newPtr);
+			}
+			T* Release()noexcept
+			{
+				T* ptr = PtrBase::Get();
+				if (PtrBase::IsValid())
+					PtrBase::SetInvalidPointer();
+				return ptr;
+			}
+			T* Swap(T * newPtr)
+			{
+				T* exist = PtrBase::Get();
+				if (newPtr != nullptr)
+					PtrBase::SetValidPointer(newPtr);
+				return exist;
+			}
+			void Clear()noexcept
+			{
+				UniqueDisConnect();
+			}
+		public: 
+			template<typename ParentType>
+			static JUniquePtr ConvertChild(JUniquePtr<ParentType>&& unique)
+			{
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
+
+				if (!unique.IsValid())
+					return nullptr;
+
+				if constexpr (HasTypeInfo<T>::value)
+				{
+					if (unique->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JUniquePtr newUnique;
+						newUnique.UniqueMove(std::move(unique));
+						return newUnique;
+					}
+				}
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (unique->IsChildOf(T::TypeGuid()))
+					{
+						JUniquePtr newUnique;
+						newUnique.UniqueMove(std::move(unique));
+						return newUnique;
+					}
+				}
+				return nullptr;
+			}
+		private:
+			template<typename NewType>
+			void UniqueMove(JUniquePtr<NewType>&& rhs)noexcept
+			{
+				Clear();	 
+				PtrBase::SetValidPointer(rhs);
+				rhs.SetInvalidPointer();
+			}
+			void UniqueConnect(T * ptr)noexcept
+			{ 
+				PtrBase::SetValidPointer(ptr);
+			}
+			void UniqueDisConnect()noexcept
+			{
+				if (!PtrBase::IsValid())
+					return;
+
+				ExchangePointer(nullptr);
+			}
+			void ExchangePointer(T* newPtr = nullptr)noexcept
+			{
+				if (PtrBase::IsValid())
+					PtrBase::DestroyPointer();
+
+				if (newPtr != nullptr)
+					PtrBase::SetValidPointer(newPtr);
+			}
+		};
+
+		//Unsafe
+		/*
+		* Owner pointer나 UniquePointer에 Raw pointer가 변경된 경우
+		* 수동으로 재할당이 필요.
+		*/
+		template<typename T>
+		class JFastPtr final  
+		{
+		public:
+			using ElementType = T;
+		private:
+			template<typename T> friend class JFastPtr;
+		private: 
+			using OwnerPtrBase = JOwnerPtrBase<T>;
+			using UniquePtrBase = JUniquePtrBase<T>;
+		private:
+			T* ptr = nullptr;
+		public:
+			JFastPtr() = default;
+			JFastPtr(nullptr_t) {}
+			JFastPtr(const JFastPtr& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				//rhs.FastDisConnect();
+			}
+			JFastPtr(JFastPtr&& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				//rhs.FastDisConnect();
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr(const JOwnerPtrBase<NewType>& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr(const JUniquePtrBase<NewType>& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr& operator=(const JOwnerPtrBase<NewType>& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				return *this;
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr& operator=(const JUniquePtrBase<NewType>& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				return *this;
+			} 
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr(const JFastPtr<NewType>& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr(JFastPtr<NewType>&& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				//rhs.FastDisConnect();
+			}
+			JFastPtr& operator=(const JFastPtr& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				return *this;
+			}
+			JFastPtr& operator=(JFastPtr&& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				return *this;
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr& operator=(const JFastPtr<NewType>& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				return *this;
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JFastPtr& operator=(JFastPtr<NewType>&& rhs)noexcept
+			{
+				FastDisConnect();
+				FastConnect(rhs);
+				//rhs.FastDisConnect();
+				return *this;
+			}
+			JFastPtr& operator=(nullptr_t)noexcept
+			{
+				FastDisConnect();
+				return *this;
+			}
+			~JFastPtr()noexcept
+			{
+				Clear();
+			}
+		public:
+			T& operator*() noexcept
+			{
+				return *ptr;
+			}
+			const T& operator*() const noexcept
+			{
+				return *ptr;
+			}
+			T* operator->() const noexcept
+			{
+				return ptr;
+			}
+			template<typename OtherType>
+			bool operator==(JFastPtr<OtherType> rhs) const noexcept
+			{
+				return ptr == rhs.ptr;
+			}
+			template<typename OtherType>
+			bool operator!=(JFastPtr<OtherType> rhs) const noexcept
+			{
+				return ptr != rhs.ptr;
+			}
+			template<typename OtherType>
+			bool operator!=(OtherType* rhs) const noexcept
+			{
+				return ptr != rhs;
+			}
+			bool operator==(nullptr_t) const noexcept
+			{
+				return ptr == nullptr;
+			}
+			bool operator!=(nullptr_t) const noexcept
+			{
+				return ptr != nullptr;
+			}  
+		public:
+			T* Get()const noexcept
+			{
+				return ptr;
+			}
+			T** GetAddress()noexcept
+			{
+				return &ptr;
+			}
+		public:
+			void Clear()
+			{
+				FastDisConnect();
+			}
+			void Reset(OwnerPtrBase& rhs)
+			{
+				Clear();
+				FastConnect(rhs);
+			}
+			void Reset(UniquePtrBase& rhs)
+			{
+				Clear();
+				FastConnect(rhs);
+			}
+			T* Release()
+			{
+				T* res = ptr;
+				FastDisConnect();
+				return res;
+			}
+		public:
+			template<typename ParentType>
+			static JFastPtr<T> CreateChild(JOwnerPtrBase<ParentType>& fast)
+			{
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
+
+				if (!fast.IsValid())
+					return nullptr;
+
+				if constexpr (HasTypeInfo<T>::value)
+				{
+					if (fast->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JFastPtr<T> newUser;
+						newUser.FastConnect(fast);
+						return newUser;
+					}
+				}
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (fast->IsChildOf(T::TypeGuid()))
+					{
+						JFastPtr<T> newUser;
+						newUser.FastConnect(fast);
+						return newUser;
+					}
+				}
+				return nullptr;
+			}
+			template<typename ParentType>
+			static JFastPtr<T> CreateChild(JUniquePtrBase<ParentType>& fast)
+			{
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
+
+				if (!fast.IsValid())
+					return nullptr;
+
+				if constexpr (HasTypeInfo<T>::value)
+				{
+					if (fast->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JFastPtr<T> newUser;
+						newUser.FastConnect(fast);
+						return newUser;
+					}
+				}
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (fast->IsChildOf(T::TypeGuid()))
+					{
+						JFastPtr<T> newUser;
+						newUser.FastConnect(fast);
+						return newUser;
+					}
+				}
+				return nullptr;
+			}
+			template<typename ParentType>
+			static JFastPtr<T> ConvertChild(JFastPtr<ParentType>&& fast)
+			{
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
+
+				if (!fast.IsValid())
+					return nullptr;
+
+				if constexpr (HasTypeInfo<T>::value)
+				{
+					if (fast->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JFastPtr<T> newUser;
+						newUser.FastConnect(fast);
+						fast.Clear();
+						return newUser;
+					}
+				}
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (fast->IsChildOf(T::TypeGuid()))
+					{
+						JFastPtr<T> newUser;
+						newUser.FastConnect(fast);
+						fast.Clear();
+						return newUser;
+					}
+				}
+				return nullptr;
+			}
+			template<typename ParentType>
+			bool ConnnectChild(const JFastPtr<ParentType>& fast)
+			{
+				if constexpr (!std::is_base_of_v<JTypeBase, ParentType> || !std::is_base_of_v<JTypeBase, T>)
+					return false;
+
+				if (!fast.IsValid())
+					return false;
+
+				if constexpr (HasTypeInfo<T>::value)
+				{
+					if (fast->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						FastDisConnect();
+						FastConnect(fast);
+						return true;
+					}
+				}
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (fast->IsChildOf(T::TypeGuid()))
+					{
+						FastDisConnect();
+						FastConnect(fast);
+						return true;
+					}
+				}
+				return false;
+			}
+		private:
+			template<typename NewType>
+			void FastConnect(const JOwnerPtrBase<NewType>& ptrBase)noexcept
+			{ 
+				ptr = static_cast<T*>(ptrBase.Get());
+			}
+			template<typename NewType>
+			void FastConnect(const JUniquePtrBase<NewType>& ptrBase)noexcept
+			{
+				ptr = static_cast<T*>(ptrBase.Get());
+			}
+			template<typename NewType>
+			void FastConnect(const JFastPtr<NewType>& fastPtr)noexcept
+			{
+				ptr = fastPtr.ptr;
+			}
+			template<typename NewType>
+			void FastConnect(const JFastPtr<NewType>&& fastPtr)noexcept
+			{
+				ptr = static_cast<T*>(fastPtr.ptr);
+				fastPtr.ptr = nullptr;
+			}
+			void FastDisConnect()noexcept
+			{  
+				ptr = nullptr;
 			}
 		};
 
@@ -915,6 +1416,11 @@ namespace JinEngine
 			{
 				return JOwnerPtr<T>(new T(std::forward<Param>(var)...));
 			}
+			template<typename T, typename ...Param>
+			static JUniquePtr<T> MakeUniquePtr(Param&&... var)
+			{
+				return JUniquePtr<T>(new T(std::forward<Param>(var)...));
+			}
 		};
 	}
 
@@ -924,4 +1430,8 @@ namespace JinEngine
 	using JUserPtr = Core::JUserPtr<T>;
 	template<typename T>
 	using JWeakPtr = Core::JWeakPtr<T>;
+	template<typename T>
+	using JUniquePtr = Core::JUniquePtr<T>;
+	template<typename T>
+	using JFastPtr = Core::JFastPtr<T>;
 }

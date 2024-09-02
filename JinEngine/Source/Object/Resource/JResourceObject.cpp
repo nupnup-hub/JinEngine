@@ -87,7 +87,7 @@ namespace JinEngine
 	public:
 		static std::wstring GetCacheFilePath(JResourceObject* rObj) noexcept
 		{ 
-			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rObj->GetGuid()) + Core::JFileConstant::GetCacheFileFormatW();
+			return Core::JFileConstant::MakeCacheFilePath(JApplicationProject::ModResourceCachePath(), rObj->GetGuid());
 		}
 	public:
 		static bool DoCopy(const JUserPtr<JResourceObject>& from, const JUserPtr<JResourceObject>& to)
@@ -232,6 +232,10 @@ namespace JinEngine
 		}
 		void CreateCacheFile()noexcept
 		{
+			/*
+			* Engine 실행중에 사용되는 파일
+			* 종료시 일괄삭제된다.
+			*/
 			JResourceObject::StoreData storeData(thisPointer);
 			static_cast<JResourceObjectPrivate&>(thisPointer->PrivateInterface()).GetAssetDataIOInterface().StoreAssetData(&storeData);
 			if (!RTypeCommonCall::GetRTypeHint(thisPointer->GetResourceType()).isFixedAssetFile)
@@ -263,7 +267,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			IMPL_REALLOC_BIND(JResourceObject::JResourceObjectImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	}; 
 	 
@@ -412,9 +416,9 @@ namespace JinEngine
 	{
 		return rEv.EvInterface();
 	}
-	void JResourceObject::RegisterRTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc)
+	void JResourceObject::RegisterRTypeInfo(const Core::JTypeInfo& typeInfo, const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc)
 	{
-		RTypeRegister::RegisterRTypeInfo(rTypeHint, rTypeCFunc, rTypePFunc);
+		RTypeRegister::RegisterRTypeInfo(typeInfo, rTypeHint, rTypeCFunc, rTypePFunc);
 	}
 	JResourceObject::JResourceObject(const InitData& initData)
 		: JObject(initData), impl(std::make_unique<JResourceObjectImpl>(initData))
@@ -452,7 +456,7 @@ namespace JinEngine
 			if (!rObj->HasFile())
 				rPrivate.GetAssetDataIOInterface().StoreAssetData(&storeData);
 			if (!rObj->HasMetafile())
-				rPrivate.GetAssetDataIOInterface().StoreMetaData(&storeData);
+				rPrivate.GetAssetDataIOInterface().StoreMetadata(&storeData);
 		}
 		//리소스는 생성 후 자원을 초기화한뒤 유효한상태가 된다
 		//Has order dependency 
@@ -461,10 +465,7 @@ namespace JinEngine
 
 		RTypeHint rTypeHint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
 		if (rTypeHint.isFrameResource)
-		{
-			auto setFrameDirtyCallable = RTypePrivateCall::GetSetFrameDirtyCallable(rObj->GetResourceType());
-			setFrameDirtyCallable(nullptr, rObj);
-		}
+			rObj->ModuleManagedData()->GetFrameUpdateUserInterface()->SetFrameDirty();
 	}
 	void CreateInstanceInterface::TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept{}
 	bool CreateInstanceInterface::Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept
@@ -485,8 +486,10 @@ namespace JinEngine
 		{
 			int index = rObj->GetTypeInfo().GetInstanceIndex(rObj->GetGuid());
 			auto objVec = rObj->GetTypeInfo().GetInstanceRawPtrVec();
-			auto setFrameDirtyCallable = RTypePrivateCall::GetSetFrameDirtyCallable(rObj->GetResourceType());
-			JCUtil::ApplyFunc(index, setFrameDirtyCallable, objVec);
+			
+			const uint count = (uint)objVec.size();
+			for (uint i = index + 1; i < count; ++i)
+				static_cast<JResourceObject*>(objVec[i])->ModuleManagedData()->GetFrameUpdateUserInterface()->SetFrameDirty();
 		}		
 		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
@@ -502,7 +505,7 @@ namespace JinEngine
 		{
 			rObj->impl->ConvertToDeActFileData(); 
 			if (canCreateCache && JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
-			{
+			{ 
 				if (JModifedObjectInterface{}.IsModifiedAndStoreAble(rObj->GetGuid()))
 				{
 					if (!rObj->IsActivated())
@@ -543,7 +546,7 @@ namespace JinEngine
 	{
 		return std::make_unique<JResourceObject::StoreData>(rObj);
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadCommonMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JResourceObject::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -564,7 +567,7 @@ namespace JinEngine
 			tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreCommonMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JResourceObject::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;

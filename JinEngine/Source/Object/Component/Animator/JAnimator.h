@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JComponent.h"  
+#include"../JComponent.h" 
 
 namespace JinEngine
 {  
@@ -32,9 +32,11 @@ namespace JinEngine
 	{
 		class JFSMparameter;
 	}
-	class JSkeletonAsset; 
 	class JAnimationController; 
 	class JAnimatorPrivate;
+	class JSkeletonAsset;
+	struct JSkeletonMatrixSet;
+
 	class JAnimator final : public JComponent
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JAnimator)
@@ -53,10 +55,12 @@ namespace JinEngine
 		std::unique_ptr<JAnimatorImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
-			return J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR;
+			return J_COMPONENT_TYPE::ENGINE_ANIMATOR;
 		}
 		JUserPtr<JSkeletonAsset>GetSkeletonAsset()const noexcept;
 		JUserPtr<JAnimationController> GetAnimatorController()const noexcept;
@@ -67,6 +71,9 @@ namespace JinEngine
 	public:
 		bool IsAvailableOverlap()const noexcept final; 
 		bool PassDefectInspection()const noexcept final;  
+	public:
+		void Update();
+		void Compute(JSkeletonMatrixSet& set);
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

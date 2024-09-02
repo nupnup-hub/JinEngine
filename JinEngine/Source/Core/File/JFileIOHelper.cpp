@@ -948,6 +948,27 @@ namespace JinEngine
 
 		return _wremove(path.c_str()) == 0 ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::DestroyAllFile(const std::wstring& dirPath)
+	{
+		if (_waccess(dirPath.c_str(), 00) == -1)
+			return 	Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+
+		/**
+		* Window에서 Directory를 지우려면 내부에 파일과 디렉토리들을 우선적으로 지워야한다.
+		*/
+		Private::TraversalPtr destroyPtr = [](const std::wstring& path, const bool isDir)
+		{
+			if (isDir)
+				_wrmdir(path.c_str());
+			else
+				_wremove(path.c_str());
+		};
+		Private::TraversalCondition cond;
+		cond.canAccessDir = cond.canAccessFile = cond.callDirPtrAfterTrabersal = true;
+
+		Private::TraversalDirectroy(dirPath.c_str(), destroyPtr, cond);
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::DestroyDirectory(const std::wstring& path)
 	{
 		if (_waccess(path.c_str(), 00) == -1)

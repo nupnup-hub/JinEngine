@@ -37,8 +37,8 @@ namespace JinEngine
 			JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) final;
 			Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) final;////리소스 생성시 에셋파일이 없을 경우 한번 호출된다
 		private:
-			Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetaData
-			Core::J_FILE_IO_RESULT StoreMetaData(Core::JDITypeDataBase* data)final;	//use storeData	 
+			Core::J_FILE_IO_RESULT LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetadata
+			Core::J_FILE_IO_RESULT StoreMetadata(Core::JDITypeDataBase* data)final;	//use storeData	 
 		private:
 			std::unique_ptr<Core::JMeshGroup> ReadMeshGroupData(const std::wstring& path) final;
 		};

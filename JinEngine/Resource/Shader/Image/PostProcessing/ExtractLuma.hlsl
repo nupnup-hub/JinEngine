@@ -47,6 +47,5 @@ void ExtractLuma(uint3 dispatchThreadID : SV_DispatchThreadID)
         const float rcpLogRange = exposure[7];
 		float logLuma = saturate((log2(luma) - minLog) * rcpLogRange); // Rescale to [0.0, 1.0]
 		outLuma[dispatchThreadID.xy] = logLuma * 254.0 + 1.0; // Rescale to [1, 255]
-
 	}
 }

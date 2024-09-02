@@ -203,7 +203,7 @@ namespace JinEngine
 			static void RegisterTypeData()
 			{
 				JIdentifier::RegisterPrivateInterface(JFSMdiagram::StaticTypeInfo(), dPrivate);
-				IMPL_REALLOC_BIND(JFSMdiagram::JFSMdiagramImpl, thisPointer)
+				IMPL_REALLOC_BIND()
 			}
 		};
 

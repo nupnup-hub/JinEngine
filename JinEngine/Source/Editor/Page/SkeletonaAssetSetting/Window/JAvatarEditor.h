@@ -55,7 +55,7 @@ namespace JinEngine
 			int selectJointRefIndex; 
 			int selectJointIndex;
 			std::bitset<JSkeletonFixedData::maxAvatarJointCount> isValidJointRef; 
-			std::bitset<4> tabs;
+			std::bitset<JAvatar::GetJointCategoryCount()> tabs;
 			const JVector4<float> failColor{ 0.85f, 0.2f, 0.2f, 0.75f }; 
 		public:
 			JAvatarEditor(const std::string& name,

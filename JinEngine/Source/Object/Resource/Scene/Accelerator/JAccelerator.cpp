@@ -27,6 +27,7 @@ SOFTWARE.
 #include"../../../GameObject/JGameObject.h"
 #include"../../../Component/RenderItem/JRenderItem.h"
 #include"../../../Component/Light/JLight.h"
+#include"../../../GraphicRule/JGraphicModuleInterfaceHolder.h"
 
 namespace JinEngine
 {
@@ -57,7 +58,7 @@ namespace JinEngine
 			if (parent == nullptr)
 				return;
 
-			auto light = parent->GetComponents(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+			auto light = parent->GetComponents(J_COMPONENT_TYPE::ENGINE_LIGHT);
 			for (const auto& data : light)
 			{
 				JUserPtr<JLight> lit = Core::ConnectChildUserPtr<JLight>(data);
@@ -283,38 +284,35 @@ namespace JinEngine
 			innerRoot->IsParentLine(gameObj);
 	}
 
-	JGpuAccelerator::JGpuAccelerator()
-	{
-		RegisterInterfacePointer();
-	}
 	void JGpuAccelerator::Build()noexcept
 	{ 
-		Graphic::JGpuAcceleratorBuildDesc desc;
+		JGpuAcceleratorBuildDesc desc;
 		desc.flag = option.flag;
 		Private::FindInnerObject(desc.obj, option.root, J_ACCELERATOR_LAYER::COMMON_OBJECT);
-		if (Core::HasSQValueEnum(desc.flag, Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE))
+		if (Core::HasSQValueEnum(desc.flag, J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE))
 			Private::FindInnerNonDeltaLight(desc.localLight, option.root);
-		JGpuAcceleratorInterface::CreateGpuAccelerator(desc);
+
+		GMI()->CreateGpuAccelerator(sceneGraphicData.Get(), desc); 
 	}
 	void JGpuAccelerator::UnBuild()noexcept
 	{
-		JGpuAcceleratorInterface::DestroyGpuAccelerator();
+		GMI()->DestroyGpuAccelerator(sceneGraphicData.Get());
 	}
 	void JGpuAccelerator::Clear()noexcept
 	{
 		UnBuild();
 	}
 	void JGpuAccelerator::UpdateTransform(const JUserPtr<JComponent>& comp)noexcept
-	{
-		JGpuAcceleratorInterface::UpdateTransform(comp);
+	{ 
+		GMI()->UpdateTransform(sceneGraphicData->GetGpuAcceleratorUserInterface(), comp);
 	}
 	void JGpuAccelerator::AddComponent(const JUserPtr<JComponent>& newComp)noexcept
 	{
-		JGpuAcceleratorInterface::AddComponent(newComp);
+		GMI()->AddComponent(sceneGraphicData->GetGpuAcceleratorUserInterface(), newComp);
 	}
 	void JGpuAccelerator::RemoveComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
-		JGpuAcceleratorInterface::RemoveComponent(comp);
+		GMI()->RemoveComponent(sceneGraphicData->GetGpuAcceleratorUserInterface(), comp);
 	}
 	JGpuAcceleratorOption JGpuAccelerator::GetOption()const noexcept
 	{
@@ -322,20 +320,20 @@ namespace JinEngine
 	}
 	void JGpuAccelerator::SetOption(const JGpuAcceleratorOption& newOption)
 	{
-		if (JGpuAcceleratorInterface::HasInfo())
+		if (sceneGraphicData->GetGpuAcceleratorUserInterface()->HasInfo())
 			UnBuild();
 
 		option = newOption;
 		Build();
 	}
+	void JGpuAccelerator::SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& newSceneGraphicData)
+	{
+		sceneGraphicData = newSceneGraphicData; 
+	}
 	bool JGpuAccelerator::CanBuild()noexcept
 	{
-		return JGpuAcceleratorInterface::CanBuildGpuAccelerator();
-	}
-	void JGpuAccelerator::RegisterInterfacePointer()
-	{
-		Graphic::JGpuAcceleratorInterface::SetInterfacePointer(this);
-	}
+		return sceneGraphicData != nullptr && sceneGraphicData->GetGpuAcceleratorUserInterface()->CanBuild();
+	} 
  
 }
  

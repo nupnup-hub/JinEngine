@@ -62,7 +62,7 @@ namespace JinEngine
 			}
 			~JDx12GraphicShaderDataHolder()
 			{
-				ClearResource();
+				Clear();
 			}
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final
@@ -90,22 +90,17 @@ namespace JinEngine
 				return psoVariation;
 			}
 		public:
-			void Clear()final
-			{
-				ClearResource();
-			}
-		private:
-			void ClearResource()
+			void Clear()
 			{
 				vs = nullptr;
 				hs = nullptr;
 				ds = nullptr;
 				gs = nullptr;
 				ps = nullptr;
-				inputLayout.clear(); 
+				inputLayout.clear();
 				for (uint i = 0; i < SIZE_OF_ARRAY(pso); ++i)
 					pso[i] = nullptr;
-			}
+			} 
 		};
 
 		template<uint psoVariation>
@@ -123,7 +118,7 @@ namespace JinEngine
 			}
 			~JDx12ComputeShaderDataHolder()
 			{
-				ClearResource();
+				Clear();
 			}
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final
@@ -151,13 +146,8 @@ namespace JinEngine
 				return psoVariation;
 			}
 		public:
-			void Clear()final
+			void Clear()
 			{
-				ClearResource();
-			}
-		private:
-			void ClearResource()
-			{ 
 				cs = nullptr;
 				for (uint i = 0; i < SIZE_OF_ARRAY(pso); ++i)
 					pso[i] = nullptr;

@@ -33,13 +33,7 @@ namespace JinEngine
 	namespace Core
 	{
 		class JGameTimer;
-	}
-	namespace Graphic
-	{
-		class JGraphic; 
-		class JFrameIndexAccess;
-		struct JAnimationConstants;
-	}
+	} 
 	class JAnimatorPrivate final : public JComponentPrivate
 	{
 	public:
@@ -72,27 +66,7 @@ namespace JinEngine
 		private:
 			static void OnAnimationUpdate(JUserPtr<JAnimator> ani, Core::JGameTimer* sceneTimer)noexcept;
 			static void OffAnimationUpdate(JUserPtr<JAnimator> ani)noexcept;
-		};
-		class FrameUpdateInterface final
-		{
-		private:
-			friend class Graphic::JGraphic;
-		private:
-			static bool UpdateStart(JAnimator* ani)noexcept;
-			static void UpdateFrame(JAnimator* ani, Graphic::JAnimationConstants& constant)noexcept;
-			static void UpdateEnd(JAnimator* ani)noexcept;
-		private:
-			static int GetFrameIndex(JAnimator* ani)noexcept; 
-		protected:
-			static bool HasRecopyRequest(JAnimator* ani)noexcept;
-		};
-		class FrameIndexInterface final
-		{
-		private:
-			friend class Graphic::JFrameIndexAccess; 
-		private:
-			static int GetFrameIndex(JAnimator* ani)noexcept;
-		};
+		}; 
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;

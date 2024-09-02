@@ -59,7 +59,7 @@ namespace JinEngine
 			BILATERAL_Y,
 			COUNT
 		};
-		class JDx12Ssao : public JSsao
+		class JDx12Ssao final: public JSsao
 		{
 		private:
 			using JDx12GraphicShaderDataHolder = JDx12GraphicShaderDataHolder<1>;
@@ -124,6 +124,9 @@ namespace JinEngine
 			std::unique_ptr<JDx12GraphicBufferT<SsaoAoSliceConstants>> ssaoAoSliceCB;
 		private:
 			JUserPtr<JGraphicResourceInfo> randomVecInfo[(uint)J_SSAO_TYPE::COUNT]; 
+		private:
+			JDx12GraphicDevice* cachedDevice;
+			JDx12GraphicResourceManager* cachedGm;
 		public:
 			JDx12Ssao();
 			~JDx12Ssao();
@@ -151,7 +154,7 @@ namespace JinEngine
 			void RecompileShader(const JGraphicShaderCompileSet& dataSet)final;
 		private:
 			void BuildResouce(JGraphicDevice* device, JGraphicResourceManager* gM);
-			void BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
+			void BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildBuffer(JDx12GraphicDevice* device, JDx12GraphicResourceManager* gm);
 		private: 

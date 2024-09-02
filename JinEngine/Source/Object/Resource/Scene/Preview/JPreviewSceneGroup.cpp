@@ -31,7 +31,6 @@ SOFTWARE.
 #include"../../../Directory/JDirectory.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
-#include"../../../../Graphic/Frameresource/JAnimationConstants.h"  
 
 namespace JinEngine
 {

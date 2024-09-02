@@ -28,19 +28,7 @@ SOFTWARE.
 
 namespace JinEngine
 { 
-	class JLight; 
-	class JDirectionalLight;
-	class JPointLight;
-	class JSpotLight;
-	class JRectLight;
-
-	namespace Graphic
-	{
-		class JGraphic;  
-		class JFrameDirty;
-		class JFrameIndexAccess;
-		struct JLightConstantsSet;
-	}
+	class JLight;  	 
 	class JLightPrivate : public JComponentPrivate
 	{
 	public:
@@ -64,49 +52,7 @@ namespace JinEngine
 		protected:
 			void Clear(Core::JIdentifier* ptr, const bool isForced)override;
 		};
-		class FrameUpdateInterface
-		{
-		private:
-			friend class Graphic::JGraphic; 
-		private:
-			virtual bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept = 0;
-			virtual void UpdateFrame(JLight* lit, Graphic::JLightConstantsSet& set)noexcept = 0;
-			virtual void UpdateEnd(JLight* lit)noexcept = 0;
-		private:
-			virtual int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept = 0;
-			virtual int GetFrameIndexSize(JLight* lit, const uint layerIndex)noexcept = 0;
-			virtual int GetShadowFrameLayerIndex(JLight* lit)noexcept = 0;
-		private:
-			//valid updating
-			virtual bool IsFrameHotDirted(JLight* lit)noexcept = 0;
-			//valid after update end
-			virtual bool IsLastFrameHotUpdated(JLight* lit)noexcept = 0;
-			virtual bool IsLastUpdated(JLight* lit)noexcept = 0; 
-		};
-		class FrameIndexInterface
-		{
-		private:
-			friend class Graphic::JFrameIndexAccess;
-		private:
-			virtual int GetFrameIndex(JLight* lit, const uint layerIndex)noexcept = 0;
-			virtual int GetShadowFrameLayerIndex(JLight* lit)noexcept = 0;
-		};
-		class ChildInterface final
-		{
-		private:    
-			friend class JDirectionalLight;
-			friend class JPointLight;
-			friend class JSpotLight;
-			friend class JRectLight;
-		private:
-			//almost JFrameDirtyListener is impl class
-			static void RegisterFrameDirtyListener(JLight* lit, Graphic::JFrameDirty* listener, const size_t guid)noexcept;
-			static void DeRegisterFrameDirtyListener(JLight* lit, const size_t guid)noexcept;
-			static void UpdateLightShape(const JUserPtr<JLight>& lit)noexcept;
-		};
 	public:  
-		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;
-		virtual JLightPrivate::FrameUpdateInterface& GetFrameUpdateInterface()const noexcept = 0;
-		virtual JLightPrivate::FrameIndexInterface& GetFrameIndexInterface()const noexcept = 0; 
+		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override; 
 	};
 }

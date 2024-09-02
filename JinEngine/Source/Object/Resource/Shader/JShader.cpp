@@ -30,25 +30,24 @@ SOFTWARE.
 #include"../../Directory/JDirectory.h"
 #include"../../Directory/JFile.h"
 #include"../../JObjectFileIOHelper.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h" 
 #include"../../../Core/Platform/JHardwareInfo.h" 
-#include"../../../Core/Utility/JCommonUtility.h"
-#include"../../../Graphic/JGraphic.h"
-#include"../../../Graphic/JGraphicPrivate.h"
-#include"../../../Graphic/Shader/JShaderDataHolder.h"
-#include"../../../Graphic/Shader/JShaderType.h"
+#include"../../../Core/Utility/JCommonUtility.h"  
 #include"../../../Application/Engine/JApplicationEngine.h"
 #include"../../../Application/Project/JApplicationProject.h"
 #include<fstream> 
 
 namespace JinEngine
-{ 
-	namespace
-	{ 
-		static JShaderPrivate sPrivate;
+{
+	namespace Private
+	{
+		static JShaderPrivate instance;
 	}
- 
+
 	namespace
 	{
 		static JUserPtr<JDirectory> GetShaderDirectory()
@@ -96,20 +95,21 @@ namespace JinEngine
 				return JShaderType::ConvertToName(cFunctionFlag);
 		}
 	}
- 
+
 	class JShader::JShaderImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JShaderImpl)
 	public:
-		JWeakPtr<JShader> thisPointer = nullptr;
-	public: 
+		JWeakPtr<JShader> thisPointer;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
+	public:
 		//graphic forward
-		JOwnerPtr<Graphic::JShaderDataHolder> gFShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
+		JOwnerPtr<JShaderDataHolder> gFShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
 		//graphic deferred geometry
-		JOwnerPtr<Graphic::JShaderDataHolder> gDGShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
+		JOwnerPtr<JShaderDataHolder> gDGShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
 	public:
 		//compute
-		JOwnerPtr<Graphic::JShaderDataHolder> cShaderData = nullptr;
+		JOwnerPtr<JShaderDataHolder> cShaderData;
 	public:
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
 		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
@@ -120,9 +120,12 @@ namespace JinEngine
 			:gFunctionFlag(initData.gFunctionFlag),
 			cFunctionFlag(initData.cFunctionFlag),
 			condition(initData.condition)
-		{}
+		{
+		}
 		~JShaderImpl()
-		{}
+		{
+			GraphicModuleInterface()->DeAllocate(graphicData);
+		}
 	public:
 		bool IsComputeShader()const noexcept
 		{
@@ -135,7 +138,7 @@ namespace JinEngine
 			{
 				gFunctionFlag = newFunctionFlag;
 				if (thisPointer->IsActivated())
-					CompileShdaer(); 
+					CompileShdaer();
 			}
 		}
 		void SetComputeShaderFunctionFlag(const J_COMPUTE_SHADER_FUNCTION newFunctionFlag)
@@ -156,7 +159,7 @@ namespace JinEngine
 			return hasData;
 		}
 		bool HasComputeShaderData()const noexcept
-		{ 
+		{
 			return cShaderData != nullptr;
 		}
 	public:
@@ -198,7 +201,6 @@ namespace JinEngine
 			JGraphicShaderInitData initHelper;
 			StuffInitHelper(initHelper, gFunctionFlag, condition);
 
-			using GResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
 			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
 			{
 				for (uint j = 0; j < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++j)
@@ -206,12 +208,12 @@ namespace JinEngine
 					initHelper.shaderType = (J_GRAPHIC_SHADER_TYPE)i;
 					initHelper.layoutType = (J_GRAPHIC_SHADER_VERTEX_LAYOUT)j;
 					initHelper.processType = J_GRAPHIC_RENDERING_PROCESS::FORWARD;
-					gFShaderData[i][j] = GResourceInterface::StuffGraphicShaderPso(initHelper);
+					gFShaderData[i][j] = GMI()->CreateGraphicShader(initHelper);
 				}
 			}
-			if (!JGraphic::Instance().GetGraphicOption().rendering.allowDeferred)
+			if (!GMI()->IsActivated(J_GRAPHIC_OPTIONAL_FEATURE::DEFERRED_RENDERING))
 				return;
-			    
+
 			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
 			{
 				for (uint j = 0; j < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++j)
@@ -219,7 +221,7 @@ namespace JinEngine
 					initHelper.shaderType = (J_GRAPHIC_SHADER_TYPE)i;
 					initHelper.layoutType = (J_GRAPHIC_SHADER_VERTEX_LAYOUT)j;
 					initHelper.processType = J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY;
-					gDGShaderData[i][j] = GResourceInterface::StuffGraphicShaderPso(initHelper);
+					gDGShaderData[i][j] = GMI()->CreateGraphicShader(initHelper);
 				}
 			}
 		}
@@ -229,19 +231,16 @@ namespace JinEngine
 			StuffInitHelper(initHelper, cFunctionFlag);
 			//macroVec = std::vector<D3D_SHADER_MACRO>{ { NULL, NULL } };
 			if (cFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
-			{
-				using GResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
-				cShaderData = GResourceInterface::StuffComputeShaderPso(initHelper);
-			}
+				cShaderData = GMI()->CreateComputeShader(initHelper);
 		}
 		static void StuffInitHelper(_Out_ JGraphicShaderInitData& initHelper,
-			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
+			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
 			const JGraphicShaderCondition& cond)noexcept
 		{
 			//앞으로 graphic shader에 macro는 JGraphicShaderDataHandler에 하위클래스에서 stuff 하도록한다. --2023/12/28--
 			initHelper.gFunctionFlag = gFunctionFlag;
 			initHelper.condition = cond;
-		} 
+		}
 		static void StuffInitHelper(_Out_ JComputeShaderInitData& initHelper, J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		{
 			//앞으로 hzb에 대한 shader option control은 JShader객체를 통해서가아닌
@@ -263,7 +262,7 @@ namespace JinEngine
 				else
 					return result;
 			};
-			using GpuInfo = Core::JHardwareInfo::GpuInfo;		
+			using GpuInfo = Core::JHardwareInfo::GpuInfo;
 			auto InitHZBMaps = [](_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 			{
 				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
@@ -303,24 +302,13 @@ namespace JinEngine
 			{
 				for (uint j = 0; j < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++j)
 				{
-					if (gFShaderData[i][j] != nullptr)
-					{
-						gFShaderData[i][j]->Clear();
-						gFShaderData[i][j].Clear();
-					}
-					if (gDGShaderData[i][j] != nullptr)
-					{
-						gDGShaderData[i][j]->Clear();
-						gDGShaderData[i][j].Clear();
-					}
+					gFShaderData[i][j] = nullptr;
+					gDGShaderData[i][j] = nullptr;
 				}
 			}
-			 
+
 			if (cShaderData != nullptr)
-			{
-				cShaderData->Clear();
-				cShaderData.Clear();
-			}
+				cShaderData = nullptr;;
 		}
 	public:
 		bool ReadAssetData()
@@ -331,9 +319,10 @@ namespace JinEngine
 		{
 			return true;
 		}
-	public: 
+	public:
 		void Initialize()
 		{
+			IMPL_ALLOC_GRAPHIC_MODULE_DATA(); 
 			if (IsComputeShader())
 				SetComputeShaderFunctionFlag((J_COMPUTE_SHADER_FUNCTION)cFunctionFlag);
 			else
@@ -345,7 +334,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex(GetStaticResourceType(),format); };
+			auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex(GetStaticResourceType(), format); };
 
 			static GetRTypeInfoCallable getTypeInfoCallable{ &JShader::StaticTypeInfo };
 			static GetAvailableFormatCallable getAvailableFormatCallable{ &JShader::GetAvailableFormat };
@@ -354,20 +343,20 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, true, true, false, false };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
-			Core::JIdentifier::RegisterPrivateInterface(JShader::StaticTypeInfo(), sPrivate);
+			RegisterRTypeInfo(JShader::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			Core::JIdentifier::RegisterPrivateInterface(JShader::StaticTypeInfo(), Private::instance);
 
-			IMPL_REALLOC_BIND(JShader::JShaderImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
-	JShader::InitData::InitData(const J_OBJECT_FLAG flag, 
+	JShader::InitData::InitData(const J_OBJECT_FLAG flag,
 		const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
 		const JGraphicShaderCondition condition,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		:JResourceObject::InitData(JShader::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), GetShaderDirectory()),
-		gFunctionFlag(gFunctionFlag), 
-		condition(condition), 
+		gFunctionFlag(gFunctionFlag),
+		condition(condition),
 		cFunctionFlag(cFunctionFlag)
 	{
 		InitData::flag = Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE);
@@ -396,7 +385,15 @@ namespace JinEngine
 
 	Core::JIdentifierPrivate& JShader::PrivateInterface()const noexcept
 	{
-		return sPrivate;
+		return Private::instance;
+	}
+	JGraphicModuleManagedDataFrame* JShader::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JShader::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_RESOURCE_TYPE JShader::GetResourceType()const noexcept
 	{
@@ -411,25 +408,25 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".shader" };
 		return format;
 	}
-	JUserPtr<Graphic::JShaderDataHolder> JShader::GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<JShaderDataHolder> JShader::GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
 		if (processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY)
 			return impl->gDGShaderData[(uint)type][(uint)vertexLayout];
 		else
 			return impl->gFShaderData[(uint)type][(uint)vertexLayout];
 	}
-	JUserPtr<Graphic::JShaderDataHolder> JShader::GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<JShaderDataHolder> JShader::GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
 		return impl->gFShaderData[(uint)type][(uint)vertexLayout];
 	}
-	JUserPtr<Graphic::JShaderDataHolder> JShader::GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<JShaderDataHolder> JShader::GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
 		return impl->gDGShaderData[(uint)type][(uint)vertexLayout];
-	} 
-	JUserPtr<Graphic::JShaderDataHolder> JShader::GetComputeData()const noexcept
+	}
+	JUserPtr<JShaderDataHolder> JShader::GetComputeData()const noexcept
 	{
 		return impl->cShaderData;
-	} 
+	}
 	J_GRAPHIC_SHADER_FUNCTION JShader::GetShaderGFunctionFlag()const noexcept
 	{
 		return impl->gFunctionFlag;
@@ -441,7 +438,7 @@ namespace JinEngine
 	JGraphicShaderCondition JShader::GetShaderCondition()const noexcept
 	{
 		return impl->condition;
-	} 
+	}
 	bool JShader::IsComputeShader()const noexcept
 	{
 		return impl->IsComputeShader();
@@ -452,8 +449,20 @@ namespace JinEngine
 	{
 		return FindOverlapShader(MakeName(gFunctionFlag, condition, cFunctionFlag));
 	}
+	void JShader::RecompileGraphicShader()
+	{
+		return impl->RecompileGraphicShader();
+	}
+	void JShader::RecompileComputeShader()
+	{
+		return impl->RecompileComputeShader();
+	}
 	void JShader::DoActivate()noexcept
 	{
+		if (impl->graphicData == nullptr)
+		{
+			INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
+		}
 		JResourceObject::DoActivate();
 		impl->CompileShdaer();
 		SetValid(true);
@@ -463,6 +472,7 @@ namespace JinEngine
 		impl->ClearShaderData();
 		SetValid(false);
 		JResourceObject::DoDeActivate();
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JShader::JShader(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JShaderImpl>(initData, this))
@@ -471,10 +481,9 @@ namespace JinEngine
 	{
 		impl.reset();
 	}
-	 
+
 	using CreateInstanceInterface = JShaderPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JShaderPrivate::AssetDataIOInterface;
-	using CompileInterface = JShaderPrivate::CompileInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -497,13 +506,13 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JShader::LoadData::StaticTypeInfo()))
 			return nullptr;
- 
+
 		auto loadData = static_cast<JShader::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = std::make_unique<JShader::InitData>();	//for load metadata
-		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JShader> newShdaer = nullptr;
@@ -513,7 +522,7 @@ namespace JinEngine
 		if (newShdaer == nullptr)
 		{
 			initData->name = MakeName(initData->gFunctionFlag, initData->condition, initData->cFunctionFlag);
-			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
+			auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::move(initData), &Private::instance);
 			newShdaer.ConnnectChild(idenUser);
 		}
 		newShdaer->impl->ReadAssetData();
@@ -532,7 +541,7 @@ namespace JinEngine
 		shader.ConnnectChild(storeData->obj);
 		return shader->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JShader::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -541,23 +550,23 @@ namespace JinEngine
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JShader::InitData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JShader::InitData*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
- 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->gFunctionFlag, "ShaderFuncFlag:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->cFunctionFlag, "ComputeShaderFuncFlag:");
 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.primitiveCondition, "SubPsoPrimitiveCondition:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.depthCompareCondition, "SubPsoDepthComparesionCondition:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.cullModeCondition, "SubPsoCullModeCondition:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.primitiveType, "SubPsoPrimitive:");
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.depthCompareFunc, "SubPsoDepthComparesion:");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->condition.isCullModeNone, "SubPsoCullMode:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->gFunctionFlag, "ShaderFuncFlag:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->cFunctionFlag, "ComputeShaderFuncFlag:");
+
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.primitiveCondition, "SubPsoPrimitiveCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.depthCompareCondition, "SubPsoDepthComparesionCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.cullModeCondition, "SubPsoCullModeCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.primitiveType, "SubPsoPrimitive:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->condition.depthCompareFunc, "SubPsoDepthComparesion:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->condition.isCullModeNone, "SubPsoCullMode:");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JShader::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -570,7 +579,7 @@ namespace JinEngine
 		if (!tool.Begin(shader->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->gFunctionFlag, "ShaderFuncFlag:");
@@ -582,18 +591,9 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->condition.primitiveType, "SubPsoPrimitive:");
 		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->condition.depthCompareFunc, "SubPsoDepthComparesion:");
 		JObjectFileIOHelper::StoreAtomicData(tool, shader->impl->condition.isCullModeNone, "SubPsoCullMode:");
-		
+
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
-	}
-
-	void CompileInterface::RecompileGraphicShader(JShader* shader)noexcept
-	{
-		shader->impl->RecompileGraphicShader();
-	}
-	void CompileInterface::RecompileComputeShader(JShader* shader)noexcept
-	{
-		shader->impl->RecompileComputeShader();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JShaderPrivate::GetCreateInstanceInterface()const noexcept

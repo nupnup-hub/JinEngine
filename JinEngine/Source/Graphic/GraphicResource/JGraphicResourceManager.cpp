@@ -23,11 +23,11 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#include"JGraphicResourceManager.h"   
-#include"JGraphicResourceUserAccess.h"
+#include"JGraphicResourceManager.h"    
 #include"JGraphicResourceInterface.h"
 #include"../../Window/JWindow.h"
 #include"../../Window/JWindowPrivate.h"
+
 namespace JinEngine
 {
 	namespace Graphic
@@ -75,13 +75,14 @@ namespace JinEngine
 		{
 			return count < capacity;
 		}
-		JGraphicResourceInfo* JGraphicResourceManager::GetInfo(JGraphicResourceUserAccess* access, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE task)const noexcept
-		{
-			if (access == nullptr)
-				return nullptr;
 
-			const int arrayIndex = access->GraphicResourceUserInterface().GetResourceArrayIndex(rType, task);
-			return arrayIndex != invalidIndex ? GetInfo(rType, arrayIndex) : nullptr;
+		void JGraphicResourceManager::Initialize(JGraphicDevice* device)
+		{
+
+		}
+		void JGraphicResourceManager::Clear()
+		{
+
 		}
 		HWND JGraphicResourceManager::GetWindowHandle()noexcept
 		{
@@ -99,8 +100,8 @@ namespace JinEngine
 		std::wofstream stream;
 		stream.open(L"D:\\JinWooJung\\gDebug.txt", std::ios::app | std::ios::out);
 
-		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
-		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
+		Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_RESOURCE_TYPE).name());
+		Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_BIND_TYPE).name());
 		auto rNameVec = rInfo->GetEnumNameVec();
 		auto bNameVec = bInfo->GetEnumNameVec();
 		JFileIOHelper::InputSpace(stream, 1);

@@ -172,7 +172,7 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadAtomicData(tool, innerRootGuid, "innerGuid:");
 	}
 
-	JAcceleratorCullingInfo::JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
+	JAcceleratorCullingInfo::JAcceleratorCullingInfo(JCullingUserInterface* cullUser,
 		DirectX::BoundingFrustum frustum)
 		:cullUser(cullUser),
 		frustum(frustum),
@@ -181,7 +181,7 @@ namespace JinEngine
 		useBBox(false),
 		pos(frustum.Origin)
 	{}
-	JAcceleratorCullingInfo::JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
+	JAcceleratorCullingInfo::JAcceleratorCullingInfo(JCullingUserInterface* cullUser,
 		DirectX::BoundingFrustum camFrustum,
 		DirectX::BoundingFrustum cullingFrustum)
 		:cullUser(cullUser),
@@ -192,7 +192,7 @@ namespace JinEngine
 		useBBox(false),
 		pos(camFrustum.Origin)
 	{}
-	JAcceleratorCullingInfo::JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
+	JAcceleratorCullingInfo::JAcceleratorCullingInfo(JCullingUserInterface* cullUser,
 		const DirectX::BoundingBox bbox)
 		:cullUser(cullUser),
 		bbox(bbox),

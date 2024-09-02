@@ -60,21 +60,10 @@ namespace JinEngine
 		return (*createInitDataCallable)(nullptr, typeInfo, owner, std::move(parentInitData));
 	}
 
-	CTypePrivateFunc::CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable)
-		:setFrameDirtyCallable(setFrameDirtyCallable)
+	CTypePrivateFunc::CTypePrivateFunc()
 	{}
 	CTypePrivateFunc::~CTypePrivateFunc()
-	{
-		setFrameDirtyCallable = nullptr;
-	}
-	void CTypePrivateFunc::CallSetFrameDirty(JComponent* jComp)
-	{
-		(*setFrameDirtyCallable)(nullptr, jComp);
-	}
-	SetCFrameDirtyCallable* CTypePrivateFunc::GetSetFrameDirtyCallable()
-	{
-		return setFrameDirtyCallable;
-	}
+	{} 
 
 	struct CTypeInfoData
 	{
@@ -157,21 +146,19 @@ namespace JinEngine
 				data = typeMap.find(nextInfo->TypeGuid());
 				nextInfo = nextInfo->GetParent();
 			}
-			return data != typeMap.end() ? data->second : (J_COMPONENT_TYPE)-1;
+			return data != typeMap.end() ? data->second : (J_COMPONENT_TYPE)invalidIndex;
 		}
 		else
 			return data->second;
 	}
+	J_COMPONENT_TYPE CTypeCommonCall::ConvertCompType(const size_t typeGuid)
+	{
+		auto& typeMap = CTypeInfo::Instance().typeMap;
+		auto data = typeMap.find(typeGuid);
+		return data != typeMap.end() ? data->second : (J_COMPONENT_TYPE)invalidIndex;
+	}
 	bool CTypeCommonCall::NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept
 	{
 		return CTypeInfo::Instance().cFuncStorage[(uint)a.thisType].CallGetTypeInfo().Name() < CTypeInfo::Instance().cFuncStorage[(uint)b.thisType].CallGetTypeInfo().Name();
-	}
-	void CTypePrivateCall::CallSetFrameDirty(JComponent* jComp)
-	{
-		return CTypeInfo::Instance().pFuncStorage[(uint)jComp->GetComponentType()].CallSetFrameDirty(jComp);
-	}
-	SetCFrameDirtyCallable* CTypePrivateCall::GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType)
-	{
-		return CTypeInfo::Instance().pFuncStorage[(uint)cType].GetSetFrameDirtyCallable();
 	}
 }

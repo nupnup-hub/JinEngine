@@ -27,6 +27,7 @@ SOFTWARE.
 #include"JGpuAcceleratorType.h"
 #include"../../Core/Reflection/JReflection.h"
 #include"../../Core/Reflection//JTypeImplBase.h"
+#include"../../Object/GraphicRule/GpuAccelerator/JGraphicModuleGpuAcceleratorUserAccess.h"
 
 namespace JinEngine
 { 
@@ -34,51 +35,22 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGpuAcceleratorInfo;
-		class JGpuAcceleratorInterface : public Core::JTypeImplInterfacePointerHolder<JGpuAcceleratorInterface>
+		class JGpuAcceleratorInterface : public JGpuAcceleratorUserInterface
 		{
 		private:
 			JUserPtr<JGpuAcceleratorInfo> info;
 		public:
 			virtual ~JGpuAcceleratorInterface() = default;
-		protected:
-			bool CreateGpuAccelerator(const JGpuAcceleratorBuildDesc& desc);
-			bool DestroyGpuAccelerator();
-		protected:
-			void UpdateTransform(const JUserPtr<JComponent>& comp);
-			void AddComponent(const JUserPtr<JComponent>& comp);
-			void RemoveComponent(const JUserPtr<JComponent>& comp);
 		public:
-			int GetArrayIndex()const noexcept;
-			J_GPU_ACCELERATOR_BUILD_OPTION GetBuildOption()const noexcept;
+			void AddInfo(const JUserPtr<JGpuAcceleratorInfo>& newInfo);
+			JGpuAcceleratorInfo* ReleaseInfo(); 
 		public:
-			bool HasInfo()const noexcept;
-		protected: 
-			static bool CanBuildGpuAccelerator()noexcept;
-		};
-
-		using JGpuAcceleratorInterfacePointer = Core::JTypeImplInterfacePointer<JGpuAcceleratorInterface>;
-		class JGpuAcceleratorUserInterface final
-		{
-		private:
-			JUserPtr<JGpuAcceleratorInterfacePointer> gPtrWrapper = nullptr;
+			int GetArrayIndex()const noexcept final;
+			J_GPU_ACCELERATOR_BUILD_OPTION GetBuildOption()const noexcept final;
+			JUserPtr<JGpuAcceleratorInfo> GetInfo()const noexcept;
 		public:
-			JGpuAcceleratorUserInterface() = default;
-			JGpuAcceleratorUserInterface(JGpuAcceleratorInterface* gInterface);
-			~JGpuAcceleratorUserInterface() = default;
-		public:
-			int GetArrayIndex()const noexcept;
-			J_GPU_ACCELERATOR_BUILD_OPTION GetBuildOption()const noexcept;
-		public:
-			bool HasInfo()const noexcept;
-		};
-
-		class JGpuAcceleratorUserAccess
-		{
-		protected:
-			JGpuAcceleratorUserAccess() = default;
-			virtual ~JGpuAcceleratorUserAccess() = default;
-		public:
-			virtual const JGpuAcceleratorUserInterface GpuAcceleratorUserInterface()const noexcept = 0;
+			bool HasInfo()const noexcept final;
+			bool CanBuild()const noexcept final;
 		};
 	}
 }

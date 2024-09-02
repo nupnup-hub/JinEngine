@@ -34,8 +34,11 @@ namespace JinEngine
 			return info;
 		}
 
-		JThread::JThread(std::unique_ptr<JBindHandleBase>&& bind, const JThreadInfo& info)
-			:bind(std::move(bind)), info(info)
+		JThread::JThread()
+			: index(JPtrUtil::MakeOwnerPtr<int>(invalidIndex))
 		{}
+		JThread::JThread(std::unique_ptr<JBindHandleBase>&& bind, const JThreadInfo& info)
+			:bind(std::move(bind)), info(info), index(JPtrUtil::MakeOwnerPtr<int>(invalidIndex))
+		{} 
 	}
 }

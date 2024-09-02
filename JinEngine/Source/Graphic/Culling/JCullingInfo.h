@@ -24,7 +24,8 @@ SOFTWARE.
 
 
 #pragma once
-#include"JCullingType.h" 
+#include"JCullingType.h"
+#include"../Device/JGraphicDeviceUser.h"
 #include"../../Core/Reflection/JReflection.h"
 
 namespace JinEngine
@@ -46,13 +47,13 @@ namespace JinEngine
 			uint updatedStartIndex = 0;
 			uint updatedCount = 0;
 		};
-		class JCullingInfo final
+		class JCullingInfo : public JGraphicDeviceUser
 		{ 
 			REGISTER_CLASS_USE_ALLOCATOR(JCullingInfo) 
 		private:
 			friend class JCullingManager;
-		private:
-			JCullingManager* manager;  
+		//private:
+		//	JCullingManager* manager;  
 		private:
 			std::unique_ptr<JCullingResultHolder> resultHolder;
 			std::vector<JCullingUpdatedInfo> updatedInfo;
@@ -91,15 +92,12 @@ namespace JinEngine
 			bool IsCulled(const uint index)const noexcept;	 
 			bool IsCullingResultInGpu()const noexcept;
 			bool IsUpdateEnd()const noexcept;
-			bool CanSetCullingValue()const noexcept;
-		public:
-			static bool Destroy(JCullingInfo* info);
-		private:
-			JCullingInfo(JCullingManager* manager, 
-				const J_CULLING_TYPE cullingType, 
+			bool CanSetCullingValue()const noexcept; 
+		protected:
+			JCullingInfo(const J_CULLING_TYPE cullingType, 
 				const uint updatedInfoCount,
 				std::unique_ptr<JCullingResultHolder>&& resultHolder); 
-			~JCullingInfo();
+			virtual ~JCullingInfo();
 		};
 	}
 }

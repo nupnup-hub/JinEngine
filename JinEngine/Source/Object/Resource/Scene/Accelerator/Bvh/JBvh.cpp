@@ -25,19 +25,17 @@ SOFTWARE.
 
 #include"JBvh.h"
 #include"../../../../GameObject/JGameObject.h"
-#include"../../../../Component/RenderItem/JRenderItem.h"
-#include"../../../../Component/RenderItem/JRenderItemPrivate.h"
+#include"../../../../Component/RenderItem/JRenderItem.h" 
 #include"../../../../../Core/Geometry/JBBox.h"
 #include"../../../../../Core/Geometry/JDirectXCollisionEx.h"
-#include"../../../../../Core/Math/JMathHelper.h"   
-#include"../../../../../Graphic/Culling/JCullingInterface.h"
+#include"../../../../../Core/Math/JMathHelper.h"    
 #include <algorithm> 
+
 namespace JinEngine
 {
 	using namespace DirectX;
-	namespace
-	{
-		using RItemFrameIndexInteface = JRenderItemPrivate::FrameIndexInterface;
+	namespace Private
+	{  
 		static constexpr uint useCandidateCount = 3;
 	}
 
@@ -132,20 +130,21 @@ namespace JinEngine
 		{
 			//Core::J_CULLING_FLAG flag = Core::J_CULLING_FLAG::NONE;
 			JUserPtr<JRenderItem> rItem = innerGameObjectCandidate->GetRenderItem();
+			const uint frameIndex = rItem->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
 			if (info.useJFrustum)
 			{
 				//Core::J_CULLING_RESULT res = info.jFrustum.Contain(rItem->GetBoundingBox(), flag);
 				//if (res == Core::J_CULLING_RESULT::CONTAIN || res == Core::J_CULLING_RESULT::INTERSECT)
-				//	info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+				//	info.cullUser.OffCulling(::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 				//else if (res == Core::J_CULLING_RESULT::DISJOINT)
-				//	info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+				//	info.cullUser.SetCulling(::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 			}
 			else
 			{
 				ContainmentType res = info.frustum.Contains(rItem->GetBoundingBox());
 				if (res == ContainmentType::CONTAINS || res == ContainmentType::INTERSECTS)
 				{
-					info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+					info.cullUser->OffCulling(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, frameIndex);
 					if (info.allowPushVisibleObjVec)
 					{
 						(*info.appAlignedObjVec)[info.pushedCount] = innerGameObjectCandidate;
@@ -153,7 +152,7 @@ namespace JinEngine
 					}
 				}
 				else if (res == ContainmentType::DISJOINT)
-					info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+					info.cullUser->SetCulling(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, frameIndex);
 			}
 		}
 	}
@@ -266,7 +265,7 @@ namespace JinEngine
 			return Core::JBBox();
 		else
 		{
-			if (allNodes.size() > useCandidateCount)
+			if (allNodes.size() > Private::useCandidateCount)
 				return Core::JBBox::Union(root->GetLeftNode()->GetBoundingBox(), root->GetRightNode()->GetBoundingBox());
 			else
 			{
@@ -432,6 +431,7 @@ namespace JinEngine
 					b = bucketCount - 1;
 				return b <= minCostSplitBucket;
 			});
+
 			int mid = (int)(pmid - &objectList[0]);
 			if (mid == end)
 				mid = (start + end) / 2;
@@ -580,7 +580,7 @@ namespace JinEngine
 		if (parentNode->GetNodeType() == J_BVH_NODE_TYPE::ROOT)
 		{
 			const uint allNodeCount = (uint)allNodes.size();
-			if (allNodeCount == useCandidateCount)
+			if (allNodeCount == Private::useCandidateCount)
 			{
 				//이진트리 유지를 위해 루트 자식 노드를 삭제하고
 				//포함된 게임오브젝트를 후보로 캐싱

@@ -38,6 +38,7 @@ SOFTWARE.
 
 namespace JinEngine
 {
+	class JCamera;
 	namespace Graphic
 	{
 		using RestirTemporalAccumulationData = JDx12GraphicResourceShareData::RestirTemporalAccumulationData;
@@ -122,7 +123,7 @@ namespace JinEngine
 				UserPrivateData(JGraphicDevice* device);
 				~UserPrivateData();
 			public:
-				void Begin(const JDrawHelper& helper);
+				void Begin(JDx12CommandContext* context, const JDrawHelper& helper);
 				void End(const JDrawHelper& helper);
 			};
 			struct GIDataSet
@@ -130,7 +131,7 @@ namespace JinEngine
 			public:
 				JDx12CommandContext* context;
 				JDx12GraphicDevice* device;
-				UserPrivateData* userPrivate;
+				UserPrivateData* userPrivate; 
 			public:
 				RestirTemporalAccumulationData* sharedata;
 			public:

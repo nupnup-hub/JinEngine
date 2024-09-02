@@ -49,12 +49,9 @@ SamplerState samLinearWrap : register(s0);
 
 cbuffer cbSettings : register(b0)
 {
-    uint2 resolution;
-    float2 nearFar;
-    int arrayIndex;		
-    uint debugPad00;
-    uint debugPad01;
-    uint debugPad02;
+    uint2 resolution; 
+    int arrayIndex;
+    uint debugPad00; 
 };
  
 /*
@@ -74,8 +71,8 @@ void VisualizeLinearMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchTh
 	//float factor = 1 - (2.5f * camNearn) / (camFar + camNear - z * (camFar - camNear));
 	*/
 	//linear depth value
-	const float z = 1 - srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
-	result[dispatchThreadID.xy] = float4(z, z, z, z); 
+	const float z = 1.0 - srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
+	result[dispatchThreadID.xy] = float4(z, z, z, 1.0f); 
 } 
 #elif  DEPTH_NON_LINEAR_MAP
 [numthreads(DIMX, DIMY, DIMZ)]
@@ -84,12 +81,12 @@ void VisualizeNonLinearMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatc
 	if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
 		return;
 
-#ifdef USE_PERSPECTIVE
-	const float z = 1 - LinearDepth(srcMap.Load(int3(dispatchThreadID.xy, 0)).r, nearFar.x, nearFar.y);
+#ifdef USE_PERSPECTIVE 
+	const float z = 1.0 - LinearDepth(srcMap.Load(int3(dispatchThreadID.xy, 0)).r, 1.0f, 50.0f);
 #else
-	const float z = 1 - srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
+	const float z = 1.0 - srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
 #endif
-	result[dispatchThreadID.xy] = float4(z, z, z, z);
+	result[dispatchThreadID.xy] = float4(z, z, z, 1.0f);
 }
 #elif CSM
 [numthreads(DIMX, DIMY, DIMZ)]
@@ -98,8 +95,8 @@ void VisualizeCSM(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID
     if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
         return;
 
-    const float z = 1 - srcMap.Load(int4(dispatchThreadID.xy, arrayIndex, 0)).r;
-    result[dispatchThreadID.xy] = float4(z, z, z, z);
+    const float z = srcMap.Load(int4(dispatchThreadID.xy, arrayIndex, 0)).r;
+    result[dispatchThreadID.xy] = float4(z, z, z, 1.0f);
 }
 #elif ALBEDO_MAP 
 [numthreads(DIMX, DIMY, DIMZ)]
@@ -143,6 +140,16 @@ void VisualizeTangentMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchT
 	UnpackNormalAndTangentLayer(encodeNormalAndTangent, normal, tangent);
     result[dispatchThreadID.xy] = float4(tangent, 1.0f);
 }
+#elif  SSAO_MAP
+[numthreads(DIMX, DIMY, DIMZ)]
+void VisualizeAoMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+	if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
+		return;
+	
+	const float ao = srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
+	result[dispatchThreadID.xy] = float4(ao, ao, ao, 1.0f);
+} 
 #elif  VELOCITY_MAP
 [numthreads(DIMX, DIMY, DIMZ)]
 void VisualizeVelocityMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
@@ -153,16 +160,6 @@ void VisualizeVelocityMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatch
     uint encodeVelocity = srcMap.Load(int3(dispatchThreadID.xy, 0));
     result[dispatchThreadID.xy] = float4(abs(UnpackVelocity(encodeVelocity).xy), 0.0f, 1.0f);
 }
-#elif  SSAO_MAP
-[numthreads(DIMX, DIMY, DIMZ)]
-void VisualizeAoMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
-{
-	if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
-		return;
-	
-	const float ao = srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
-	result[dispatchThreadID.xy] = float4(ao, ao, ao, ao);
-} 
 #else
 #endif 
  

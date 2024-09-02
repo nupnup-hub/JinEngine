@@ -69,6 +69,10 @@ namespace JinEngine
 	public:
 		J_OBJECT_FLAG GetFlag()const noexcept;
 		virtual J_OBJECT_TYPE GetObjectType()const noexcept = 0;
+		/*
+		* @brief Has dependency by sub type order
+		*/
+		virtual uint GetSubTypeIndex()const noexcept = 0; 
 	public:
 		bool CanControlIdentifiable()const noexcept final;
 		bool HasFlag(const J_OBJECT_FLAG flag)const noexcept;

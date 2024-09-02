@@ -38,8 +38,7 @@ SOFTWARE.
 
 using namespace DirectX;
 namespace JinEngine
-{
-
+{ 
 	enum class J_BOUND_EDGE_TYPE
 	{
 		START,

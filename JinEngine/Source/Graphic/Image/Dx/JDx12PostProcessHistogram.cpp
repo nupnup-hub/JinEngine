@@ -28,7 +28,7 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"  
 #include"../../Command/Dx/JDx12CommandContext.h" 
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h"  
 #include"../../Utility/Dx/JDx12Utility.h"
@@ -139,10 +139,10 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface();
+		auto gInterface = helper.GetResourceInterface();
 		JDx12GraphicResourceComputeSet histogramSet = context->ComputeSet(imageShare->histogram);
-		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
-		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
+		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
+		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
 		if (helper.option.postProcess.exposureType == J_EXPOSURE_TYPE::DEFUALT)
 			exposureSet = context->ComputeSet(imageShare->defaultExposure);
 
@@ -167,13 +167,13 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 
 		clearHistogram = std::make_unique<JDx12ClearBufferUseCs>();
 		clearHistogram->Initialize(d3d12Device, JVector3<uint>(Constants::histogramBufferCount, 1, 1), sizeof(uint32), 0);
 	}
-	void JDx12PostProcessHistogram::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12PostProcessHistogram::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildHistogramRootSignature(device); 
 	}

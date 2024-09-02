@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"   
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Command/Dx/JDx12CommandContext.h"
 #include"../../Utility/Dx/JDx12ObjectCreation.h" 
 #include"../../FrameResource/Dx/JDx12FrameResource.h" 
@@ -125,9 +125,9 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface();
+		auto gInterface = helper.GetResourceInterface();
 		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
-		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
+		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
 		JDx12GraphicResourceComputeSet bloomSet = context->ComputeSet(imageShare->bloom[0][1]);
 		JDx12GraphicResourceComputeSet dstSet = context->ComputeSet(imageShare->GetUpdateWaitIntermediate());
 		JDx12GraphicResourceComputeSet lumaSet = context->ComputeSet(imageShare->lumaUnorm);
@@ -182,7 +182,7 @@ namespace JinEngine::Graphic
 		ClearPso();
 
 		ID3D12Device* d3d12Device = static_cast<JDx12GraphicDevice*>(dataSet.device)->GetDevice();
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 	}
 	void JDx12ToneMapping::BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM)
@@ -191,10 +191,10 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption()); 
 	}
-	void JDx12ToneMapping::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12ToneMapping::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildToneMappingRootSignature(device);
 	}

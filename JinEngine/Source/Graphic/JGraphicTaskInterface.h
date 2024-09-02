@@ -25,7 +25,7 @@ SOFTWARE.
 
 #pragma once  
 #include"JGraphicEnum.h"
-#include"DataSet/JGraphicDataSet.h"
+#include"DataSet/JGraphicTaskDataSet.h"
 #include"Device/JGraphicDeviceUser.h"
  
 namespace JinEngine

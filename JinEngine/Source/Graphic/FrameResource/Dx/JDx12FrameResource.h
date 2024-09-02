@@ -23,7 +23,15 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once
+#pragma once 
+#include"JObjectConstants.h" 
+#include"JAnimationConstants.h" 
+#include"JMaterialConstants.h" 
+#include"JSceneConstants.h" 
+#include"JCameraConstants.h" 
+#include"JLightConstants.h"   
+#include"JOcclusionConstants.h"  
+#include"JRaytracingConstants.h"
 #include"../JFrameResource.h"
 #include"../../Buffer/Dx/JDx12GraphicBuffer.h" 
 #include"../../Thread/JGraphicThreadType.h"
@@ -95,7 +103,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JDx12GraphicBufferT<JSsaoConstants>> ssaoCB = nullptr; 
 		private:
-			JDx12GraphicBufferInterface* bufferVec[(uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];
+			JDx12GraphicBufferInterface* bufferVec[(uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT];
 		private:
 			int framePerThread = 0;
 		public:
@@ -104,13 +112,13 @@ namespace JinEngine
 			JDx12FrameResource& operator=(const JFrameResource& rhs) = delete;
 			~JDx12FrameResource();
 		public:
-			void Intialize(JGraphicDevice* device) final;
+			void Initialize(JGraphicDevice* device) final;
 			void Clear()final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
-			JGraphicBufferBase* GetGraphicBufferBase(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept final;
-			JDx12GraphicBufferInterface* GetDx12Buffer(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept;
-			uint GetElementCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept final;
+			JGraphicBufferBase* GetGraphicBufferBase(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final;
+			JDx12GraphicBufferInterface* GetDx12Buffer(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+			uint GetElementCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept final;
 			GraphicFence GetFenceValue()const noexcept; 
 			ID3D12GraphicsCommandList* GetCmd(const J_MAIN_THREAD_ORDER type)const noexcept;	//Main thread
 			ID3D12GraphicsCommandList* GetCmd(const J_THREAD_TASK_TYPE taskType, const uint index)const noexcept;	//thread 
@@ -120,10 +128,14 @@ namespace JinEngine
 		public:
 			void SetFenceValue(const GraphicFence value)noexcept;
 		public:
-			void ReBuild(JGraphicDevice* device, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint newCount)final;
+			void MoveData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint stIndex, const uint destIndex, const uint count)final;
+		public:
+			void ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)final;
 		public:
 			void ResetCmd(const J_MAIN_THREAD_ORDER type);	//reset specific cmd
 			void ResetCmd(const uint useThreadCount);
+		private:
+			void ClearResource();
 		};
 	}
 }

@@ -81,11 +81,11 @@ namespace JinEngine
 			virtual JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) = 0;
 			virtual Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) = 0;
 		private:
-			virtual Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data) = 0;	//use initData
-			virtual Core::J_FILE_IO_RESULT StoreMetaData(Core::JDITypeDataBase* data) = 0;	//use storeData	 
+			virtual Core::J_FILE_IO_RESULT LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data) = 0;	//use initData
+			virtual Core::J_FILE_IO_RESULT StoreMetadata(Core::JDITypeDataBase* data) = 0;	//use storeData	 
 		protected:
-			static Core::J_FILE_IO_RESULT LoadCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose = false);	//use initData
-			static Core::J_FILE_IO_RESULT StoreCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose = false);	//use storeData	
+			static Core::J_FILE_IO_RESULT LoadCommonMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose = false);	//use initData
+			static Core::J_FILE_IO_RESULT StoreCommonMetadata(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose = false);	//use storeData	
 		}; 
 		class FileInterface
 		{

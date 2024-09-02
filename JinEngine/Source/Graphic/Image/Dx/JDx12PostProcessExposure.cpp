@@ -27,7 +27,7 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"  
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../Command/Dx/JDx12CommandContext.h" 
 #include"../../Utility/Dx/JDx12ObjectCreation.h" 
@@ -108,9 +108,9 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface(); 
+		auto gInterface = helper.GetResourceInterface();
 		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
-		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::MANAGE_POST_PROCESS_EXPOSURE);
+		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::MANAGE_POST_PROCESS_EXPOSURE);
 		JDx12GraphicResourceComputeSet lumaSet = context->ComputeSet(imageShare->lumaLowResolutionUint);
 
 		context->Transition(srcSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -144,9 +144,9 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface();
+		auto gInterface = helper.GetResourceInterface();
 		JDx12GraphicResourceComputeSet histogramSet = context->ComputeSet(imageShare->histogram);
-		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::MANAGE_POST_PROCESS_EXPOSURE);
+		JDx12GraphicResourceComputeSet exposureSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::MANAGE_POST_PROCESS_EXPOSURE);
  
 		context->Transition(histogramSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		context->Transition(exposureSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
@@ -172,10 +172,10 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 	}
-	void JDx12PostProcessExposure::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12PostProcessExposure::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildExtractRootSignature(device);
 		BuildUpdateAdaptRootSignature(device);

@@ -39,10 +39,8 @@ namespace JinEngine::Graphic
 	{
 		arrayIndex = newValue;
 	} 
-	JGpuAcceleratorInfo::JGpuAcceleratorInfo(JGpuAcceleratorManager* manager,
-		J_GPU_ACCELERATOR_BUILD_OPTION buildOptionFlag,
-		std::unique_ptr<JGpuAcceleratorHolder>&& holder)
-		:am(manager), buildOptionFlag(buildOptionFlag), holder(std::move(holder))
+	JGpuAcceleratorInfo::JGpuAcceleratorInfo(J_GPU_ACCELERATOR_BUILD_OPTION buildOptionFlag, std::unique_ptr<JGpuAcceleratorHolder>&& holder)
+		:buildOptionFlag(buildOptionFlag), holder(std::move(holder))
 	{}
 	JGpuAcceleratorInfo::~JGpuAcceleratorInfo()
 	{}

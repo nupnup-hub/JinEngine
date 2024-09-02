@@ -33,6 +33,9 @@ SOFTWARE.
 #include"../Material/JDefaultMaterialSetting.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h"  
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h"  
@@ -42,10 +45,10 @@ SOFTWARE.
 namespace JinEngine
 {
 	using namespace DirectX; 
-	namespace
+	namespace Private
 	{
 		const static std::wstring skeletonSymbol = L"--SkeletonData--";
-		static JSkinnedMeshGeometryPrivate sPrivate;
+		static JSkinnedMeshGeometryPrivate instance;
 	}
  
 	class JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl : public Core::JTypeImplBase,
@@ -53,14 +56,19 @@ namespace JinEngine
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSkinnedMeshGeometryImpl)
 	public:
-		JWeakPtr<JSkinnedMeshGeometry> thisPointer = nullptr;
+		JWeakPtr<JSkinnedMeshGeometry> thisPointer;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	private:
 		const size_t privateGuid = Core::MakeGuid();
 	public:
-		JUserPtr<JSkeletonAsset> skeletonAsset = nullptr;
+		JUserPtr<JSkeletonAsset> skeletonAsset;
 	public:
-		JSkinnedMeshGeometryImpl(const InitData& initData, JSkinnedMeshGeometry* thisMeshRaw){}
-		~JSkinnedMeshGeometryImpl(){}
+		JSkinnedMeshGeometryImpl(const InitData& initData)
+		{ 
+		}
+		~JSkinnedMeshGeometryImpl()
+		{ 
+		} 
 	public:
 		void SetSkeletonAsset(JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
 		{
@@ -252,9 +260,18 @@ namespace JinEngine
 			}
 		}
 	public:
-		static std::unique_ptr<InitData> CreateInitData(const std::wstring& name, const std::wstring& path, LoadMetaData* meta)
+		static std::unique_ptr<InitData> CreateInitData(const std::wstring& name, const std::wstring& path, LoadMetadata* meta)
 		{
 			return std::make_unique<InitData>(name, meta->guid, meta->flag, meta->formatIndex, meta->directory, ReadAssetData(path));
+		}
+	public:
+		void Activate()noexcept
+		{
+			OnResourceRef();
+		}
+		void DeActivate()noexcept
+		{
+			OffResourceRef();
 		}
 	public:
 		void NotifyReAlloc()
@@ -263,7 +280,7 @@ namespace JinEngine
 		}
 	public:
 		void Initialize(InitData* initData)
-		{
+		{ 
 			SetSkeletonAsset(initData->skeletonAsset);
 		}	 
 		void RegisterThisPointer(JSkinnedMeshGeometry* mesh)
@@ -280,8 +297,8 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			Core::JIdentifier::RegisterPrivateInterface(JSkinnedMeshGeometry::StaticTypeInfo(), sPrivate);
-			IMPL_REALLOC_BIND(JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl, thisPointer);
+			Core::JIdentifier::RegisterPrivateInterface(JSkinnedMeshGeometry::StaticTypeInfo(), Private::instance);
+			IMPL_REALLOC_BIND();
 			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
 		}
 	};
@@ -315,14 +332,18 @@ namespace JinEngine
 	}
 
 
-	JSkinnedMeshGeometry::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
-		: JMeshGeometry::LoadMetaData(JSkinnedMeshGeometry::StaticTypeInfo(), directory)
+	JSkinnedMeshGeometry::LoadMetadata::LoadMetadata(const JUserPtr<JDirectory>& directory)
+		: JMeshGeometry::LoadMetadata(JSkinnedMeshGeometry::StaticTypeInfo(), directory)
 	{}
 
 	Core::JIdentifierPrivate& JSkinnedMeshGeometry::PrivateInterface()const noexcept
 	{
-		return sPrivate;
+		return Private::instance;
 	}
+	JGraphicModuleManagedDataFrame* JSkinnedMeshGeometry::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	} 
 	Core::J_MESHGEOMETRY_TYPE JSkinnedMeshGeometry::GetMeshGeometryType()const noexcept
 	{
 		return Core::J_MESHGEOMETRY_TYPE::SKINNED;
@@ -333,16 +354,21 @@ namespace JinEngine
 	}
 	void JSkinnedMeshGeometry::DoActivate()noexcept
 	{
+		if (impl->graphicData == nullptr)
+		{
+			INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
+		}
 		JMeshGeometry::DoActivate();
-		impl->OnResourceRef();
+		impl->Activate();
 	}
 	void JSkinnedMeshGeometry::DoDeActivate()noexcept
 	{
-		impl->OffResourceRef();
-		JMeshGeometry::DoDeActivate();
+		impl->DeActivate();
+		JMeshGeometry::DoDeActivate(); 
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JSkinnedMeshGeometry::JSkinnedMeshGeometry(InitData& initData)
-		:JMeshGeometry(initData), impl(std::make_unique<JSkinnedMeshGeometryImpl>(initData, this))
+		:JMeshGeometry(initData), impl(std::make_unique<JSkinnedMeshGeometryImpl>(initData))
 	{}
 	JSkinnedMeshGeometry::~JSkinnedMeshGeometry()
 	{
@@ -359,9 +385,11 @@ namespace JinEngine
 	}
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
-		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JSkinnedMeshGeometry* mesh = static_cast<JSkinnedMeshGeometry*>(createdPtr);
-		mesh->impl->RegisterThisPointer(mesh);
+		mesh->impl->RegisterThisPointer(mesh); 
+		ALLOC_GRAPHIC_MODULE_DATA(JSkinnedMeshGeometry, mesh->impl->graphicData, mesh->impl->thisPointer);
+
+		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData); 
 		mesh->impl->RegisterPostCreation();
 		mesh->impl->Initialize(static_cast<JSkinnedMeshGeometry::InitData*>(initData));
 	} 
@@ -386,8 +414,8 @@ namespace JinEngine
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
 
-		auto metaData = std::make_unique<JSkinnedMeshGeometry::LoadMetaData>(directory);	//for load metadata
-		if (LoadMetaData(pathData.metaFilePath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto metaData = std::make_unique<JSkinnedMeshGeometry::LoadMetadata>(directory);	//for load metadata
+		if (LoadMetadata(pathData.metaFilePath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JSkinnedMeshGeometry> newMesh = nullptr;
@@ -397,7 +425,7 @@ namespace JinEngine
 		if (newMesh == nullptr)
 		{
 			using Impl = JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl;
-			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &sPrivate);
+			auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.path, metaData.get()), &Private::instance);
 			newMesh.ConnnectChild(idenUser);
 		}
 		return newMesh;
@@ -415,24 +443,24 @@ namespace JinEngine
 		newMesh.ConnnectChild(storeData->obj);
 		return newMesh->impl->WriteAssetData(newMesh->GetPath(), newMesh->GetMeshGroupData()) ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
-		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkinnedMeshGeometry::LoadMetaData::StaticTypeInfo()))
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkinnedMeshGeometry::LoadMetadata::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JFileIOTool tool;
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JSkinnedMeshGeometry::LoadMetaData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JSkinnedMeshGeometry::LoadMetadata*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->meshType, "MeshType");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetadata->meshType, "MeshType");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkinnedMeshGeometry::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -445,7 +473,7 @@ namespace JinEngine
 		if (!tool.Begin(mesh->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		JObjectFileIOHelper::StoreEnumData(tool, mesh->GetMeshGeometryType(), "MeshType");

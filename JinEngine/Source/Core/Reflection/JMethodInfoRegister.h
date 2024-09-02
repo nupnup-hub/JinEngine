@@ -214,7 +214,6 @@ namespace JinEngine
 				}
 			}
 		};
-
 		template<typename Type, typename GetPointer, GetPointer getPtr>
 		class JMethodGuiWidgetRegister
 		{
@@ -294,5 +293,6 @@ namespace JinEngine
 				}
 			}
 		};
+
 	}
 }

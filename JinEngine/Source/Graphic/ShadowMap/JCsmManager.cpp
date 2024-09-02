@@ -30,111 +30,140 @@ SOFTWARE.
 #include"../../Core/Log/JLogMacro.h"
 
 namespace JinEngine::Graphic
-{ 
+{
+	JCsmManager::AreaData::AreaData(const size_t guid)
+	{ 
+		areaInfo.SetGuid(guid);
+	}
+
 	JCsmManager::~JCsmManager()
 	{
-		Clear();
-	}
-	bool JCsmManager::RegisterHandler(JCsmHandlerInterface* handler)
+		ClearResource();
+	} 
+	void JCsmManager::Initialize(JGraphicDevice* device)
 	{
-		auto existHandle = GetHandler(handler->GetCsmAreaGuid(), handler->GetCsmHandlerGuid());
-		if (existHandle != nullptr)
-			return false;
 
-		auto area = areaData.find(handler->GetCsmAreaGuid());
-		if (area == areaData.end())
-		{
-			areaData.emplace(handler->GetCsmAreaGuid(), AreaData());
-			area = areaData.find(handler->GetCsmAreaGuid());
-		}
-
-		//handler->handlerIndex = (uint)area->second.handler.size();
-		area->second.handler.push_back(handler->GetPointerWrapper());
-		for (auto& data : area->second.target)
-		{
-			auto info = handler->CreateTargetInfo();
-			if (info != nullptr)
-				data->Get()->AddCsmTargetInfo(info);
-		} 
-		return true;
 	}
-	bool JCsmManager::DeRegisterHandler(JCsmHandlerInterface* handler)
+	void JCsmManager::Clear()
 	{
-		int existHandlerIndex = GetHandlerIndex(handler->GetCsmAreaGuid(), handler->GetCsmHandlerGuid());
-		if (existHandlerIndex == -1)
-			return false;
-
-		auto area = areaData.find(handler->GetCsmAreaGuid());
-		if (area == areaData.end())
-			return false;
-
-		handler->DestroyAllTargetInfo(); 
-		//const uint count = (uint)area->second.handler.size();
-		//for (uint i = existHandlerIndex + 1; i < count; ++i)
-		//	--area->second.handler[i]->Get()->handlerIndex;
-
-		area->second.handler.erase(area->second.handler.begin() + existHandlerIndex);
-		if (area->second.handler.size() == 0 && area->second.target.size() == 0)
-			areaData.erase(handler->GetCsmAreaGuid());
-		return true;
+		ClearResource();
 	}
-	bool JCsmManager::RegisterTarget(JCsmTargetInterface* target)
+	JCsmManager::AreaData* JCsmManager::GetAreaDataPointer(const size_t guid)noexcept
 	{
-		auto existTarget = GetTarget(target->GetCsmAreaGuid(), target->GetCsmTargetGuid());
-		if (existTarget != nullptr)
-			return false;
-
-		auto area = areaData.find(target->GetCsmAreaGuid());
-		if (area == areaData.end())
-		{
-			areaData.emplace(target->GetCsmAreaGuid(), AreaData());
-			area = areaData.find(target->GetCsmAreaGuid());
-		}
-
-		target->targetIndex = (uint)area->second.target.size();
-		area->second.target.push_back(target->GetPointerWrapper());
-		for (auto& data : area->second.handler)
-		{
-			auto info = data->Get()->CreateTargetInfo();
-			if (info != nullptr)
-			{
-				target->AddCsmTargetInfo(info);
-				data->Get()->NotifyAddCsmTarget(data->Get()->GetCsmTargetCount() - 1);
-			}
-		}
-		return true;
+		auto data = areaData.find(guid);
+		return data != areaData.end() ? &data->second : nullptr;
 	}
-	bool JCsmManager::DeRegisterTarget(JCsmTargetInterface* target)
-	{
-		int existTargetIndex = GetTargetIndex(target->GetCsmAreaGuid(), target->GetCsmTargetGuid());
-		if (existTargetIndex == -1)
-			return false;
-
-		auto area = areaData.find(target->GetCsmAreaGuid());
+	JUserPtr<JCsmHandlerInfo> JCsmManager::CreateHandler(JCsmHandleCreationDesc& desc)
+	{ 
+		auto area = areaData.find(desc.areaGuid);
 		if (area == areaData.end())
-			return false;
+			area = CreateAreaData(desc.areaGuid);
 
-		const uint handlerCount = (uint)area->second.handler.size();
-		for (uint i = 0; i < handlerCount; ++i)
-		{
-			area->second.handler[i]->Get()->DestroyTargetInfo(target->GetCsmTargetIndex());
-			area->second.handler[i]->Get()->NotifyPopCsmTarget(i);
-		}
+		CsmHandlerInfoVec& handlerVec = area->second.handler;
+		CsmTargetInfoVec& targetVec = area->second.target;
 		
-		const uint targetCount = (uint)area->second.target.size();
-		for (uint i = existTargetIndex + 1; i < targetCount; ++i)
-			--area->second.target[i]->Get()->targetIndex;
-		area->second.target.erase(area->second.target.begin() + existTargetIndex);
+		auto newHandle = _CreateHandler(desc, &area->second.areaInfo);
+		newHandle->SetIndex(handlerVec.size());
+ 
+		const uint existTargetCount = (uint)targetVec.size();
+		for (uint i = 0; i < existTargetCount; ++i)
+			newHandle->AddTarget(targetVec[i]);
 
-		for (uint i = 0; i < handlerCount; ++i)
-		{
-			if(area->second.handler[i]->Get()->GetCsmTargetCount() == 0)
-				area->second.handler[i]->Get()->NotifyCsmTargetZero();
+		JUserPtr<JCsmHandlerInfo> result = newHandle;
+		handlerVec.push_back(std::move(newHandle));
+		return result;
+	}
+	JUserPtr<JCsmTargetInfo> JCsmManager::CreateTarget(JCsmTargetCreationDesc& desc)
+	{ 
+		auto area = areaData.find(desc.areaGuid);
+		if (area == areaData.end())
+			area = CreateAreaData(desc.areaGuid);
+
+		CsmHandlerInfoVec& handlerVec = area->second.handler;
+		CsmTargetInfoVec& targetVec = area->second.target;
+
+		auto newTarget = _CreateTarget(desc, &area->second.areaInfo);
+		newTarget->SetIndex(targetVec.size());
+
+		const uint existHandleCount = (uint)handlerVec.size();
+		for (uint i = 0; i < existHandleCount; ++i)
+			handlerVec[i]->AddTarget(newTarget);
+
+		JUserPtr<JCsmTargetInfo> result = newTarget;
+		targetVec.push_back(std::move(newTarget));
+		return result;
+	}
+	bool JCsmManager::DestroyHandler(JCsmHandlerInfo* data)
+	{
+		if (data == nullptr)
+			return false;
+
+		const size_t areaGuid = data->GetAreaInfo()->GetGuid();
+		auto area = areaData.find(areaGuid);
+		if (area == areaData.end())
+		{ 
+			J_LOG_PRINT_OUT_SIMPLE("Invalid Area Guid");
+			return false;
 		}
-		if (area->second.handler.size() == 0 && area->second.target.size() == 0)
-			areaData.erase(target->GetCsmAreaGuid());
+
+		CsmHandlerInfoVec& handlerVec = area->second.handler;
+		CsmTargetInfoVec& targetVec = area->second.target;
+
+		//Manage index
+		const uint handleCount = (uint)handlerVec.size();
+		for (uint i = data->GetIndex() + 1; i < handleCount; ++i)
+			handlerVec[i]->SetIndex(handlerVec[i]->GetIndex() - 1);
+
+		handlerVec.erase(handlerVec.begin() + data->GetIndex()); 
+
+		//Try to erase area data if 0 member
+		if (handlerVec.size() == 0 && targetVec.size() == 0)
+			areaData.erase(areaGuid);
 		return true;
 	}
+	bool JCsmManager::DestroyTarget(JCsmTargetInfo* data)
+	{
+		if (data == nullptr)
+			return false;
+
+		const size_t areaGuid = data->GetAreaInfo()->GetGuid();
+		auto area = areaData.find(areaGuid);
+		if (area == areaData.end())
+		{
+			J_LOG_PRINT_OUT_SIMPLE("Invalid Area Guid");
+			return false;
+		}
+
+		CsmHandlerInfoVec& handlerVec = area->second.handler;
+		CsmTargetInfoVec& targetVec = area->second.target;
+
+		//Manage handle target caching
+		const uint handleCount = (uint)handlerVec.size();
+		for (uint i = 0; i < handleCount; ++i)
+			handlerVec[i]->RemoveTarget(data->GetIndex());
+
+		//Manage index
+		const uint targetCount = (uint)targetVec.size();
+		for (uint i = data->GetIndex() + 1; i < targetCount; ++i)
+			targetVec[i]->SetIndex(targetVec[i]->GetIndex() - 1);
+
+		targetVec.erase(targetVec.begin() + data->GetIndex()); 
+	 
+		//Try to erase area data if 0 member
+		if (handlerVec.size() == 0 && targetVec.size() == 0)
+			areaData.erase(areaGuid);
+		return true;
+	}  
+	JCsmManager::AreaMap::iterator JCsmManager::CreateAreaData(const size_t guid)
+	{   
+		return areaData.emplace(guid, AreaData(guid)).first;
+	} 
+	void JCsmManager::ClearResource()
+	{
+		areaData.clear();
+	}
+}
+/*	unuse
 	JUserPtr<JCsmHandlerPointer> JCsmManager::GetHandler(const size_t areaGuid, const size_t handlerGuid)const noexcept
 	{
 		auto area = areaData.find(areaGuid);
@@ -197,8 +226,4 @@ namespace JinEngine::Graphic
 		}
 		return -1;
 	}
-	void JCsmManager::Clear()
-	{
-		areaData.clear();
-	}
-}
+*/

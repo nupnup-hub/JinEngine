@@ -48,10 +48,12 @@ namespace JinEngine
 		std::unique_ptr<JTransformImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
-			return J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM;
+			return J_COMPONENT_TYPE::ENGINE_TRANSFORM;
 		}
 		JVector3<float> GetPosition()const noexcept;
 		//Euler

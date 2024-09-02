@@ -30,7 +30,7 @@ SOFTWARE.
 #include"../Device/JGraphicDevice.h"
 #include"../GraphicResource/JGraphicResourceManager.h" 
 #include"../GraphicResource/JGraphicResourceShareData.h" 
-#include"../Outline/JOutline.h"
+#include"../Scene/JOutline.h"
 #include"../Culling/JCullingManager.h"
 #include"../Culling/Occlusion/JHardwareOccCulling.h"
 #include"../Culling/Occlusion/JHZBOccCulling.h"
@@ -92,7 +92,7 @@ namespace JinEngine::Graphic
 
 		GetAdaptee(deviceType)->CreateResourceManageSubclass(shareData, set);
 	}
-	void JGraphicAdapter::CreateDrawSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JDrawingSubclassSet& set)
+	void JGraphicAdapter::CreateDrawSubclass(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicSubClassShareData& shareData, _Inout_ JSceneDrawingSubclassSet& set)
 	{
 		if (!IsSameDevice(deviceType))
 			return;

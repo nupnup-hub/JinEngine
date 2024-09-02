@@ -27,25 +27,35 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 {
-	size_t JCsmTargetInfo::GetHandlerGuid()const noexcept
+	int JCsmTargetInfo::GetIndex()const noexcept
 	{
-		return handlerGuid;
-	}  
-	DirectX::BoundingFrustum JCsmTargetInfo::GetFrustum()const noexcept
+		return index;
+	}
+	JCsmAreaInfo* JCsmTargetInfo::GetAreaInfo()const noexcept
 	{
-		return getFrustumF();
+		return areaInfo;
+	}
+	DirectX::BoundingFrustum JCsmTargetInfo::GetFrustum()noexcept
+	{
+		return (*getBoundingFrustumB)();
 	} 
-	void JCsmTargetInfo::SetFrustumPtr(GetCsmTargetBoundingFrustumF::Functor&& newFunc)
+	void JCsmTargetInfo::SetIndex(const int newIndex)noexcept
 	{
-		getFrustumF = std::move(newFunc); 
+		index = newIndex;
+	} 
+	void JCsmTargetInfo::SetFrustumPtr(GetCsmTargetBoundingFrustumBindPtr&& newGetBoundingFrustumB)
+	{
+		getBoundingFrustumB = std::move(newGetBoundingFrustumB);
 	}
 	bool JCsmTargetInfo::IsValid()const noexcept
 	{
 		return true;
 	}
-	JCsmTargetInfo::JCsmTargetInfo(const size_t handlerGuid)
-		:handlerGuid(handlerGuid)
-	{}
+	JCsmTargetInfo::JCsmTargetInfo(JCsmAreaInfo* areaInfo, GetCsmTargetBoundingFrustumBindPtr&& getBoundingFrustumB)
+		:areaInfo(areaInfo)
+	{
+		SetFrustumPtr(std::move(getBoundingFrustumB));
+	}
 	JCsmTargetInfo::~JCsmTargetInfo()
 	{}
 }

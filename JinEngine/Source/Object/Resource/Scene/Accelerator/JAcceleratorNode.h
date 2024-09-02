@@ -29,11 +29,7 @@ SOFTWARE.
 
 namespace JinEngine
 {
-	class JRenderItem;
-	namespace Graphic
-	{
-		class JCullingUserInterface;
-	}
+	class JRenderItem; 
 	class JAcceleratorNode
 	{
 	protected:

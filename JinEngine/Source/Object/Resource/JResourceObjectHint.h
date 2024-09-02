@@ -84,16 +84,9 @@ namespace JinEngine
 
 	struct RTypePrivateFunc
 	{
-	private:
-		SetRFrameDirtyCallable* setFrameDirtyCallable = nullptr; 
-	public:
-		RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable);
-		RTypePrivateFunc() = default;
+	public: 
+		RTypePrivateFunc();
 		~RTypePrivateFunc();
-	public:
-		SetRFrameDirtyCallable GetSetFrameDirtyCallable(); 
-	public:
-		void CallSetFrameDirty(JResourceObject* jRobj); 
 	};
 
 	class RTypeRegister
@@ -101,7 +94,10 @@ namespace JinEngine
 	private:
 		friend class JResourceObject;
 	private:
-		static void RegisterRTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypeIFunc)noexcept;
+		static void RegisterRTypeInfo(const Core::JTypeInfo& info, 
+			const RTypeHint& rTypeHint,
+			const RTypeCommonFunc& rTypeCFunc, 
+			const RTypePrivateFunc& rTypeIFunc)noexcept;
 	};
 
 	class RTypeCommonCall
@@ -116,15 +112,9 @@ namespace JinEngine
 		static Core::JTypeInfo& CallGetTypeInfo(const J_RESOURCE_TYPE type);
 		static uint8 CallFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format);
 		static bool CallIsValidFormat(const J_RESOURCE_TYPE type, const std::wstring& format);
+	public:
+		static J_RESOURCE_TYPE ConvertResourceType(const Core::JTypeInfo& info);
+		static J_RESOURCE_TYPE ConvertResourceType(const size_t typeGuid);
 	};
-
-	class RTypePrivateCall
-	{
-	private: 
-		friend class JResourceObjectPrivate; 
-	private:
-		static SetRFrameDirtyCallable GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type); 
-	private:
-		static void CallSetFrameDirty(JResourceObject* jRobj); 
-	};
+	 
 }

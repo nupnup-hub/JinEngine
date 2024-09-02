@@ -63,11 +63,11 @@ struct SceneData
 struct CameraData  
 {
 	//float4x4 camView;					//light shape drawing
-    float4x4 invView; //pixel
+    float4x4 invView;                   //pixel
 	//float4x4 camProj;					//pixel	light shape drawing
 	//float4x4 camInvProj;				//vertex
-    float4x4 viewProj; //vertex
-    float4x4 preViewProj; //pixel
+    float4x4 viewProj;                  //vertex
+    //float4x4 preViewProj;             //pixel ... move other shader pass because velocity frame frequency is not same as scene drawing(2024-08-19)
 	//float4x4 camInvViewProj;
 	//float4x4 camViewProjTex;
     float2 renderTargetSize;
@@ -85,11 +85,11 @@ struct CameraData
 struct ObjectData 
 {
     float4x4 world;
-    float4x4 texTransform;
-    uint objectIndex;
+    float4x4 texTransform; 
     uint materialIndex;
     uint pad00;
     uint pad01; 
+    uint pad02;
 };
 
 struct SkinnedData 
@@ -98,8 +98,7 @@ struct SkinnedData
 };
 
 struct InstanceData
-{
-    uint uniqueIndex;
+{ 
     uint materialIndex;
     uint verticesIndex; //access srv view
     uint indicesIndex; //access srv view
@@ -107,4 +106,5 @@ struct InstanceData
     uint indicesOffset; //sub mesh indices start
     uint verticesType;
     uint indicesType; 
+    uint pad00;
 };

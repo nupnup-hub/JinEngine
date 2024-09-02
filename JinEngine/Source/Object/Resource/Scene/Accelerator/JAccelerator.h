@@ -26,20 +26,16 @@ SOFTWARE.
 #pragma once
 #include"JAcceleratorType.h" 
 #include"JAcceleratorOption.h" 
+#include"../../../GraphicRule/JGraphicModuleManagedDataFrame.h"
 #include"../../../../Core/Geometry/JRay.h"
-#include"../../../../Core/Geometry/JBBox.h"  
-#include"../../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
+#include"../../../../Core/Geometry/JBBox.h"   
 #include<DirectXCollision.h> 
 
 namespace JinEngine
 {
 	class JGameObject;
 	class JComponent;
-	struct JAcceleratorCullingInfo;
-	namespace Graphic
-	{
-		class JGpuAcceleratorInfo;
-	}
+	struct JAcceleratorCullingInfo; 
 
 	class JAccelerator
 	{
@@ -110,12 +106,14 @@ namespace JinEngine
 		virtual void AddGameObject(const JUserPtr<JGameObject>& newGameObject)noexcept = 0;
 		virtual void RemoveGameObject(const JUserPtr<JGameObject>& gameObj)noexcept = 0;
 	};
-	class JGpuAccelerator : public JAccelerator, public Graphic::JGpuAcceleratorInterface
+
+	class JGpuAccelerator : public JAccelerator	 
 	{
 	private:
 		JGpuAcceleratorOption option;
+		JFastPtr<JGraphicModuleManagedDataFrame> sceneGraphicData;
 	public:
-		JGpuAccelerator();
+		JGpuAccelerator() = default;
 	protected:
 		void Build()noexcept final;
 		void UnBuild()noexcept final;
@@ -130,10 +128,9 @@ namespace JinEngine
 		JGpuAcceleratorOption GetOption()const noexcept;
 	public:
 		void SetOption(const JGpuAcceleratorOption& newOption);
+		void SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& newSceneGraphicData);
 	public:
-		static bool CanBuild()noexcept;
-	public:
-		void RegisterInterfacePointer();
+		bool CanBuild()noexcept; 
 	};
  
 }

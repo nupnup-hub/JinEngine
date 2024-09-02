@@ -279,11 +279,11 @@ namespace JinEngine
 				return false;
 			  
 			componentVec.push_back(newComp);
-			if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
+			if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_ANIMATOR)
 				animator.ConnnectChild(newComp);
-			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_RENDERITEM)
 				renderItem.ConnnectChild(newComp);
-			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
+			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_TRANSFORM)
 				transform.ConnnectChild(newComp); 
 			return true;
 		}
@@ -298,11 +298,11 @@ namespace JinEngine
 			if (index == -1)
 				return false;
 
-			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_ANIMATOR)
 				animator = nullptr;
-			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_RENDERITEM)
 				renderItem = nullptr;
-			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
+			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_TRANSFORM)
 				transform = nullptr;
 
 			componentVec.erase(componentVec.begin() + index);
@@ -354,7 +354,7 @@ namespace JinEngine
 		{
 			Core::JIdentifier::RegisterPrivateInterface(JGameObject::StaticTypeInfo(), gPrivate);
 			searchPtr = [](const JUserPtr<JComponent>& c, const J_COMPONENT_TYPE compType) {return c->GetComponentType() == compType; };
-			IMPL_REALLOC_BIND(JGameObject::JGameObjectImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -480,6 +480,10 @@ namespace JinEngine
 	J_OBJECT_TYPE JGameObject::GetObjectType()const noexcept
 	{
 		return J_OBJECT_TYPE::GAME_OBJECT;
+	}
+	uint JGameObject::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	void JGameObject::SetName(const std::wstring& newName)noexcept
 	{

@@ -136,5 +136,4 @@ float4 LinearStep(float4 a, float4 b, float4 x)
 {
     return _LinearStep(a, b, x);
 }
-
  

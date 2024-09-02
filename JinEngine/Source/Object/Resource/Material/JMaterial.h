@@ -25,8 +25,7 @@ SOFTWARE.
 
 #pragma once  
 #include"../JResourceObject.h"    
-#include"../../../Graphic/Shader/JShaderType.h"
-#include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
+#include"../../GraphicRule/Shader/JGraphicModuleShaderType.h" 
 #include"../../../Core/Math/JMatrix.h"
 #include"../../../Core/Geometry/Mesh/JMaterialProperty.h"
 
@@ -35,8 +34,7 @@ namespace JinEngine
 	class JShader;   
 	class JTexture;
 	class JMaterialPrivate;
-	class JMaterial : public JResourceObject, 
-		public Graphic::JFrameUpdateUserAccess
+	class JMaterial : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JMaterial) 
 	public: 
@@ -60,6 +58,8 @@ namespace JinEngine
 		std::unique_ptr<JMaterialImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -110,8 +110,7 @@ namespace JinEngine
 		bool OnShadow()const noexcept;
 		bool OnLight()const noexcept;
 		bool OnAlbedoOnly()const noexcept;
-		bool OnNonCulling()const noexcept; 
-		bool IsFrameDirted()const noexcept final;
+		bool OnNonCulling()const noexcept;  
 		bool IsSkyMaterial()const noexcept;
 		bool IsDebugMaterial()const noexcept; 
 		bool IsSame(const Core::JMaterialParameter& param)const noexcept;

@@ -59,8 +59,6 @@ namespace JinEngine
 			virtual void DrawSceneDebugUIMultiThread(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper) = 0;
 			virtual void DrawSceneShade(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper) = 0;
 			virtual void DrawSceneShadeMultiThread(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper) = 0;
-		public: 
-			virtual void ComputeSceneDependencyTemporalResource(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper) = 0;
 		};
 	}
 }

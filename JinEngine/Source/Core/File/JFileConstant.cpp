@@ -55,5 +55,9 @@ namespace JinEngine
 		{
 			return folderPath + L"\\" + name + format;
 		}
+		std::wstring JFileConstant::MakeCacheFilePath(const std::wstring& folderPath, const size_t guid)
+		{
+			return folderPath + L"\\" + std::to_wstring(guid) + GetCacheFileFormatW();
+		}
 	}
 }

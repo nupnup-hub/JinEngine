@@ -34,7 +34,7 @@ namespace JinEngine
 	{
 		class JGraphicDevice;
 		class JGraphicResourceManager;
-		class JFrameResource;
+		class JFrameResourceManager;
 		class JGuiBackendDataAdaptee;
 		struct JGraphicOption;
 
@@ -55,7 +55,7 @@ namespace JinEngine
 				_In_ const GuiIdentification guiIden);
 			std::unique_ptr<JGuiDrawData> CreateDrawData(_In_ JGraphicDevice* device,
 				_In_ JGraphicResourceManager* gm,
-				_In_ JFrameResource* frame,
+				_In_ JFrameResourceManager* frame,
 				_In_ const JGraphicOption& option,
 				_In_ const GuiIdentification guiIden);
 		};

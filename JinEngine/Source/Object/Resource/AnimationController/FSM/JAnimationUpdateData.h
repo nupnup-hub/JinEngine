@@ -96,12 +96,12 @@ namespace JinEngine
 	public:
 		//Share All diagram		
 		std::unordered_map<size_t, std::vector<JAnimationAdditionalBind>> additionalBind;
-
+	public:
 		//for Calculate
 		std::vector<JAnimationIKCalculateJoint> ikJoint[JAnimationFixedData::defaultIKSlotCount];
 		std::vector<JAnimationIKJointRate> ikRate;
 		uint ikCount[JAnimationFixedData::defaultIKSlotCount];
-
+	public:
 		//Share a Diagram State
 		J_ANIMATION_STATE_TYPE lastState[JAnimationFixedData::defaultCrossFadingCount];
 		std::unordered_map<size_t, float> skeletonBlendRate[JAnimationFixedData::defaultCrossFadingCount];
@@ -109,21 +109,23 @@ namespace JinEngine
 		std::unordered_map<size_t, float> paramValueMap;
 	public:
 		void Initialize()noexcept;
-		void ClearSkeletonBlendRate(const uint index)noexcept;
-		bool FindClipGuid(size_t& guid, const uint index)noexcept;
-		//have to clear when start ik calculate
+		void ClearSkeletonBlendRate(const uint index)noexcept; 
 	public:
+		float GetParameterValue(const size_t guid)const noexcept;
+	public:
+		//have to clear when start ik calculate
 		void SetIKRate(const uint ikNumber)noexcept;
+		void SetTimer(Core::JGameTimer* newTimer);
+		void SetModelSkeleton(Core::JUserPtr<JSkeletonAsset> newModelSkeleton);
+		void SetParameterValue(const size_t guid, const float value)noexcept;
+	public:
 		void EnterCalculateIK()noexcept;
+	public:
+		bool FindClipGuid(size_t& guid, const uint index)noexcept;
 	public:
 		void StuffIdentity(const uint layerNumber, const uint updateNumber)noexcept;
 		void StuffBindPose(const uint layerNumber, const uint updateNumber)noexcept;
 	public:
 		void RegisterParameter(const size_t guid, const float value)noexcept;
-		float GetParameterValue(const size_t guid)const noexcept;
-		void SetParameterValue(const size_t guid, const float value)noexcept;
-	public:
-		void SetTimer(Core::JGameTimer* newTimer);
-		void SetModelSkeleton(Core::JUserPtr<JSkeletonAsset> newModelSkeleton); 
 	};
 }

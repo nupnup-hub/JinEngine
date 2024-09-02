@@ -28,30 +28,31 @@ SOFTWARE.
 #include"../JComponentHint.h"
 #include"../../GameObject/JGameObject.h" 
 #include"../../JObjectFileIOHelper.h"
-#include"../../Resource/Scene/JScenePrivate.h"  
+#include"../../Resource/Scene/JScenePrivate.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/Math/JMathHelper.h"
-#include"../../../Graphic/Frameresource/JObjectConstants.h"
-#include"../../../Graphic/Frameresource/JFrameUpdate.h" 
-#include<fstream>
+#include"../../../Core/Math/JMathHelper.h" 
+#include<fstream> 
 
 namespace JinEngine
 {
 	using namespace DirectX;
-	namespace
+	namespace Private
 	{
 		static auto isAvailableoverlapLam = []() {return false; };
-		static JTransformPrivate tPrivate;
+		static JTransformPrivate instance;
 	}
 
-	class JTransform::JTransformImpl : public Core::JTypeImplBase,
-		public Graphic::JFrameDirtyChain<Graphic::JFrameDirtyTrigger>
+	class JTransform::JTransformImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTransformImpl)
 	public:
-		JWeakPtr<JTransform> thisPointer = nullptr;
+		JWeakPtr<JTransform> thisPointer;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public: 
 		REGISTER_PROPERTY_EX(position, GetPosition, SetPosition, GUI_INPUT(false))
 		mutable JVector3<float> position;
@@ -66,7 +67,9 @@ namespace JinEngine
 	public:
 		JTransformImpl(const InitData& initData, JTransform* thisTransRaw)
 		{}
-		~JTransformImpl() {}
+		~JTransformImpl() 
+		{ 
+		}
 	public:
 		JTransform* GetParent()const noexcept
 		{
@@ -203,7 +206,7 @@ namespace JinEngine
 		}
 		void SetFrameDirtyTrigger()
 		{
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 	public:
 		bool IsRoot()const noexcept
@@ -270,10 +273,10 @@ namespace JinEngine
 			const uint childrenCount = owner->GetChildrenCount();
 			for (uint i = 0; i < childrenCount; ++i)
 				owner->GetChild(i)->GetTransform()->impl->UpdateTopDown();
-			SetFrameDirty();
+			JGMUtil::SetFrameDirty(graphicData.Get());
 		}
 		void UpdateWorld()noexcept
-		{  
+		{
 			world.StoreXM(XMMatrixMultiply(XMMatrixAffineTransformation(scale.ToXmV(), 
 				XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
 				GetQuaternion(), 
@@ -296,22 +299,18 @@ namespace JinEngine
 				UpdateWorld();
 		}
 	public:
+		void NotifyReAlloc()
+		{ 
+		}
+	public: 
 		void RegisterThisPointer(JTransform* trans)
 		{
 			thisPointer = Core::GetWeakPtr(trans);
-		}
-		void RegisterFrameDirtyListener(Graphic::JFrameDirtyTriggerBase* newListener, const size_t guid)
-		{
-			AddFrameDirtyListener(newListener, guid);
-		}
-		void DeRegisterFrameDirtyListener(const size_t guid)
-		{
-			RemoveFrameDirtyListener(guid);
-		}
+		} 
 		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
-			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
+			static IsAvailableOverlapCallable isAvailableOverlapCallable{ Private::isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
 			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
@@ -326,18 +325,15 @@ namespace JinEngine
 					return std::make_unique<JTransform::InitData>(parent);
 			};
 			static CreateInitDataCallable createInitDataCallable{ createInitDataLam };
-
-			static auto setFrameLam = [](JComponent* component) {static_cast<JTransform*>(component)->impl->SetFrameDirtyTrigger(); };
-			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
-
+			 
 			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable,isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+			static CTypePrivateFunc cTypeInterfaceFunc{};
 
 			RegisterCTypeInfo(JTransform::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
-			Core::JIdentifier::RegisterPrivateInterface(JTransform::StaticTypeInfo(), tPrivate);
+			Core::JIdentifier::RegisterPrivateInterface(JTransform::StaticTypeInfo(), Private::instance);
 
-			IMPL_REALLOC_BIND(JTransform::JTransformImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -350,7 +346,15 @@ namespace JinEngine
 	{}
 	Core::JIdentifierPrivate& JTransform::PrivateInterface()const noexcept
 	{
-		return tPrivate;
+		return Private::instance;
+	}
+	JGraphicModuleManagedDataFrame* JTransform::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JTransform::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_COMPONENT_TYPE JTransform::GetComponentType()const noexcept
 	{
@@ -517,7 +521,7 @@ namespace JinEngine
 	}
 	bool JTransform::IsAvailableOverlap()const noexcept
 	{
-		return isAvailableoverlapLam();
+		return Private::isAvailableoverlapLam();
 	}
 	bool JTransform::PassDefectInspection()const noexcept
 	{
@@ -527,13 +531,15 @@ namespace JinEngine
 			return false;
 	}
 	void JTransform::DoActivate()noexcept
-	{
+	{ 
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JComponent::DoActivate();
 		impl->SetFrameDirtyTrigger();
 	}
 	void JTransform::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JTransform::JTransform(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JTransformImpl>(initData, this))
@@ -546,8 +552,7 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JTransformPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JTransformPrivate::AssetDataIOInterface;
-	using UpdateWorldInterface = JTransformPrivate::UpdateWorldInterface;
-	using FrameDirtyInterface = JTransformPrivate::FrameDirtyInterface;
+	using UpdateWorldInterface = JTransformPrivate::UpdateWorldInterface; 
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -596,7 +601,7 @@ namespace JinEngine
 		FILE_ASSERTION(JObjectFileIOHelper::LoadVector3(tool, rot, "Rot:"));
 		FILE_ASSERTION(JObjectFileIOHelper::LoadVector3(tool, scale, "Scale:"));
 
-		auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &tPrivate);
+		auto idenUser = Private::instance.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &Private::instance);
 		JUserPtr<JTransform> transUser = JUserPtr<JTransform>::ConvertChild(std::move(idenUser));
 
 		transUser->SetPosition(pos);
@@ -635,16 +640,7 @@ namespace JinEngine
 	{
 		transform->impl->UpdateTopDown();
 	}
-
-	void FrameDirtyInterface::RegisterFrameDirtyListener(JTransform* transform, Graphic::JFrameDirtyTriggerBase* listener, const size_t guid)noexcept
-	{
-		transform->impl->RegisterFrameDirtyListener(listener, guid);
-	}
-	void FrameDirtyInterface::DeRegisterFrameDirtyListener(JTransform* transform, const size_t guid)noexcept
-	{
-		transform->impl->DeRegisterFrameDirtyListener(guid);
-	}
-
+	  
 	Core::JIdentifierPrivate::CreateInstanceInterface& JTransformPrivate::GetCreateInstanceInterface()const noexcept
 	{
 		static CreateInstanceInterface pI;

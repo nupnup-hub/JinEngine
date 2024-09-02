@@ -434,7 +434,7 @@ namespace JinEngine
 			iconAlignCal.Update(canvasSize, iconSize, CreateVec2(0), iconSpacing, canvasPos);
 
 			using MenuIconPtr = void(*)(SelectorValues& value);
-			using GetTexturePtr = JTexture * (*)();
+			using GetTexturePtr = JTexture*(*)();
 
 			static std::string uniqueLabel[(int)J_TITLE_ICON::COUNT]
 			{

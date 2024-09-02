@@ -112,6 +112,7 @@ namespace JinEngine
 		std::vector<JUserPtr<JGameObject>> GetChildren()const noexcept;
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 	public:
 		void SetName(const std::wstring& newName)noexcept final;
 	public:

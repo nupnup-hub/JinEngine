@@ -338,11 +338,11 @@ float PowerHeuristic(int nf, float pdfF, int ng, float pdfG)
 }
  
 namespace Catmul
-{ 
+{
     struct Parameter
     {
-        float2 originSampleCoord;
-        float2 weight[4]; 
+        float2 leftUpCenter;
+        float2 weight[4];
         float2 weight12;
         float2 offset12;
         
@@ -351,17 +351,17 @@ namespace Catmul
         float2 samplePos12;
         
         void Initialize(float2 uv, float2 texSize, float2 invTexSize)
-        {  
+        {
             // We're going to sample a a 4x4 grid of texels surrounding the target UV coordinate. We'll do this by rounding
             // down the sample location to get the exact center of our "starting" texel. The starting texel will be at
             // location [1, 1] in the grid, where [0, 0] is the top left corner.
             float2 samplePos = uv * texSize;
-            originSampleCoord = floor(samplePos - 0.5f) + 0.5f;
+            leftUpCenter = floor(samplePos - 0.5f) + 0.5f;
             //float2 texPos1 = samplePos;
         
             // Compute the fractional offset from our starting texel to our original sample location, which we'll
             // feed into the Catmull-Rom spline function to get our filter weights.
-            float2 f = samplePos - originSampleCoord;
+            float2 f = samplePos - leftUpCenter;
             float2 f2 = f * f;
             float2 f3 = f2 * f;
             
@@ -379,9 +379,9 @@ namespace Catmul
             offset12 = weight[2] / (weight[1] + weight[2]);
 
             // Compute the final UV coordinates we'll use for sampling the texture
-            samplePos0 = (originSampleCoord - 1) * invTexSize;
-            samplePos3 = (originSampleCoord + 2) * invTexSize;
-            samplePos12 = (originSampleCoord + offset12) * invTexSize;
+            samplePos0 = (leftUpCenter - 1) * invTexSize;
+            samplePos3 = (leftUpCenter + 2) * invTexSize;
+            samplePos12 = (leftUpCenter + offset12) * invTexSize;
         }
     };
     float4 Compute(in Texture2D<float4> tex, in SamplerState linearSampler, Parameter param)
@@ -482,7 +482,7 @@ namespace CustomSampling
     }
      
     float4 ApplyBilinearCustomWeights(float4 s00, float4 s10, float4 s01, float4 s11, float4 w, bool normalize = true)
-    { 
+    {
         float4 r = s00 * w.x + s10 * w.y + s01 * w.z + s11 * w.w;
         return r * (normalize ? rcp(dot(w, 1.0)) : 1.0);
     }

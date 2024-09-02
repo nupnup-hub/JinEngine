@@ -76,21 +76,10 @@ namespace JinEngine
 		return (*getFormatIndex)(nullptr, format);
 	}
 
-	RTypePrivateFunc::RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable)
-		:setFrameDirtyCallable(setFrameDirtyCallable)
+	RTypePrivateFunc::RTypePrivateFunc()
 	{}
 	RTypePrivateFunc::~RTypePrivateFunc()
-	{
-		setFrameDirtyCallable = nullptr;
-	}
-	SetRFrameDirtyCallable RTypePrivateFunc::GetSetFrameDirtyCallable()
-	{
-		return *setFrameDirtyCallable;
-	} 
-	void RTypePrivateFunc::CallSetFrameDirty(JResourceObject* jRobj)
-	{
-		(*setFrameDirtyCallable)(nullptr, jRobj);
-	} 
+	{ }
 
 	struct RTypeInfoData
 	{
@@ -98,6 +87,8 @@ namespace JinEngine
 		std::vector<RTypeHint> hintStorage;
 		std::vector<RTypeCommonFunc> cFuncStorage;
 		std::vector<RTypePrivateFunc> pFuncStorage;
+	public:
+		std::unordered_map<size_t, J_RESOURCE_TYPE> typeMap;	//key is typeInfo typeGuid
 	public:
 		RTypeInfoData()
 		{
@@ -115,11 +106,15 @@ namespace JinEngine
 	using RTypeInfo = Core::JSingletonHolder<RTypeInfoData>;
 	//FuncStorage
 
-	void RTypeRegister::RegisterRTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc)noexcept
+	void RTypeRegister::RegisterRTypeInfo(const Core::JTypeInfo& info, 
+		const RTypeHint& rTypeHint,
+		const RTypeCommonFunc& rTypeCFunc, 
+		const RTypePrivateFunc& rTypePFunc)noexcept
 	{
 		RTypeInfo::Instance().hintStorage[(int)rTypeHint.thisType] = rTypeHint;
 		RTypeInfo::Instance().cFuncStorage[(int)rTypeHint.thisType] = rTypeCFunc;
 		RTypeInfo::Instance().pFuncStorage[(int)rTypeHint.thisType] = rTypePFunc;
+		RTypeInfo::Instance().typeMap.emplace(info.TypeGuid(), rTypeHint.thisType);
 	}
 
 	namespace
@@ -259,13 +254,27 @@ namespace JinEngine
 	{
 		return RTypeInfo::Instance().cFuncStorage[(int)type].CallFormatIndex(format) != JResourceObject::GetInvalidFormatIndex();
 	}
-
-	SetRFrameDirtyCallable RTypePrivateCall::GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type)
+	J_RESOURCE_TYPE RTypeCommonCall::ConvertResourceType(const Core::JTypeInfo& info)
 	{
-		return RTypeInfo::Instance().pFuncStorage[(int)type].GetSetFrameDirtyCallable();
-	} 
-	void RTypePrivateCall::CallSetFrameDirty(JResourceObject* jRobj)
+		auto& typeMap = RTypeInfo::Instance().typeMap;
+		auto data = typeMap.find(info.TypeGuid());
+		if (data == typeMap.end())
+		{
+			auto nextInfo = info.GetParent();
+			while (nextInfo != nullptr && data == typeMap.end())
+			{
+				data = typeMap.find(nextInfo->TypeGuid());
+				nextInfo = nextInfo->GetParent();
+			}
+			return data != typeMap.end() ? data->second : (J_RESOURCE_TYPE)invalidIndex;
+		}
+		else
+			return data->second;
+	}
+	J_RESOURCE_TYPE RTypeCommonCall::ConvertResourceType(const size_t typeGuid)
 	{
-		RTypeInfo::Instance().pFuncStorage[(int)jRobj->GetResourceType()].CallSetFrameDirty(jRobj);
-	} 
+		auto& typeMap = RTypeInfo::Instance().typeMap;
+		auto data = typeMap.find(typeGuid);
+		return data != typeMap.end() ? data->second : (J_RESOURCE_TYPE)invalidIndex;
+	}
 }

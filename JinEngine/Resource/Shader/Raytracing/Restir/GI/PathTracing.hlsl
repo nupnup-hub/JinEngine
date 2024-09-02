@@ -87,7 +87,7 @@ struct EstimateDataSet
     float bxdfPdf;
     uint pathLength;
     uint hitType; //0 object, 1 light, 2 miss
-};
+}; 
 
 #ifndef TEXTURE_2D_COUNT
 #define TEXTURE_2D_COUNT 1
@@ -128,7 +128,7 @@ struct EstimateDataSet
 #define LIGHT_HIT 1
 #define MISS 2
  
-//directionalLight[0] is current scene directionalLightData
+//directionalLight[0] is current scene directionalLightData 
 StructuredBuffer<DirectionalLightData> directionalLight : register(t2, space0);
 StructuredBuffer<PointLightData> pointLight : register(t2, space1);
 StructuredBuffer<SpotLightData> spotLight : register(t2, space2);
@@ -151,16 +151,16 @@ SamplerState samLTCSample : register(s2);
  
 void SampleBxdf(float3 normal, float3 tangent, MeshMaterial material, float3 toRayOrigin, out float3 toLight, inout float2 u, inout float3 bsdf, inout float bsdfPdf)
 {
-    BxDF bxdf; 
+    BxDF bxdf;
     if (u.x < 0.5f)
-    { 
+    {
         //SampleDirectionHemisphere
         //variance Hemisphere < Coshine weighted Hemisphere 
         bxdf.DiffuseSamplingInitialize(material.albedoColor, material.specularFactor, normal, tangent, toRayOrigin, material.roughness, material.metallic, u);
-        bxdf.SampleDiffuse(bsdf, bsdfPdf);     
+        bxdf.SampleDiffuse(bsdf, bsdfPdf);
     }
     else
-    { 
+    {
         bxdf.SpecularSamplingInitialize(material.albedoColor, material.specularFactor, normal, toRayOrigin, material.roughness, material.metallic, u);
         bxdf.SampleSpecular(bsdf, bsdfPdf);
     }
@@ -168,7 +168,7 @@ void SampleBxdf(float3 normal, float3 tangent, MeshMaterial material, float3 toR
     
     const bool enableDiffuse = material.metallic < 1.0f;
     if (enableDiffuse)
-        bsdfPdf *= 0.5f;    
+        bsdfPdf *= 0.5f;
 }
 void EvaluateBxdf(float3 normal, MeshMaterial material, float3 toRayOrigin, float3 toLight, inout float2 u, inout float3 bsdf, inout float bsdfPdf)
 {
@@ -177,7 +177,7 @@ void EvaluateBxdf(float3 normal, MeshMaterial material, float3 toRayOrigin, floa
     if (u.x < 0.5f)
         bxdf.SampleDiffuse(bsdf, bsdfPdf);
     else
-        bxdf.SampleSpecular(bsdf, bsdfPdf); 
+        bxdf.SampleSpecular(bsdf, bsdfPdf);
     
     const bool enableDiffuse = material.metallic < 1.0f;
     if (enableDiffuse)
@@ -238,7 +238,7 @@ float3 SampleBxdfImportance(inout MeshVertex hitSurface, inout MeshMaterial mate
     
     RayDesc rayDesc = CreateRayDesc(hitSurface.pos, toLight, hitSurface.normal, cb.tMax, T_MIN);
 
-    RayPayload rayPayload; 
+    RayPayload rayPayload;
     rayPayload.hitType = MISS;
     
     uint rayFlag = RAY_FLAG_NONE;
@@ -420,16 +420,16 @@ void RayGenShader()
         return;
     
     float3 albedo;
-    float specularFactor; 
+    float specularFactor;
     UnPackAlbedoColorLayer(screenAlbedoMap.SampleLevel(samLinearClamp, uv, 0), albedo, specularFactor);
  
     MeshVertex visibleVertex;
-    visibleVertex.pos = GetWorldPos(uv, depth); 
+    visibleVertex.pos = GetWorldPos(uv, depth);
     UnpackNormalAndTangentLayer(screenNormalMap.SampleLevel(samLinearClamp, uv, 0), visibleVertex.normal, visibleVertex.tangent);
      
-    MeshMaterial material; 
+    MeshMaterial material;
     material.albedoColor = albedo;
-    material.specularFactor = specularFactor;  
+    material.specularFactor = specularFactor;
     UnpackLightPropLayer(screenLightProp.SampleLevel(samLinearClamp, uv, 0), material.metallic, material.roughness);
  
     float3 radiance = float3(0, 0, 0);
@@ -456,7 +456,7 @@ void HemisphereHitShader(inout RayPayload rayPayload, in BuiltInTriangleIntersec
 {
     //opaque object and instance ID = instanceInfo index
     //instanceInfo[instanceID]      
-    uint instanceID = InstanceID();   
+    uint instanceID = InstanceID();
     MaterialData meshMatData = materialData[instanceInfo[instanceID].materialIndex];
  
     StaticVertex vertex = GetStaticMeshVertex(instanceID, PrimitiveIndex(), attr);
@@ -492,7 +492,7 @@ void HemisphereHitShader(inout RayPayload rayPayload, in BuiltInTriangleIntersec
         float4 normalMapSample = textureMaps[meshMatData.normalMapIndex].SampleLevel(samLinearClamp, texC, 0);
         float3 normalT = 2.0f * normalMapSample.rgb - 1.0f;
         rayPayload.vertex.normal = normalize(mul(normalT, CalTBN(rayPayload.vertex.normal, rayPayload.vertex.tangent)));
-    }  
+    }
     rayPayload.hitType = OBJECT_HIT;
 }
 [shader("miss")]

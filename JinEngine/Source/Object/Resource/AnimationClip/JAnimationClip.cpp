@@ -40,6 +40,9 @@ SOFTWARE.
 #include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h"  
 #include"../../Directory/JFile.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h" 
 #include"../../../Core/Guid/JGuidCreator.h" 
@@ -49,39 +52,40 @@ SOFTWARE.
 #include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Application/Project/JApplicationProject.h"
 
- 
+
 namespace JinEngine
 {
 	using namespace DirectX;
 	namespace
 	{
-		static JAnimationClipPrivate aPrivate; 
+		static JAnimationClipPrivate aPrivate;
 	}
- 
+
 	class JAnimationClip::JAnimationClipImpl : public Core::JTypeImplBase,
-		public JClearableInterface, 
+		public JClearableInterface,
 		public JResourceObjectUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationClipImpl)
 	public:
 		JWeakPtr<JAnimationClip> thisPointer;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		std::vector<Core::JAnimationSample>animationSample;			//fixed
 		size_t skeletonHash;			//fixed
 	public:
 		REGISTER_PROPERTY_EX(clipSkeletonAsset, GetClipSkeletonAsset, SetClipSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false))
-		JUserPtr<JSkeletonAsset> clipSkeletonAsset;
+			JUserPtr<JSkeletonAsset> clipSkeletonAsset;
 		uint32 length;
 		float framePerSecond;
 		REGISTER_PROPERTY_EX(updateFramePerSecond, GetUpdateFPS, SetUpdateFPS, GUI_SLIDER(30, 120))
-		float updateFramePerSecond;
+			float updateFramePerSecond;
 		REGISTER_PROPERTY_EX(isLooping, IsLoop, SetLoop, GUI_CHECKBOX())
-		bool isLooping = false;
+			bool isLooping = false;
 		bool isMatchClipSkeleton = false;
 	public:
 		JAnimationClipImpl(const InitData& initData, JAnimationClip* thisClipRaw)
 		{ }
-		~JAnimationClipImpl(){}
+		~JAnimationClipImpl() {}
 	public:
 		JUserPtr<JSkeletonAsset> GetClipSkeletonAsset()const noexcept
 		{
@@ -155,12 +159,10 @@ namespace JinEngine
 		}
 		void ClipClose()noexcept
 		{
-		}
-		void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
-		{
-			//JAnimationTime& animationTime, JAnimationUpdateData* updateData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& worldTransform, float nowTime, float deltaTime
-			//animationTime.timePos = nowTime;
 
+		}
+		void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)
+		{
 			JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
 			const float deltaTime = updateData->timer->DeltaTime();
 
@@ -168,18 +170,27 @@ namespace JinEngine
 			animationTime.normalizedTime = (animationTime.timePos - animationTime.startTime) / (animationTime.endTime - animationTime.startTime);
 			if (animationTime.timePos >= animationTime.nextUpdateTime)
 				animationTime.nextUpdateTime = animationTime.timePos + (1 / updateFramePerSecond);
-			else
+		}
+		void Compute(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		{
+			//JAnimationTime& animationTime, JAnimationUpdateData* updateData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& worldTransform, float nowTime, float deltaTime
+			//animationTime.timePos = nowTime;
+
+			JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
+			const float deltaTime = updateData->timer->DeltaTime();
+
+			if (animationTime.timePos >= animationTime.nextUpdateTime)
 				return;
 
 			if (!isMatchClipSkeleton)
 				return;
-			 
+
 			if (!thisPointer->IsSameSkeleton(updateData->modelSkeleton.Get()))
 			{
 				if (updateData->modelSkeleton->HasAvatar() && clipSkeletonAsset->HasAvatar())
-					UpdateUsingAvatar(updateData, layerNumber, updateNumber);
+					ComputeUsingAvatar(updateData, layerNumber, updateNumber);
 				return;
-			} 
+			}
 
 			float localTime = animationTime.timePos - animationTime.startTime;
 			JSkeleton* tarSkeleton = clipSkeletonAsset->GetSkeleton().Get();
@@ -189,14 +200,14 @@ namespace JinEngine
 
 			const uint sampleSize = (uint)animationSample.size();
 			for (uint i = 0; i < sampleSize; ++i)
-			{ 
+			{
 				if (animationSample[i].jointPose.size() == 0)
 				{
 					uint8 parentIndex = tarSkeleton->GetJointParentIndex(i);
 					worldTransform[i] = worldTransform[parentIndex];
 					continue;
 				}
-				  
+
 				if (localTime < animationSample[i].jointPose.front().stTime)
 				{
 					float lerpPercent = localTime / animationSample[i].jointPose[0].stTime;
@@ -245,7 +256,7 @@ namespace JinEngine
 					worldTransform[i].StoreXM(XMMatrixAffineTransformation(S, zero, Q, P));
 				}
 
-				 
+
 				//Debug
 				//XMMATRIX bind = srcSkeletonAsset->GetSkeleton()->GetBindPose(i);
 				//XMStoreFloat4x4(&worldTransform[i], bind);
@@ -258,13 +269,13 @@ namespace JinEngine
 				//	worldTransform[i] = worldTransform[1];
 			//}
 		}
-		void UpdateUsingAvatar(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void ComputeUsingAvatar(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
 			JAvatar* tarAvatar = clipSkeletonAsset->GetAvatar().Get();
 			JAvatar* srcAvatar = updateData->modelSkeleton->GetAvatar().Get();
 			JSkeleton* tarSkeleton = clipSkeletonAsset->GetSkeleton().Get();
 			JSkeleton* srcSkeleton = updateData->modelSkeleton->GetSkeleton().Get();
-			 
+
 			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 			JMatrix4x4* worldTransform = updateData->diagramData[layerNumber].worldTransform[updateNumber];
 			worldTransform[0] = JMatrix4x4::Identity();
@@ -288,7 +299,7 @@ namespace JinEngine
 				if (animationSample[tarIndex].jointPose.size() == 0)
 					continue;
 
-				const uint8 parentRefIndex = JAvatar::jointReferenceParent[i];
+				const uint8 parentRefIndex = JAvatar::GetJointReferenceParent(i);
 				const uint8 tarParentIndex = tarAvatar->jointReference[parentRefIndex];
 				const uint8 srcParentIndex = srcAvatar->jointReference[parentRefIndex];
 
@@ -411,7 +422,8 @@ namespace JinEngine
 				const XMMATRIX finalM = XMMatrixMultiply(additionalWorld, aniWorld);
 				XMStoreFloat4x4(&worldTransform[i], finalM);
 			}*/
-		} 
+		}
+
 	public:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
@@ -424,6 +436,7 @@ namespace JinEngine
 					SetClipSkeletonAsset(JUserPtr<JSkeletonAsset>{});
 			}
 		}
+	private:
 		void OnResourceRef()
 		{
 			CallOnResourceReference(clipSkeletonAsset.Get());
@@ -432,7 +445,7 @@ namespace JinEngine
 		{
 			CallOffResourceReference(clipSkeletonAsset.Get());
 		}
-	public:
+	private:
 		void StuffResource()
 		{
 			if (!thisPointer->IsValidTriggerOn())
@@ -452,10 +465,10 @@ namespace JinEngine
 			JFileIOTool tool;
 			if (!tool.Begin(path, JFileIOTool::TYPE::INPUT_STREAM))
 				return nullptr;
- 
+
 			std::unique_ptr<Core::JAnimationData> res = std::make_unique<Core::JAnimationData>();
 			uint sampleCount;
-			JObjectFileIOHelper::LoadAtomicData(tool, sampleCount, "SampleCount:"); 
+			JObjectFileIOHelper::LoadAtomicData(tool, sampleCount, "SampleCount:");
 			res->animationSample.resize(sampleCount);
 			for (uint i = 0; i < sampleCount; ++i)
 			{
@@ -481,7 +494,7 @@ namespace JinEngine
 			JFileIOTool tool;
 			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::OUTPUT_STREAM))
 				return false;
- 
+
 			JObjectFileIOHelper::StoreAtomicData(tool, animationSample.size(), "SampleCount:");
 			const uint sampleCount = (uint)animationSample.size();
 			for (uint i = 0; i < sampleCount; ++i)
@@ -510,11 +523,24 @@ namespace JinEngine
 			framePerSecond = aniData->framePerSecond;
 			updateFramePerSecond = framePerSecond;
 
-			bool(*ptr)(JSkeletonAsset*, size_t) = [](JSkeletonAsset* skel, size_t hash){return skel->GetSkeletonHash() == hash;};			 
-		    auto userPtr = _JResourceManager::Instance().GetByCondition(ptr, false, std::move(skeletonHash));
+			bool(*ptr)(JSkeletonAsset*, size_t) = [](JSkeletonAsset* skel, size_t hash) {return skel->GetSkeletonHash() == hash; };
+			auto userPtr = _JResourceManager::Instance().GetByCondition(ptr, false, std::move(skeletonHash));
 			if (userPtr != nullptr)
-				SetClipSkeletonAsset(userPtr);		
+				SetClipSkeletonAsset(userPtr);
 			return true;
+		}
+	public:
+		void Activate()noexcept
+		{ 
+			StuffResource();
+			OnResourceRef();
+			SetMatchSkeletonTrigger();
+		}
+		void DeActivate()noexcept
+		{
+			//has order dependency 
+			ClearResource();
+			OffResourceRef(); 
 		}
 	public:
 		void NotifyReAlloc()
@@ -550,10 +576,10 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, true, false, false, true };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JAnimationClip::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
 			auto fbxMeshImportC = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
-			{				
+			{
 				const Core::JFileImportPathData& importPathData = desc->importPathData;
 				const JUserPtr<JDirectory>& dir = desc->dir;
 
@@ -570,7 +596,7 @@ namespace JinEngine
 					JUserPtr<JDirectory> fileDir = dir->GetChildDirctoryByName(importPathData.name);
 					if (fileDir == nullptr)
 						fileDir = JICI::Create<JDirectory>(importPathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, dir);
-					
+
 					JUserPtr<JDirectory> animationDir = JICI::Create<JDirectory>(L"Animation", Core::MakeGuid(), OBJECT_FLAG_NONE, fileDir);
 					//Animation
 					if (HasSQValueEnum(info.typeInfo, Core::J_FBX_RESULT_HAS_ANIMATION))
@@ -589,7 +615,7 @@ namespace JinEngine
 			JResourceObjectImporter::Instance().AddFormatInfo(L".fbx", J_RESOURCE_TYPE::ANIMATION_CLIP, fbxMeshImportC);
 			Core::JIdentifier::RegisterPrivateInterface(JAnimationClip::StaticTypeInfo(), aPrivate);
 
-			IMPL_REALLOC_BIND(JAnimationClip::JAnimationClipImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -608,7 +634,7 @@ namespace JinEngine
 	JAnimationClip::InitData::InitData(const std::wstring& name,
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
-		const uint8 formatIndex, 
+		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
 		std::unique_ptr<Core::JAnimationData>&& anidata)
 		: JResourceObject::InitData(JAnimationClip::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory),
@@ -620,13 +646,21 @@ namespace JinEngine
 		return anidata != nullptr;
 	}
 
-	JAnimationClip::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
+	JAnimationClip::LoadMetadata::LoadMetadata(const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JAnimationClip::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
 
 	Core::JIdentifierPrivate& JAnimationClip::PrivateInterface()const noexcept
 	{
 		return aPrivate;
+	}
+	JGraphicModuleManagedDataFrame* JAnimationClip::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JAnimationClip::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	JUserPtr<JSkeletonAsset> JAnimationClip::GetClipSkeletonAsset()const noexcept
 	{
@@ -649,12 +683,12 @@ namespace JinEngine
 		return GetStaticResourceType();
 	}
 	std::wstring JAnimationClip::GetFormat()const noexcept
-	{ 
+	{
 		return GetAvailableFormat()[GetFormatIndex()];
 	}
 	std::vector<std::wstring> JAnimationClip::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::wstring> format{ L".fbx" }; 
+		static std::vector<std::wstring> format{ L".fbx" };
 		return format;
 	}
 	void JAnimationClip::SetClipSkeletonAsset(JUserPtr<JSkeletonAsset> newClipSkeletonAsset)noexcept
@@ -682,7 +716,7 @@ namespace JinEngine
 		return Core::JValidInterface::IsValid() && (impl->clipSkeletonAsset.IsValid());
 	}
 	void JAnimationClip::ClipEnter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept
-	{	
+	{
 		impl->ClipEnter(updateData, layerNumber, updateNumber, timeOffset);
 	}
 	void JAnimationClip::ClipClose()noexcept
@@ -690,21 +724,24 @@ namespace JinEngine
 		impl->ClipClose();
 	}
 	void JAnimationClip::Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
-	{ 
+	{
 		impl->Update(updateData, layerNumber, updateNumber);
+	}
+	void JAnimationClip::Compute(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+	{
+		impl->Compute(updateData, layerNumber, updateNumber);
 	}
 	void JAnimationClip::DoActivate()noexcept
 	{
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JResourceObject::DoActivate();
-		impl->StuffResource();
-		impl->OnResourceRef();
-		impl->SetMatchSkeletonTrigger();
+		impl->Activate();
 	}
 	void JAnimationClip::DoDeActivate()noexcept
 	{
-		impl->ClearResource();
-		impl->OffResourceRef();
+		impl->DeActivate();
 		JResourceObject::DoDeActivate();
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	}
 	JAnimationClip::JAnimationClip(InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JAnimationClipImpl>(initData, this))
@@ -746,13 +783,13 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationClip::LoadData::StaticTypeInfo()))
 			return nullptr;
- 
+
 		auto loadData = static_cast<JAnimationClip::LoadData*>(data);
 		auto pathData = loadData->pathData;
 		JUserPtr<JDirectory> directory = loadData->directory;
-		JAnimationClip::LoadMetaData metadata(loadData->directory);
-		 
-		if (LoadMetaData(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
+		JAnimationClip::LoadMetadata metadata(loadData->directory);
+
+		if (LoadMetadata(pathData.metaFilePath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JAnimationClip> newClip = nullptr;
@@ -760,11 +797,11 @@ namespace JinEngine
 			newClip = Core::GetUserPtr<JAnimationClip>(JAnimationClip::StaticTypeInfo().TypeGuid(), metadata.guid);
 
 		if (newClip == nullptr)
-		{ 
-			std::unique_ptr<JAnimationClip::InitData> initData = std::make_unique<JAnimationClip::InitData>( pathData.name,
-				metadata.guid, 
-				metadata.flag, 
-				(uint8)metadata.formatIndex, 
+		{
+			std::unique_ptr<JAnimationClip::InitData> initData = std::make_unique<JAnimationClip::InitData>(pathData.name,
+				metadata.guid,
+				metadata.flag,
+				(uint8)metadata.formatIndex,
 				directory,
 				JAnimationClip::JAnimationClipImpl::ReadAssetData(pathData.path));
 
@@ -785,52 +822,52 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto storeData = static_cast<JAnimationClip::StoreData*>(data);
-		if(!storeData->HasCorrectType(JAnimationClip::StaticTypeInfo()))
+		if (!storeData->HasCorrectType(JAnimationClip::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JUserPtr<JAnimationClip> clip;
 		clip.ConnnectChild(storeData->obj);
 		return clip->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
-		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationClip::LoadMetaData::StaticTypeInfo()))
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationClip::LoadMetadata::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
-		 
+
 		JFileIOTool tool;
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
- 
-		auto loadMetaData = static_cast<JAnimationClip::LoadMetaData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+
+		auto loadMetadata = static_cast<JAnimationClip::LoadMetadata*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		loadMetaData->clipSkeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(tool, "SkeletonAsset");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->updateFramePerSecond, "updateFramePerSecond");
-		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isLooping, "IsLooping");
+		loadMetadata->clipSkeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(tool, "SkeletonAsset");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->updateFramePerSecond, "updateFramePerSecond");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetadata->isLooping, "IsLooping");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationClip::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto storeData = static_cast<JAnimationClip::StoreData*>(data);
 		JUserPtr<JAnimationClip> clip;
-		clip.ConnnectChild(storeData->obj);	 
+		clip.ConnnectChild(storeData->obj);
 
 		JFileIOTool tool;
 		if (!tool.Begin(clip->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-		 
+
 		JObjectFileIOHelper::_StoreHasIden(tool, clip->impl->clipSkeletonAsset.Get(), "SkeletonAsset");
 		JObjectFileIOHelper::StoreAtomicData(tool, clip->impl->updateFramePerSecond, "updateFramePerSecond");
 		JObjectFileIOHelper::StoreAtomicData(tool, clip->impl->isLooping, "IsLooping");
-		
+
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -850,5 +887,5 @@ namespace JinEngine
 		static AssetDataIOInterface pI;
 		return pI;
 	}
- 
+
 }

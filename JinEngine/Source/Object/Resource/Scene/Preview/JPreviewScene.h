@@ -26,8 +26,7 @@ SOFTWARE.
 #pragma once 
 #include"JPreviewEnum.h"
 #include"../../Texture/JDefaulTextureType.h"
-#include"../../../../Core/JCoreEssential.h"
-#include"../../../../Graphic/JGraphicConstants.h" 
+#include"../../../../Core/JCoreEssential.h" 
 #include"../../../../Core/Pointer/JOwnerPtr.h"
 #include"../../../../Core/Utility/JMacroUtility.h"
 #include"../../../../Core/Math/JVector.h"  

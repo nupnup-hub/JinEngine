@@ -61,11 +61,11 @@ namespace JinEngine
 		private:
 			/// Pointer to array of allocated blocks.
 			DataPointer pData = nullptr;
-			bool* isUsePage = nullptr;
-			bool* isUseBlock = nullptr;
+			bool* isUsePage = nullptr;						//array
+			bool* isUseBlock = nullptr;						//array
 		private:
-			PageInfo* allocablePaegHead = nullptr;
-			BlockInfo* allocableBlockHead = nullptr;
+			PageInfo* allocablePaegHead = nullptr;			//list 
+			BlockInfo* allocableBlockHead = nullptr;		//list
 		private:
 			size_t oriBlockSize = 0;
 			size_t allocBlockSize = 0;

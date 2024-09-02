@@ -35,19 +35,18 @@ SOFTWARE.
 #include"JAnimationRetargeting.h" 
 
 #include"../../Skeleton/JSkeleton.h"
-#include"../../Skeleton/JSkeletonAsset.h"
-#include"../../Skeleton/JSkeletonFixedData.h"
+#include"../../Skeleton/JSkeletonAsset.h" 
+#include"../../Skeleton/JSkeletonMatrixSet.h"
 #include"../../../JObjectFileIOHelper.h"
 #include"../../../../Core/Time/JGameTimer.h"
 #include"../../../../Core/Reflection/JTypeTemplate.h"
 #include"../../../../Core/Identity/JIdenCreator.h"
 #include"../../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
-#include"../../../../Core/Log/JLogMacro.h"
-#include"../../../../Graphic/Frameresource/JAnimationConstants.h"
+#include"../../../../Core/Log/JLogMacro.h" 
 #include<DirectXMath.h>
 #include<fstream>
-
+ 
 namespace JinEngine
 {
 	using namespace DirectX;
@@ -56,7 +55,7 @@ namespace JinEngine
 	{
 		using JDiagramData = JAnimationUpdateData::DiagramData;
 		using _StateIOInterface = JAnimationFSMstatePrivate::AssetDataIOInterface;
-		using _StateUpdateInterface = JAnimationFSMstatePrivate::UpdateInterface;
+		using _StateUpdateInterface = JAnimationFSMstatePrivate::AnimationUpdateInterface;
 	}
 	namespace
 	{
@@ -83,7 +82,7 @@ namespace JinEngine
 		~JAnimationFSMdiagramImpl()
 		{}
 	public:
-		void Initialize(JAnimationUpdateData* updateData, const uint layerNumber)noexcept
+		void Initialize(JAnimationUpdateData* updateData, const uint layerNumber)const
 		{
 			thisPointer->Initialize();
 			JUserPtr<Core::JFSMstate> state = thisPointer->GetNowState();
@@ -99,17 +98,18 @@ namespace JinEngine
 
 			PreprocessSkeletonBindPose(updateData);
 		}
-		void Enter(JAnimationUpdateData* updateData, const uint layerNumber)
+		void Enter(JAnimationUpdateData* updateData, const uint layerNumber)const
 		{
 			JDiagramData& diagramData = updateData->diagramData[layerNumber];
 			if (diagramData.nowState != nullptr)
 				StateUpdateInterface(diagramData.nowState)->Enter(diagramData.nowState, updateData, layerNumber, 0);
 		}
-		void Update(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
+		void Update(JAnimationUpdateData* updateData, const uint layerNumber)const
 		{
 			JDiagramData& diagramData = updateData->diagramData[layerNumber];
 			if (diagramData.nextState == nullptr)
 			{
+				//get next state transition if pass condition(parameter & blend time)
 				diagramData.nowTransition = diagramData.nowState->FindNextStateTransition(updateData, layerNumber, 0);
 				if (diagramData.nowTransition != nullptr)
 				{
@@ -133,25 +133,35 @@ namespace JinEngine
 					diagramData.blender.Clear();
 				}
 			}
-
 			if (diagramData.nextState != nullptr)
 			{
 				StateUpdateInterface(diagramData.nowState)->Update(diagramData.nowState, updateData, layerNumber, 0);
 				StateUpdateInterface(diagramData.nextState)->Update(diagramData.nextState, updateData, layerNumber, 1);
-				CrossFading(updateData, animationConstatns, layerNumber);
 			}
 			else
-			{
 				StateUpdateInterface(diagramData.nowState)->Update(diagramData.nowState, updateData, layerNumber, 0);
-				StuffFinalTransform(updateData, animationConstatns, layerNumber);
-			}
 
 			const bool canLoop = diagramData.animationTimes[0].IsOverEndTime() && diagramData.nowState->CanLoop();
 			if (canLoop)
 				StateUpdateInterface(diagramData.nowState)->Enter(diagramData.nowState, updateData, layerNumber, 0);
 		}
+		void Compute(JAnimationUpdateData* updateData, JSkeletonMatrixSet& set, const uint layerNumber)const
+		{
+			JDiagramData& diagramData = updateData->diagramData[layerNumber];
+			if (diagramData.nextState != nullptr)
+			{
+				StateUpdateInterface(diagramData.nowState)->Compute(diagramData.nowState, updateData, layerNumber, 0);
+				StateUpdateInterface(diagramData.nextState)->Compute(diagramData.nextState, updateData, layerNumber, 1);
+				CrossFading(updateData, set, layerNumber);
+			}
+			else
+			{
+				StateUpdateInterface(diagramData.nowState)->Compute(diagramData.nowState, updateData, layerNumber, 0);
+				StuffFinalTransform(updateData, set, layerNumber);
+			}			 
+		}
 	public:
-		void StuffFinalTransform(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
+		void StuffFinalTransform(JAnimationUpdateData* updateData, JSkeletonMatrixSet& set, const uint layerNumber)const
 		{
 			JDiagramData& diagramData = updateData->diagramData[layerNumber];
 			uint size = (uint)updateData->modelSkeleton->GetSkeleton()->GetJointCount();
@@ -161,11 +171,11 @@ namespace JinEngine
 
 			for (uint i = 0; i < size; ++i)
 			{
-				animationConstatns.boneTransforms[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(skeleton->GetInBindPose(i),
+				set.boneTransforms[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(skeleton->GetInBindPose(i),
 					diagramData.worldTransform[0][i].LoadXM())));
 			}
 		}
-		void CrossFading(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
+		void CrossFading(JAnimationUpdateData* updateData, JSkeletonMatrixSet& set, const uint layerNumber)const
 		{
 			JDiagramData& diagramData = updateData->diagramData[layerNumber];
 			float rate = diagramData.blender.GetBlnederValue(updateData->timer->TotalTime());
@@ -200,11 +210,11 @@ namespace JinEngine
 				finalQ = XMQuaternionSlerp(stQ, edQ, rate);
 				finalT = XMVectorLerp(stT, edT, rate);
 
-				animationConstatns.boneTransforms[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(skeleton->GetInBindPose(i), XMMatrixAffineTransformation(finalS, zero, finalQ, finalT))));
+				set.boneTransforms[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(skeleton->GetInBindPose(i), XMMatrixAffineTransformation(finalS, zero, finalQ, finalT))));
 				//XMStoreFloat4x4(&finalTransform[i], XMMatrixTranspose(XMMatrixMultiply(skeleton->GetInBindPose(i), skeleton->GetBindPose(i))));
 			}
 		}
-		void PreprocessSkeletonBindPose(JAnimationUpdateData* updateData)noexcept
+		void PreprocessSkeletonBindPose(JAnimationUpdateData* updateData)const
 		{
 			std::vector<JUserPtr<JSkeletonAsset>> skeletonVec;
 			uint stateSize = thisPointer->GetStateCount();
@@ -259,7 +269,7 @@ namespace JinEngine
 			uint stateCount = 0;
 			JObjectFileIOHelper::LoadAtomicData(tool, stateCount, "StateCount"); 
 
-			tool.PushExistStack("StateMetaData");
+			tool.PushExistStack("StateMetadata");
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				J_ANIMATION_STATE_TYPE stateType;
@@ -279,6 +289,11 @@ namespace JinEngine
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				JUserPtr<JAnimationFSMstate> state = diagramUser->GetStateByIndex(i);
+				if (state == nullptr)
+				{
+					J_LOG_PRINT_OUT("Null state", "");
+					continue;
+				}
 				tool.PushExistStack();
 				StateIOInterface(state)->LoadAssetData(tool, state);
 				tool.PopStack();
@@ -296,7 +311,7 @@ namespace JinEngine
 			const uint stateCount = (uint)stateVec.size();
 			JObjectFileIOHelper::StoreAtomicData(tool, stateCount, "StateCount");
 
-			tool.PushArrayOwner("StateMetaData");
+			tool.PushArrayOwner("StateMetadata");
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				tool.PushArrayMember();
@@ -325,7 +340,7 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{
 			JIdentifier::RegisterPrivateInterface(JAnimationFSMdiagram::StaticTypeInfo(), aPrivate);
-			IMPL_REALLOC_BIND(JAnimationFSMdiagram::JAnimationFSMdiagramImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -375,7 +390,7 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JAnimationFSMdiagramPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JAnimationFSMdiagramPrivate::AssetDataIOInterface;
-	using UpdateInterface = JAnimationFSMdiagramPrivate::UpdateInterface;
+	using AnimationUpdateInterface = JAnimationFSMdiagramPrivate::AnimationUpdateInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -402,17 +417,21 @@ namespace JinEngine
 		return JAnimationFSMdiagram::JAnimationFSMdiagramImpl::StoreAssetData(tool, diagram);
 	}
 
-	void UpdateInterface::Initialize(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)noexcept
+	void AnimationUpdateInterface::Initialize(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)noexcept
 	{
 		diagram->impl->Initialize(updateData, layerNumber);
 	}
-	void UpdateInterface::Enter(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)
+	void AnimationUpdateInterface::Enter(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)
 	{
 		diagram->impl->Enter(updateData, layerNumber);
 	}
-	void UpdateInterface::Update(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
+	void AnimationUpdateInterface::Update(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)
 	{
-		diagram->impl->Update(updateData, animationConstatns, layerNumber);
+		diagram->impl->Update(updateData, layerNumber);
+	}
+	void AnimationUpdateInterface::Compute(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, JSkeletonMatrixSet& set, const uint layerNumber)noexcept
+	{
+		diagram->impl->Compute(updateData, set, layerNumber);
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMdiagramPrivate::GetCreateInstanceInterface()const noexcept

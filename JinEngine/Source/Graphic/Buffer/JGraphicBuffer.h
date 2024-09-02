@@ -56,6 +56,8 @@ namespace JinEngine
 				CopyData(elementIndex, count, dataVec.data(), sizeof(T));
 			}
 		public:
+			virtual void MoveData(const uint stIndex, const uint destIndex, const uint count) = 0;
+		public:
 			virtual J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept = 0;
 			virtual uint GetElementCount()const noexcept = 0;
 			virtual uint GetElementByteSize()const noexcept = 0;

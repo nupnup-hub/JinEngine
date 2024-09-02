@@ -34,10 +34,14 @@ SOFTWARE.
 #include"FSM/JAnimationUpdateData.h"  
 #include"../JResourceObjectHint.h"
 #include"../JClearableInterface.h"
-#include"../Skeleton/JSkeletonAsset.h"  
+#include"../Skeleton/JSkeletonAsset.h"
+#include"../Skeleton/JSkeletonMatrixSet.h"
 #include"../../Directory/JDirectory.h"
 #include"../../Directory/JFile.h"
 #include"../../JObjectFileIOHelper.h"
+#include"../../GraphicRule/JGraphicModuleInterfaceHolder.h"
+#include"../../GraphicRule/JGraphicModuleUtility.h"
+#include"../../GraphicRule/JGraphicModuleMacro.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h"
@@ -46,19 +50,17 @@ SOFTWARE.
 #include"../../../Core/FSM/JFSMownerInterface.h"  
 #include"../../../Core/Utility/JCommonUtility.h"
 
-#include"../../../Application/Project/JApplicationProject.h" 
-#include"../../../Graphic/Frameresource/JAnimationConstants.h" 
+#include"../../../Application/Project/JApplicationProject.h"   
 
 //수정필요  
 #include<fstream>
 
 namespace JinEngine
-{ 
-	using namespace Graphic;
+{  
 	namespace
 	{ 
 		using DiagramIOInterface = JAnimationFSMdiagramPrivate::AssetDataIOInterface;
-		using DiagramUpdateInterface = JAnimationFSMdiagramPrivate::UpdateInterface;
+		using DiagramAnimationInterface = JAnimationFSMdiagramPrivate::AnimationUpdateInterface;
 	}
 	namespace
 	{
@@ -71,7 +73,8 @@ namespace JinEngine
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationControllerImpl)
 	public:
-		JWeakPtr<JAnimationController> thisPointer = nullptr;
+		JWeakPtr<JAnimationController> thisPointer;
+		JFastPtr<JGraphicModuleManagedDataFrame> graphicData;
 	public:
 		JOwnerPtr<Core::JFSMparameterStorage> paramStorage;
 		std::vector<JUserPtr<JAnimationFSMdiagram>> diagramVec;
@@ -85,7 +88,7 @@ namespace JinEngine
 		{
 			return paramStorage.Get();
 		}
-	public:
+	private:
 		Core::JUserPtr<JAnimationFSMdiagram> FindDiagram(const size_t guid)noexcept
 		{
 			const uint dCount = (uint)diagramVec.size();
@@ -97,31 +100,40 @@ namespace JinEngine
 			return nullptr;
 		}
 	public:
-		void Initialize(JAnimationUpdateData* updateData)noexcept
+		void Initialize(JAnimationUpdateData* updateData)const
 		{ 
-			uint layerSize = (uint)diagramVec.size();
+			const uint layerSize = (uint)diagramVec.size();
 			for (uint i = 0; i < layerSize; ++i)
 			{
-				DiagramUpdateInterface::Initialize(diagramVec[i], updateData, i);
-				DiagramUpdateInterface::Enter(diagramVec[i], updateData, i);
+				DiagramAnimationInterface::Initialize(diagramVec[i], updateData, i);
+				DiagramAnimationInterface::Enter(diagramVec[i], updateData, i);
 			}
 		}
-		void Update(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
+		void Update(JAnimationUpdateData* updateData)const
+		{
+			const uint layerSize = (uint)diagramVec.size();
+			for (uint i = 0; i < layerSize; ++i)
+			{
+				if (diagramVec[i]->GetStateCount() > 0)
+					DiagramAnimationInterface::Update(diagramVec[i], updateData, i);
+			}
+		}
+		void Compute(JAnimationUpdateData* updateData, JSkeletonMatrixSet& set)const
 		{
 			bool hasValidValue = false;
-			uint layerSize = (uint)diagramVec.size();
+			const uint layerSize = (uint)diagramVec.size();
 			for (uint i = 0; i < layerSize; ++i)
 			{
 				if (diagramVec[i]->GetStateCount() > 0)
 				{
-					DiagramUpdateInterface::Update(diagramVec[i], updateData, constant, i);
+					DiagramAnimationInterface::Compute(diagramVec[i], updateData, set, i);
 					hasValidValue = true;
 				}
 			}
 			if (!hasValidValue)
-				constant.StuffIdentity();
+				set.StuffIdentity();
 		}
-	public:
+	private:
 		void StuffResource()
 		{
 			if (!thisPointer->IsValid())
@@ -196,6 +208,16 @@ namespace JinEngine
 			return std::move(unq);
 		}
 	public:
+		void Activate()noexcept
+		{ 
+			StuffResource();
+		}
+		void DeActivate()noexcept
+		{
+			//has order dependency 
+			ClearResource(); 
+		}
+	public:
 		bool RegisterDiagram(JUserPtr<Core::JFSMdiagram> diagram)noexcept final
 		{	 
 			if (diagram != nullptr)
@@ -255,17 +277,16 @@ namespace JinEngine
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false, true, false };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
+			RegisterRTypeInfo(JAnimationController::StaticTypeInfo(), rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JAnimationController::StaticTypeInfo(), aPrivate);
 
-			IMPL_REALLOC_BIND(JAnimationController::JAnimationControllerImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 
 			NotifyReAllocPtr notifyParamReAllocPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
 			{
 				auto movedParamStorage = static_cast<Core::JFSMparameterStorage*>(movedPtr);
 				JAnimationController* cond = static_cast<JAnimationController*>(movedParamStorage->GetOwner().Get());
-				cond->impl->paramStorage.Release();
-				cond->impl->paramStorage.Reset(movedParamStorage);
+				cond->impl->paramStorage.Swap(movedParamStorage);
 			};
 			auto paramReAllocF = std::make_unique<NotifyReAllocF>(notifyParamReAllocPtr);
 			std::unique_ptr<JAllocationDesc> paramAllocDesc = std::make_unique<JAllocationDesc>();
@@ -293,6 +314,14 @@ namespace JinEngine
 	Core::JIdentifierPrivate& JAnimationController::PrivateInterface()const noexcept
 	{
 		return aPrivate;
+	}
+	JGraphicModuleManagedDataFrame* JAnimationController::ModuleManagedData()const noexcept
+	{
+		return impl->graphicData.Get();
+	}
+	uint JAnimationController::GetSubTypeIndex()const noexcept
+	{
+		return 0;
 	}
 	J_RESOURCE_TYPE JAnimationController::GetResourceType()const noexcept
 	{
@@ -400,13 +429,15 @@ namespace JinEngine
 	}
 	void JAnimationController::DoActivate()noexcept
 	{
+		INTERFACE_ALLOC_GRAPHIC_MODULE_DATA();
 		JResourceObject::DoActivate();
-		impl->StuffResource();
+		impl->Activate();
 	}
 	void JAnimationController::DoDeActivate()noexcept
 	{ 
-		impl->ClearResource();
+		impl->DeActivate();
 		JResourceObject::DoDeActivate();
+		DEALLOC_GRAPHIC_MODULE_DATA();
 	} 
 	JAnimationController::JAnimationController(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JAnimationControllerImpl>(initData, this))
@@ -418,7 +449,7 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JAnimationControllerPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JAnimationControllerPrivate::AssetDataIOInterface; 
-	using FrameUpdateInterface = JAnimationControllerPrivate::FrameUpdateInterface;
+	using AnimationInterface = JAnimationControllerPrivate::AnimationInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -447,7 +478,7 @@ namespace JinEngine
 		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = JAnimationController::JAnimationControllerImpl::CreateLoadAssetInitData(directory);
-		if (LoadMetaData(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadMetadata(pathData.metaFilePath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
 		JUserPtr<JAnimationController> newCont; 
@@ -476,7 +507,7 @@ namespace JinEngine
 		cont.ConnnectChild(storeData->obj); 
 		return cont->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetadata(const std::wstring& path, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationController::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -485,14 +516,14 @@ namespace JinEngine
 		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		auto loadMetaData = static_cast<JAnimationController::InitData*>(data);
-		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		auto loadMetadata = static_cast<JAnimationController::InitData*>(data);
+		if (LoadCommonMetadata(tool, loadMetadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetadata(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationController::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
@@ -505,20 +536,24 @@ namespace JinEngine
 		if (!tool.Begin(cont->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetadata(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	void FrameUpdateInterface::Initialize(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept
+	void AnimationInterface::Initialize(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept
 	{
 		aniCont->impl->Initialize(updateData);
 	}
-	void FrameUpdateInterface::Update(JAnimationController* aniCont, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
+	void AnimationInterface::Update(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept
 	{
-		aniCont->impl->Update(updateData, constant);
+		aniCont->impl->Update(updateData);
+	}
+	void AnimationInterface::Compute(JAnimationController* aniCont, JAnimationUpdateData* updateData, JSkeletonMatrixSet& set)noexcept
+	{
+		aniCont->impl->Compute(updateData, set);
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JAnimationControllerPrivate::GetCreateInstanceInterface()const noexcept

@@ -157,22 +157,15 @@ namespace JinEngine::Graphic
 		 
 		if (!Core::HasSQValueEnum(pHeapFlags, D3D12_HEAP_FLAGS::D3D12_HEAP_FLAG_SHARED))
 		{ 
-			resource = nullptr;
-			//resource = nullptr;
+			resource = nullptr; 
 			/*
 			D3D12_RESOURCE_DESC desc = resource->GetDesc();
 			if (pHeapProperties.Type == D3D12_HEAP_TYPE_UPLOAD)
 				resource = nullptr;
-				//resource.Reset();
 			else if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 				resource = nullptr;
-				//resource.Reset();
 			else
-			{
 				resource = nullptr;
-				//resource->Release();
-				//resource.Reset();
-			}
 			*/
 		} 
 	}

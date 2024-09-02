@@ -203,7 +203,8 @@ namespace JinEngine
 	{}
 	JMatrix3x4::JMatrix3x4(const JVector4F v0, const JVector4F v1, const JVector4F v2)
 		: r{ v0, v1, v2 }
-	{}
+	{ 
+	}
 	float JMatrix3x4::operator() (size_t row, size_t column)const noexcept
 	{
 		return m[row][column];
@@ -389,6 +390,10 @@ namespace JinEngine
 	{
 		return r[0] == rhs.r[0] && r[1] == rhs.r[1] && r[2] == rhs.r[2] && r[3] == rhs.r[3];
 	}  
+	bool JMatrix4x4::operator!=(const JMatrix4x4& rhs)const noexcept
+	{
+		return r[0] != rhs.r[0] || r[1] != rhs.r[1] || r[2] != rhs.r[2] || r[3] != rhs.r[3];
+	}
 	void JMatrix4x4::StoreXM(const DirectX::FXMMATRIX& xm)noexcept
 	{
 		_mm_storeu_ps(&_11, xm.r[0]);

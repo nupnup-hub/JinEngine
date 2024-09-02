@@ -36,7 +36,8 @@ SOFTWARE.
 #include"../Graphic/Gui/JGuiBackendDataAdapter.h" 
 #include"../Graphic/JGraphicPrivate.h" 
 #include"../Object/Resource/JResourceManager.h"  
-#include"../Object/Resource/JResourceManagerPrivate.h"  
+#include"../Object/Resource/JResourceManagerPrivate.h" 
+#include"../Object/GraphicRule/JGraphicModuleInterfaceHolder.h" 
 #include"../Core/Reflection/JReflectionInfoPrivate.h"
 #include"../Core/Identity/JIdentifier.h"
 #include"../Core/Time/JGameTimer.h"  
@@ -112,7 +113,7 @@ namespace JinEngine
 
 			auto setAppStateF = std::make_unique<SetAppStateF>(&JApplicationEnginePrivate::MainAccess::SetApplicationState);
 			ProjectMainAccess::RegisterFunctor(std::move(setAppStateF));
-			WindowMainAccess::Initialize(hInstance, std::make_unique<WindowMainAccess::CloseConfirmF>(&JMainImpl::CloseAppProcess, this));
+			WindowMainAccess::Initialize(hInstance, std::make_unique<WindowMainAccess::CloseConfirmF>(&JMainImpl::CloseAppProcess, this));	
 		}
 		~JMainImpl()
 		{
@@ -188,16 +189,18 @@ namespace JinEngine
 					break;
 
 				Core::JGameTimer::UpdateAllTimer();
+				//Window가 포커스상태일 경우만 Update & Draw 수행.
 				if (JWindow::IsActivated())
 				{ 
 					GraphicMainAccess::UpdateWait();
 					RefelectionMainAccess::Update();
 					ThreadManagerAccess::Update();
 					editorManager.Update();
-					GraphicMainAccess::UpdateFrame();
+					GraphicMainAccess::Update();
 					GraphicMainAccess::Draw(true);
 				}
-
+				 
+				//다른 모듈에서 발생한 END_FRAME_EVENT를 처리한다.
 				if (edFrameEv != END_FRAME_EVENT::NONE)
 				{
 					switch (edFrameEv)
@@ -212,6 +215,7 @@ namespace JinEngine
 					}
 					edFrameEv = END_FRAME_EVENT::NONE;
 				}
+				//프로젝트 종료 프로세스 진입 분기
 				if (ProjectMainAccess::CanEndProject())
 				{
 					GraphicMainAccess::UpdateWait();
@@ -421,4 +425,4 @@ namespace JinEngine
 #endif
 	}
 }
-
+ 

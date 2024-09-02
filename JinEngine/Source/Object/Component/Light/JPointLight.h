@@ -47,8 +47,7 @@ namespace JinEngine
 		std::unique_ptr<JPointLightImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
-		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
 		J_LIGHT_TYPE GetLightType()const noexcept final;
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final;
 		float GetMinPower()const noexcept;
@@ -56,26 +55,25 @@ namespace JinEngine
 		float GetFrustumNear()const noexcept final;
 		float GetFrustumFar()const noexcept final; 
 		float GetRange()const noexcept;
-		float GetRadius()const noexcept;
+		float GetRadius()const noexcept; 
+		void GetSidePosition(JVector3F& left, JVector3F& right)const noexcept;
 		DirectX::BoundingBox GetBBox()const noexcept final;
 		JUserPtr<JMeshGeometry> GetMesh()const noexcept final;
-		DirectX::XMMATRIX GetMeshWorldM(const bool restrictScaledZ = false)const noexcept final;
-		JVector3F GetDirection()const noexcept;
+		DirectX::XMMATRIX GetMeshWorldM(const bool restrictScaledZ = false)const noexcept final; 
+		JMatrix4x4 GetView(const uint index)const noexcept;
+		JMatrix4x4 GetProj()const noexcept;
 	public:
 		void SetShadow(const bool value)noexcept final;
 		void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept final;
 		void SetAllowDisplayShadowMap(const bool value)noexcept final;  
 		void SetRange(const float range)noexcept;
 		void SetRadius(const float radius)noexcept;
-	public:
-		bool IsFrameDirted()const noexcept final;
-		bool IsCsmActivated()const noexcept;
-		bool CanAllocateCsm()const noexcept;
+	public:  
 		bool PassDefectInspection()const noexcept final;
 		bool AllowFrustumCulling()const noexcept final;
 		bool AllowHzbOcclusionCulling()const noexcept final;
-		bool AllowHdOcclusionCulling()const noexcept final; 
-		bool AllowDisplayOccCullingDepthMap()const noexcept final; 
+		bool AllowHdOcclusionCulling()const noexcept final;
+		bool AllowDisplayOccCullingDepthMap()const noexcept final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

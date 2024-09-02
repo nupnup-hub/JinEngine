@@ -28,7 +28,7 @@ SOFTWARE.
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"   
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
-#include"../../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../../Command/Dx/JDx12CommandContext.h"
 #include"../../../Utility/Dx/JDx12ObjectCreation.h" 
 #include"../../../FrameResource/Dx/JDx12FrameResource.h" 
@@ -62,7 +62,7 @@ namespace JinEngine::Graphic
 	};
 	namespace Private
 	{
-#ifdef _DEBUG
+#ifdef USE_DEBUG
 		static constexpr bool allowDebug = false;
 		static constexpr uint bufferSize = 32;
 #else
@@ -176,8 +176,9 @@ namespace JinEngine::Graphic
 
 		JDx12CommandContext* context = static_cast<JDx12CommandContext*>(computeSet->context); 
 		
-		auto gInterface = helper.cam->GraphicResourceUserInterface();
-		auto aInterface = helper.scene->GpuAcceleratorUserInterface();
+		auto gInterface = helper.GetResourceInterface();
+		auto fInterface = helper.GetFrameInterface();
+		auto aInterface = helper.GetGpuAcceleratorInterface();
 		auto ssaoDesc = helper.cam->GetSsaoDesc();
 
 		auto rtSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
@@ -187,7 +188,7 @@ namespace JinEngine::Graphic
 		auto aoSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
 		auto accelSet = context->ComputeSet(aInterface);
 
-		const DirectX::XMMATRIX viewM = helper.cam->GetView();
+		const DirectX::XMMATRIX viewM = helper.cam->GetView().LoadXM();
 		JMatrix4x4 camInvView;
 		camInvView.StoreXM(XMMatrixTranspose(XMMatrixInverse(nullptr, viewM)));
 
@@ -199,7 +200,7 @@ namespace JinEngine::Graphic
 		context->Transition(aoSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
 		context->SetComputeRootSignature(globalRootSignature.Get());
-		context->SetComputeRootConstantBufferView(Private::ssaoCBIndex, J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, helper.GetCamFrameIndex(CameraFrameLayer::ssao));
+		context->SetComputeRootConstantBufferView(Private::ssaoCBIndex, fInterface, J_FRAME_RESOURCE_UPLOAD_TYPE::SSAO_PASS);
 		context->SetComputeRootConstantBufferView(Private::sampleCBIndex, sampleCB.get(), 3);
 		context->SetComputeRoot32BitConstants(Private::rtCBIndex, 2, camInvView);
 		context->SetTlasView(Private::asViewindex, accelSet);
@@ -239,6 +240,9 @@ namespace JinEngine::Graphic
 		BuildRootSignature(dx12Device);
 		BuildShaderResource(dx12Device);
 		BuildBuffer(device, dx12Gm);
+ 
+		cachedDevice = dx12Device;
+		cachedGm = dx12Gm;
 	}
 	void JDx12RaytracingAmbientOcclusion::BuildRootSignature(JDx12GraphicDevice* device)
 	{
@@ -498,15 +502,15 @@ namespace JinEngine::Graphic
 			ssaoRandomVec[i] = noise.Normalize();
 		}
 
-		JGraphicResourceCreationDesc desc;
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_AMBIENT_OCCLUSION);
+		JGraphicResourceCreationDesc desc(typeSet);
 		desc.width = Private::randomWidth;
 		desc.height = Private::randomWidth;
 		desc.textureDesc = std::make_unique<JTextureCreationDesc>();
 		desc.textureDesc->mipMapDesc.type = J_GRAPHIC_MIP_MAP_TYPE::NONE; 
 		desc.uploadBufferDesc = std::make_unique<JUploadBufferCreationDesc>(ssaoRandomVec.data(), ssaoRandomVec.size() * sizeof(JVector4F));
-
-		randomVecInfo = gm->CreateResource(device, desc, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON);
-
+ 
+		randomVecInfo = gm->CreateResource(device, desc); 
 		if constexpr (Private::allowDebug)
 		{
 			if (debugHandle == nullptr)
@@ -520,6 +524,8 @@ namespace JinEngine::Graphic
 		ClearStateObject();
 		ClearShaderTable();
 		ClearBuffer();
+		cachedDevice = nullptr;
+		cachedGm = nullptr;
 	}
 	void JDx12RaytracingAmbientOcclusion::ClearRootSignature()
 	{ 
@@ -538,8 +544,8 @@ namespace JinEngine::Graphic
 	}
 	void JDx12RaytracingAmbientOcclusion::ClearBuffer()
 	{
-		sampleCB = nullptr;
-		randomVecInfo = nullptr;
+		sampleCB = nullptr; 
+		cachedGm->DestroyGraphicTextureResource(cachedDevice, randomVecInfo.Release());
 		if constexpr (Private::allowDebug)
 			debugHandle = nullptr;
 	}

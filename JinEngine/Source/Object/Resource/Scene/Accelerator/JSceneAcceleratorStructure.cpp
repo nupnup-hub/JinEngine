@@ -122,10 +122,13 @@ namespace JinEngine
 			bvh[i] = std::make_unique<JBvh>((J_ACCELERATOR_LAYER)i);
 			kdTree[i] = std::make_unique<JKdTree>((J_ACCELERATOR_LAYER)i);
 
-			spaceSpatialVec.push_back(octree[i].get());
-			spaceSpatialVec.push_back(bvh[i].get());
-			spaceSpatialVec.push_back(kdTree[i].get());
+			//spaceSpatialVec.push_back(octree[i].get());
+			//spaceSpatialVec.push_back(bvh[i].get());
+			//spaceSpatialVec.push_back(kdTree[i].get());
 		} 
+		if(!activateTrigger)
+			optionCash = std::make_unique<ActivatedOptionCash>();
+		gpuAccelerator = std::make_unique<JGpuAccelerator>();
 	}
 	JSceneAcceleratorStructure::~JSceneAcceleratorStructure() {}
 	void JSceneAcceleratorStructure::Clear()noexcept
@@ -140,6 +143,7 @@ namespace JinEngine
 			bvh[i].reset();
 			kdTree[i].reset();
 		}
+		gpuAccelerator = nullptr;
 		spaceSpatialVec.clear();
 	}
 	/*void JSceneAcceleratorStructure::Culling(const JCullingFrustum& camFrustum)noexcept
@@ -163,9 +167,9 @@ namespace JinEngine
 				data->Culling(info);
 				cullingOnece = true;
 			}
-		}
+		} 
 		if (!cullingOnece && !info.useJFrustum)
-			info.cullUser.OffCullingArray(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM);
+			info.cullUser->OffCullingArray(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 	}
 	void JSceneAcceleratorStructure::Intersect(JAcceleratorIntersectInfo& info)const noexcept
 	{ 
@@ -222,7 +226,7 @@ namespace JinEngine
 	{ 
 		const J_COMPONENT_TYPE compType = comp->GetComponentType();
 		auto gameObject = comp->GetOwner();
-		if ((compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM || compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM) && gameObject->HasRenderItem())
+		if ((compType == J_COMPONENT_TYPE::ENGINE_RENDERITEM || compType == J_COMPONENT_TYPE::ENGINE_TRANSFORM) && gameObject->HasRenderItem())
 		{
 			auto renderItem = gameObject->GetRenderItem();
 			const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(renderItem->GetRenderLayer());
@@ -235,7 +239,7 @@ namespace JinEngine
 				gpuAccelerator->UpdateTransform(renderItem);
 		}
 
-		if (gpuAccelerator != nullptr && compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+		if (gpuAccelerator != nullptr && compType == J_COMPONENT_TYPE::ENGINE_LIGHT)
 			gpuAccelerator->UpdateTransform(comp);
 	}
 	void JSceneAcceleratorStructure::AddGameObject(const JUserPtr<JRenderItem>& rItem)noexcept
@@ -303,11 +307,7 @@ namespace JinEngine
 
 		isValidBBox = !result.IsDistanceZero();
 		return result;
-	}
-	const Graphic::JGpuAcceleratorUserInterface JSceneAcceleratorStructure::GpuAcceleratorUserInterface()const noexcept
-	{
-		return Graphic::JGpuAcceleratorUserInterface(gpuAccelerator.get());
-	}
+	} 
 	void JSceneAcceleratorStructure::SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& option)
 	{
 		if (activateTrigger)
@@ -330,23 +330,27 @@ namespace JinEngine
 			optionCash->SetKdTreeOption(layer, option);
 	}
 	void JSceneAcceleratorStructure::SetGpuAccelerator(JGpuAcceleratorOption option)
-	{
-		if (!JGpuAccelerator::CanBuild())
+	{ 
+		if (!gpuAccelerator->CanBuild())
 			return;
 
-		if (gpuAccelerator == nullptr)
-			gpuAccelerator = std::make_unique<JGpuAccelerator>();
- 
 		if constexpr (restrictGpuAccLightShape)
-		{ 
-			if (Core::HasSQValueEnum(option.flag, Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE))
+		{
+			if (Core::HasSQValueEnum(option.flag, J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE))
 				J_LOG_PRINT_OUT("Invalid data", "J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE");
-			option.flag = Core::MinusSQValueEnum(option.flag, Graphic::J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE);
+			option.flag = Core::MinusSQValueEnum(option.flag, J_GPU_ACCELERATOR_BUILD_OPTION_LIGHT_SHAPE);
 		}
 		if (activateTrigger)
 			gpuAccelerator->SetOption(option);
 		else
 			optionCash->SetGpuOption(option);
+	} 
+	void JSceneAcceleratorStructure::SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& data)
+	{
+		if (gpuAccelerator == nullptr)
+			return;
+
+		gpuAccelerator->SetGraphicData(data);
 	}
 	bool JSceneAcceleratorStructure::IsActivated(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)
 	{
@@ -363,7 +367,7 @@ namespace JinEngine
 			bvh[(uint)layer]->IsAcceleratorActivated() && bvh[(uint)layer]->IsCullingActivated() ||
 			kdTree[(uint)layer]->IsAcceleratorActivated() && kdTree[(uint)layer]->IsCullingActivated();
 	}
-	void JSceneAcceleratorStructure::Activate()noexcept
+	void JSceneAcceleratorStructure::Activate(const JFastPtr<JGraphicModuleManagedDataFrame>& data)noexcept
 	{
 		if (!activateTrigger)
 		{
@@ -377,7 +381,9 @@ namespace JinEngine
 				spaceSpatialVec.push_back(bvh[i].get());
 				spaceSpatialVec.push_back(kdTree[i].get());
 			}
-			if (gpuAccelerator != nullptr)
+
+			SetGraphicData(data);
+			if(gpuAccelerator != nullptr)
 				gpuAccelerator->SetOption(optionCash->GetGpuOption());
 
 			optionCash.reset();
@@ -400,7 +406,7 @@ namespace JinEngine
 				kdTree[i]->Clear();
 			}
 			if (gpuAccelerator != nullptr)
-			{
+			{ 
 				optionCash->SetGpuOption(gpuAccelerator->GetOption());
 				gpuAccelerator->Clear();
 			}
@@ -435,12 +441,5 @@ namespace JinEngine
 				break;
 			}
 		}
-	}
-	void JSceneAcceleratorStructure::RegisterInterfacePointer()
-	{
-		if (gpuAccelerator == nullptr)
-			return;
-
-		gpuAccelerator->RegisterInterfacePointer();
 	}
 }

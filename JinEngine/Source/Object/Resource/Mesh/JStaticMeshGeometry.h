@@ -50,13 +50,13 @@ namespace JinEngine
 				std::unique_ptr<Core::JMeshGroup>&& meshGroup);
 		};
 	protected: 
-		class LoadMetaData final : public JMeshGeometry::LoadMetaData
+		class LoadMetadata final : public JMeshGeometry::LoadMetadata
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			Core::J_MESHGEOMETRY_TYPE meshType;
 		public:
-			LoadMetaData(const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JStaticMeshGeometryPrivate;
@@ -65,7 +65,11 @@ namespace JinEngine
 		std::unique_ptr<JStaticMeshGeometryImpl> impl;
 	public: 
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final; 
 		Core::J_MESHGEOMETRY_TYPE GetMeshGeometryType()const noexcept final;
+	public:
+		void DoActivate()noexcept final;
+		void DoDeActivate()noexcept final;
 	private: 
 		JStaticMeshGeometry(InitData& initData);
 		~JStaticMeshGeometry();

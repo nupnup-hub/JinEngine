@@ -35,11 +35,4 @@ namespace JinEngine::Graphic
 		//생성 파괴를 스스로 관리한다.
 		//추후 재설계를 하기 전까지는 여기서 필요한 공통data를 관리한다. 
 	}
-
-	JShaderDataHolder::JShaderDataHolder()
-	{ 
-	}
-	JShaderDataHolder::~JShaderDataHolder()
-	{ 
-	} 
 }

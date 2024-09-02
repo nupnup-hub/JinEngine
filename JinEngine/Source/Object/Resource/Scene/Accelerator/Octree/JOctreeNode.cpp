@@ -32,8 +32,7 @@ SOFTWARE.
 #include"../../../../Component/RenderItem/JRenderItemPrivate.h"
 #include"../../../../Component/Transform/JTransform.h" 
 #include"../../../../../Core/Math/JMathHelper.h"  
-#include"../../../../../Core/Math/JVectorExtend.h"
-#include"../../../../../Graphic/Culling/JCullingInterface.h"
+#include"../../../../../Core/Math/JVectorExtend.h" 
 
 namespace JinEngine
 {

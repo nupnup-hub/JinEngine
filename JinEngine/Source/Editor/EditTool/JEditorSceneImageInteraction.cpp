@@ -94,7 +94,7 @@ namespace JinEngine::Editor
 			//Yv = Yndc * r * tan(fov) * z= (Yndc * z) / proj(1, 1)	..투영창으로 스케일링 
 			//screen상에 점이므로 z 는 기본적으로 1.0이다
 			const JVector2<float> ndcPos = ToNdcPos(cam, mousePos, sceneImageScreenMinPoint);
-			const JMatrix4x4 proj = cam->GetProj4x4();
+			const JMatrix4x4 proj = cam->GetProj();
 			return JVector2<float>((ndcPos.x * pointZValue) / proj(0, 0), (ndcPos.y * pointZValue) / proj(1, 1));
 		}
 	}
@@ -108,7 +108,7 @@ namespace JinEngine::Editor
 
 		//계산에서 구한 pos는 world변환 후 ray dir로 사용 ray pos는 cam eye를 world로 변환한값이다
 		JVector2<float> viewPos = Private::ToViewPos(cam, JGui::GetMousePos(), sceneImageWorldMinPoint);
-		const XMMATRIX invView = XMMatrixInverse(nullptr, cam->GetView());
+		const XMMATRIX invView = XMMatrixInverse(nullptr, cam->GetView().LoadXM());
 
 		const XMVECTOR rayOri = XMVector3TransformCoord(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), invView);
 		const XMVECTOR rayDir = XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(viewPos.x, viewPos.y, 1.0f, 0.0f), invView));
@@ -133,7 +133,7 @@ namespace JinEngine::Editor
 		JVector2<float> posV00 = Private::ToViewPos(cam, minMousePos, sceneImageWorldMinPoint);
 		JVector2<float> posV01 = Private::ToViewPos(cam, maxMousePos, sceneImageWorldMinPoint);
 
-		const XMMATRIX view = cam->GetView();
+		const XMMATRIX view = cam->GetView().LoadXM();
 		const XMMATRIX invView = XMMatrixInverse(nullptr, view);
 
 		const JVector3<float> rayV00 = XMVector3Normalize(XMVectorSet(posV00.x, posV00.y, 1.0f, 0.0f));

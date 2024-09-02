@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once 
 #include"../JGraphicDebug.h" 
 #include"../../JGraphicEnum.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
@@ -56,9 +56,9 @@ namespace JinEngine
 				DEBUG_TYPE_ALBEDO,
 				DEBUG_TYPE_SPECULAR,
 				DEBUG_TYPE_NORMAL,
-				DEBUG_TYPE_TANGENT, 
-				//DEBUG_TYPE_VELOCITY,
+				DEBUG_TYPE_TANGENT,  
 				DEBUG_TYPE_AO,
+				//DEBUG_TYPE_VELOCITY,
 				DEBUG_TYPE_COUNT
 			};
 		private: 
@@ -68,10 +68,10 @@ namespace JinEngine
 				CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle;  
 				CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
 			public:
-				JVector2<uint> size = JVector2<uint>::Zero();
-				JVector2F nearFar = 0; 
+				JVector2<uint> size = JVector2<uint>::Zero(); 
 			public:
 				uint arrayCount = 0;
+				uint arrayPerView = 0;
 				int arrayIndex = invalidIndex;
 			public:
 				bool isNonLinearDepthMap = true;
@@ -88,7 +88,7 @@ namespace JinEngine
 					JDx12GraphicResourceComputeSetBufferBase& destBase);
 			public:
 				void SetOcclusionBuffer(JDx12CommandContext* context,
-					JGraphicResourceUserInterface* gRInterface,
+					JGraphicResourceInterface* gRInterface,
 					const JDrawHelper& helper,
 					const J_GRAPHIC_RESOURCE_TYPE srcType,
 					const J_GRAPHIC_RESOURCE_TYPE destType,

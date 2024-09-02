@@ -92,7 +92,15 @@ SOFTWARE.
 #define RESTIR_UNBIASED 1
 #define RESTIR_ZERO_WEIGHT 1 
 
-
+struct ReusePassCB
+{
+    float3 camPrePosW;
+    uint currSampleSetIndex; 
+    uint updateCount;
+    uint forceClearPrevalue; ///< Clear temporal and spatial reservoirs.
+    uint pad00;
+};
+ 
 StructuredBuffer<RestirSamplePack> initialSample : register(t1);
 StructuredBuffer<RestirReserviorPack> preTemporal : register(t2);
 StructuredBuffer<RestirReserviorPack> preSpatial : register(t3);

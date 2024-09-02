@@ -27,6 +27,7 @@ SOFTWARE.
 #include"JToneMapping.h"
 #include"JConvertColor.h"
 #include"JBloom.h"
+#include"JBlur.h"
 #include"JAntialise.h"
 #include"JPostProcessExposure.h"
 #include"JPostProcessHistogram.h"
@@ -43,8 +44,10 @@ namespace JinEngine::Graphic
 		NONE = 0,
 		TONE_MAPPING = 1 << 0,
 		BLOOM = 1 << 1,
-		FXAA = 1 << 2,
-		EXPOSURE= 1 << 3
+		BLUR = 1 << 2,
+		FXAA = 1 << 3,
+		EXPOSURE= 1 << 4,
+		TAA = 1 << 5
 	};
 	void JPostProcessPipeline::ApplyPostProcess(JPostProcessComputeSet* computeSet, const JDrawHelper& helper, const bool isUpdatedThisFrame)
 	{ 
@@ -54,14 +57,21 @@ namespace JinEngine::Graphic
 		if (!isUpdatedThisFrame && helper.option.postProcess.exposureType == J_EXPOSURE_TYPE::NONE)
 			return;
 		  
-		auto gInfo = computeSet->gm->GetInfo(helper.cam.Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		computeSet->imageShareData = computeSet->shareData->GetResourceDependencyData(J_GRAPHIC_TASK_TYPE::CONTROLL_POST_PROCESS_PIPELINE, gInfo);
+		auto gInterface = helper.GetResourceInterface(); 
+		auto gInfo = gInterface->GetGraphicInfo(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		computeSet->imageShareData = computeSet->shareData->GetResourceDependencyData(J_GRAPHIC_TASK_TYPE::CONTROLL_POST_PROCESS_PIPELINE, gInfo.Get());
 		if (computeSet->imageShareData == nullptr)
 			return;
 		   
 		POST_PROCESSING_TYPE appliedType = POST_PROCESSING_TYPE::NONE;
 		computeSet->imageShareData->UpdateBegin();
 		computeSet->ppSet->convertColor->ApplyToLinearColor(computeSet, helper);
+
+		if (helper.option.postProcess.useTaa)
+		{
+			computeSet->ppSet->aa->ApplyTAA(computeSet, helper);
+			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::TAA);
+		}
 
 		if (helper.option.postProcess.useBloom)
 		{
@@ -78,13 +88,13 @@ namespace JinEngine::Graphic
 		}
 		if(helper.option.postProcess.useFxaa)
 		{
-			computeSet->ppSet->aa->ApplyFxaa(computeSet, helper);
+			computeSet->ppSet->aa->ApplyFXAA(computeSet, helper);
 			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::FXAA);
 		}
-
+ 
+		computeSet->ppSet->convertColor->ApplyToDisplayColor(computeSet, helper);
 		if (appliedType != POST_PROCESSING_TYPE::NONE)
 		{
-			computeSet->ppSet->convertColor->ApplyToDisplayColor(computeSet, helper);
 			if (helper.option.postProcess.exposureType == J_EXPOSURE_TYPE::AUTO)
 			{
 				computeSet->ppSet->histogram->CreateHistogram(computeSet, helper);
@@ -94,6 +104,13 @@ namespace JinEngine::Graphic
 			if (helper.option.postProcess.useHistogramDebug)
 				computeSet->ppSet->histogram->DrawHistogram(computeSet, helper);
 		}
+		if (helper.option.postProcess.useBlur)
+		{
+			//¹Ì±¸Çö
+			computeSet->ppSet->blur->ApplyBlur(computeSet, helper);
+			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::BLUR);
+		}
+
 		computeSet->imageShareData->UpdateEnd();
 	}
 }

@@ -56,19 +56,19 @@ namespace JinEngine
 				using GraphicDebugInterface = Graphic::JGraphicPrivate::DebugInterface;
 				Graphic::JGraphicResourceManager* grManager = GraphicDebugInterface::GetGraphicResourceManager();
 
-				Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
-				Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
+				Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_RESOURCE_TYPE).name());
+				Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(J_GRAPHIC_BIND_TYPE).name());
 				auto rNameVec = rInfo->GetEnumNameVec();
 				auto bNameVec = bInfo->GetEnumNameVec();
 				 
-				for (uint i = 0; i < (uint)Graphic::J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
+				for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 				{ 
-					const Graphic::J_GRAPHIC_RESOURCE_TYPE rType = (Graphic::J_GRAPHIC_RESOURCE_TYPE)i;
+					const J_GRAPHIC_RESOURCE_TYPE rType = (J_GRAPHIC_RESOURCE_TYPE)i;
 					JGui::Text(rNameVec[i].c_str());
 					JGui::Text(("Resource Count:" + std::to_string(grManager->GetResourceCount(rType))));
-					for (uint j = 0; j < (uint)Graphic::J_GRAPHIC_BIND_TYPE::COUNT; ++j)
+					for (uint j = 0; j < (uint)J_GRAPHIC_BIND_TYPE::COUNT; ++j)
 					{
-						const Graphic::J_GRAPHIC_BIND_TYPE bType = (Graphic::J_GRAPHIC_BIND_TYPE)j;
+						const J_GRAPHIC_BIND_TYPE bType = (J_GRAPHIC_BIND_TYPE)j;
 						JGui::Text(bNameVec[j].c_str());
 						JGui::Text(("View Count:" + std::to_string(grManager->GetViewCount(rType, bType))));
 						JGui::Text(("View Capacity:" + std::to_string(grManager->GetViewCapacity(rType, bType))));

@@ -26,23 +26,22 @@ SOFTWARE.
 #pragma once 
 #include"../Core/JCoreEssential.h"
 #include"../Core/Math/JVector.h"
-#include"../Core/Unit/JManagedVariable.h"
+#include"../Core/Unit/JManagedVariable.h" 
 
-#define _DEBUG
-#ifdef _DEBUG
-#define GRAPIC_DEBUG
+#ifdef DEVELOP
+#define USE_DEBUG
+#define USE_PIX
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif
 
+#include"../Object/GraphicRule/JGraphicModuleType.h"
 namespace JinEngine
 {
 	namespace Graphic
 	{
 		using GraphicFence = uint64;
-		//data type경우 값을 void*로 캐스팅가능(비권장) void* 주소값에 값이채워짐
-		//사용자지정 데이터타입(클래스, 구조체)경우는 주소값만 전달해야함
-		using ResourceHandle = void*;		 
+ 	 
 
 		namespace Constants
 		{

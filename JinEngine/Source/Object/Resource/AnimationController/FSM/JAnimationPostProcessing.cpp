@@ -54,8 +54,8 @@ namespace JinEngine
 		if (tarStRefIndex == JSkeletonFixedData::incorrectJointIndex || srcStRefIndex == JSkeletonFixedData::incorrectJointIndex)
 			return false;
 
-		const uint8 srcRootRefIndex = srcAvatar->jointReferenceMap.find(root)->second;
-		const uint8 tarRootRefIndex = tarAvatar->jointReferenceMap.find(root)->second;
+		const uint8 srcRootRefIndex = srcAvatar->GetJointReferenceIndex(root);
+		const uint8 tarRootRefIndex = tarAvatar->GetJointReferenceIndex(root);
 
 		const uint8 srcStIndex = srcAvatar->jointReference[srcStRefIndex];
 		const uint8 tarStIndex = tarAvatar->jointReference[tarStRefIndex];
@@ -79,7 +79,7 @@ namespace JinEngine
 		JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
 		JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
 		uint8 nowJointRefIndex = startJointRefIndex;
-		const uint8 rootParentRefIndex = srcAvatar->jointReferenceParent[rootJointRefIndex];
+		const uint8 rootParentRefIndex = srcAvatar->GetJointReferenceParent(rootJointRefIndex);
 		const uint8 rootIndex = srcAvatar->jointReference[rootJointRefIndex];
 		//const XMMATRIX rootM = srcSkeleton->GetBindPose(rootIndex); 
 		const XMMATRIX root = bindPose[rootIndex].LoadXM();
@@ -96,7 +96,7 @@ namespace JinEngine
 			updateData->ikJoint[ikNumber][ikCount].initTransform.StoreXM(srcInitLM);
 			updateData->ikJoint[ikNumber][ikCount].jointIndex = nowJointIndex;
 			updateData->ikJoint[ikNumber][ikCount].jointRefIndex = nowJointRefIndex;
-			nowJointRefIndex = srcAvatar->jointReferenceParent[nowJointRefIndex];
+			nowJointRefIndex = srcAvatar->GetJointReferenceParent(nowJointRefIndex);
 			++ikCount;
 		}
 

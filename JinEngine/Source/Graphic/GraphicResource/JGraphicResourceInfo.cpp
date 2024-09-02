@@ -24,7 +24,6 @@ SOFTWARE.
 
 
 #include"JGraphicResourceInfo.h"  
-#include"../JGraphicPrivate.h"
 #include"../../Core/Reflection/JTypeBase.h"
 
 namespace JinEngine
@@ -35,7 +34,7 @@ namespace JinEngine
 		{
 			switch (rType)
 			{
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:	//owner is swapchain class
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:	//owner is swapchain class
 				return false;
 			default:
 				return true;
@@ -121,11 +120,7 @@ namespace JinEngine
 		bool JGraphicResourceInfo::HasView(const J_GRAPHIC_BIND_TYPE bindType)const noexcept
 		{
 			return viewInfo[(int)bindType].count > 0;
-		}
-		bool JGraphicResourceInfo::Destroy(JGraphicResourceInfo* info)
-		{
-			return JGraphicPrivate::ResourceInterface::DestroyGraphicTextureResource(info);
-		}
+		} 
 		void JGraphicResourceInfo::TryCreateOptionViewInfo()
 		{
 			if (optionalInfo == nullptr)

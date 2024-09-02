@@ -408,9 +408,7 @@ namespace JinEngine
 					return i;
 			}
 			return searchFail;
-		}
-
-
+		} 
 		template<typename Type, typename VecType, typename ...Param>
 		static std::vector<VecType> GetPassConditionElement(const std::vector<Type>& vec, bool(*condPtr)(const Type&, Param...), Param... var)
 		{
@@ -499,7 +497,13 @@ namespace JinEngine
 		static void AddValue(T* vPtr, U& value, std::index_sequence<Is...>)
 		{  
 			((value += vPtr[Is]), ...); 
-		} 
+		}   
+		template<typename T,  size_t ...Is>
+		static void AddOne(T* vPtr, std::index_sequence<Is...>)
+		{  
+			if constexpr (Core::IsNumber_V<T>)
+				((++(vPtr[Is])), ...);		 
+		}
 	};
 
 	using JCUtil = JCommonUtility;

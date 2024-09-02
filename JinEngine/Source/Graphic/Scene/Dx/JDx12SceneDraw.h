@@ -25,11 +25,10 @@ SOFTWARE.
 
 #pragma once
 #include"../JSceneDraw.h"
-#include"../../DataSet/Dx/JDx12GraphicDataSet.h"
+#include"../../DataSet/Dx/JDx12GraphicTaskDataSet.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/JGraphicResourceInterface.h"
-#include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
-#include<d3d12.h>     
+#include"../../Shader/Dx/JDx12ShaderDataHolder.h"   
 #include<wrl/client.h>
 
 namespace JinEngine
@@ -86,7 +85,7 @@ namespace JinEngine
 				int camFrameIndex = invalidIndex;
 				int sceneFrameIndex = invalidIndex;
 			public:
-				Graphic::JGraphicResourceUserInterface gRInterface;
+				JGraphicResourceInterface* gInterface;
 			public:
 				JDx12GraphicResourceComputeSet rtSet;
 				JDx12GraphicResourceComputeSet dsSet;
@@ -128,12 +127,9 @@ namespace JinEngine
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> forwardRootSignature;
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> deferredGeometryRootSignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> deferredShadingRootSignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> deferredShadingRootSignature; 
 		private:
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> velocityRootsignature;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> velocityShader;
-		private:
-			JOwnerPtr<JDx12GraphicShaderDataHolder> deferredShadingHolder[INNER_DEFERRED_SHADER_COUNT];
+			JOwnerPtr<JDx12GraphicShaderDataHolder> deferredShadingHolder[INNER_DEFERRED_SHADER_COUNT]; 
 		public:
 			~JDx12SceneDraw();
 		public:
@@ -174,7 +170,6 @@ namespace JinEngine
 			void DrawSceneGameObject(JDx12CommandContext* context, const JDrawHelper& helper);
 			void DrawFullScreenGeometry(JDx12CommandContext* context, const ResourceDataSet& rSet, const JDrawHelper& helper);	//for deferred rendering on single thread if multithread call DrawSceneShadeMultiThread	
 			void CopyPreTemporalResource(JDx12CommandContext* context, ResourceDataSet& rSet, const JDrawHelper& helper);
-			void ComputeVelocity(JDx12CommandContext* context, const ResourceDataSet& set, const JDrawHelper& helper);
 		public:
 			//for multi thread
 			//clear rtv dsv and set resource state
@@ -194,8 +189,6 @@ namespace JinEngine
 			void DrawSceneDebugUIMultiThread(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)final;
 			void DrawSceneShade(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)final;
 			void DrawSceneShadeMultiThread(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)final;
-		public:
-			void ComputeSceneDependencyTemporalResource(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)final;
 		private:
 			void DrawGameObject(JDx12CommandContext* context,
 				const std::vector<JUserPtr<JGameObject>>& gameObject,
@@ -214,10 +207,8 @@ namespace JinEngine
 			void BuildForwardRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildDeferredGeometryRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildDeferredShadingRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
-			void BuildVelocityRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void ReBuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
-			void BuildDeferredShader(const JGraphicShaderCompileSet& dataSet);
-			void BuildVelocityShader(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
+			void BuildDeferredShader(const JGraphicShaderCompileSet& dataSet); 
 		private:
 			void ClearResource();
 		};

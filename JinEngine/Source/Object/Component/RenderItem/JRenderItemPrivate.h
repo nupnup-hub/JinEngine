@@ -30,13 +30,7 @@ namespace JinEngine
 {
 	class JRenderItem; 
 	class JAcceleratorNode;
-	class JBvh;
-	namespace Graphic
-	{
-		class JGraphic;   
-		class JFrameIndexAccess; 
-		struct JObjectConstantsSet;
-	}
+	class JBvh; 
 	//Debug
 	/*
 	namespace Editor
@@ -68,39 +62,7 @@ namespace JinEngine
 		{
 		private:
 			void Clear(Core::JIdentifier* ptr, const bool isForced)final;
-		};
-		class FrameUpdateInterface final
-		{
-		private:
-			friend class Graphic::JGraphic; 
-		private:   
-			static bool UpdateStart(JRenderItem* rItem, const bool isUpdateForced)noexcept;
-			static void UpdateFrame(JRenderItem* rItem, Graphic::JObjectConstantsSet& set)noexcept;
-			static void UpdateEnd(JRenderItem* rItem)noexcept;
-		private:
-			//Count submesh
-			static int GetObjectFrameIndex(JRenderItem* rItem)noexcept;		
-			//Count ritem	 
-			static int GetBoundingFrameIndex(JRenderItem* rItem)noexcept;
-			static int GetOccObjectFrameIndex(JRenderItem* rItem)noexcept;
-			static int GetRefInfoFrameIndex(JRenderItem* rItem)noexcept;
-		private:
-			static bool IsLastFrameHotUpdated(JRenderItem* rItem)noexcept;
-			static bool IsLastUpdated(JRenderItem* rItem)noexcept; 
-		};
-		class FrameIndexInterface
-		{
-		private: 
-			friend class JAcceleratorNode;
-			friend class JBvh;  
-			friend class Graphic::JFrameIndexAccess;
-		private:
-			//per submesh
-			static int GetObjectFrameIndex(JRenderItem* rItem)noexcept;
-			//per ritem	 
-			static int GetBoundingFrameIndex(JRenderItem* rItem)noexcept;
-			static int GetRefInfoFrameIndex(JRenderItem* rItem)noexcept;
-		};
+		}; 
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;

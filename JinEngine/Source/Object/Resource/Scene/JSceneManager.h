@@ -30,12 +30,9 @@ SOFTWARE.
 
 namespace JinEngine
 {
+	class JObject;
 	class JResourceObject;
-	class JScene;
-	namespace Graphic
-	{
-		class JFrameUpdateUserAccess;
-	}
+	class JScene; 
 	namespace Core
 	{
 		template <class T> class JCreateUsingNew;
@@ -58,7 +55,7 @@ namespace JinEngine
 		bool IsRegistered(JScene* scene)noexcept;
 		bool IsFirstScene(JScene* scene)const noexcept;
 	public:
-		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<Graphic::JFrameUpdateUserAccess>& observationFrame);
+		//bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<JObject>& object);
 	private:
 		JSceneManager();
 		~JSceneManager();

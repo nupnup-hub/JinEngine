@@ -24,17 +24,16 @@ SOFTWARE.
 
 
 #include"JShaderDataHandler.h"
-#include"../../Object/Resource/Shader/JShader.h"
-#include"../../Object/Resource/Shader/JShaderPrivate.h"
+#include"../../Object/Resource/Shader/JShader.h" 
  
 namespace JinEngine::Graphic
 { 
 	void JGraphicShaderDataHandler::RecompileUserShader(JShader* shader)
 	{
-		JShaderPrivate::CompileInterface::RecompileGraphicShader(shader);
+		shader->RecompileGraphicShader();
 	}
 	void JComputeShaderDataHandler::RecompileUserShader(JShader* shader)
 	{
-		JShaderPrivate::CompileInterface::RecompileComputeShader(shader);
+		shader->RecompileComputeShader();
 	} 
 }

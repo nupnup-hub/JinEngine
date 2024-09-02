@@ -48,7 +48,7 @@ namespace JinEngine
 			virtual bool HasDependency(const JGraphicOption::TYPE type)const noexcept;
 		private:
 			virtual void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set);
-			virtual void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set);
+			virtual void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set); 
 		};
 	}
 }

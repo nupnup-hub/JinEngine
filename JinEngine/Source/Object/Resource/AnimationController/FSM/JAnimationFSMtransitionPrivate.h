@@ -52,7 +52,7 @@ namespace JinEngine
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
 		};
-		class UpdateInterface final : public JFSMtransitionPrivate::UpdateInterface
+		class AnimationUpdateInterface final : public JFSMtransitionPrivate::UpdateInterface
 		{
 		private:
 			void Initialize(const JUserPtr<Core::JFSMtransition>& trans)noexcept final;

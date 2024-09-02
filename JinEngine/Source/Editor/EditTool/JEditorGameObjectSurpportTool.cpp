@@ -125,7 +125,7 @@ namespace JinEngine
 			const JVector2F clipSpace = (fixedScale / wndSize) * 0.5f;
 
 			//cam to seleceted distance
-			const JVector3F posV = XMVector3Transform(posW.ToXmV(), cam->GetView());
+			const JVector3F posV = XMVector3Transform(posW.ToXmV(), cam->GetView().LoadXM());
 			const float z = posV.z;
 
 			//clipSpace to world space
@@ -677,12 +677,11 @@ namespace JinEngine
 		}
 		JEditorGeometryTool::FrustumView::~FrustumView()
 		{ 
-			Clear();
+			ClearResource();
 		}
 		void JEditorGeometryTool::FrustumView::Clear()
 		{
-			if (root.IsValid())
-				JGameObject::BeginDestroy(root.Release());
+			ClearResource();
 		}
 		void JEditorGeometryTool::FrustumView::Update()
 		{
@@ -737,6 +736,11 @@ namespace JinEngine
 		{
 			return root != nullptr && nearFrustum != nullptr && farFrustum != nullptr && (targetCam != nullptr && targetCam->IsActivated());
 		}
+		void JEditorGeometryTool::FrustumView::ClearResource()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
+		}
 
 		JEditorGeometryTool::SphereView::SphereView(const JUserPtr<JPointLight>& lit, const JUserPtr<JGameObject>& parent)
 		{
@@ -755,12 +759,11 @@ namespace JinEngine
 		}
 		JEditorGeometryTool::SphereView::~SphereView()
 		{
-			Clear();
+			ClearResource();
 		}
 		void JEditorGeometryTool::SphereView::Clear()
 		{
-			if (root.IsValid())
-				JGameObject::BeginDestroy(root.Release());
+			ClearResource();
 		}
 		void JEditorGeometryTool::SphereView::Update()
 		{
@@ -816,6 +819,11 @@ namespace JinEngine
 			return root != nullptr && xyCircle != nullptr && xzCircle != nullptr && yzCircle != nullptr && targetPoint != nullptr && targetPoint->IsActivated() &&
 				targetPoint->GetOwner()->IsSelected();
 		}
+		void JEditorGeometryTool::SphereView::ClearResource()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
+		}
 
 		JEditorGeometryTool::ConeView::ConeView(const JUserPtr<JSpotLight>& lit, const JUserPtr<JGameObject>& parent)
 		{
@@ -835,12 +843,11 @@ namespace JinEngine
 		}
 		JEditorGeometryTool::ConeView::~ConeView()
 		{
-			Clear();
+			ClearResource();
 		}
 		void JEditorGeometryTool::ConeView::Clear()
 		{
-			if (root.IsValid())
-				JGameObject::BeginDestroy(root.Release());
+			ClearResource();
 		}
 		void JEditorGeometryTool::ConeView::Update()
 		{
@@ -852,21 +859,19 @@ namespace JinEngine
 			if (targetSpot != nullptr)
 			{
 				transform = targetSpot->GetOwner()->GetTransform();
-				dirction = targetSpot->GetDirection();
+				dirction = targetSpot->GetWorldDirection();
 				range = targetSpot->GetRange();
 				outAngle = targetSpot->GetOuterConeAngle();
 			}
 			if (transform == nullptr)
 				return;
-
-			//bounding
-			float radius = 0.5f; 
-			float bottomRadius = range * tan(outAngle);
-
+			 
 			//boundingCone face z+
 			JMatrix4x4 world;
-			world.StoreXM(targetSpot->GetMeshWorldM());
-			boundingCone->GetTransform()->SetTransform(world); 
+			world.StoreXM(targetSpot->GetMeshWorldM()); 
+			 
+			JUserPtr<JTransform> coneTransform = boundingCone->GetTransform();
+			coneTransform->SetTransform(world); 
 		}
 		size_t JEditorGeometryTool::ConeView::GetTargetGuid()const noexcept
 		{
@@ -883,6 +888,11 @@ namespace JinEngine
 		bool JEditorGeometryTool::ConeView::IsValid()const noexcept
 		{
 			return root != nullptr && boundingCone != nullptr && targetSpot != nullptr && targetSpot->IsActivated() && targetSpot->GetOwner()->IsSelected();
+		}
+		void JEditorGeometryTool::ConeView::ClearResource()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
 		}
 
 		JEditorGeometryTool::RectView::RectView(const JUserPtr<JRectLight>& lit, const JUserPtr<JGameObject>& parent)
@@ -903,10 +913,13 @@ namespace JinEngine
 					outerLine[i] = JGCI::CreateDebugLineShape(root, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false);
 			}
 		}
+		JEditorGeometryTool::RectView::~RectView()
+		{
+			ClearResource();
+		}
 		void JEditorGeometryTool::RectView::Clear()
 		{
-			if (root.IsValid())
-				JGameObject::BeginDestroy(root.Release());
+			ClearResource();
 		}
 		void JEditorGeometryTool::RectView::Update()
 		{
@@ -1008,10 +1021,6 @@ namespace JinEngine
 				edgeLine[i]->GetTransform()->SetPosition(linePos);
 			} 
 		}
-		JEditorGeometryTool::RectView::~RectView()
-		{
-			Clear();
-		}
 		size_t JEditorGeometryTool::RectView::GetTargetGuid()const noexcept
 		{
 			return targetRect->GetGuid();
@@ -1033,6 +1042,11 @@ namespace JinEngine
 		{
 			return root != nullptr && targetRect != nullptr && targetRect->IsActivated() && targetRect->GetOwner()->IsSelected();
 		}
+		void JEditorGeometryTool::RectView::ClearResource()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
+		}
 
 		JEditorGeometryTool::~JEditorGeometryTool()
 		{
@@ -1046,9 +1060,12 @@ namespace JinEngine
 		{
 			for (const auto& data : idenVec)
 			{
-				auto litVec = data->GetComponents(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+				auto litVec = data->GetComponents(J_COMPONENT_TYPE::ENGINE_LIGHT);
 				for (const auto& litData : litVec)
 				{
+					if (!litData->IsActivated())
+						continue;
+
 					J_LIGHT_TYPE litType = static_cast<JLight*>(litData.Get())->GetLightType();
 					if (litType == J_LIGHT_TYPE::POINT)
 						CreateSphereView(Core::ConnectChildUserPtr<JPointLight>(litData), parent);

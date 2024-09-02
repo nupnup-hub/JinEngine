@@ -28,9 +28,14 @@ SOFTWARE.
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../Utility/Dx/JDx12Utility.h" 
 #include"../../../Core/Exception/JExceptionMacro.h"
+#include"../../../Core/Log/JLogMacro.h"
 #include<assert.h> 
-//#include<pix3.h>
- 
+
+#ifdef USE_PIX
+#include<pix3.h>
+#include<pix3_win.h>
+#endif
+
 //#define TRACE_REMOVE_REASON
 namespace JinEngine::Graphic
 {
@@ -129,8 +134,8 @@ namespace JinEngine::Graphic
 		ClearResource();
 	}
 	bool JDx12GraphicDevice::CreateDeviceObject()
-	{
-#ifdef GRAPIC_DEBUG
+	{ 
+#ifdef USE_DEBUG
 		// Enable the D3D12 DEBUG layer.
 		Microsoft::WRL::ComPtr<ID3D12Debug> debugController; 
 		Microsoft::WRL::ComPtr<ID3D12Debug1> debugController1; 
@@ -149,9 +154,17 @@ namespace JinEngine::Graphic
 		pDredSettings->SetBreadcrumbContextEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 		pDredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON); 
 #endif
+#endif 
+
+#ifdef USE_PIX
+		ThrowIfFailedHr(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&dxgiFactory)));
+		if (PIXLoadLatestWinPixGpuCapturerLibrary() == NULL)
+			J_LOG_PRINT_OUT("Can't find WinPixGpuCapturer please install pix or check pix folder", "");
+			
+#else
+		ThrowIfFailedHr(CreateDXGIFactory2(0, IID_PPV_ARGS(&dxgiFactory)));
+		//ThrowIfFailedHr(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
 #endif
-		ThrowIfFailedHr(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
-		//ThrowIfFailedHr(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG,  IID_PPV_ARGS(&dxgiFactory)));
 
 		HRESULT hardwareResult = D3D12CreateDevice(
 			nullptr,
@@ -167,7 +180,7 @@ namespace JinEngine::Graphic
 			d3dDevice->QueryInterface(IID_PPV_ARGS(&raytracingDevice));
 			isRaytracingSupported &= (raytracingDevice != nullptr);
 		}
-#if defined(GRAPIC_DEBUG) 
+#if defined(USE_DEBUG) 
 		Microsoft::WRL::ComPtr<ID3D12InfoQueue> d3dInfoQueue;
 		if (SUCCEEDED(d3dDevice.As(&d3dInfoQueue)))
 		{
@@ -203,7 +216,7 @@ namespace JinEngine::Graphic
 		return true;
 	}
 	bool JDx12GraphicDevice::CreateRefResourceObject(const JGraphicDeviceInitSet& dataSet)
-	{
+	{ 
 		if (dataSet.graphicResourceM == nullptr || dataSet.graphicResourceM->GetDeviceType() != GetDeviceType())
 			return false;
 
@@ -219,10 +232,9 @@ namespace JinEngine::Graphic
 
 		m4xMsaaQuality = msQualityLevels.NumQualityLevels;
 		assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
-
-#ifdef GRAPIC_DEBUG
-		LogAdapters(dataSet);
-#endif  
+#ifdef USE_DEBUG
+		//LogAdapters(dataSet);
+#endif   
 		CreateSwapChain(dataSet);
 		return true;
 	}
@@ -252,7 +264,7 @@ namespace JinEngine::Graphic
 		scissorRect = D3D12_RECT();
 
 		currBackBuffer = 0;
-#ifdef GRAPIC_DEBUG  
+#ifdef USE_DEBUG  
 		HMODULE dxgidebugdll = GetModuleHandleW(L"dxgidebug.dll");
 		if (dxgidebugdll == nullptr)
 		{
@@ -284,7 +296,7 @@ namespace JinEngine::Graphic
 	void JDx12GraphicDevice::GetLastDeviceError(_Out_ std::wstring& errorCode, _Out_ std::wstring& errorMsg)
 	{
 		bool useDefault = true;
-#ifdef GRAPIC_DEBUG
+#ifdef USE_DEBUG
 		auto BreadcrumbsOutputLam = [](std::wostringstream& stream, const D3D12_AUTO_BREADCRUMB_NODE1* node)
 		{
 			if (node == nullptr)
@@ -441,7 +453,25 @@ namespace JinEngine::Graphic
 	{
 		currBackBuffer = value;
 	}
-	bool JDx12GraphicDevice::IsSupportPublicCommand()const noexcept
+	bool JDx12GraphicDevice::IsSupported(const J_GRAPHIC_OPTIONAL_FEATURE featureType)const noexcept
+	{
+		switch (featureType)
+		{
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::DEFERRED_RENDERING:
+			return true;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING:
+			return isRaytracingSupported;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::RAYTRACING_GI:
+			return isRaytracingSupported;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::POST_PROCESSING:
+			return true;
+		case JinEngine::J_GRAPHIC_OPTIONAL_FEATURE::GPU_ACCELERATOR:
+			return isRaytracingSupported; 
+		default:
+			break;
+		}
+	}
+	bool JDx12GraphicDevice::IsSupportedPublicCommand()const noexcept
 	{
 		return true;
 	}
@@ -449,17 +479,9 @@ namespace JinEngine::Graphic
 	{
 		return stCommand;
 	}
-	bool JDx12GraphicDevice::IsRaytracingSupported()const noexcept
-	{
-		return isRaytracingSupported;
-	}
 	bool JDx12GraphicDevice::CanStartPublicCommand()const noexcept
 	{
 		return !stCommand;
-	}
-	bool JDx12GraphicDevice::CanBuildGpuAccelerator()const noexcept
-	{
-		return isRaytracingSupported;
 	}
 	void JDx12GraphicDevice::CalViewportAndRect(const JVector2F rtSize, const bool restrictRange, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept
 	{
@@ -540,8 +562,7 @@ namespace JinEngine::Graphic
 	void JDx12GraphicDevice::UpdateWait(const GraphicFence frameFence)
 	{
 		if (frameFence != 0 && fence->GetCompletedValue() < frameFence)
-		{
-			//nullptr, FALSE, FALSE, EVENT_ALL_ACCESS 
+		{ 
 			HANDLE eventHandle = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
 			ThrowIfFailedHr(fence->SetEventOnCompletion(frameFence, eventHandle));
 			WaitForSingleObject(eventHandle, INFINITE);

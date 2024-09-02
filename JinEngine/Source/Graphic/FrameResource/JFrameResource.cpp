@@ -28,26 +28,35 @@ SOFTWARE.
 
 namespace JinEngine::Graphic
 {
+	void JFrameResource::Initialize(JGraphicDevice* device)
+	{ 
+	}
+	void JFrameResource::Clear()
+	{ 
+	}
 	uint JFrameResource::GetLocalLightCount()const noexcept
 	{
-		return GetElementCount(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT) +
-			GetElementCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT) +
-			GetElementCount(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT);
-	}
-	void JFrameResource::CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const void* data)
+		return GetElementCount(J_FRAME_RESOURCE_UPLOAD_TYPE::POINT_LIGHT) +
+			GetElementCount(J_FRAME_RESOURCE_UPLOAD_TYPE::SPOT_LIGHT) +
+			GetElementCount(J_FRAME_RESOURCE_UPLOAD_TYPE::RECT_LIGHT);
+	} 
+	void JFrameResource::CopyData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint elementIndex, const void* data)
 	{
 		auto base = GetGraphicBufferBase(type);
 		if (base == nullptr)
 			return;
-
+		    
 		base->CopyData(elementIndex, data);
 	}
-	void JFrameResource::CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint elementIndex, const uint count, const void* data, const uint dataElementSize)
+	void JFrameResource::CopyData(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint elementIndex, const uint count, const void* data, const uint dataElementSize)
 	{
 		auto base = GetGraphicBufferBase(type);
 		if (base == nullptr)
 			return;
-
+		  
 		base->CopyData(elementIndex, count, data, dataElementSize);
 	}
+	void JFrameResource::ReBuild(JGraphicDevice* device, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint newCount)
+	{ 
+	} 
 }

@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JCoreEssential.h"
+#include"../JCoreEssential.h" 
 
 namespace JinEngine
 {
@@ -48,7 +48,7 @@ namespace JinEngine
 		private:
 			int waitFrame = 0;
 		public:
-			uint GetUpdateCount()const noexcept;
+			uint GetUpdateCount()const noexcept; 
 		public:  
 			void SetWaitFrame(const uint frameCount)noexcept;
 		public:
@@ -58,6 +58,9 @@ namespace JinEngine
 			bool HasWaitFrame()const noexcept;
 		};
 
+		/*
+		* Interface for Can delete storage data by trigger condition 
+		*/
 		class JVolatileStorageInterface : public JStorageInterface, public JStorageUpdateInterface
 		{
 		private:
@@ -67,6 +70,41 @@ namespace JinEngine
 			void OffAliveTrigger()noexcept;
 		public:
 			bool CanAlive()const noexcept;
-		};
+		public:
+			template<typename Key, typename Value>
+			static void UpdateEnd(std::unordered_map<Key, Value>& map)
+			{
+				if constexpr (std::is_convertible_v<Value, JVolatileStorageInterface>)
+				{
+					for (auto iter = map.begin(); iter != map.end();)
+					{
+						if (iter->second.CanAlive())
+						{
+							iter->second.OffAliveTrigger();
+							++iter;
+						}
+						else
+							map.erase(iter);
+					}
+				}
+			}
+			template<typename Key, typename Value>
+			static void UpdateEnd(std::unordered_map<Key, std::unique_ptr<Value>>& map)
+			{
+				if constexpr (std::is_convertible_v<Value, JVolatileStorageInterface>)
+				{
+					for (auto iter = map.begin(); iter != map.end(); )
+					{
+						if (iter->second->CanAlive())
+						{
+							iter->second->OffAliveTrigger();
+							++iter;
+						}
+						else
+							map.erase(iter); 
+					} 
+				}
+			}
+		};  
 	}
 }

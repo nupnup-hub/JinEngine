@@ -231,14 +231,33 @@ float UnpackVelocityZ(uint x)
 {
     return f16tof32((x & 0x7FF) << 2 | (x >> 11) << 15) * 128.0;
 }
+ 
+#ifdef USE_LARGE_FORMAT_VELOCITY
+#define VELOCITY_FORMAT float2
+
+//ref miniengine velocity packing
+// Pack the velocity to write to R10G10B10A2_UNORM
+float2 PackVelocity(float3 velocity)
+{ 
+    return velocity.xy;
+}
+// Unpack the velocity from R10G10B10A2_UNORM
+float2 UnpackVelocity(float2 velocity)
+{ 
+    return velocity;
+}  
+#else
+#define VELOCITY_FORMAT uint
 //ref miniengine velocity packing
 // Pack the velocity to write to R10G10B10A2_UNORM
 uint PackVelocity(float3 velocity)
-{ 
+{
     return PackVelocityXY(velocity.x) | (PackVelocityXY(velocity.y) << 10) | (PackVelocityZ(velocity.z) << 20);
 }
 // Unpack the velocity from R10G10B10A2_UNORM
 float3 UnpackVelocity(uint velocity)
-{ 
+{
     return float3(UnpackVelocityXY(velocity & 0x3FF), UnpackVelocityXY((velocity >> 10) & 0x3FF), UnpackVelocityZ(velocity >> 20));
-} 
+}
+#endif
+ 

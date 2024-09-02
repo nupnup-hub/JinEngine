@@ -62,7 +62,7 @@ ConstantBuffer<ReserviorDenoiseConstants> cb : register(b0);
 
 namespace RestirTA
 { 
-    TA::Actor CreateActor(float2 preUv,
+    TA::GeometryErrorEstimationActor CreateActor(float2 preUv,
         float3 centerPos,
         float3 centerNormal, 
         float centerViewZ,
@@ -74,7 +74,7 @@ namespace RestirTA
         SamplerState samLinearClmap)
     {
         float centerPlaneDist = dot(centerPos, centerNormal);
-        TA::Actor actor;
+        TA::GeometryErrorEstimationActor actor;
         actor.Initialze(preUv,
             centerPos,
             centerNormal,

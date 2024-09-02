@@ -465,10 +465,7 @@ namespace JinEngine
 
 				auto result = handleResult.find(updateData.handleBase->GetName());
 				if (result == handleResult.end())
-				{
-					handleResult.emplace(updateData.handleBase->GetName(), 0);
-					result = handleResult.find(updateData.handleBase->GetName());
-				}
+					result = handleResult.emplace(updateData.handleBase->GetName(), 0).first;
 
 				const bool canUpdate = result->second < (INT64)tableUserInfo->GetUseColumnCount();
 				if (canUpdate && canDisplayWidget)
@@ -1371,7 +1368,7 @@ namespace JinEngine
 				std::string name = "None";
 				if (hasPreviewScene && hasPreviewObject)
 				{
-					JGuiImageInfo info((*previewScene)->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+					JGuiImageInfo info((*previewScene)->GetPreviewCamera().Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					isSelected = JGui::ImageSelectable("##PreviewImageButton" + uniqueLabel, info, JVector2<float>(iconSize, iconSize), false);
 					name = JCUtil::WstrToU8Str(previewObject->GetName());
 				}
@@ -1494,7 +1491,7 @@ namespace JinEngine
 					if (!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
 						continue;
 
-					JGuiImageInfo info(selectorPreviewVec[i]->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+					JGuiImageInfo info(selectorPreviewVec[i]->GetPreviewCamera().Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					JGui::Image(info, JVector2<float>(sizeFactor, sizeFactor));
 					JGui::SameLine();
 					if (JGui::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()) + "##Image" + uniqueLabel,
@@ -2774,9 +2771,8 @@ namespace JinEngine
 				{
 					std::unique_ptr<JGuiWidgetDisplayHandle> newHandle = MakeGuiHandle(updateData.handleBase->GetFieldHint(), updateData.GetWidgetInfo());
 					if (newHandle != nullptr)
-					{
-						userData->guiWidgetHandleMap.emplace(widgetMapKey, std::move(newHandle));
-						widgetHandle = userData->guiWidgetHandleMap.find(widgetMapKey);
+					{ 
+						widgetHandle = userData->guiWidgetHandleMap.emplace(widgetMapKey, std::move(newHandle)).first;
 						widgetHandle->second->Initialize(updateData, userData);
 					}
 				}
@@ -2799,8 +2795,8 @@ namespace JinEngine
 					{
 						std::unique_ptr<JGuiWidgetExtraHandle> extraHandle = MakeExtraGroupHandle(updateData);
 						if (extraHandle != nullptr)
-							userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle));
-						extraData = userData->guiExtraHandleMap.find(extraMapKey);
+							extraData = userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle)).first;
+						//extraData = userData->guiExtraHandleMap.find(extraMapKey);
 					}
 
 					if (extraData != userData->guiExtraHandleMap.end())
@@ -2818,8 +2814,8 @@ namespace JinEngine
 					{
 						std::unique_ptr<JGuiWidgetExtraHandle> extraHandle = MakeExtraTableHandle(updateData.GetWidgetInfo());
 						if (extraHandle != nullptr)
-							userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle));
-						extraData = userData->guiExtraHandleMap.find(extraMapKey);
+							extraData = userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle)).first;
+						//extraData = userData->guiExtraHandleMap.find(extraMapKey);
 					}
 
 					if (extraData != userData->guiExtraHandleMap.end())

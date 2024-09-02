@@ -81,9 +81,10 @@ namespace JinEngine
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		public:
 			void ApplyBlur(JGraphicBlurComputeSet* computeSet, const JDrawHelper& helper) final;
+			void ApplyBlur(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) final;
 		private:
 			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);
-			void BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
+			void BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option); 
 		private:
 			void BuildBlurRootSignature(ID3D12Device* device);

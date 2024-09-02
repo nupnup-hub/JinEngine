@@ -116,6 +116,8 @@ namespace JinEngine
 				CopyData(elementIndex, count, dataVec.data(), sizeof(T));
 			}
 		public:
+			void MoveData(const uint stIndex, const uint destIndex, const uint count) final;
+		public:
 			std::wstring GetName()const noexcept;
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 			J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept final;

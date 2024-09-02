@@ -39,10 +39,12 @@ namespace JinEngine
 		public:
 			std::unique_ptr<JBindHandleBase> bind;
 			JThreadInfo info;
+		private:
+			JOwnerPtr<int> index;
 		public:
 			JThreadInfo GetInfo()const noexcept;
 		public:
-			JThread() = default;
+			JThread() ;
 			JThread(std::unique_ptr<JBindHandleBase>&& bind, const JThreadInfo& info);
 		};
 	}

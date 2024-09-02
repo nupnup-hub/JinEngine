@@ -28,11 +28,9 @@ SOFTWARE.
 #include"Octree/JOctreeOption.h"
 #include"Bvh/JBvhOption.h"
 #include"Kd-tree/JKdTreeOption.h" 
+#include"../../../GraphicRule/JGraphicModuleManagedDataFrame.h"
 #include"../../../../Core/JCoreEssential.h" 
-#include"../../../../Core/Geometry/JBBox.h"
-#include"../../../../Graphic/Culling/JCullingInterface.h"
-#include"../../../../Graphic/Accelerator/JGpuAcceleratorType.h"
-#include"../../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
+#include"../../../../Core/Geometry/JBBox.h" 
 #include<DirectXMath.h>
 #include<DirectXCollision.h> 
 
@@ -100,7 +98,7 @@ namespace JinEngine
 		std::unique_ptr<ActivatedOptionCash> optionCash; 
 		JBvhOption debugOptionCash;
 	private:
-		bool activateTrigger = true;
+		bool activateTrigger = false;
 		bool gpuAccAllowLightShape = false;
 	public:
 		JSceneAcceleratorStructure();
@@ -108,7 +106,7 @@ namespace JinEngine
 	public:
 		void Clear()noexcept;
 	public:
-		//void Culling(const Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept;  //unuse
+		//void Culling(const JCullingUserInterface* cullUser, const JCullingFrustum& camFrustum)noexcept;  //unuse
 		void Culling(JAcceleratorCullingInfo& info)noexcept;
 		void Intersect(JAcceleratorIntersectInfo& info)const noexcept;
 		void Contain(JAcceleratorContainInfo& info)const noexcept;
@@ -134,23 +132,21 @@ namespace JinEngine
 		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JBvhOption GetBvhOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JKdTreeOption GetKdTreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;
-		Core::JBBox GetSceneBBox(const J_ACCELERATOR_LAYER layer, _Out_ bool& isValidBBox)const noexcept;
-		const Graphic::JGpuAcceleratorUserInterface GpuAcceleratorUserInterface()const noexcept;
+		Core::JBBox GetSceneBBox(const J_ACCELERATOR_LAYER layer, _Out_ bool& isValidBBox)const noexcept; 
 	public:
 		void SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& option);
 		void SetBvhOption(const J_ACCELERATOR_LAYER layer, const JBvhOption& option);
 		void SetKdTreeOption(const J_ACCELERATOR_LAYER layer, const JKdTreeOption& option);
 		void SetGpuAccelerator(JGpuAcceleratorOption option);
+		void SetGraphicData(const JFastPtr<JGraphicModuleManagedDataFrame>& data);
 		//void SetDebugKdTreeOption(const JKdTreeOption& option);
 	public:
 		bool IsActivated(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type); 
 		bool HasCanCullingAccelerator(const J_ACCELERATOR_LAYER layer)const noexcept;
 	public:
-		void Activate()noexcept;
+		void Activate(const JFastPtr<JGraphicModuleManagedDataFrame>& data)noexcept;
 		void DeAcitvate()noexcept;
 	public:
 		void BuildDebugTree(const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, JAcceleratorVisualizeInterface* tree)noexcept;
-	public:
-		void RegisterInterfacePointer();
 	};
 }

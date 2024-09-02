@@ -190,6 +190,7 @@ namespace JinEngine
 		float operator() (size_t row, size_t column)const noexcept;
 		float& operator() (size_t row, size_t column)noexcept;
 		bool operator==(const JMatrix4x4& rhs)const noexcept;
+		bool operator!=(const JMatrix4x4& rhs)const noexcept;
 	public:
 		void StoreXM(const DirectX::FXMMATRIX& xm)noexcept;
 		DirectX::XMMATRIX LoadXM()const noexcept;
@@ -200,6 +201,6 @@ namespace JinEngine
 		static DirectX::XMMATRIX Inverse(const JMatrix4x4& m)noexcept;
 		static DirectX::XMMATRIX InverseTranspose(const JMatrix4x4& m)noexcept;
 	public:
-		std::string ToString()const noexcept;
+		std::string ToString()const noexcept; 
 	};
 }

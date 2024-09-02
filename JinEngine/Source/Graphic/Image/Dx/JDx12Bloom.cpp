@@ -67,8 +67,8 @@ namespace JinEngine::Graphic
 		if (imageShare == nullptr)
 			return;
 
-		auto gUser = helper.cam->GraphicResourceUserInterface();
-		exposureSet = context->ComputeSet(gUser, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
+		auto gInterface = helper.GetResourceInterface();
+		exposureSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, J_GRAPHIC_TASK_TYPE::APPLY_TONE_MAPPING);
 		srcSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
 		lumaSet = context->ComputeSet(imageShare->lumaLowResolutionUint);
  
@@ -250,10 +250,10 @@ namespace JinEngine::Graphic
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gM);
 		ID3D12Device* d3d12Device = dx12Device->GetDevice();
 
-		BuildRootSingnature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
+		BuildRootSignature(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 		BuildPso(d3d12Device, GetGraphicInfo(), GetGraphicOption());
 	}
-	void JDx12Bloom::BuildRootSingnature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
+	void JDx12Bloom::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
 		BuildBloomRootSignature(device);
 	}

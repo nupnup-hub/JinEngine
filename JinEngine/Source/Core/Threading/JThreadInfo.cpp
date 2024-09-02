@@ -40,5 +40,20 @@ namespace JinEngine
 			state(J_THREAD_STATE_TYPE::WAIT),
 			callBindOnce(initInfo.callBindOnce)
 		{}
+
+		JThreadUserHandle::JThreadUserHandle()
+			:guid(0), index(nullptr)
+		{}
+		JThreadUserHandle::JThreadUserHandle(const size_t guid, const JUserPtr<int>& index)
+			:guid(guid), index(index)
+		{}
+		size_t JThreadUserHandle::GetGuid()const noexcept
+		{
+			return guid;
+		}
+		int JThreadUserHandle::GetIndex()const noexcept
+		{ 
+			return index != nullptr ? *index : invalidIndex;
+		}
 	}
 }

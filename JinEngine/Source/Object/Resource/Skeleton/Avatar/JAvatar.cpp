@@ -26,327 +26,195 @@ SOFTWARE.
 #include"JAvatar.h"
 
 namespace JinEngine
-{ 
-	const std::vector<std::vector<JAvatarJointGuide>> JAvatar::jointGuide
+{
+	struct JointReferenceInfo
 	{
-		// Body
+	public:
+		JAvatarJointGuide guide;
+		std::string categoryName;
+		uint8 parentIndex;
+		std::vector<uint8> childIndex;
+	public:
+		JointReferenceInfo(const JAvatarJointGuide& guide, const std::string& categoryName, const uint8 parentIndex)
+			:guide(guide), categoryName(categoryName), parentIndex(parentIndex)
+		{}
+		JointReferenceInfo(const JAvatarJointGuide& guide, const std::string& categoryName, const uint8 parentIndex, std::vector<uint8> childIndex)
+			:guide(guide), categoryName(categoryName), parentIndex(parentIndex), childIndex(childIndex)
+		{}
+	};
+	static std::vector<JointReferenceInfo> GetJointReferenceInfo()
+	{
+		static std::vector<JointReferenceInfo> info;
+		if (info.size() == 0)
 		{
-			{"Root","root",0}, {"Hips","pervis",1},{"Spine","spine_01",2},{"Chest","spine_02",3},{"Upper Chest","spine_03",4},
-
-			{"Left Shoulder","clavicle_l",5},{"Left Upper Arm","upperarm_l",6},{"Left Lower Arm","lowerarm_l",7},{"Left Hand","hand_l",8},
-			{"Left Lower Arm Twist","lowerarm_twist_01_l",24},{"Left Upper Arm Twist","upperarm_twist_01_l",25},
-
-			{"Right Shoulder","clavicle_r",26},{"Right Upper Arm","upperarm_r",27},{"Right Lower Arm","lowerarm_r",28},{"Right Hand","hand_r",29},
-			{"Right Lower Arm Twist","lowerarm_twist_01_r",45},{"Right Upper Arm Twist","upperarm_twist_01_r",46},
-
-			{"Left Upper Leg","thigh_l", 47},{"Left Lower Leg","calf_l",48}, {"Left Calf Twist","calf_twist_01_l",49},{"Left Foot","foot_l",50},
-			{"Left Toes","ball_l",51},{"Left Thigh Twist","thigh_twist_01_l",52},
-
-			{"Right Upper Leg","thigh_r",53},{"Right Lower Leg","calf_r",54}, {"Right Calf Twist","calf_twist_01_r",55},{"Right Foot","foot_r",56},
-			{"Right Toes","ball_r",57},{"Right Thigh Twist","thigh_twist_01_r",58}
-		},
-		// Head
-		{
-			{"Neck","neck_01", 59},{"Head","head",60},{"Left Eye","Eye_l",61},{"Right Eye","Eye_r",62},{"Jaw","Mouth",63},
-		},
-		//Left Hand
-		{
-			{"Left Thumb Proximal","thumb_01_l",21},{"Left Thumb Intermediate", "thumb_02_l",22},{"Left Thumb Distal","thumb_03_l",23},
-			{"Left Index Proximal","index_01_l",9},{"Left Index Intermediate","index_02_l",10},{"Left Index Distal","index_03_l",11},
-			{"Left Middle Proximal","middle_01_l",12},{"Left Middle Intermediate","middle_02_l",13},{"Left Middle Distal","middle_03_l",14},
-			{"Left Ring Proximal","ring_01_l",18},{"Left Ring Intermediate","ring_02_l",19},{"Left Ring Distal","ring_03_l",20},
-			{"Left Little Proximal","pinky_01_l",15},{"Left Little Intermediate","pinky_02_l",16},{"Left Little Distal","pinky_03_l",17},
-		},
-		//Right Hand
-		{
-			{"Right Thumb Proximal","thumb_01_r",42},{"Right Thumb Intermediate","thumb_02_r",43},{"Right Thumb Distal","thumb_03_r",44},
-			{"Right Index Proximal","index_01_r",30},{"Right Index Intermediate","index_02_r",31},{"Right Index Distal","index_03_r",32},
-			{"Right Middle Proximal","middle_01_r",33},{"Right Middle Intermediate","middle_02_r",34},{"Right Middle Distal","middle_03_r",35},
-			{"Right Ring Proximal","ring_01_r",39},{"Right Ring Intermediate","ring_02_r",40},{"Right Ring Distal","ring_03_r",41},
-			{"Right Little Proximal","pinky_01_r",36},{"Right Little Intermediate","pinky_02_r",37},{"Right Little Distal","pinky_03_r",38},
+			info.push_back(JointReferenceInfo({ "Root", "root", 0 }, "Body", 255, { 1 }));
+			info.push_back(JointReferenceInfo({ "Hips", "pervis", 1 }, "Body", 0, { 2, 47, 53 }));
+			info.push_back(JointReferenceInfo({ "Spine", "spine_01", 2 }, "Body", 1, { 3 }));
+			info.push_back(JointReferenceInfo({ "Chest", "spine_02", 3 }, "Body", 2, { 4 }));
+			info.push_back(JointReferenceInfo({ "Upper Chest", "spine_03", 4 }, "Body", 3, { 5, 26, 59 }));
+			info.push_back(JointReferenceInfo({ "Left Shoulder", "clavicle_l", 5 }, "Body", 4, { 6 }));
+			info.push_back(JointReferenceInfo({ "Left Upper Arm", "upperarm_l", 6 }, "Body", 5, { 7, 25 }));
+			info.push_back(JointReferenceInfo({ "Left Lower Arm", "lowerarm_l", 7 }, "Body", 6, { 8, 24 }));
+			info.push_back(JointReferenceInfo({ "Left Hand", "hand_l", 8 }, "Body", 7, { 9, 12, 15, 18, 21 }));
+			info.push_back(JointReferenceInfo({ "Left Index Proximal", "index_01_l", 9 }, "Left Hand", 8, { 10 }));
+			info.push_back(JointReferenceInfo({ "Left Index Intermediate", "index_02_l", 10 }, "Left Hand", 9, { 11 }));
+			info.push_back(JointReferenceInfo({ "Left Index Distal", "index_03_l", 11 }, "Left Hand", 10, {}));
+			info.push_back(JointReferenceInfo({ "Left Middle Proximal", "middle_01_l", 12 }, "Left Hand", 8, { 13 }));
+			info.push_back(JointReferenceInfo({ "Left Middle Intermediate", "middle_02_l", 13 }, "Left Hand", 12, { 14 }));
+			info.push_back(JointReferenceInfo({ "Left Middle Distal", "middle_03_l", 14 }, "Left Hand", 13, {}));
+			info.push_back(JointReferenceInfo({ "Left Little Proximal", "pinky_01_l", 15 }, "Left Hand", 8, { 16 }));
+			info.push_back(JointReferenceInfo({ "Left Little Intermediate", "pinky_02_l", 16 }, "Left Hand", 15, { 17 }));
+			info.push_back(JointReferenceInfo({ "Left Little Distal", "pinky_03_l", 17 }, "Left Hand", 16, {}));
+			info.push_back(JointReferenceInfo({ "Left Ring Proximal", "ring_01_l", 18 }, "Left Hand", 8, { 19 }));
+			info.push_back(JointReferenceInfo({ "Left Ring Intermediate", "ring_02_l", 19 }, "Left Hand", 18, { 20 }));
+			info.push_back(JointReferenceInfo({ "Left Ring Distal", "ring_03_l", 20 }, "Left Hand", 19, {}));
+			info.push_back(JointReferenceInfo({ "Left Thumb Proximal", "thumb_01_l", 21 }, "Left Hand", 8, { 22 }));
+			info.push_back(JointReferenceInfo({ "Left Thumb Intermediate", "thumb_02_l", 22 }, "Left Hand", 21, { 23 }));
+			info.push_back(JointReferenceInfo({ "Left Thumb Distal", "thumb_03_l", 23 }, "Left Hand", 22, {}));
+			info.push_back(JointReferenceInfo({ "Left Lower Arm Twist", "lowerarm_twist_01_l", 24 }, "Body", 7, {}));
+			info.push_back(JointReferenceInfo({ "Left Upper Arm Twist", "upperarm_twist_01_l", 25 }, "Body", 6, {}));
+			info.push_back(JointReferenceInfo({ "Right Shoulder", "clavicle_r", 26 }, "Body", 4, { 27 }));
+			info.push_back(JointReferenceInfo({ "Right Upper Arm", "upperarm_r", 27 }, "Body", 26, { 28, 46 }));
+			info.push_back(JointReferenceInfo({ "Right Lower Arm", "lowerarm_r", 28 }, "Body", 27, { 29, 45 }));
+			info.push_back(JointReferenceInfo({ "Right Hand", "hand_r", 29 }, "Body", 28, { 30, 33, 36, 39, 42 }));
+			info.push_back(JointReferenceInfo({ "Right Index Proximal", "index_01_r", 30 }, "Right Hand", 29, { 31 }));
+			info.push_back(JointReferenceInfo({ "Right Index Intermediate", "index_02_r", 31 }, "Right Hand", 30, { 32 }));
+			info.push_back(JointReferenceInfo({ "Right Index Distal", "index_03_r", 32 }, "Right Hand", 31, {}));
+			info.push_back(JointReferenceInfo({ "Right Middle Proximal", "middle_01_r", 33 }, "Right Hand", 29, { 34 }));
+			info.push_back(JointReferenceInfo({ "Right Middle Intermediate", "middle_02_r", 34 }, "Right Hand", 33, { 35 }));
+			info.push_back(JointReferenceInfo({ "Right Middle Distal", "middle_03_r", 35 }, "Right Hand", 34, {}));
+			info.push_back(JointReferenceInfo({ "Right Little Proximal", "pinky_01_r", 36 }, "Right Hand", 29, { 37 }));
+			info.push_back(JointReferenceInfo({ "Right Little Intermediate", "pinky_02_r", 37 }, "Right Hand", 36, { 38 }));
+			info.push_back(JointReferenceInfo({ "Right Little Distal", "pinky_03_r", 38 }, "Right Hand", 37, {}));
+			info.push_back(JointReferenceInfo({ "Right Ring Proximal", "ring_01_r", 39 }, "Right Hand", 29, { 40 }));
+			info.push_back(JointReferenceInfo({ "Right Ring Intermediate", "ring_02_r", 40 }, "Right Hand", 39, { 41 }));
+			info.push_back(JointReferenceInfo({ "Right Ring Distal", "ring_03_r", 41 }, "Right Hand", 40, {}));
+			info.push_back(JointReferenceInfo({ "Right Thumb Proximal", "thumb_01_r", 42 }, "Right Hand", 29, { 43 }));
+			info.push_back(JointReferenceInfo({ "Right Thumb Intermediate", "thumb_02_r", 43 }, "Right Hand", 42, { 44 }));
+			info.push_back(JointReferenceInfo({ "Right Thumb Distal", "thumb_03_r", 44 }, "Right Hand", 43, {}));
+			info.push_back(JointReferenceInfo({ "Right Lower Arm Twist", "lowerarm_twist_01_r", 45 }, "Body", 28, {}));
+			info.push_back(JointReferenceInfo({ "Right Upper Arm Twist", "upperarm_twist_01_r", 46 }, "Body", 27, {}));
+			info.push_back(JointReferenceInfo({ "Left Upper Leg", "thigh_l", 47 }, "Body", 1, { 48, 52 }));
+			info.push_back(JointReferenceInfo({ "Left Lower Leg", "calf_l", 48 }, "Body", 47, { 49, 50 }));
+			info.push_back(JointReferenceInfo({ "Left Calf Twist", "calf_twist_01_l", 49 }, "Body", 48, {}));
+			info.push_back(JointReferenceInfo({ "Left Foot", "foot_l", 50 }, "Body", 48, { 51 }));
+			info.push_back(JointReferenceInfo({ "Left Toes", "ball_l", 51 }, "Body", 50, {}));
+			info.push_back(JointReferenceInfo({ "Left Thigh Twist", "thigh_twist_01_l", 52 }, "Body", 47, {}));
+			info.push_back(JointReferenceInfo({ "Right Upper Leg", "thigh_r", 53 }, "Body", 1, { 54, 58 }));
+			info.push_back(JointReferenceInfo({ "Right Lower Leg", "calf_r", 54 }, "Body", 53, { 55, 56 }));
+			info.push_back(JointReferenceInfo({ "Right Calf Twist", "calf_twist_01_r", 55 }, "Body", 54, {}));
+			info.push_back(JointReferenceInfo({ "Right Foot", "foot_r", 56 }, "Body", 54, { 57 }));
+			info.push_back(JointReferenceInfo({ "Right Toes", "ball_r", 57 }, "Body", 56, {}));
+			info.push_back(JointReferenceInfo({ "Right Thigh Twist", "thigh_twist_01_r", 58 }, "Body", 53, {}));
+			info.push_back(JointReferenceInfo({ "Neck", "neck_01", 59 }, "Head", 4, { 60 }));
+			info.push_back(JointReferenceInfo({ "Head", "head", 60 }, "Head", 59, { 61, 62, 63 }));
+			info.push_back(JointReferenceInfo({ "Left Eye", "Eye_l", 61 }, "Head", 60, {}));
+			info.push_back(JointReferenceInfo({ "Right Eye", "Eye_r", 62 }, "Head", 60, {}));
+			info.push_back(JointReferenceInfo({ "Jaw", "Mouth", 63 }, "Head", 60, {}));
 		}
-	};
-	const std::vector<std::string> JAvatar::tabName
+		return info;
+	}
+ 
+	const std::vector<std::vector<JAvatarJointGuide>>& JAvatar::GetAllJointGuide()
 	{
-		"Body", "Head", "Left Hand", "Right Hand"
-	};
-	const std::vector<uint8> JAvatar::jointReferenceParent
+		static std::vector<std::vector<JAvatarJointGuide>> guide;
+		if (guide.size() == 0)
+		{
+			auto info = GetJointReferenceInfo();
+			guide.resize(jointCategoryCount);
+
+			for (uint i = 0; i < jointCategoryCount; ++i)
+			{
+				const std::string categoryName = GetJointCategoryName(i);
+				for (uint j = 0; j < info.size(); ++j)
+				{
+					if (info[j].categoryName == categoryName)
+						guide[i].push_back(info[j].guide);
+				}
+			}
+		}
+		return guide;
+	}
+	const std::vector<JAvatarJointGuide>& JAvatar::GetJointCategoryGuide(const uint index)
 	{
-		//Name : root 
-		//Index : 0
-		255,
-		//Name : pelvis 
-		//Index : 1
-		0,
-		//Name : spine_01
-		//Index : 2
-		1,
-		// Name : spine_02
-		//Index : 3
-		2,
-		//Name : spine_03
-		//Index : 4
-		3,
-		//Name : clavicle_l
-		//Index : 5
-		4,
-		//Name : upperarm_l
-		//Index : 6
-		5,
-		//Name : lowerarm_l
-		//Index : 7
-		6,
-		//Name : hand_l
-		//Index : 8
-		7,
-		//Name : index_01_l
-		//Index : 9
-		8,
-		//Name : index_02_l
-		//Index : 10
-		9,
-		//Name : index_03_l
-		//Index : 11
-		10,
-		//Name : middle_01_l
-		//Index : 12
-		8,
-		//Name : middle_02_l
-		//Index : 13
-		12,
-		//Name : middle_03_l
-		//Index : 14
-		13,
-		//Name : pinky_01_l
-		//Index : 15
-		8,
-		//Name : pinky_02_l
-		//Index : 16
-		15,
-		//Name : pinky_03_l
-		//Index : 17
-		16,
-		//Name : ring_01_l
-		//Index : 18
-		8,
-		//Name : ring_02_l
-		//Index : 19
-		18,
-		//Name : ring_03_l
-		//Index : 20
-		19,
-		//Name : thumb_01_l
-		//Index : 21
-		8,
-		//Name : thumb_02_l
-		//Index : 22
-		21,
-		//Name : thumb_03_l
-		//Index : 23
-		22,
-		//Name : lowerarm_twist_01_l
-		//Index : 24
-		7,
-		//Name : upperarm_twist_01_l
-		//Index : 25
-		6,
-
-		//Name : clavicle_r
-		//Index : 26
-		4,
-		//Name : upperarm_r
-		//Index : 27
-		26,
-		//Name : lowerarm_r
-		//Index : 28
-		27,
-		//Name : hand_r
-		//Index : 29
-		28,
-		//Name : index_01_r
-		//Index : 30
-		29,
-		//Name : index_02_r
-		//Index : 31
-		30,
-		//Name : index_03_r
-		//Index : 32
-		31,
-		//Name : middle_01_l
-		//Index : 33
-		29,
-		//Name : middle_02_l
-		//Index : 34
-		33,
-		//Name : middle_03_l
-		//Index : 35
-		34,
-		//Name : pinky_01_l
-		//Index : 36
-		29,
-		//Name : pinky_02_l
-		//Index : 37
-		36,
-		//Name : pinky_03_l
-		//Index : 38
-		37,
-		//Name : ring_01_l
-		//Index : 39
-		29,
-		//Name : ring_02_l
-		//Index : 40
-		39,
-		//Name : ring_03_l
-		//Index : 41
-		40,
-		//Name : thumb_01_l
-		//Index : 42
-		29,
-		//Name : thumb_02_l
-		//Index : 43
-		42,
-		//Name : thumb_03_l
-		//Index : 44
-		43,
-		//Name : lowerarm_twist_01_l
-		//Index : 45
-		28,
-		//Name : upperarm_twist_01_l
-		//Index : 46
-		27,
-
-		//Name : thigh_l
-		//Index : 47
-		1,
-		//Name : calf_l
-		//Index : 48
-		47,
-		//Name : calf_twist_01_l
-		//Index : 49
-		48,
-		//Name : foot_l
-		//Index : 50
-		48,
-		//Name : ball_l
-		//Index : 51
-		50,
-		//Name : thigh_twist_01_l
-		//Index : 52
-		47,
-
-		//Name : thigh_r
-		//Index : 53
-		1,
-		//Name : calf_r
-		//Index : 54
-		53,
-		//Name : calf_twist_01_r
-		//Index : 55
-		54,
-		//Name : foot_r
-		//Index : 56
-		54,
-		//Name : ball_r
-		//Index : 57
-		56,
-		//Name : thigh_twist_01_r
-		//Index : 58
-		53,
-
-		//Name : neck_01
-		//Index : 59
-		4,
-		//Name : head
-		//Index : 60
-		59,
-		//Name : Eye_l
-		//Index : 61
-		60,
-		//Name : Eye_r
-		//Index : 62
-		60,
-		//Name : Mouth
-		//Index : 63
-		60,
-	};
-	const std::unordered_map<uint8, std::vector<uint8>> JAvatar::jointReferenceChildren
+		return GetAllJointGuide()[index];
+	}
+	std::string JAvatar::GetJointCategoryName(const uint index)
 	{
-		{0, {1}}, {1, {2, 47, 53}}, {2,{3}}, {3,{4}}, {4,{5, 26, 59}},
-
-		{5,{6}},
-		{6,{7,25}},	{7,{8,24}}, {8,{9, 12, 15, 18, 21}}, {9,{10}}, {10, {11}},
-		{12,{13}}, {13, {14}}, {15,{16}}, {16, {17}}, {18,{19}}, {19, {20}},
-		{21,{22}}, {22, {23}},
-
-		{26,{27}},
-		{27,{28,46}}, {28,{29,45}}, {29,{30, 33, 36, 39, 42}}, {30,{31}}, {31, {32}},
-		{33,{34}}, {34, {35}}, {36,{37}}, {37, {38}}, {39,{40}}, {40, {41}},
-		{42,{43}}, {43, {44}},
-
-		{47, {48,52}}, {48, {49,50}}, {50, {51}},
-
-		{53, {54, 58}}, {54, {55,56}}, {56, {57}},
-
-		{59, {60}},{60, {61,62,63}},
-	};
-	const std::unordered_map<J_AVATAR_JOINT, uint8> JAvatar::jointReferenceMap
+		static const std::string tabName[jointCategoryCount]
+		{
+			"Body", "Head", "Left Hand", "Right Hand"
+		};
+		return index > jointCategoryCount ? tabName[index] : "invalid index";
+	}
+	uint8 JAvatar::GetJointReferenceIndex(const J_AVATAR_JOINT joint)
 	{
-		{J_AVATAR_JOINT::ROOT, 0}, {J_AVATAR_JOINT::HIPS, 1}, {J_AVATAR_JOINT::SPINE, 2},
-		{J_AVATAR_JOINT::CHEST, 3}, {J_AVATAR_JOINT::UPPER_CHEST, 4},
+		static std::vector<uint8> jointReferenceVec;
+		if (jointReferenceVec.size() == 0)
+		{
+			const uint jointCount = (uint)J_AVATAR_JOINT::COUNT;
+			auto info = GetJointReferenceInfo();
+			jointReferenceVec.resize(jointCount); 
 
-		{J_AVATAR_JOINT::LEFT_SHOULDER, 5}, {J_AVATAR_JOINT::LEFT_UPPER_ARM, 6}, {J_AVATAR_JOINT::LEFT_LOWER_ARM, 7},
-		{J_AVATAR_JOINT::LEFT_HAND, 8}, {J_AVATAR_JOINT::LEFT_LOWER_ARM_TWIST, 24},{J_AVATAR_JOINT::LEFT_UPPER_ARM_TWIST, 25},
+			for (uint i = 0; i < jointCount; ++i)
+				jointReferenceVec[i] = info[i].guide.index;
+		}
+		return jointReferenceVec[(uint)joint];
+	}
+	uint8 JAvatar::GetJointReferenceParent(const uint8 index)
+	{
+		static std::vector<uint8> jointReferenceParent;
+		if (jointReferenceParent.size() == 0)
+		{
+			const uint jointCount = (uint)J_AVATAR_JOINT::COUNT;
+			auto info = GetJointReferenceInfo();
+			jointReferenceParent.resize(jointCount);
 
-		{J_AVATAR_JOINT::RIGHT_SHOULDER, 26}, {J_AVATAR_JOINT::RIGHT_UPPER_ARM, 27}, {J_AVATAR_JOINT::RIGHT_LOWER_ARM, 28},
-		{J_AVATAR_JOINT::RIGHT_HAND, 29}, {J_AVATAR_JOINT::RIGHT_LOWER_ARM_TWIST, 45},{J_AVATAR_JOINT::RIGHT_UPPER_ARM_TWIST, 46},
+			for (uint i = 0; i < jointCount; ++i)
+				jointReferenceParent[i] = info[i].parentIndex;
+		}
+		return jointReferenceParent[index];
+	}
+	const std::vector<uint8>& JAvatar::GetJointReferenceChildren(const uint8 index)
+	{
+		static std::vector<std::vector<uint8>> jointReferenceChildren;
+		if (jointReferenceChildren.size() == 0)
+		{
+			const uint jointCount = (uint)J_AVATAR_JOINT::COUNT;
+			auto info = GetJointReferenceInfo();
+			jointReferenceChildren.resize(jointCount);
 
-		{J_AVATAR_JOINT::LEFT_UPPER_LEG, 47}, {J_AVATAR_JOINT::LEFT_LOWER_LEG, 48}, {J_AVATAR_JOINT::LEFT_CALF_TWIST, 49},
-		{J_AVATAR_JOINT::LEFT_FOOT, 50}, {J_AVATAR_JOINT::LEFT_TOES, 51},{J_AVATAR_JOINT::LEFT_THIGH_TWIST, 52},
-
-		{J_AVATAR_JOINT::RIGHT_UPPER_LEG, 53}, {J_AVATAR_JOINT::RIGHT_LOWER_LEG, 54}, {J_AVATAR_JOINT::RIGHT_CALF_TWIST, 55},
-		{J_AVATAR_JOINT::RIGHT_FOOT, 56}, {J_AVATAR_JOINT::RIGHT_TOES, 57},{J_AVATAR_JOINT::RIGHT_THIGH_TWIST, 58},
-
-		{J_AVATAR_JOINT::NECK, 59}, {J_AVATAR_JOINT::HEAD, 60},
-		{J_AVATAR_JOINT::LEFT_EYE, 61},{J_AVATAR_JOINT::RIGHT_EYE, 62}, {J_AVATAR_JOINT::JAW, 63},
-
-		{J_AVATAR_JOINT::LEFT_THUMB_PROXIMAL, 21},{J_AVATAR_JOINT::LEFT_THUMB_INTERMEDIATE, 22}, {J_AVATAR_JOINT::LEFT_THUMB_DISTAL, 23},
-		{J_AVATAR_JOINT::LEFT_INDEX_PROXIMAL, 9},{J_AVATAR_JOINT::LEFT_INDEX_INTERMEDIATE, 10}, {J_AVATAR_JOINT::LEFT_INDEX_DISTAL, 11},
-		{J_AVATAR_JOINT::LEFT_MIDDLE_PROXIMAL, 12},{J_AVATAR_JOINT::LEFT_MIDDLE_INTERMEDIATE, 13}, {J_AVATAR_JOINT::LEFT_MIDDLE_DISTAL, 14},
-		{J_AVATAR_JOINT::LEFT_RING_PROXIMAL, 18},{J_AVATAR_JOINT::LEFT_RING_INTERMEDIATE, 19}, {J_AVATAR_JOINT::LEFT_RING_DISTAL, 20},
-		{J_AVATAR_JOINT::LEFT_LITTLE_PROXIMAL, 15},{J_AVATAR_JOINT::LEFT_LITTLE_INTERMEDIATE, 16}, {J_AVATAR_JOINT::LEFT_LITTLE_DISTAL, 17},
-
-		{J_AVATAR_JOINT::RIGHT_THUMB_PROXIMAL, 42},{J_AVATAR_JOINT::RIGHT_THUMB_INTERMEDIATE, 43}, {J_AVATAR_JOINT::RIGHT_THUMB_DISTAL, 44},
-		{J_AVATAR_JOINT::RIGHT_INDEX_PROXIMAL, 30},{J_AVATAR_JOINT::RIGHT_INDEX_INTERMEDIATE, 31}, {J_AVATAR_JOINT::RIGHT_INDEX_DISTAL, 32},
-		{J_AVATAR_JOINT::RIGHT_MIDDLE_PROXIMAL, 33},{J_AVATAR_JOINT::RIGHT_MIDDLE_INTERMEDIATE, 34}, {J_AVATAR_JOINT::RIGHT_MIDDLE_DISTAL, 35},
-		{J_AVATAR_JOINT::RIGHT_RING_PROXIMAL, 39},{J_AVATAR_JOINT::RIGHT_RING_INTERMEDIATE, 40}, {J_AVATAR_JOINT::RIGHT_RING_DISTAL, 41},
-		{J_AVATAR_JOINT::RIGHT_LITTLE_PROXIMAL, 36},{J_AVATAR_JOINT::RIGHT_LITTLE_INTERMEDIATE, 37}, {J_AVATAR_JOINT::RIGHT_LITTLE_DISTAL, 38},
-	};
+			for (uint i = 0; i < jointCount; ++i)
+				jointReferenceChildren[i] = info[i].childIndex;
+		}
+		return jointReferenceChildren[index];
+	}
 	uint8 JAvatar::FindReferenceIndexEndToRoot(const J_AVATAR_JOINT st, const J_AVATAR_JOINT ed)noexcept
 	{
 		if (st < ed)
 			return JSkeletonFixedData::incorrectJointIndex;
 
-		auto stData = jointReferenceMap.find(st);
-		if (jointReference[stData->second] != JSkeletonFixedData::incorrectJointIndex)
-			return stData->second;
+		uint8 stIndex = GetJointReferenceIndex(st);
+		if (jointReference[stIndex] != JSkeletonFixedData::incorrectJointIndex)
+			return stIndex;
 
-		auto edData = jointReferenceMap.find(ed);
-		if (jointReference[edData->second] == JSkeletonFixedData::incorrectJointIndex)
+		uint8 edIndex = GetJointReferenceIndex(ed);
+		if (jointReference[edIndex] == JSkeletonFixedData::incorrectJointIndex)
 			return JSkeletonFixedData::incorrectJointIndex;
 
-		uint nowJointRefIndex = jointReferenceParent[stData->second];
-		while (nowJointRefIndex != edData->second && nowJointRefIndex != JSkeletonFixedData::incorrectJointIndex)
+		uint nowJointRefIndex = GetJointReferenceParent(stIndex);
+		while (nowJointRefIndex != edIndex && nowJointRefIndex != JSkeletonFixedData::incorrectJointIndex)
 		{
 			if (jointReference[nowJointRefIndex] != JSkeletonFixedData::incorrectJointIndex)
 				return nowJointRefIndex;
 
-			nowJointRefIndex = jointReferenceParent[nowJointRefIndex];
+			nowJointRefIndex = GetJointReferenceParent(nowJointRefIndex);
 		}
 
 		if (nowJointRefIndex == JSkeletonFixedData::incorrectJointIndex)
 			return JSkeletonFixedData::incorrectJointIndex;
 		else
-			return edData->second;
+			return edIndex;
 	}
 	uint8 JAvatar::FindReferenceIndexEndToRoot(const uint8 st, const uint8 ed)noexcept
 	{
@@ -356,13 +224,13 @@ namespace JinEngine
 		if (jointReference[ed] == JSkeletonFixedData::incorrectJointIndex)
 			return JSkeletonFixedData::incorrectJointIndex;
 
-		uint nowJointRefIndex = jointReferenceParent[st];
+		uint nowJointRefIndex = GetJointReferenceParent(st);
 		while (nowJointRefIndex != ed && nowJointRefIndex != JSkeletonFixedData::incorrectJointIndex)
 		{
 			if (jointReference[nowJointRefIndex] != JSkeletonFixedData::incorrectJointIndex)
 				return nowJointRefIndex;
 
-			nowJointRefIndex = jointReferenceParent[nowJointRefIndex];
+			nowJointRefIndex = GetJointReferenceParent(nowJointRefIndex);
 		}
 
 		if (nowJointRefIndex == JSkeletonFixedData::incorrectJointIndex)
@@ -379,5 +247,5 @@ namespace JinEngine
 			srcIndex = tarIndex;
 		else if (srcIndex < tarIndex)
 			tarIndex = srcIndex;
-	} 
+	}
 }

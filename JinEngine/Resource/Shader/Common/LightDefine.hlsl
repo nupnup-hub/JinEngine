@@ -45,15 +45,19 @@ struct DirectionalLightData
 	float4x4 shadowMapTransform;
 	float3 color;
 	float power; 
+	
 	float3 direction;
 	float frustumNear;
+	
 	float2 frustumSize;
 	float frustumFar;
 	float penumbraScale;
+	
 	float penumbraBlockerScale;
 	int csmDataIndex; //data start index
 	int shadowMapIndex;
 	int shadowMapType; //-1 not, 0 normal, 1 csm, 2 cube
+	
 	float shadowMapSize;
 	float shadowMapInvSize;
 	float tanAngle;

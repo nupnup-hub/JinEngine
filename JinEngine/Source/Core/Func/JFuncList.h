@@ -34,6 +34,13 @@ namespace JinEngine
 		template<uint count, typename Type, typename ...Param>
 		class JFuncList
 		{
+		public:
+			enum class CONDITION_MASK
+			{
+				PASS_ALL,
+				PASS_LOCAL,
+				PASS_NONE,
+			};
 		protected:
 			using JFuncCallable = JCallableInterface<void, Type*, Param...>;  
 			using JCondCallable = JCallableInterface<bool>; 
@@ -54,44 +61,59 @@ namespace JinEngine
 			};
 		private:
 			Data list[count];
+			std::unique_ptr<JCondCallable> globalCond = nullptr;
 		public:
 			JFuncList() = default;
 		public:
 			void Invoke(const uint index, Type* type, Param&&... value)
 			{
+				if (globalCond != nullptr && !(*globalCond)(type))
+					return;
+
 				if (list[index].cond != nullptr && !(*list[index].cond)(type))
 					return;
 
 				(*list[index].func)(type, type, std::forward<Param>(value)...);
 			}
-			void InvokePassCondition(const uint index, Type* type, Param&&... value)
+			void InvokePassLocalCondition(const uint index, Type* type, Param&&... value)
 			{
+				if (globalCond != nullptr && !(*globalCond)(type))
+					return;
+
 				(*list[index].func)(type, type, std::forward<Param>(value)...);
 			}
-			void InvokeAll(Type* type, const bool doConditionTest, Param&&... value)
-			{
+			void InvokePassAllCondition(const uint index, Type* type, Param&&... value)
+			{ 
+				(*list[index].func)(type, type, std::forward<Param>(value)...);
+			}
+			void InvokeAll(Type* type, const CONDITION_MASK condMask, Param&&... value)
+			{ 
 				for (uint i = 0; i < count; ++i)
 				{
 					if (Has(i))
 					{
-						if (doConditionTest)
+						if (condMask == CONDITION_MASK::PASS_NONE)
 							Invoke(i, type, std::forward<Param>(value)...);
+						else if (condMask == CONDITION_MASK::PASS_LOCAL)
+							InvokePassLocalCondition(i, type, std::forward<Param>(value)...);
 						else
-							InvokePassCondition(i, type, std::forward<Param>(value)...);
+							InvokePassAllCondition(i, type, std::forward<Param>(value)...);
 					}
 				}
 			}
-			void InvokeAllReverse(Type* type, const bool doConditionTest, Param&&... value)
+			void InvokeAllReverse(Type* type, const CONDITION_MASK condMask, Param&&... value)
 			{ 
 				for (uint i = 0; i < count; ++i)
 				{
 					int index = count - i - 1;
 					if (Has(index))
 					{
-						if (doConditionTest)
+						if (condMask == CONDITION_MASK::PASS_NONE)
 							Invoke(index, type, std::forward<Param>(value)...);
+						else if (condMask == CONDITION_MASK::PASS_LOCAL)
+							InvokePassLocalCondition(index, type, std::forward<Param>(value)...);
 						else
-							InvokePassCondition(index, type, std::forward<Param>(value)...);
+							InvokePassAllCondition(index, type, std::forward<Param>(value)...);
 					}
 				}
 			}
@@ -112,6 +134,15 @@ namespace JinEngine
 			void DeRegister(const uint index)
 			{
 				list[index] = nullptr;
+			}
+		public:
+			void RegisterGlobalCond(std::unique_ptr<JCondCallable>&& newGlobalCond)
+			{
+				globalCond = std::move(newGlobalCond);
+			}
+			void DeRegisterGlobalCond()
+			{
+				globalCond = nullptr;
 			}
 		};
 		 
@@ -148,7 +179,7 @@ namespace JinEngine
 				for (uint i = 0; i < count; ++i)
 				{
 					if (Parent::Has(i))
-						Parent::InvokePassCondition(innerGroup[index][i], type, std::forward<Param>(value)...);
+						Parent::InvokePassLocalCondition(innerGroup[index][i], type, std::forward<Param>(value)...);
 				}
 			}
 			void InvokeGroupPassConditionReverse(const uint index, Type* type, Param&&... value)
@@ -158,7 +189,26 @@ namespace JinEngine
 				{
 					int innerIndex = count - i - 1;
 					if (Parent::Has(innerIndex))
-						Parent::InvokePassCondition(innerGroup[index][innerIndex], type, std::forward<Param>(value)...);
+						Parent::InvokePassLocalCondition(innerGroup[index][innerIndex], type, std::forward<Param>(value)...);
+				}
+			}
+			void InvokeGroupPassAllCondition(const uint index, Type* type, Param&&... value)
+			{
+				const uint count = (uint)innerGroup[index].size();
+				for (uint i = 0; i < count; ++i)
+				{
+					if (Parent::Has(i))
+						Parent::InvokePassAllCondition(innerGroup[index][i], type, std::forward<Param>(value)...);
+				}
+			}
+			void InvokeGroupPassAllConditionReverse(const uint index, Type* type, Param&&... value)
+			{
+				const int count = (int)innerGroup[index].size();
+				for (uint i = 0; i < count; ++i)
+				{
+					int innerIndex = count - i - 1;
+					if (Parent::Has(innerIndex))
+						Parent::InvokePassAllCondition(innerGroup[index][innerIndex], type, std::forward<Param>(value)...);
 				}
 			}
 		public:
@@ -175,5 +225,5 @@ namespace JinEngine
 				innerGroup[(uint)index].erase(innerGroup[(uint)index].begin() + innerIndex);
 			}
 		};
-	}
+	} 
 }

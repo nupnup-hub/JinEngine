@@ -31,7 +31,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		Graphic::J_GRAPHIC_RESOURCE_TYPE JGraphicResourceUserInterface::CallGetGraphicResourceType(JGraphicResourceHandleUserInterface& gI)const noexcept
+		J_GRAPHIC_RESOURCE_TYPE JGraphicResourceUserInterface::CallGetGraphicResourceType(JGraphicResourceHandleUserInterface& gI)const noexcept
 		{
 			return gI.GetGraphicResourceType();
 		}

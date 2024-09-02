@@ -25,11 +25,8 @@ SOFTWARE.
 
 #pragma once
 #include"JCameraState.h"
-#include"../JComponent.h" 
-#include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
-#include"../../../Graphic/Culling/JCullingUserAccess.h" 
-#include"../../../Graphic/Image/JImageProcessingDesc.h"
+#include"../JComponent.h"   
+#include"../../GraphicRule/JGraphicModuleManagedDataUser.h"
 #include"../../../Core/Math/JMatrix.h"
 #include<DirectXCollision.h>
 
@@ -38,10 +35,7 @@ namespace JinEngine
 	class JTransform; 
 	class JCameraPrivate;
 	 
-	class JCamera final : public JComponent,
-		public Graphic::JFrameUpdateUserAccess,
-		public Graphic::JGraphicResourceUserAccess,
-		public Graphic::JCullingUserAccess
+	class JCamera final : public JComponent, public JGraphicModuleUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JCamera)
 	public: 
@@ -60,22 +54,23 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JCameraImpl> impl;
 	public:
-		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
-		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
-		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;  
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
-			return J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+			return J_COMPONENT_TYPE::ENGINE_CAMERA;
 		} 	  
 		JUserPtr<JTransform> GetTransform()noexcept;
-		DirectX::XMMATRIX GetView()const noexcept;
-		JMatrix4x4 GetView4x4()const noexcept;
+		JMatrix4x4 GetView()const noexcept; 
 		DirectX::XMMATRIX GetInvView()const noexcept;  
-		DirectX::XMMATRIX GetProj()const noexcept;  
-		JMatrix4x4 GetProj4x4()const noexcept; 
-		DirectX::XMMATRIX GetPreViewProj()const noexcept;
+		JMatrix4x4 GetProj()const noexcept; 
+		JMatrix4x4 GetPreView()const noexcept;
+		DirectX::XMMATRIX GetPreInvView()const noexcept;
+		JMatrix4x4 GetPreViewProj()const noexcept;
 		void GetUvToView(JVector2F& a, JVector2F& b)const noexcept;
+		void GetPreUvToView(JVector2F& a, JVector2F& b)const noexcept;
 		/*
 		* @return world bounding frustum
 		*/
@@ -90,6 +85,7 @@ namespace JinEngine
 		float GetFovXDegree()const noexcept;
 		float GetFovY()const noexcept;
 		float GetFovYDegree()const noexcept;
+		float GetTanHalfFovY()const noexcept;
 		float GetAspect()const noexcept;
 		float GetOrthoViewWidth()const noexcept;
 		float GetOrthoViewHeight()const noexcept;
@@ -97,10 +93,18 @@ namespace JinEngine
 		float GetNearViewHeight()const noexcept;
 		float GetFarViewWidth()const noexcept;
 		float GetFarViewHeight()const noexcept;
+		/**
+		* @return now used frustum(ortho or perspective) width
+		*/
+		float GetRenderViewWidth()const noexcept;
+		/**
+		* @return now used frustum(ortho or perspective) height
+		*/
+		float GetRenderViewHeight()const noexcept;
 		J_CAMERA_STATE GetCameraState()const noexcept; 
 		JVector2F GetRenderTargetSize()const noexcept; 
 		JVector2F GetRenderTargetRate()const noexcept;
-		Graphic::JSsaoDesc GetSsaoDesc()const noexcept; 
+		JSsaoDesc GetSsaoDesc()const noexcept; 
 	public:
 		void SetNear(const float value)noexcept;
 		void SetFar(const float value) noexcept;
@@ -117,26 +121,27 @@ namespace JinEngine
 		void SetAllowHzbOcclusionCulling(const bool value)noexcept;
 		void SetAllowHdOcclusionCulling(const bool value)noexcept;
 		void SetAllowDisplayOccCullingDepthMap(const bool value)noexcept;
+		void SetReflectAllCullingResult(const bool value)noexcept;
 		void SetAllowSsao(const bool value)noexcept;
 		void SetCameraState(const J_CAMERA_STATE state)noexcept;
 		void SetRenderTargetRate(const JVector2F rate)noexcept;		//default 1,1 = client window size
-		void SetSsaoDesc(const Graphic::JSsaoDesc& desc)noexcept;
-	public: 
-		bool IsFrameDirted()const noexcept;
+		void SetSsaoDesc(const JSsaoDesc& desc)noexcept;
+	public:  
 		bool IsOrthoCamera()const noexcept; 
-		bool IsAvailableOverlap()const noexcept final;
+		bool IsAvailableOverlap()const noexcept final; 
 		bool PassDefectInspection()const noexcept final; 
 		bool AllowDisplayRenderResult()const noexcept;
 		bool AllowDisplayDebugObject()const noexcept;
-		bool AllowFrustumCulling()const noexcept final;
-		bool AllowHzbOcclusionCulling()const noexcept final;
-		bool AllowHdOcclusionCulling()const noexcept final;
-		bool AllowDisplayOccCullingDepthMap()const noexcept final;
-		bool AllowLightCulling()const noexcept final;
+		bool AllowFrustumCulling()const noexcept;
+		bool AllowHzbOcclusionCulling()const noexcept;
+		bool AllowHdOcclusionCulling()const noexcept;
+		bool AllowDisplayOccCullingDepthMap()const noexcept;
+		bool AllowLightCulling()const noexcept;
 		bool AllowDisplayLightCullingDebug()const noexcept;
+		bool AllowReflectAllCullingResult()const noexcept;
 		bool AllowSsao()const noexcept;
 		bool AllowPostProcess()const noexcept;
-		bool AllowRaytracingGI()const noexcept;
+		bool AllowRaytracingGI()const noexcept; 
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

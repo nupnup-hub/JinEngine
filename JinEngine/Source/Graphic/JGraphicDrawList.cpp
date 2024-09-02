@@ -23,23 +23,20 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#include"JGraphicDrawList.h" 
-#include"GraphicResource/JGraphicResourceInfo.h"
+#include"JGraphicDrawList.h"  
 #include"../Object/Resource/Scene/JScene.h" 
 #include"../Object/Resource/Scene/JScenePrivate.h" 
 #include"../Object/Component/JComponent.h" 
 #include"../Object/Component/Camera/JCamera.h" 
 #include"../Object/Component/Light/JLight.h" 
 #include"../Object/GameObject/JGameObject.h"
-#include"../Core/Utility/JCommonUtility.h" 
-#include"FrameResource/JFrameUpdate.h" 
-#include"FrameResource/JFrameUpdateUserAccess.h"
+#include"../Core/Utility/JCommonUtility.h"  
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		JDrawRequestor::JDrawRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)
+		JDrawRequestor::JDrawRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)
 			:ownerTarget(ownerTarget), updateFrequency(updateFrequency)
 		{}
 		JGraphicDrawTarget* JDrawRequestor::GetOwnerTarget()const noexcept
@@ -47,7 +44,7 @@ namespace JinEngine
 			return ownerTarget;
 		} 
 
-		JSceneDrawRequestor::JSceneDrawRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const JUserPtr<JCamera>& jCamera)
+		JSceneDrawRequestor::JSceneDrawRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency, const JUserPtr<JCamera>& jCamera)
 			:JDrawRequestor(ownerTarget, updateFrequency), jCamera(jCamera)
 		{}
 		JSceneDrawRequestor::~JSceneDrawRequestor()
@@ -57,7 +54,7 @@ namespace JinEngine
 			return jCamera->GetGuid();
 		}
 
-		JShadowMapDrawRequestor::JShadowMapDrawRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const JUserPtr<JLight>& jLight)
+		JShadowMapDrawRequestor::JShadowMapDrawRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency, const JUserPtr<JLight>& jLight)
 			: JDrawRequestor(ownerTarget, updateFrequency), jLight(jLight)
 		{}
 		JShadowMapDrawRequestor::~JShadowMapDrawRequestor()
@@ -67,7 +64,7 @@ namespace JinEngine
 			return jLight->GetGuid();
 		}
 
-		JSceneFrustumCullingRequestor::JSceneFrustumCullingRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const JUserPtr<JComponent>& comp)
+		JSceneFrustumCullingRequestor::JSceneFrustumCullingRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency, const JUserPtr<JComponent>& comp)
 			:JDrawRequestor(ownerTarget, updateFrequency), comp(comp)
 		{}
 		JSceneFrustumCullingRequestor::~JSceneFrustumCullingRequestor()
@@ -77,7 +74,7 @@ namespace JinEngine
 			return comp->GetGuid();
 		}
 
-		JSceneHzbOccCullingRequestor::JSceneHzbOccCullingRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const JUserPtr<JComponent>& comp)
+		JSceneHzbOccCullingRequestor::JSceneHzbOccCullingRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency, const JUserPtr<JComponent>& comp)
 			:JDrawRequestor(ownerTarget, updateFrequency), comp(comp)
 		{}
 		JSceneHzbOccCullingRequestor::~JSceneHzbOccCullingRequestor()
@@ -87,7 +84,7 @@ namespace JinEngine
 			return comp->GetGuid();
 		}
 
-		JSceneHdOccCullingRequestor::JSceneHdOccCullingRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const JUserPtr<JComponent>& comp)
+		JSceneHdOccCullingRequestor::JSceneHdOccCullingRequestor(JGraphicDrawTarget* ownerTarget, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency, const JUserPtr<JComponent>& comp)
 			:JDrawRequestor(ownerTarget, updateFrequency), comp(comp)
 		{}
 		JSceneHdOccCullingRequestor::~JSceneHdOccCullingRequestor()
@@ -108,53 +105,74 @@ namespace JinEngine
 
 		void JGraphicDrawTarget::UpdateInfo::BeginUpdate()
 		{
-			objUpdateCount = aniUpdateCount = camUpdateCount = lightUpdateCount = shadowMapUpdateCount = hzbOccUpdateCount = hdOccUpdateCount =
-				hotObjUpdateCount = hotAniUpdateCount = hotCamUpdateCount = hotLitghtUpdateCount =
-				thisFrameObjCount = 0;
-
+			memset(log, 0, sizeof(JGraphicUpdateLog) * totalCompVariation);
+			 
 			sceneUpdated = false;
 			shadowUpdated = false;
-			hzbOccCullingUpdated = hdOccCullingUpdated = false;
-
-			if (observationFrame != nullptr && observationFrame->IsFrameDirted())
-				sceneUpdated = true;
-			hasObjRecopy = false;
+			hzbOccCullingUpdated = hdOccCullingUpdated = false; 
 		}
 		void JGraphicDrawTarget::UpdateInfo::EndUpdate()
-		{
+		{ 
+			static constexpr UniqueIndex ritemIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_RENDERITEM>();
+			static constexpr UniqueIndex aniIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_ANIMATOR>();
+			static constexpr UniqueIndex camIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_CAMERA>();
+			static constexpr UniqueIndex dLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::DIRECTIONAL);
+			static constexpr UniqueIndex pLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::POINT);
+			static constexpr UniqueIndex sLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::SPOT);
+			static constexpr UniqueIndex rLitIndex = ConvertCompUniqueIndex<J_COMPONENT_TYPE::ENGINE_LIGHT>(J_LIGHT_TYPE::RECT);
+
+			auto& rItemLog = log[ritemIndex];
+			auto& aniLog = log[aniIndex];
+			auto& dLitLog = log[dLitIndex];
+			auto& pLitLog = log[pLitIndex];
+			auto& sLitLog = log[sLitIndex];
+			auto& rLitLog = log[rLitIndex];
+			auto& camLog = log[camIndex];
+
 			//cam이 자기자신의 update이외에 영향을 주는 객체들의 update count
-			const uint sceneUpdateFactor = objUpdateCount + aniUpdateCount + lightUpdateCount;
+			const uint sceneUpdateFactor = rItemLog.updateCount +
+				aniLog.updateCount +
+				dLitLog.updateCount +
+				pLitLog.updateCount +
+				sLitLog.updateCount +
+				rLitLog.updateCount + 
+				rItemLog.moveCount + 
+				aniLog.moveCount +
+				dLitLog.moveCount +
+				pLitLog.moveCount + 
+				sLitLog.moveCount +
+				rLitLog.moveCount;
+
 			if (sceneUpdateFactor > 0 || nextSceneUpdate)
 				sceneUpdated = true;
 	 
 			//const uint shadowUpdateCount = hotObjUpdateCount + hotAniUpdateCount + hotLitghtUpdateCount + shadowMapUpdateCount;
 			//shadow map을 소유한 shadow requestor update이외에 영향을 주는 객체들의 update count
-			const uint shadowUpdateFactor = objUpdateCount + aniUpdateCount + hasObjRecopy;
+			const uint shadowUpdateFactor = rItemLog.updateCount + aniLog.updateCount + rItemLog.moveCount + aniLog.moveCount;
 			if (shadowUpdateFactor > 0)
 				shadowUpdated = true;
 			 
 			//const uint occUpdateHotFactor = hotObjUpdateCount + hotAniUpdateCount + hasObjRecopy;
-			const uint occUpdateFactor = objUpdateCount + aniUpdateCount + hasObjRecopy;
-			const uint occUpdateHotFactor = hotObjUpdateCount + hotAniUpdateCount + hasObjRecopy;
+			const uint occUpdateFactor = shadowUpdateFactor; 
 
 			hdOccCullingUpdated = occUpdateFactor;
 			hzbOccCullingUpdated = occUpdateFactor;
-			if (thisFrameObjCount < lastFrameObjCount)
+			if (rItemLog.thisFrameCount < lastFrameCount[ritemIndex])
 				shadowUpdated = hdOccCullingUpdated = hzbOccCullingUpdated = true;
 
-			lastFrameObjCount = thisFrameObjCount;
+			for (uint i = 0; i < totalCompVariation; ++i)
+				lastFrameCount[i] = log[i].thisFrameCount;
 			nextSceneUpdate = false;
 		}
 
 		JGraphicDrawTarget::JGraphicDrawTarget(const JUserPtr<JScene>& scene)
 			: scene(scene)
-		{
-			updateInfo = std::make_unique<UpdateInfo>();
+		{ 
 		}
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
 		void JGraphicDrawTarget::BeginUpdate()
 		{
-			updateInfo->BeginUpdate();
+			updateInfo.BeginUpdate();
 			for (const auto& data : sceneRequestor)
 			{
 				data->isUpdated = false;
@@ -187,41 +205,41 @@ namespace JinEngine
 		void JGraphicDrawTarget::EndUpdate()
 		{ 
 			//manage drawing trigger
-			updateInfo->EndUpdate();
+			updateInfo.EndUpdate();
 			for (const auto& data : sceneRequestor)
 			{
-				if (updateInfo->sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
+				if (updateInfo.sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true; 
 			}
 			for (const auto& data : shadowRequestor)
 			{
-				if (updateInfo->shadowUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
+				if (updateInfo.shadowUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->passNextFrame)
 					data->canDrawThisFrame = false;
 			}
 			for (const auto& data : frustumCullingRequestor)
 			{
-				if (updateInfo->sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
+				if (updateInfo.sceneUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
 					data->canDrawThisFrame = true;	
 			}
 			for (const auto& data : hzbOccCullingRequestor)
 			{
-				if (updateInfo->hzbOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
+				if (updateInfo.hzbOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
 					data->canDrawThisFrame = true;
 			}
 			for (const auto& data : hdOccCullingRequestor)
 			{
-				if (updateInfo->hdOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
+				if (updateInfo.hdOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
 					data->canDrawThisFrame = true;
 			}
-		}
+		} 
 
 		class DrawListPrivateData
 		{
@@ -251,32 +269,24 @@ namespace JinEngine
 					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return false;
-
+				  
 				drawList.erase(drawList.begin() + index);
 				return true;
-			}
-			bool AddObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<JFrameUpdateUserAccess>& observationFrame)noexcept
-			{
-				int index = GetIndex(scene);
-				if (index == -1)
-					return false;
-				drawList[index]->updateInfo->observationFrame = observationFrame;
-				return true;
-			}
-			void AddDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
+			} 
+			bool AddDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
 			{
 				if (scene == nullptr || jCamera == nullptr)
-					return;
+					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->sceneRequestor, jCamera);
 				if (existIndex != invalidIndex)
-					return;
+					return false;
 
 				auto unqPtr = std::make_unique<JSceneDrawRequestor>(drawList[index].get(), updateFrequency, jCamera);
 				auto rawPtr = unqPtr.get();
@@ -284,40 +294,42 @@ namespace JinEngine
 
 				drawList[index]->sceneRequestor.emplace_back(std::move(unqPtr));
 				sceneDrawRequestorCacheVec.push_back(rawPtr);
+				return true;
 			}
-			void AddDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
+			bool AddDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
 			{
 				if (scene == nullptr || jLight == nullptr)
-					return;
+					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->shadowRequestor, jLight);
 				if (existIndex != invalidIndex)
-					return;
+					return false;
 
-				auto unqPtr = std::make_unique<JShadowMapDrawRequestor>(drawList[index].get(), J_GRAPHIC_DRAW_FREQUENCY::UPDATED, jLight);
+				auto unqPtr = std::make_unique<JShadowMapDrawRequestor>(drawList[index].get(), J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY::UPDATED, jLight);
 				auto rawPtr = unqPtr.get();
 				rawPtr->isUpdated = true; 
 
 				drawList[index]->shadowRequestor.emplace_back(std::move(unqPtr));
-				shadowMapDrawRequestorCacheVec.push_back(rawPtr);
+				shadowMapDrawRequestorCacheVec.push_back(rawPtr); 
+				return true;
 			}
-			void AddFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
+			bool AddFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
 			{
 				if (scene == nullptr || jComp == nullptr)
-					return;
+					return false;
 
 				const J_COMPONENT_TYPE compType = jComp->GetComponentType();
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->frustumCullingRequestor, jComp);
 				if (existIndex != invalidIndex)
-					return;
+					return false;
 
 				auto unqPtr = std::make_unique<JSceneFrustumCullingRequestor>(drawList[index].get(), updateFrequency, jComp);
 				auto rawPtr = unqPtr.get();
@@ -325,20 +337,21 @@ namespace JinEngine
 
 				drawList[index]->frustumCullingRequestor.emplace_back(std::move(unqPtr));
 				frustumCullingRequestorCacheVec.push_back(rawPtr);
+				return true;
 			}
-			void AddHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
+			bool AddHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
 			{
 				if (scene == nullptr || jComp == nullptr)
-					return;
+					return false;
 
 				const J_COMPONENT_TYPE compType = jComp->GetComponentType();
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->hzbOccCullingRequestor, jComp);
 				if (existIndex != invalidIndex)
-					return;
+					return false;
 
 				auto unqPtr = std::make_unique<JSceneHzbOccCullingRequestor>(drawList[index].get(), updateFrequency, jComp);
 				auto rawPtr = unqPtr.get();
@@ -346,20 +359,21 @@ namespace JinEngine
 
 				drawList[index]->hzbOccCullingRequestor.emplace_back(std::move(unqPtr));
 				hzbOccCullingRequestorCacheVec.push_back(rawPtr);
+				return true;
 			}
-			void AddHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
+			bool AddHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
 			{
 				if (scene == nullptr || jComp == nullptr)
-					return;
+					return false;
 
 				const J_COMPONENT_TYPE compType = jComp->GetComponentType();
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->hdOccCullingRequestor, jComp);
 				if (existIndex != invalidIndex)
-					return;
+					return false;
 
 				auto unqPtr = std::make_unique<JSceneHdOccCullingRequestor>(drawList[index].get(), updateFrequency, jComp);
 				auto rawPtr = unqPtr.get();
@@ -367,106 +381,105 @@ namespace JinEngine
 
 				drawList[index]->hdOccCullingRequestor.emplace_back(std::move(unqPtr));
 				hdOccCullingRequestorCacheVec.push_back(rawPtr);
+				return true;
 			}
-			void PopDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera)noexcept
+			bool PopDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera)noexcept
 			{
 				if (scene == nullptr || jCamera == nullptr)
-					return;
+					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->sceneRequestor, jCamera);
 				if (existIndex == invalidIndex)
-					return;
+					return false;
 
 				int cacheIndex = GetReqIndex(sceneDrawRequestorCacheVec, jCamera);
 				sceneDrawRequestorCacheVec.erase(sceneDrawRequestorCacheVec.begin() + cacheIndex);
 
 				drawList[index]->sceneRequestor.erase(drawList[index]->sceneRequestor.begin() + existIndex);
+				return true;
 				//const JUserPtr<JScene>& scene = drawList[index]->scene;
 				//scene->DeActivate();
 			}
-			void PopDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
+			bool PopDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
 			{
 				if (scene == nullptr || jLight == nullptr)
-					return;
+					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->shadowRequestor, jLight);
 				if (existIndex == invalidIndex)
-					return;
-				 
-				/*
-				for (uint i = 0; i < shadowMapDrawRequestorCacheVec.size(); ++i)
-				{
-					if (shadowMapDrawRequestorCacheVec[i]->jLight == nullptr)
-						MessageBox(0, shadowMapDrawRequestorCacheVec[i]->GetOwnerTarget()->scene->GetName().c_str(), L"NLL", 0);
-				}
-				*/
+					return false;
+				    
 				int cacheIndex = GetReqIndex(shadowMapDrawRequestorCacheVec, jLight);
 				shadowMapDrawRequestorCacheVec.erase(shadowMapDrawRequestorCacheVec.begin() + cacheIndex);
 
 				drawList[index]->shadowRequestor.erase(drawList[index]->shadowRequestor.begin() + existIndex);
-				drawList[index]->updateInfo->nextSceneUpdate = true;
+				drawList[index]->updateInfo.nextSceneUpdate = true;
+				return true;
 			}
-			void PopFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+			bool PopFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
 			{
 				if (scene == nullptr || jComp == nullptr)
-					return;
+					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->frustumCullingRequestor, jComp);
 				if (existIndex == invalidIndex)
-					return;
+					return false;
 				 
 				int cacheIndex = GetReqIndex(frustumCullingRequestorCacheVec, jComp);
 				frustumCullingRequestorCacheVec.erase(frustumCullingRequestorCacheVec.begin() + cacheIndex);
 
 				drawList[index]->frustumCullingRequestor.erase(drawList[index]->frustumCullingRequestor.begin() + existIndex);
+				return true;
 			}
-			void PopHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+			bool PopHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
 			{
 				if (scene == nullptr || jComp == nullptr)
-					return;
+					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->hzbOccCullingRequestor, jComp);
 				if (existIndex == invalidIndex)
-					return;
+					return false;
 				
 				int cacheIndex = GetReqIndex(hzbOccCullingRequestorCacheVec, jComp);
 				hzbOccCullingRequestorCacheVec.erase(hzbOccCullingRequestorCacheVec.begin() + cacheIndex);
 
 				drawList[index]->hzbOccCullingRequestor.erase(drawList[index]->hzbOccCullingRequestor.begin() + existIndex);
+				return true;
 			}
-			void PopHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+			bool PopHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
 			{
 				if (scene == nullptr || jComp == nullptr)
-					return;
+					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
-					return;
+				if (index == invalidIndex)
+					return false;
 
 				int existIndex = GetReqIndex(drawList[index]->hdOccCullingRequestor, jComp);
 				if (existIndex == invalidIndex)
-					return;
+					return false;
 				 
 				int cacheIndex = GetReqIndex(hdOccCullingRequestorCacheVec, jComp);
 				hdOccCullingRequestorCacheVec.erase(hdOccCullingRequestorCacheVec.begin() + cacheIndex);
 
 				drawList[index]->hdOccCullingRequestor.erase(drawList[index]->hdOccCullingRequestor.begin() + existIndex);
+				return true;
 			}
 		public:
 			uint GetListCount()const noexcept
@@ -509,7 +522,7 @@ namespace JinEngine
 					return false;
 
 				int index = GetIndex(scene);
-				if (index == -1)
+				if (index == invalidIndex)
 					return false;
 
 				return drawList[index]->sceneRequestor.size() + drawList[index]->shadowRequestor.size() > 0;
@@ -533,64 +546,46 @@ namespace JinEngine
 		bool JGraphicDrawList::PopDrawList(const JUserPtr<JScene>& scene)noexcept
 		{
 			return GetPrivate().PopDrawList(scene);
-		}
-		bool JGraphicDrawList::AddObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<JFrameUpdateUserAccess>& observationFrame)noexcept
-		{
-			return GetPrivate().AddObservationFrame(scene, observationFrame);
-		}
-		void JGraphicDrawList::UpdateScene(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType)noexcept
-		{
-			if (scene == nullptr)
-				return;
-
-			DrawListPrivateData& p = GetPrivate();
-			int index = p.GetIndex(scene);
-			if (index == -1)
-				return;
-
-			const uint drawListCount = (uint)p.drawList.size();
-			for (uint i = index + 1; i < drawListCount; ++i)
-				JScenePrivate::CompFrameInterface::SetComponentFrameDirty(p.drawList[i]->scene, cType);
-		}
-		void JGraphicDrawList::AddDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
-		{
-			GetPrivate().AddDrawSceneRequest(scene, jCamera, updateFrequency);
-		}
-		void JGraphicDrawList::AddDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
-		{
-			GetPrivate().AddDrawShadowRequest(scene, jLight);
-		}
-		void JGraphicDrawList::AddFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
-		{
-			GetPrivate().AddFrustumCullingRequest(scene, jComp, updateFrequency);
-		}
-		void JGraphicDrawList::AddHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
-		{
-			GetPrivate().AddHzbOccCullingRequest(scene, jComp, updateFrequency);
-		}
-		void JGraphicDrawList::AddHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
-		{
-			GetPrivate().AddHdOccCullingRequest(scene, jComp, updateFrequency);
-		}
-		void JGraphicDrawList::PopDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera)noexcept
-		{
-			GetPrivate().PopDrawSceneRequest(scene, jCamera);
-		}
-		void JGraphicDrawList::PopDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
-		{
-			GetPrivate().PopDrawShadowRequest(scene, jLight);
 		} 
-		void JGraphicDrawList::PopFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		bool JGraphicDrawList::AddDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
 		{
-			GetPrivate().PopFrustumCullingRequest(scene, jComp);
+			return GetPrivate().AddDrawSceneRequest(scene, jCamera, updateFrequency);
 		}
-		void JGraphicDrawList::PopHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		bool JGraphicDrawList::AddDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
 		{
-			GetPrivate().PopHzbOccCullingRequest(scene, jComp);
+			return GetPrivate().AddDrawShadowRequest(scene, jLight);
 		}
-		void JGraphicDrawList::PopHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		bool JGraphicDrawList::AddFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
 		{
-			GetPrivate().PopHdOccCullingRequest(scene, jComp);
+			return GetPrivate().AddFrustumCullingRequest(scene, jComp, updateFrequency);
+		}
+		bool JGraphicDrawList::AddHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
+		{
+			return GetPrivate().AddHzbOccCullingRequest(scene, jComp, updateFrequency);
+		}
+		bool JGraphicDrawList::AddHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_REQUEST_EXECUTE_FREQUENCY updateFrequency)noexcept
+		{
+			return GetPrivate().AddHdOccCullingRequest(scene, jComp, updateFrequency);
+		}
+		bool JGraphicDrawList::PopDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera)noexcept
+		{
+			return GetPrivate().PopDrawSceneRequest(scene, jCamera);
+		}
+		bool JGraphicDrawList::PopDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept
+		{
+			return	GetPrivate().PopDrawShadowRequest(scene, jLight);
+		} 
+		bool JGraphicDrawList::PopFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		{
+			return GetPrivate().PopFrustumCullingRequest(scene, jComp);
+		}
+		bool JGraphicDrawList::PopHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		{
+			return GetPrivate().PopHzbOccCullingRequest(scene, jComp);
+		}
+		bool JGraphicDrawList::PopHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		{
+			return GetPrivate().PopHdOccCullingRequest(scene, jComp);
 		}
 		uint JGraphicDrawList::GetListCount()noexcept
 		{

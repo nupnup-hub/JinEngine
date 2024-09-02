@@ -57,10 +57,12 @@ namespace JinEngine
 		std::unique_ptr<JBehaviorImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;  
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
-			return J_COMPONENT_TYPE::USER_DEFIENED_BEHAVIOR;
+			return J_COMPONENT_TYPE::USER_BEHAVIOR;
 		}
 	public:
 		bool IsAvailableOverlap()const noexcept final; 

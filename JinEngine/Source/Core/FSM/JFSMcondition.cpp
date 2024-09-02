@@ -53,9 +53,9 @@ namespace JinEngine
 			REGISTER_PROPERTY_EX(parameter, GetParameter, SetParameter, GUI_SELECTOR(J_GUI_SELECTOR_IMAGE::NONE, false, GetSroageParameter))
 			JUserPtr<JFSMparameter> parameter = nullptr;
 			REGISTER_PROPERTY_EX(onValue, GetOnValue, SetOnValue,
-				GUI_CHECKBOX(GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::BOOL)),
-				GUI_FIXED_INPUT(false, J_PARAMETER_TYPE::Int, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::INT)),
-				GUI_FIXED_INPUT(false, J_PARAMETER_TYPE::Float, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::FLOAT)))
+			GUI_CHECKBOX(GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::BOOL)),
+			GUI_FIXED_INPUT(false, J_PARAMETER_TYPE::Int, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::INT)),
+			GUI_FIXED_INPUT(false, J_PARAMETER_TYPE::Float, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::FLOAT)))
 			float onValue = 0;
 		public:
 			JFSMconditionImpl(const InitData& initData, JFSMcondition* thisCondRaw)
@@ -141,7 +141,7 @@ namespace JinEngine
 			static void RegisterTypeData()
 			{
 				JIdentifier::RegisterPrivateInterface(JFSMcondition::StaticTypeInfo(),cPrivate);
-				IMPL_REALLOC_BIND(JFSMcondition::JFSMconditionImpl, thisPointer)
+				IMPL_REALLOC_BIND()
 			}
 		};
 

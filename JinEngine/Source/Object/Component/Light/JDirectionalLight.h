@@ -47,17 +47,24 @@ namespace JinEngine
 		std::unique_ptr<JDirectionalLightImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
-		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final; 
 		J_LIGHT_TYPE GetLightType()const noexcept final;
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final; 
 		float GetMinPower()const noexcept;
 		float GetMaxPower()const noexcept;
 		float GetFrustumNear()const noexcept final;
-		float GetFrustumFar()const noexcept final;
+		float GetFrustumFar()const noexcept final; 
+		JVector3F GetInitWorldDirection()const noexcept;
+		JVector3F GetWorldDirection()const noexcept;
+		JVector3F GetCachedWorldDirection()const noexcept;
+		JVector3F GetFrustumMinPoint()const noexcept;
+		JVector3F GetFrustumMaxPoint()const noexcept; 
 		DirectX::BoundingBox GetBBox()const noexcept final;
 		JUserPtr<JMeshGeometry> GetMesh()const noexcept final;
 		DirectX::XMMATRIX GetMeshWorldM(const bool restrictScaledZ = false)const noexcept final;
+		DirectX::XMMATRIX GetShadowMapTransform()const noexcept;
+		JMatrix4x4 GetView()const noexcept; 
+		JMatrix4x4 GetProj()const noexcept;
 		uint GetCsmSplitCount()const noexcept;
 		float GetCsmSplitBlendRate()const noexcept;
 		float GetCsmShadowDistance()const noexcept;
@@ -71,15 +78,14 @@ namespace JinEngine
 		void SetCsmSplitBlendRate(const float value)noexcept;
 		void SetCsmShadowDistance(const float value)noexcept;
 		void SetCsmLevelBlendRate(const float value)noexcept;
-	public:
-		bool IsFrameDirted()const noexcept final;
+	public: 
 		bool IsCsmActivated()const noexcept; 
 		bool CanAllocateCsm()const noexcept;
 		bool PassDefectInspection()const noexcept final; 
 		bool AllowFrustumCulling()const noexcept final;
 		bool AllowHzbOcclusionCulling()const noexcept final;
 		bool AllowHdOcclusionCulling()const noexcept final;
-		bool AllowDisplayOccCullingDepthMap()const noexcept final; 
+		bool AllowDisplayOccCullingDepthMap()const noexcept final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

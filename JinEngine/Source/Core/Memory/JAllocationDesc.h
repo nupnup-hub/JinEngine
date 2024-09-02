@@ -77,6 +77,13 @@ namespace JinEngine
 			bool useIncrementalMemoryCompaction = true;
 		public:
 			bool canReAlloc = true;
+		public:
+			//bool applyChildTypeIfNotDefined = false;
+		public:
+			JAllocationDesc() = default;
+			JAllocationDesc(JAllocationDesc&& rhs) = default;
+			JAllocationDesc& operator=(JAllocationDesc&& rhs) = default;
+			~JAllocationDesc() = default;
 		};
 	}
 }

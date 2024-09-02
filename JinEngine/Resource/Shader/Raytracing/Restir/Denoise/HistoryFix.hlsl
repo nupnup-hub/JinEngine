@@ -58,7 +58,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float2 centerUv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
     uint currHistoryLength = historyLength[pixelCoord];
  
-    if (currHistoryLength < FIXED_FRAME_COUNT) // not enough temporal history available
+    if (currHistoryLength <= FIXED_FRAME_COUNT) // not enough temporal history available
     {
         float4 centerHistory = srcColorHistory.SampleLevel(samLinearClmap, centerUv, 0);
         float3 centerNormal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, centerUv, 0));
@@ -75,19 +75,19 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
         float3 colorSum = float3(0, 0, 0);
         //float momentSum = 0;
         float weightSum = 0.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
- 
+        
         [unroll]
-        for (int i = -BLUR_RADIUS; i <= BLUR_RADIUS; ++i)
+        for (int y = -BLUR_RADIUS; y <= BLUR_RADIUS; ++y)
         {
             [unroll]
-            for (int j = -BLUR_RADIUS; j <= BLUR_RADIUS; ++j)
+            for (int x = -BLUR_RADIUS; x <= BLUR_RADIUS; ++x)
             {
                 //if(i == 0 && j == 0)
                 //    continue;
                 
                 //Per pixel kernel rotation
                 //Input signal is already noisy  
-                int2 offset = int2(i, j) * TAB_DISTANCE;
+                int2 offset = int2(x, y) * TAB_DISTANCE;
                 float2 uv = centerUv + offset * cb.invRtSize;
                 //uv = max(uv, float2(0, 0));
         

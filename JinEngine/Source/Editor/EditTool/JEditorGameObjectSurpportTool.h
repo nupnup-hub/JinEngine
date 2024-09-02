@@ -239,6 +239,8 @@ namespace JinEngine
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
 				bool IsValid()const noexcept final;
+			private:
+				void ClearResource();
 			};
 			class SphereView : public GeometryView
 			{
@@ -263,6 +265,8 @@ namespace JinEngine
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
 				bool IsValid()const noexcept;
+			private:
+				void ClearResource();
 			};
 			class ConeView : public GeometryView
 			{
@@ -285,6 +289,8 @@ namespace JinEngine
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
 				bool IsValid()const noexcept;
+			private:
+				void ClearResource();
 			};
 			class RectView : public GeometryView
 			{
@@ -309,6 +315,8 @@ namespace JinEngine
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
 				bool IsValid()const noexcept;
+			private:
+				void ClearResource();
 			}; 
 		private: 
 			std::vector<std::unique_ptr<GeometryView>> geoView;

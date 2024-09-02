@@ -24,14 +24,13 @@ SOFTWARE.
 
 
 #pragma once
-#include"../JCommandContext.h"
-#include"../../FrameResource/JFrameResourceEnum.h"
+#include"../JCommandContext.h" 
 #include"../../GraphicResource/JGraphicResourceType.h" 
-#include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
-#include"../../Culling/JCullingType.h"
+#include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"  
 #include"../../Culling/Dx/JDx12CullingManager.h"
 #include"../../Accelerator/Dx/JDx12GpuAcceleratorManager.h"
 #include"../../Accelerator/JGpuAcceleratorInterface.h"
+#include"../../FrameResource/Dx/JDx12FrameResourceManager.h"
 #include"../../Shader/JShaderType.h"
 #include"../../JGraphicConstants.h" 
 #include"../../../Core/Utility/JTypeTraitUtility.h"
@@ -43,28 +42,29 @@ namespace JinEngine
 	class JMeshGeometry;
 	class JRenderItem;
 	namespace Graphic
-	{  
-		class JDx12GraphicDevice; 
+	{
+		class JDx12GraphicDevice;
 		class JDx12GraphicResourceInfo;
 		class JDx12GraphicResourceHolder;
 		class JDx12RasterizeShaderDataHolderInterface;
 		class JDx12FrameResource;
-		class JDx12GraphicBufferInterface; 
+		class JDx12GraphicBufferInterface;
 		class JHlslDebugBase;
 
 		struct JGraphicInfo;
 		struct JGraphicOption;
-		 
-		class JDx12CommandContext final: public JCommandContext
-		{  
+
+		class JDx12CommandContext final : public JCommandContext
+		{
 		private:
-			static constexpr uint maxBarrierBufferCount = 16; 
+			static constexpr uint maxBarrierBufferCount = 16;
 		private:
 			ID3D12GraphicsCommandList* cmd = nullptr;
 			JDx12GraphicDevice* device = nullptr;
 			JDx12GraphicResourceManager* gm = nullptr;
 			JDx12CullingManager* cm = nullptr;
 			JDx12GpuAcceleratorManager* am = nullptr;
+			JDx12FrameResourceManager* fm = nullptr;
 			JDx12FrameResource* frameResource = nullptr;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> raytracingCmd;
@@ -75,7 +75,7 @@ namespace JinEngine
 			D3D12_RESOURCE_BARRIER resourceBarrierBuffer[maxBarrierBufferCount];
 			uint barrierBufferCount = 0;
 		public:
-			JDx12CommandContext(const std::string& name, const bool isAlwausActivated = false);
+			JDx12CommandContext(const std::string& name, const uint threadNumber, const bool isAlwausActivated = false);
 			JDx12CommandContext(const JDx12CommandContext& rhs) = delete;
 			JDx12CommandContext(JDx12CommandContext&& rhs) = default;
 			JDx12CommandContext& operator=(const JDx12CommandContext& rhs) = delete;
@@ -89,29 +89,29 @@ namespace JinEngine
 				JDx12GraphicResourceManager* gm,
 				JDx12CullingManager* cm,
 				JDx12GpuAcceleratorManager* am,
-				JDx12FrameResource* frameResource,
+				JDx12FrameResourceManager* fm,
 				const JGraphicInfo* info,
 				const JGraphicOption* option,
 				const bool settingRaycastDevice = false);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
-			uint GetDescriptorSize(const J_GRAPHIC_BIND_TYPE bType)const noexcept; 
-			ID3D12QueryHeap* GetQueryHeap(const uint index)const noexcept; 
+			uint GetDescriptorSize(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
+			ID3D12QueryHeap* GetQueryHeap(const uint index)const noexcept;
 		public:
 			void SetPipelineState(JDx12RasterizeShaderDataHolderInterface* holder, const uint index = 0);
-		public: 
+		public:
 			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceInfo* info);
 			JDx12GraphicResourceComputeSet ComputeSet(const JUserPtr<JGraphicResourceInfo>& info);
-			JDx12GraphicResourceComputeSet ComputeSet(const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType);
-			JDx12GraphicResourceComputeSet ComputeSet(const JGraphicResourceUserInterface& gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
+			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceUserInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_TASK_TYPE taskType);
+			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceUserInterface* gInterface, const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
 			JDx12GraphicResourceComputeSet ComputeSet(JGraphicResourceInfo* info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 			JDx12GraphicResourceComputeSet ComputeSet(const JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 		public:
 			JDx12CullingResourceComputeSet ComputeSet(const JUserPtr<JCullingInfo>& info);
-			JDx12CullingResourceComputeSet ComputeSet(const JCullingUserInterface& cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget);
+			JDx12CullingResourceComputeSet ComputeSet(JCullingUserInterface* cInterface, const J_CULLING_TYPE cType, const J_CULLING_TARGET cTarget);
 		public:
 			JDx12AcceleratorResourceComputeSet ComputeSet(const JUserPtr<JGpuAcceleratorInfo>& info);
-			JDx12AcceleratorResourceComputeSet ComputeSet(const JGpuAcceleratorUserInterface& user);
+			JDx12AcceleratorResourceComputeSet ComputeSet(JGpuAcceleratorUserInterface* user);
 		public:
 			//Common 
 			void Transition(JDx12GraphicResourceHolder* holder, const D3D12_RESOURCE_STATES newState, const bool flushImmediate = false);
@@ -134,17 +134,17 @@ namespace JinEngine
 			}
 			void InsertUAVBarrier(JDx12GraphicResourceHolder* holder, const bool flushImmediate = false);
 			void InsertAliasBarrier(JDx12GraphicResourceHolder* before, JDx12GraphicResourceHolder* after, const bool flushImmediate = false);
-			void FlushResourceBarriers(); 
+			void FlushResourceBarriers();
 		public:
 			void CopyResource(JDx12GraphicResourceHolder* from, JDx12GraphicResourceHolder* to);
 			void CopyResource(JHlslDebugBase* base);
 			template<size_t ...Is>
 			void CopyResource(JDx12GraphicResourceComputeSet* from, JDx12GraphicResourceComputeSet* to, std::index_sequence<Is...>)
-			{ 
+			{
 				((Transition(from[Is].holder, D3D12_RESOURCE_STATE_COPY_SOURCE, false)), ...);
 				((Transition(to[Is].holder, D3D12_RESOURCE_STATE_COPY_DEST, false)), ...);
 				FlushResourceBarriers();
-				 
+
 				((cmd->CopyResource(to[Is].holder->GetResource(), from[Is].holder->GetResource())), ...);
 			}
 			template<size_t ...Is>
@@ -154,7 +154,7 @@ namespace JinEngine
 				((Transition((*to[Is]).holder, D3D12_RESOURCE_STATE_COPY_DEST, false)), ...);
 				FlushResourceBarriers();
 
-				((cmd->CopyResource((*to[Is]).holder->GetResource(), (*from[Is]).holder->GetResource())), ...); 
+				((cmd->CopyResource((*to[Is]).holder->GetResource(), (*from[Is]).holder->GetResource())), ...);
 			}
 		public:
 			void ResolveQueryData(ID3D12QueryHeap* heap, JDx12GraphicResourceHolder* holder, const D3D12_QUERY_TYPE type, const uint offset, const uint count, const uint elementSize);
@@ -170,11 +170,14 @@ namespace JinEngine
 			void SetGraphicsRootDescriptorTable(const uint rootIndex, const J_GRAPHIC_RESOURCE_TYPE rType);
 			void SetGraphicsRootDescriptorTable(const uint rootIndex, const uint index);
 			void SetGraphicsRootDescriptorTable(const uint rootIndex, const CD3DX12_GPU_DESCRIPTOR_HANDLE handle);
-			void SetGraphicsRootShaderResourceView(const uint rootIndex, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint addressOffset = 0);
+			void SetGraphicsRootShaderResourceView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetGraphicsRootShaderResourceView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);
 			void SetGraphicsRootShaderResourceView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset = 0);
 			void SetGraphicsRootShaderResourceView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
-			void SetGraphicsRootUnorderedAccessView(const uint rootIndex, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint addressOffset = 0);
-			void SetGraphicsRootConstantBufferView(const uint rootIndex, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint addressOffset);
+			void SetGraphicsRootUnorderedAccessView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetGraphicsRootUnorderedAccessView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);
+			void SetGraphicsRootConstantBufferView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset);
+			void SetGraphicsRootConstantBufferView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset= 0);
 			void SetGraphicsRootConstantBufferView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset);
 			void SetGraphicsRootConstantBufferView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			template<typename T>
@@ -187,7 +190,7 @@ namespace JinEngine
 			}
 		public:
 			void SetDepthStencilView(const JDx12GraphicResourceComputeSet& dsSet);
-			void SetRenderTargetView(const JDx12GraphicResourceComputeSet& rtSet, const uint rtCount = 1, const bool isContinuous =  false);
+			void SetRenderTargetView(const JDx12GraphicResourceComputeSet& rtSet, const uint rtCount = 1, const bool isContinuous = false);
 			void SetRenderTargetView(const JDx12GraphicResourceComputeSet& rtSet, const JDx12GraphicResourceComputeSet& dsSet, const uint rtCount = 1, const bool isContinuous = false);
 			void SetViewportAndRect(const JVector2F& rtSize);
 			void SetViewport(const D3D12_VIEWPORT& viewPort);
@@ -199,17 +202,17 @@ namespace JinEngine
 			void ClearDepthView(const JDx12GraphicResourceComputeSet& set, const float depthClearValue = 1.0f);
 			void ClearDepthStencilView(const JDx12GraphicResourceComputeSet& set, const float depthClearValue = 1.0f, const uint stencilClearValue = Constants::stencilclearValue);
 			void ClearRenderTargetView(const JDx12GraphicResourceComputeSet& set, const DirectX::XMVECTORF32 clearColor);
-		public: 
+		public:
 			void DrawInstanced(const JUserPtr<JMeshGeometry>& mesh);
 			/**
 			* @brief bind triangle geometry data and draw
 			*/
-			void DrawFullScreenTriangle();  
-			void DrawIndexedInstanced(const JUserPtr<JMeshGeometry>& mesh, 
+			void DrawFullScreenTriangle();
+			void DrawIndexedInstanced(const JUserPtr<JMeshGeometry>& mesh,
 				const uint subMeshIndex = 0,
-				const uint instanceCount = 1, 
+				const uint instanceCount = 1,
 				const uint startInstanceLocation = 0);
-			void DrawIndexedInstanced(const JUserPtr<JMeshGeometry>& mesh, 
+			void DrawIndexedInstanced(const JUserPtr<JMeshGeometry>& mesh,
 				JDx12RasterizeShaderDataHolderInterface* holder,
 				const J_GRAPHIC_SHADER_EXTRA_FUNCTION extraType,
 				const uint instanceCount = 1,
@@ -218,27 +221,36 @@ namespace JinEngine
 			//Compute
 			void SetComputeRootSignature(ID3D12RootSignature* root)noexcept;
 			//Bind all type resource by srv
-			void SetComputeRootDescriptorTable(const uint rootIndex, const J_GRAPHIC_RESOURCE_TYPE rType); 
+			void SetComputeRootDescriptorTable(const uint rootIndex, const J_GRAPHIC_RESOURCE_TYPE rType);
 			void SetComputeRootDescriptorTable(const uint rootIndex, const uint index);
 			void SetComputeRootDescriptorTable(const uint rootIndex, const CD3DX12_GPU_DESCRIPTOR_HANDLE handle);
-			void SetComputeRootShaderResourceView(const uint rootIndex, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint addressOffset = 0);
+			void SetComputeRootShaderResourceView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetComputeRootShaderResourceView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);			
 			void SetComputeRootShaderResourceView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset = 0);
 			void SetComputeRootShaderResourceView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
-			void SetComputeRootUnorderedAccessView(const uint rootIndex, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint addressOffset = 0);
+			void SetComputeRootUnorderedAccessView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset = 0);
+			void SetComputeRootUnorderedAccessView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);		
 			void SetComputeRootUnorderedAccessView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset = 0);
 			void SetComputeRootUnorderedAccessView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
-			void SetComputeRootConstantBufferView(const uint rootIndex, const J_UPLOAD_FRAME_RESOURCE_TYPE type, const uint addressOffset);
+			void SetComputeRootConstantBufferView(const uint rootIndex, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint addressOffset);
+			void SetComputeRootConstantBufferView(const uint rootIndex, JFrameUpdateInterface* fInterface, const J_FRAME_RESOURCE_UPLOAD_TYPE type, const uint frameOffset = 0);			
 			void SetComputeRootConstantBufferView(const uint rootIndex, JDx12GraphicBufferInterface* bufferInterface, const uint addressOffset);
 			void SetComputeRootConstantBufferView(const uint rootIndex, const D3D12_GPU_VIRTUAL_ADDRESS address);
 			template<typename T>
 			void SetComputeRoot32BitConstants(const uint rootIndex, const uint offset, const T& data)
-			{
+			{ 
+				static constexpr uint byteChunkUnit = 4;
 				if constexpr (Core::JVectorDetermine<T>::value)
-					cmd->SetComputeRoot32BitConstants(rootIndex, data.GetDigitCount(), &data, offset);
+				{
+					if constexpr(T::GetElementSize() == byteChunkUnit)
+						cmd->SetComputeRoot32BitConstants(rootIndex, data.GetDigitCount(), &data, offset);
+					else
+						cmd->SetComputeRoot32BitConstants(rootIndex, JMathHelper::DivideByMultiple(sizeof(T), byteChunkUnit), &data, offset);
+				}
 				else if constexpr (Core::IsNumber_V<T>)
 					cmd->SetComputeRoot32BitConstants(rootIndex, 1, &data, offset);
 				else
-					cmd->SetComputeRoot32BitConstants(rootIndex, JMathHelper::DivideByMultiple(sizeof(T), 4), &data, offset);
+					cmd->SetComputeRoot32BitConstants(rootIndex, JMathHelper::DivideByMultiple(sizeof(T), byteChunkUnit), &data, offset);
 			}
 			template<typename T>
 			void SetComputeRoot32BitConstants(const uint rootIndex, const uint offset, const T& data, const size_t count)
@@ -251,8 +263,8 @@ namespace JinEngine
 			void Dispatch(const JVector3<uint>& taskCount, const JVector3<uint>& groupPerThread);
 			void Dispatch(const uint groupCountX, const uint groupCountY, const uint groupCountZ);
 			void Dispatch(const JVector3<uint>& groupCountV);
-			void DispatchIndirect(ID3D12CommandSignature* commandSig, 
-				const JDx12GraphicResourceComputeSet& argSet, 
+			void DispatchIndirect(ID3D12CommandSignature* commandSig,
+				const JDx12GraphicResourceComputeSet& argSet,
 				const uint argStartOffset = 0,
 				const uint maxCommand = 1);
 			void DispatchIndirect(ID3D12CommandSignature* commandSig,
@@ -266,7 +278,7 @@ namespace JinEngine
 			void SetTlasView(const uint rootIndex, const JDx12AcceleratorResourceComputeSet& set);
 			void SetPipelineState(ID3D12StateObject* stateObject);
 			void DispatchRays(D3D12_DISPATCH_RAYS_DESC* desc);
-		public: 
+		public:
 			template<typename ParamComputeSet, typename FuncComputeSet, typename ...Param>
 			void ApplyOne(ParamComputeSet computeSet,
 				void(JDx12CommandContext::* funcPtr)(FuncComputeSet, Param...),
@@ -280,7 +292,7 @@ namespace JinEngine
 						(this->*funcPtr)(*computeSet, param...);
 					else if constexpr (std::is_pointer_v<FuncComputeSet>)
 						(this->*funcPtr)(&computeSet, param...);
-				}		 
+				}
 			}
 			template<typename ParamComputeSetPointer, typename FuncComputeSet, size_t ...Is, typename ...Param>
 			void Apply(ParamComputeSetPointer computeSet,
@@ -288,9 +300,19 @@ namespace JinEngine
 				std::index_sequence<Is...>,
 				Param... param)
 			{
-				if constexpr(std::is_pointer_v<ParamComputeSetPointer>)
-					((ApplyOne(&computeSet[Is], funcPtr, param...)), ...); 
+				if constexpr (std::is_pointer_v<ParamComputeSetPointer>)
+					((ApplyOne(&computeSet[Is], funcPtr, param...)), ...);
 			}
+		public:
+			//Common
+			uint GetTotalRegistedCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+			uint GetTotalFrameCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type)const noexcept;
+			uint GetAreaRegistedCount(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept;
+			uint GetAreaRegistedOffset(const J_FRAME_RESOURCE_UPLOAD_TYPE type, const size_t areaGuid)const noexcept;
+		public:
+			//Debugging
+			void BeginDebuggingCapture(const std::string& name, const Core::JRGBVector& color = Core::JRGBColorDefine::White())final;
+			void EndDebuggingCapture()final;
 		};
 	}
 }

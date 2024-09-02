@@ -85,7 +85,7 @@ namespace JinEngine
 		}
 		static void RegisterTypeData()
 		{
-			IMPL_REALLOC_BIND(JAnimationFSMstate::JAnimationFSMstateImpl, thisPointer)
+			IMPL_REALLOC_BIND()
 		}
 	};
 
@@ -142,7 +142,7 @@ namespace JinEngine
 		uint transitionCount = 0;
 		JObjectFileIOHelper::LoadAtomicData(tool, transitionCount, "TransitionCount:");
 
-		tool.PushExistStack("TransitionMetaData");
+		tool.PushExistStack("TransitionMetadata");
 		for (uint i = 0; i < transitionCount; ++i)
 		{
 			std::wstring tName;
@@ -179,7 +179,7 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreAtomicData(tool, state->GetTransitionCount(), "TransitionCount:");
 		const uint transitionCount = state->GetTransitionCount();
 
-		tool.PushArrayOwner("TransitionMetaData");
+		tool.PushArrayOwner("TransitionMetadata");
 		for (uint i = 0; i < transitionCount; ++i)
 		{
 			tool.PushArrayMember();

@@ -30,9 +30,9 @@ SOFTWARE.
 #include"Accelerator/Bvh/JBvhOption.h"
 #include"Accelerator/Octree/JOctreeOption.h"
 #include"Accelerator/Kd-tree/JKdTreeOption.h"
+#include"../../JObjectTypeStatistics.h"
 #include"../../Component/JComponentType.h"
-#include"../../Component/RenderItem/JRenderLayer.h" 
-#include"../../../Graphic/Accelerator/JGpuAcceleratorInterface.h"
+#include"../../Component/RenderItem/JRenderLayer.h"  
 #include"../../../Core/Geometry/Mesh/JMeshType.h" 
 #include<DirectXCollision.h>
 
@@ -47,7 +47,7 @@ namespace JinEngine
 	{
 		class JRay;  
 	}
-	class JScene : public JResourceObject, public Graphic::JGpuAcceleratorUserAccess
+	class JScene : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_RESOURCE(JScene) 
 	public: 
@@ -72,9 +72,9 @@ namespace JinEngine
 				const J_SCENE_USE_CASE_TYPE useCaseType); 
 		};
 	protected: 
-		class LoadMetaData final : public JResourceObject::InitData
+		class LoadMetadata final : public JResourceObject::InitData
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetadata)
 		public:
 			J_SCENE_USE_CASE_TYPE useCaseType;
 		public:
@@ -88,7 +88,7 @@ namespace JinEngine
 			JBvhOption bvhOption[(uint)J_ACCELERATOR_LAYER::COUNT];
 		JKdTreeOption kdTreeOption[(uint)J_ACCELERATOR_LAYER::COUNT];
 		public:
-			LoadMetaData(const JUserPtr<JDirectory>& directory);
+			LoadMetadata(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JScenePrivate;
@@ -97,13 +97,14 @@ namespace JinEngine
 		std::unique_ptr<JSceneImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
-		const Graphic::JGpuAcceleratorUserInterface GpuAcceleratorUserInterface()const noexcept final;
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
 			return J_RESOURCE_TYPE::SCENE;
 		}
-		std::wstring GetFormat()const noexcept final;
+		std::wstring GetFormat()const noexcept final; 
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
 		JUserPtr<JGameObject> GetRootGameObject()noexcept;
@@ -112,13 +113,20 @@ namespace JinEngine
 		JUserPtr<JGameObject> GetGameObject(const std::wstring& name)noexcept;
 		uint GetGameObjectCount()const noexcept;
 		uint GetGameObjectCount(const J_RENDER_LAYER layer)const noexcept;
-		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
+		uint GetComponetCount(const UniqueIndex index)const noexcept;
 		uint GetMeshCount()const noexcept;
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept; 
 		std::vector<JUserPtr<JGameObject>> GetGameObjectVec()const noexcept;
 		std::vector<JUserPtr<JGameObject>> GetGameObjectVec(const J_RENDER_LAYER layer, const Core::J_MESHGEOMETRY_TYPE mesh)const noexcept;
-		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept;
-		JUserPtr<JLight> GetFirstDirectionalLight()const noexcept;
+		const std::vector<JUserPtr<JGameObject>>& GetGameObjectCacheVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept;
+		std::vector<JUserPtr<JComponent>> GetComponentVec(const UniqueIndex index)const noexcept;
+		const std::vector<JUserPtr<JComponent>>& GetComponentCacheVec(const UniqueIndex index)noexcept;
+		JUserPtr<JComponent> GetFirstComponent(const UniqueIndex index)const noexcept;
+		template<typename T>
+		JUserPtr<T> GetFirstComponent(const UniqueIndex index)const noexcept
+		{ 
+			return Core::ConvertChildUserPtr<T>(GetFirstComponent(index));
+		}
 		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JBvhOption GetBvhOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JKdTreeOption GetKdTreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;		
@@ -140,7 +148,7 @@ namespace JinEngine
 		bool IsPauseSceneTime()const noexcept;
 		bool IsMainScene()const noexcept;
 		bool IsAcceleratorActivated()const noexcept;
-		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
+		bool HasComponent(const UniqueIndex index)const noexcept;
 		bool HasCanCullingAccelerator(const J_ACCELERATOR_LAYER layer)const noexcept;
 		bool AllowLightCulling()const noexcept;
 		bool CanUseAcceleratorUtility(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)const noexcept;
@@ -159,6 +167,9 @@ namespace JinEngine
 		* 크기가 부족할시 함수내부에서 재할당한다.
 		*/
 		void AlignedObjectF(JAcceleratorAlignInfo& info, _Out_ std::vector<JUserPtr<JGameObject>>& aligned, _Out_ int& count)const noexcept;
+	public:
+		void ViewCulling(const JUserPtr<JComponent>& comp)noexcept;
+		void ViewCulling(JAcceleratorCullingInfo& info)noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

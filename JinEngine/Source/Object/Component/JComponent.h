@@ -26,6 +26,7 @@ SOFTWARE.
 #pragma once 
 #include"../JObject.h" 
 #include"JComponentType.h"  
+#include"../GraphicRule/JGraphicModuleManagedDataUser.h"
 
 namespace JinEngine
 { 
@@ -36,7 +37,10 @@ namespace JinEngine
 	struct CTypeCommonFunc;
 	struct CTypePrivateFunc;
 
-	class JComponent : public JObject
+	/*
+	* GameObject에 장착되어 Rendering에 있어서 다양한 기능을 제공한다.
+	*/
+	class JComponent : public JObject, public JGraphicModuleUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JComponent)
 	public:
@@ -92,6 +96,10 @@ namespace JinEngine
 	public:
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 		JUserPtr<JGameObject> GetOwner()const noexcept;
+		/*
+		* @return owner scene guid		
+		*/
+		size_t GetAreaGuid()const noexcept;								
 		virtual J_COMPONENT_TYPE GetComponentType()const noexcept = 0;
 	public:
 		virtual bool IsAvailableOverlap()const noexcept = 0;

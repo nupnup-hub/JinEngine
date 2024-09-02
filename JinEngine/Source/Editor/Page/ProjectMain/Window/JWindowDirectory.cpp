@@ -64,6 +64,7 @@ SOFTWARE.
 #include"../../../../Object/Resource/JResourceObjectImporter.h" 
 #include"../../../../Window/JWindow.h"
 #include"../../../../Application/Project/JApplicationProject.h"   
+#include"../../../../Application/Engine/JApplicationEngine.h"   
 #include<filesystem>
 
 // #include "../../../../Graphic/GraphicResource/JGraphicResourceInfo.h"
@@ -782,7 +783,7 @@ namespace JinEngine
 							bgRectDelta,
 							true);
 					}
-					JGuiImageInfo info(nowPreviewScene->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+					JGuiImageInfo info(nowPreviewScene->GetPreviewCamera().Get(), J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					JGui::AddRoundedImage(info, JGui::GetCursorScreenPos(), JGui::GetCursorScreenPos() + CreateVec2(iconData.size));
 				
 					const JVector2F multilineSize = widgetAlignCal.GetInnerContentsSize();			 

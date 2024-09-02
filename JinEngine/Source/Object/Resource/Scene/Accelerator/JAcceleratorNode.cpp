@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #include"JAcceleratorNode.h"  
-#include"../../../Component/RenderItem/JRenderItemPrivate.h"  
+#include"../../../Component/RenderItem/JRenderItem.h"  
 #include"../../../../Core/Geometry/JDirectXCollisionEx.h"
 
 using namespace DirectX;
@@ -58,13 +58,13 @@ namespace JinEngine
 	}
 	void JAcceleratorNode::SetCulling(JAcceleratorCullingInfo& info, const JUserPtr<JRenderItem>& rItem)noexcept
 	{
-		using RItemFrameIndexInteface = JRenderItemPrivate::FrameIndexInterface;
-		info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+		const uint frameIndex = rItem->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
+		info.cullUser->SetCulling(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, frameIndex);
 	}
 	void JAcceleratorNode::OffCulling(JAcceleratorCullingInfo& info, const JUserPtr<JRenderItem>& rItem)noexcept
 	{
-		using RItemFrameIndexInteface = JRenderItemPrivate::FrameIndexInterface;
-		info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+		const uint frameIndex = rItem->ModuleManagedData()->GetFrameUpdateUserInterface()->GetFrameIndex(J_FRAME_RESOURCE_UPLOAD_TYPE::BOUNDING_OBJECT);
+		info.cullUser->OffCulling(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM, frameIndex);
 	}
 	bool JAcceleratorNode::IsContain(const JAcceleratorContainInfo& info, const BoundingBox& bbox)const noexcept
 	{

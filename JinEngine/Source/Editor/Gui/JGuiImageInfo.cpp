@@ -23,37 +23,45 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#include"JGuiImageInfo.h"
-#include"../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"JGuiImageInfo.h" 
+//#include"../../Graphic/GraphicResource/JGraphicResourceInterface.h" 
 
 namespace JinEngine::Editor
 { 
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess)
-		:gUserAccess(gUserAccess), useFirstHandle(true)
+	JGuiImageInfo::JGuiImageInfo(JGraphicResourceUserInterface* gUser)
+		:gUser(gUser), useFirstHandle(true)
+	{} 
+	JGuiImageInfo::JGuiImageInfo(JGraphicResourceUserInterface* gUser, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)
+		: gUser(gUser), rType(rType), bType(bType)
 	{}
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType)
-		: gUserAccess(gUserAccess), rType(rType)
+	JGuiImageInfo::JGuiImageInfo(JComponent* comp)
+		:gUser(comp->ModuleManagedData()->GetGraphicResourceUserInterface()), useFirstHandle(true)
 	{}
-	JGuiImageInfo::JGuiImageInfo(Graphic::JGraphicResourceUserAccess* gUserAccess, const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_BIND_TYPE bType)
-		: gUserAccess(gUserAccess), rType(rType), bType(bType)
+	JGuiImageInfo::JGuiImageInfo(JComponent* comp, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)
+		: gUser(comp->ModuleManagedData()->GetGraphicResourceUserInterface()), rType(rType), bType(bType)
 	{}
-	JGuiImageInfo::JGuiImageInfo(Graphic::ResourceHandle handle)
+	JGuiImageInfo::JGuiImageInfo(JResourceObject* resource)
+		: gUser(resource->ModuleManagedData()->GetGraphicResourceUserInterface()), useFirstHandle(true)
+	{}
+	JGuiImageInfo::JGuiImageInfo(JResourceObject* resource, const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)
+		: gUser(resource->ModuleManagedData()->GetGraphicResourceUserInterface()), rType(rType), bType(bType)
+	{}
+	JGuiImageInfo::JGuiImageInfo(ResourceHandle handle)
 		: handle(handle), useFirstHandle(true)
 	{}
 
 	bool JGuiImageInfo::IsValid()const noexcept
 	{
-		if (gUserAccess == nullptr && handle == nullptr)
+		if (gUser == nullptr && handle == nullptr)
 			return false;
 
 		if (handle != nullptr)
 			return true;
 		else if (useFirstHandle)
-			return gUserAccess->GraphicResourceUserInterface().HasFirstHandle();
+			return gUser->HasFirstHandle();
 		else if (displayAllType)
-			return gUserAccess->GraphicResourceUserInterface().HasHandle(rType);
+			return gUser->GetResourceCount(rType) > 0;
 		else
-			return gUserAccess->GraphicResourceUserInterface().IsValidHandle(rType, dataIndex);
+			return gUser->IsValidHandle(rType, dataIndex);
 	}
 }

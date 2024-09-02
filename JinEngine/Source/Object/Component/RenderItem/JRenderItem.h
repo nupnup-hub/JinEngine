@@ -27,8 +27,7 @@ SOFTWARE.
 #include"../JComponent.h"
 #include"JRenderLayer.h" 
 #include"JRenderItemAcceleratorMask.h"   
-#include"JRenderItemPrimitive.h"
-#include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
+#include"JRenderItemPrimitive.h" 
 #include"../../../Core/Math/JMatrix.h"
 #include<DirectXCollision.h> 
 
@@ -37,8 +36,7 @@ namespace JinEngine
 	class JMeshGeometry;
 	class JMaterial;
 	class JRenderItemPrivate;
-	class JRenderItem final : public JComponent, 
-		public Graphic::JFrameUpdateUserAccess
+	class JRenderItem final : public JComponent
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JRenderItem)
 	public: 
@@ -64,10 +62,12 @@ namespace JinEngine
 		std::unique_ptr<JRenderItemImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
+		JGraphicModuleManagedDataFrame* ModuleManagedData()const noexcept final;
+		uint GetSubTypeIndex()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
-			return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM;
+			return J_COMPONENT_TYPE::ENGINE_RENDERITEM;
 		}
 	public:
 		JUserPtr<JMeshGeometry> GetMesh()const noexcept;
@@ -87,6 +87,7 @@ namespace JinEngine
 		DirectX::BoundingOrientedBox GetOrientedBoundingBox()const noexcept;
 		//apply scale tranlation  
 		DirectX::BoundingSphere GetBoundingSphere()const noexcept;
+		DirectX::XMMATRIX GetBBoxWorldMaxtrix()const noexcept;
 	public:
 		void SetMesh(JUserPtr<JMeshGeometry> newMesh)noexcept;
 		void SetMaterial(int index, JUserPtr<JMaterial> newMaterial)noexcept;
@@ -96,15 +97,14 @@ namespace JinEngine
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept; 
 		void SetAcceleratorMask(const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)noexcept;
 		void SetOccluder(const bool value)noexcept;
-	public: 
-		bool IsFrameDirted()const noexcept final;
+	public:  
 		bool IsAvailableOverlap()const noexcept final;
 		/**
 		* @brief it is valid in hzb occ & hardware occ
 		*/
 		bool IsOccluder()const noexcept;
 		bool IsIgnoreCullingResult()const noexcept;
-		bool PassDefectInspection()const noexcept final; 
+		bool PassDefectInspection()const noexcept final;  
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

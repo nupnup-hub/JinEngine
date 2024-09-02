@@ -23,6 +23,10 @@ namespace JinEngine
 			{
 				return Image() + L"\\Postprocessing\\" + name;
 			}
+			static std::wstring TAA(const std::wstring& name)
+			{
+				return Image() + L"\\TAA\\" + name;
+			}
 
 			static std::wstring Culling()
 			{

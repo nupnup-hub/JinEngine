@@ -60,7 +60,7 @@ namespace JinEngine::Graphic
             const std::string& target)
         {
             UINT compileFlags = 0;
-#if defined(_DEBUG)  
+#if defined(USE_DEBUG)  
             compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
             Microsoft::WRL::ComPtr<ID3DBlob> byteCode = nullptr;
