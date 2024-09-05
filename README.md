@@ -24,7 +24,7 @@ Game engine for studying graphics and software architecture
 - Image processing
   - Bloom
   - Tone mapping
-- [Anti alising](https://www.youtube.com/watch?v=n_lxglWRLcQ)
+- [Anti alising](https://www.youtube.com/watch?v=gxaBQoXH4C8)
   - TAA
   - FXAA
 - [Animation](https://www.youtube.com/watch?v=BIuXPuigpN0)
