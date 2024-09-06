@@ -107,7 +107,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float currHistoryLength = historyLength[pixelCoord].x;
     
     float3 color = srcColorMap.SampleLevel(samLinearClmap, uv, 0).xyz;
- 
+    
     float3 centerNormal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, uv, 0));
     float centerViewZ = viewZMap.SampleLevel(samLinearClmap, uv, 0);
     float viewRange = cb.camNearFar.y - cb.camNearFar.x;

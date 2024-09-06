@@ -132,9 +132,9 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet* taSrc = nullptr;
 				JDx12GraphicResourceComputeSet* taPreHistory = nullptr;
 				JDx12GraphicResourceComputeSet* taCurHistory = nullptr;
-			public:
-				JDx12GraphicResourceComputeSet* sharpeningSource = nullptr;
-				JDx12GraphicResourceComputeSet* sharpeningDest = nullptr;
+			public: 
+				JDx12GraphicResourceComputeSet* sharpHistory = nullptr;
+				JDx12GraphicResourceComputeSet* sharpDest = nullptr;
 			public:
 				JVector2<uint> resolution;
 			public:
@@ -188,11 +188,11 @@ namespace JinEngine
 			private: 
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> prepareRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> taRootSignature;
-				Microsoft::WRL::ComPtr<ID3D12RootSignature> sharpeningRootSignature;   
+				Microsoft::WRL::ComPtr<ID3D12RootSignature> sharpeningRootSignature;
 			private:
 				std::unique_ptr<JDx12ComputeShaderDataHolder> prepare;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> ta;
-				std::unique_ptr<JDx12ComputeShaderDataHolder> sharpening; 
+				std::unique_ptr<JDx12ComputeShaderDataHolder> sharpening;
 			private:
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> clearRootSignature;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> clearShader;

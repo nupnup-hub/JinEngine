@@ -53,7 +53,7 @@ namespace JinEngine::Graphic
 		ROOT_INDEX_CREATOR(, firstSrvHandleIndex, secondSrvHandleIndex, thirdSrvHandleIndex,
 			firstUavHandleIndex, secondUavHandleIndex, thirdUavHandleIndex, forthUavHandleIndex, cbPassIndex)
 
-			static constexpr uint cb32BitCount = 7;
+		static constexpr uint cb32BitCount = 7;
 		static constexpr uint splitCount = 2;
 
 		static JVector3<uint> Pass1ThreadDim()
@@ -73,12 +73,10 @@ namespace JinEngine::Graphic
 	{
 		ROOT_INDEX_CREATOR(Prepare, passCBIndex, depthMapIndex, preDepthMapIndex, viewZMapIndex, preViewZMapIndex)
 		ROOT_INDEX_CREATOR(TA, passCBIndex, colorMapIndex, viewZMapIndex, normalMapIndex, preViewZMapIndex, preNormalMapIndex, preColorHistoryIndex, lightPropIndex, preLightPropIndex, colorHistoryIndex)
-		ROOT_INDEX_CREATOR(Sharpening, passCBIndex, srcMapIndex, destMapIndex)
+		ROOT_INDEX_CREATOR(Sharpening, passCBIndex, historyIndex, destMapIndex)
 		ROOT_INDEX_CREATOR(Clear, passCBIndex, colorHistoryIndex, preColorHistoryIndex)
 
-		static constexpr uint sampleNumberMax = 64;
-		static constexpr uint recursiveCount = 1;
-		static constexpr bool useFixedHistoryIndex = (recursiveCount % 2) == 0;
+		static constexpr uint sampleNumberMax = 16; 
 		static constexpr uint shaderCount = 4;
 
 		static JVector3<uint> ThreadDim()
@@ -132,13 +130,10 @@ namespace JinEngine::Graphic
 	{
 		AddUpdateCount();
 		SetAliveTrigger();
-		if constexpr (!TAA::useFixedHistoryIndex)
-		{
-			++historyIndex;
-			if (historyIndex >= historyCount)
-				historyIndex = 0;
-			preHistoryIndex = (historyCount - 1) - historyIndex;
-		}
+		++historyIndex;
+		if (historyIndex >= historyCount)
+			historyIndex = 0;
+		preHistoryIndex = (historyCount - 1) - historyIndex;
 	}
 
 	JDx12Antialise::TAADataSet::TAADataSet(JPostProcessComputeSet* computeSet, const JDrawHelper& helper)
@@ -172,8 +167,8 @@ namespace JinEngine::Graphic
 		preLightPropSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 		preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 
-		//colorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
-		colorSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
+		colorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		//colorSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
 		destSet = context->ComputeSet(imageShare->GetUpdateWaitIntermediate());
 
 		resolution = rtSet.info->GetResourceSize();
@@ -229,12 +224,10 @@ namespace JinEngine::Graphic
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 3);
 		builder.PushConstants(FXAA::cb32BitCount, 0);
 		builder.PushSampler(D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
-		builder.Create(device, L"FxaaMappingRootSignature", rootSignature.GetAddressOf());
-
+		builder.Create(device, L"FxaaMappingRootSignature", rootSignature.GetAddressOf()); 
 	}
 	void JDx12Antialise::FxaaResource::BuildCommandSignature(ID3D12Device* device)
-	{
-
+	{ 
 		uint byteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
 		D3D12_INDIRECT_ARGUMENT_DESC indirectDesc;
 		indirectDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
@@ -448,14 +441,15 @@ namespace JinEngine::Graphic
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 7);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 		tBuilder.PushSampler(D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
-		tBuilder.PushSampler(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		tBuilder.PushSampler(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 		tBuilder.Create(device, L"TaRootSignature", taRootSignature.GetAddressOf());
 
-		JDx12RootSignatureBuilder2<Sharpening::rootSlotCount, 1> sBuilder;
+		JDx12RootSignatureBuilder2<Sharpening::rootSlotCount, 2> sBuilder;
 		sBuilder.PushConstantsBuffer(0);
-		sBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+		sBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); 
 		sBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-		sBuilder.PushSampler(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		sBuilder.PushSampler(D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		sBuilder.PushSampler(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 		sBuilder.Create(device, L"Sharpening", sharpeningRootSignature.GetAddressOf());
 
 		JDx12RootSignatureBuilder<Clear::rootSlotCount> clearBuilder;
@@ -565,15 +559,16 @@ namespace JinEngine::Graphic
 	}
 	void JDx12Antialise::TaaResource::Sharpening(TAADataSet& set, const JDrawHelper& helper)
 	{
-		using namespace TAA;
-		set.context->Transition(set.sharpeningSource->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		set.context->Transition(set.sharpeningDest->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		using namespace TAA; 
+		set.context->Transition(set.sharpHistory->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		set.context->Transition(set.sharpDest->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->FlushResourceBarriers();
 
 		set.context->SetComputeRootSignature(sharpeningRootSignature.Get());
 		set.context->SetComputeRootConstantBufferView(Sharpening::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
-		set.context->SetComputeRootDescriptorTable(Sharpening::srcMapIndex, set.sharpeningSource->GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Sharpening::destMapIndex, set.sharpeningDest->GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(Sharpening::historyIndex, set.sharpHistory->GetGpuSrvHandle());
+
+		set.context->SetComputeRootDescriptorTable(Sharpening::destMapIndex, set.sharpDest->GetGpuUavHandle());
 		 
 		set.context->SetPipelineState(sharpening.get());
 		set.context->Dispatch2D(set.resolution, sharpening->dispatchInfo.threadDim.XY());
@@ -602,9 +597,9 @@ namespace JinEngine::Graphic
 		set.taSrc = &set.colorSet;
 		set.taPreHistory = &set.preColorHistorySet;
 		set.taCurHistory = &set.colorHistorySet;
-
-		set.sharpeningSource = &set.colorHistorySet;
-		set.sharpeningDest = &set.destSet;
+		 
+		set.sharpHistory = &set.colorHistorySet;
+		set.sharpDest = &set.destSet;
 	}
 
 	JDx12Antialise::JDx12Antialise(PushGraphicEventPtr pushGraphicEvPtr)
@@ -623,6 +618,8 @@ namespace JinEngine::Graphic
 			return;
 
 		BuildResource(device);
+		for (auto& data : taaUserPrivate)
+			data.second->SetClearTrigger();
 	}
 	void JDx12Antialise::Clear()
 	{

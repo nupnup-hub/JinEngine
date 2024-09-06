@@ -24,10 +24,9 @@ SOFTWARE.
 
 
 #pragma once 
- 
-#define MAX_FAST_FRAME_ACCMURATION 6 
-#define MAX_FRAME_ACCMURATION 60 
-#define FIXED_FRAME_COUNT 3 
+  
+#define MAX_SAMPLE_COUNT 16
+#define MAX_FRAME_ACCMURATION MAX_SAMPLE_COUNT  
 
 #include"../../Common/TemporalAccumulationCommon.hlsl"
 
@@ -54,31 +53,53 @@ struct TAAPassConstants
 ConstantBuffer<TAAPassConstants> cb : register(b0);
 
 #ifndef NORMAL_THRESHOLD
-#define NORMAL_THRESHOLD 0.75f
+#define NORMAL_THRESHOLD 0.5f
 #endif
 #ifndef DISOCCLUSION_THRES_HOLD
 #define DISOCCLUSION_THRES_HOLD 0.01f 
 #endif 
+ struct ReprojectionIn
+{
+    float2 preUv;
+    float3 curCenterPosW;
+    float3 curCenterNormalW;
+    float curCenterViewZ;
+    uint curCenterMaterialID;
+    double2 velocity;
+};
+
+struct ReprojectionOut
+{
+    float3 preColor; 
+    //uint curHistoryLength;
+    float accumSpeed; 
+    int safetyLevel;                    //0 pass bicubic, 1 pass bilinear, 2 fail
+    bool isOutline;
+};
+
+struct ValidateHistoryColorIn
+{
+    int groupIndex;
+    float2 curCenterUv;
+    float2 curJitterUv;
+    float2 preUv; 
+};
 
 namespace TAA
 {
-    TA::GeometryErrorEstimationActor CreateGeometryActor(float2 preUv,
-        float3 centerPos,
-        float3 centerNormal,
-        float centerViewZ,
-        uint centerMaterialID,
+    TA::GeometryErrorEstimationActor CreateActor(in ReprojectionIn pixel,
         Texture2D<float> preViewZMap,
         Texture2D preLightPropMap,
         Texture2D preNormalMap,
         SamplerState samPointClamp,
         SamplerState samLinearClmap)
     {
-        float centerPlaneDist = dot(centerPos, centerNormal);
+        float centerPlaneDist = dot(pixel.curCenterPosW, pixel.curCenterNormalW);
         TA::GeometryErrorEstimationActor actor;
-        actor.Initialze(preUv,
-            centerPos,
-            centerNormal,
-            centerMaterialID,
+        actor.Initialze(pixel.preUv,
+            pixel.curCenterPosW,
+            pixel.curCenterNormalW,
+            pixel.curCenterMaterialID,
             cb.rtSize,
             cb.invRtSize,
             1.0f / centerPlaneDist,
@@ -96,20 +117,33 @@ namespace TAA
         return actor;
     }
     
-    TA::ColorErrorEstimateActor CreateColorActor(float2 curUv,
-            float2 preUv,
-            uint maxLength,
-            Texture2D srcColorMap,
-            Texture2D preHistory,
+    TA::ColorErrorEstimateActor CreateColorActor(in ValidateHistoryColorIn input,
+            float3 curPixelCenterColor,
+            float3 preHistoryCenterColor,
+            Texture2D srcColorMap, 
             SamplerState samPointClamp,
-            SamplerState samLinearClmap,
-            int groupIndex)
+            SamplerState samLinearClmap)
     {
         TA::ColorErrorEstimateActor actor;
-        actor.Initialize(curUv, preUv, cb.invRtSize, maxLength, srcColorMap, preHistory, samPointClamp, samLinearClmap);
-        actor.SetGroupIndex(groupIndex);
+        actor.Initialize(input.curJitterUv, input.preUv, curPixelCenterColor, preHistoryCenterColor, cb.invRtSize, srcColorMap, samPointClamp, samLinearClmap);
+        actor.SetGroupIndex(input.groupIndex);
         
         return actor;
     };
+
+    //History R16G16B16A16
+    float4 PackHistory(const float3 color, const bool isOutline)
+    {
+        //0, 1, 2, 3
+        uint optionMark = isOutline ? 1 : 0; 
+        return float4(color, float(optionMark) / 65535.0f);
+    }
+    void UnPackHistory(in float4 historyValue, out float3 color, out bool isOutline)
+    {
+        color = historyValue.xyz;
+        
+        uint optionMark = historyValue.w * 65535.0f; 
+        isOutline = optionMark & 1; 
+    }
 
 }

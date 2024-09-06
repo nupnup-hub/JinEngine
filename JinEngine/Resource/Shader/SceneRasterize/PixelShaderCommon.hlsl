@@ -161,12 +161,12 @@ float ViewToNdcOZ(const float v)
     return ViewToNdcOZ(v, cbCam.nearZ, cbCam.FarZ);
 }
 
- #define GI_APP_DIRECT_LIGHT_COLOR_FACTOR 1.0f
+#define GI_APP_DIRECT_LIGHT_COLOR_FACTOR 1.0f
 #define GI_APP_MATERIAL_COLOR_FACTOR 0.5f
 #define GI_APP_LIGHT_COLOR_FACTOR 0.25f
 
 #define GI_DIRECT_LIGHT_COLOR_FACTOR 1.0f
-#define GI_MATERIAL_COLOR_FACTOR 0.5f
+#define GI_MATERIAL_COLOR_FACTOR 0.75f
 #define GI_LIGHT_COLOR_FACTOR 0.25f
 
 float3 CombineGlobalLight(float3 directLight, float3 albedoColor, float3 giColor, float aoFactor)

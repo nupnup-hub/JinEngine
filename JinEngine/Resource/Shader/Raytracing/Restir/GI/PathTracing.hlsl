@@ -374,6 +374,7 @@ float3 PathTracing(in MeshVertex hitSurface, in MeshMaterial material, in Estima
     float rrProb = 1.0f;
     float3 radiance = float3(0, 0, 0);
     
+    //[unroll]
     for (uint i = 0; i < MAX_DEPTH; ++i)
     {
         SelectLightInfo lightInfo;

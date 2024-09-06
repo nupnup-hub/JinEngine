@@ -45,9 +45,11 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     if (dispatchThreadID.x >= cb.originalRtSize.x || dispatchThreadID.y >= cb.originalRtSize.y)
         return;
        
-    float2 uv = (dispatchThreadID.xy + 0.5f) * cb.originalInvRtSize;
+    const float2 uv = (dispatchThreadID.xy + 0.5f) * cb.originalInvRtSize;
+    
     Catmul::Parameter param; 
     param.Initialize(uv, cb.halfRtSize, cb.halfInvRtSize);
+    
     float3 color = Catmul::Compute(src, samLinearClamp, param).xyz;
     dst[dispatchThreadID.xy] = float4(color, 1.0f);
     

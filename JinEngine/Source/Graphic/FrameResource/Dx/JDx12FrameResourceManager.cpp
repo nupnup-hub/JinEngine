@@ -80,7 +80,7 @@ namespace JinEngine::Graphic
 		*/
 
 		static constexpr uint maxNumOfUpdateThread = JDx12FrameResourceManager::maxNumOfUpdateThread; 
-		static constexpr uint aniThreadBorder = 2;
+		static constexpr uint aniThreadBorder = 4;
 		static constexpr uint aniOnlyBindPoseThreadBorder = 80;
 
 		struct InnerUpdateDataSet

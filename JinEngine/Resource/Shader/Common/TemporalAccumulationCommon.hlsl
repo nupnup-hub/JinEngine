@@ -44,6 +44,7 @@ SOFTWARE.
  
 #define TAA_COLOR_ERROR_ESTIMATE_RADIUS 1
 #define TAA_CLAMP_SCALE 1
+#define TAA_COLOR_GAUS_BLUR_RADIUS 1
 
 uint GetIndexOfValueClosestToTheReference(const float refValue, const float2 vValues)
 {
@@ -140,12 +141,21 @@ float FastAccumSpeed(const uint currHistoryLength)
 #endif
 }
  
+float3 HistoryRgbClamping(float3 minRgb, float3 maxRgb, float3 currentPixelRgb, float3 historyRgb)
+{
+    float3 dir = currentPixelRgb - historyRgb;
+    float3 p0 = (minRgb - historyRgb) / dir;
+    float3 p1 = (maxRgb - historyRgb) / dir;
+    float t = max(max(min(p0.x, p1.x), min(p0.y, p1.y)), min(p0.z, p1.z));
+    return lerp(historyRgb, currentPixelRgb, t);
+}
+    
 namespace TA
 {
     struct GeometryErrorResult
     {
         Catmul::Parameter bicubicParameter;
-        CustomSampling::BilinearParameter bilinearParameter;
+        Bilinear::Parameter bilinearParameter;
         float4 customWeight;
         int passCount;
         bool canUseCubic;
@@ -178,8 +188,8 @@ namespace TA
         float4 ComputeDisocclusion2x2(float2 sampleCenterUv, float4 prevViewZ)
         {
             float3 sampleCenterNormal = UnpackNormal(preNormalMap.SampleLevel(samLinearClmap, sampleCenterUv, 0));
-            if (dot(centerNormal, sampleCenterNormal) <= 0)
-                return float4(0, 0, 0, 0);
+            if (dot(centerNormal, sampleCenterNormal) < normalThresHold)
+                return float4(1, 1, 1, 1);
             
             float sampleCenterViewZ = preViewZMap.SampleLevel(samLinearClmap, sampleCenterUv, 0).x;
             float3 preSampleCenterPosV = GetViewPos(sampleCenterUv, sampleCenterViewZ, preUvToViewA, preUvToViewB);
@@ -198,11 +208,7 @@ namespace TA
             //float4 relativePlaneDist = (centerDistanceRate / abs(preSampleCenterPosV.z)) * abs(prevViewZ) - centerDistanceRate;
  
             return step(relativePlaneDist, disocclusionThreshold);
-        }
-        bool IsValidNormal(const float3 normal, const float3 preNormal)
-        {
-            return dot(normal, preNormal) > normalThresHold;
-        }
+        } 
         
         void Initialze(float2 _preUv,
             float3 _centerPosW,
@@ -283,8 +289,7 @@ namespace TA
             float3 disocclusion10 = ComputeDisocclusion2x2(gatherCenterUv + float2(1.5f, -0.5f) * invRtSize, preViewZ10).xzw;
             float3 disocclusion01 = ComputeDisocclusion2x2(gatherCenterUv + float2(-0.5f, 1.5f) * invRtSize, preViewZ01).xyw;
             float3 disocclusion11 = ComputeDisocclusion2x2(gatherCenterUv + float2(1.5f, 1.5f) * invRtSize, preViewZ11).xyz;
-            float4 bilinearOcclusion = float4(disocclusion00.z, disocclusion10.y, disocclusion01.y, disocclusion11.x);
-           
+             
             float4 lightProp00 = preLightPropMap.GatherAlpha(samPointClamp, gatherCenterUv).wzxy;
             float4 lightProp10 = preLightPropMap.GatherAlpha(samPointClamp, gatherCenterUv + float2(2.0f, 0.0f) * invRtSize).wzxy;
             float4 lightProp01 = preLightPropMap.GatherAlpha(samPointClamp, gatherCenterUv + float2(0.0f, 2.0f) * invRtSize).wzxy;
@@ -299,20 +304,21 @@ namespace TA
             disocclusion10 *= all(materialID10 == centerMaterialID);
             disocclusion01 *= all(materialID01 == centerMaterialID);
             disocclusion11 *= all(materialID11 == centerMaterialID);
-              
+            float4 bilinearOcclusion = float4(disocclusion00.z, disocclusion10.y, disocclusion01.y, disocclusion11.x);
+           
             uint viewTestPassCount = dot(disocclusion00 + disocclusion10 + disocclusion01 + disocclusion11, 1.0f);
             result.passCount += viewTestPassCount;
             result.canUseCubic = viewTestPassCount > 11.0f;
             
-            result.bilinearParameter = CustomSampling::GetBilinearFilter(preUv, rtSize);
-            result.customWeight = CustomSampling::GetBilinearCustomWeights(result.bilinearParameter, bilinearOcclusion);
+            result.bilinearParameter = Bilinear::CreateFilter(preUv, rtSize);
+            result.customWeight = Bilinear::ComputeWeights(result.bilinearParameter, bilinearOcclusion);
             result.canUseBilinear = any(bilinearOcclusion > 0.0f); 
             //any(result.customWeight > 0.0f);
             //any(result.customWeight > 0.0f);
             //result.customWeight *= result.customWeight;
         }
     };
-    bool ComputeCubicWeight(in GeometryErrorEstimationActor actor, out GeometryErrorResult result)
+    bool ComputeGeometryErrorEstimate(in GeometryErrorEstimationActor actor, out GeometryErrorResult result)
     {
         result.customWeight = float4(0, 0, 0, 0);
         result.passCount = 0;
@@ -333,19 +339,11 @@ namespace TA
 #endif
 groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
 #endif
-      
-    float3 HistoryClamping(float3 minColor, float3 maxColor, float3 currentPixelColor, float3 historyColor)
-    {
-        float3 dir = currentPixelColor - historyColor;
-        float3 p0 = (minColor - historyColor) / dir;
-        float3 p1 = (maxColor - historyColor) / dir;
-        float t = max(max(min(p0.x, p1.x), min(p0.y, p1.y)), min(p0.z, p1.z));
-        return lerp(historyColor, currentPixelColor, t);
-    }
+       
     struct ColorErrorResult
     {
-        float3 clampColor;
-        float minSpeed;
+        float3 clampColor; 
+        float errorFactor; //outOfRange bbox border 0 ~ 1.0f
         bool isSafe;
     };
     class ColorErrorEstimateActor
@@ -353,30 +351,31 @@ groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
         float2 curUv;
         float2 preUv;
 
+        float3 curPixelCenterColor;
+        float3 preHistoryCenterColor;
+        
         float2 invRtSize;
-        uint maxLength;
         
         Texture2D srcColorMap;
-        Texture2D preHistory;
         SamplerState samPointClamp;
         SamplerState samLinearClmap;
         
         int groupIndex; //Optional       
         void Initialize(float2 _curUv,
             float2 _preUv,
+            float3 _curPixelCenterColor,
+            float3 _preHistoryCenterColor,
             float2 _invRtSize,
-            uint _maxLength,
             Texture2D _srcColorMap,
-            Texture2D _preHistory,
             SamplerState _samPointClamp,
             SamplerState _samLinearClmap)
         {
             curUv = _curUv;
             preUv = _preUv;
+            curPixelCenterColor = _curPixelCenterColor;
+            preHistoryCenterColor = _preHistoryCenterColor;
             invRtSize = _invRtSize;
-            maxLength = _maxLength;
             srcColorMap = _srcColorMap;
-            preHistory = _preHistory;
             samPointClamp = _samPointClamp;
             samLinearClmap = _samLinearClmap;
         }
@@ -407,7 +406,7 @@ groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
                     
                     float3 sampleYCoCg = sharedColor[sampleGroupIndex].xyz;
 #else   
-                    float3 sampleYCoCg = RGBToYCoCg(srcColorMap.SampleLevel(samLinearClmap, sampleUv, 0).xyz);
+                    float3 sampleYCoCg = RGBToYCoCg(srcColorMap.SampleLevel(samPointClamp, sampleUv, 0).xyz);
 #endif 
                     m1 += sampleYCoCg;
                     m2 += m1 * m1;
@@ -420,44 +419,32 @@ groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
             float3 minYCoCg = m1 - sigma;
             float3 maxYCoCg = m1 + sigma;
             
-#ifdef USE_GROUP_BUFFER_FOR_TAA
-            float3 curCenterYCoCg = sharedColor[groupIndex].xyz;
-#else
-            float3 curCenterYCoCg = RGBToYCoCg(srcColorMap.SampleLevel(samLinearClmap, curUv, 0).xyz);
-#endif
-            float3 preHistoryCenterYCoCg = RGBToYCoCg(preHistory.SampleLevel(samLinearClmap, preUv, 0).xyz);
+            float3 curCenterRgb = curPixelCenterColor;
+            float3 curCenterYCoCg = RGBToYCoCg(curCenterRgb);
             
-            float3 dir = curCenterYCoCg - preHistoryCenterYCoCg;
-            float3 p0 = (minYCoCg - preHistoryCenterYCoCg) / dir;
-            float3 p1 = (maxYCoCg - preHistoryCenterYCoCg) / dir;
-            float t = max(max(min(p0.x, p1.x), min(p0.y, p1.y)), min(p0.z, p1.z));
+            float3 preHistoryCenterRgb = preHistoryCenterColor;
+            float3 preHistoryCenterYCoCg = RGBToYCoCg(preHistoryCenterRgb);
+            
+            float3 dir = curCenterRgb - preHistoryCenterRgb;
+            float3 p0 = (YCoCgToRGB(minYCoCg) - preHistoryCenterRgb) / dir;
+            float3 p1 = (YCoCgToRGB(maxYCoCg) - preHistoryCenterRgb) / dir;
+            float t = saturate(max(max(min(p0.x, p1.x), min(p0.y, p1.y)), min(p0.z, p1.z)));
             
             //float3 colorYCoCg = clamp(preHistoryCenterYCoCg, minYCoCg, maxYCoCg);
-            float3 clampYCoCg = lerp(preHistoryCenterYCoCg, curCenterYCoCg, saturate(t));
+            float3 clampYCoCg = lerp(preHistoryCenterYCoCg, curCenterYCoCg, t);
             result.clampColor = YCoCgToRGB(clampYCoCg);
-            
-            if (t > 0)
-            {
-                result.minSpeed = (1.0f / maxLength) * 0.125f;
-                result.isSafe = false;
-            }
-            else
-            {
-                result.minSpeed = 1.0f / maxLength;
-                result.isSafe = true;
-            }
+            result.errorFactor = t;
+            result.isSafe = t == 0;
         }
     };
-    
     bool ComputeColorErrorEstimate(in ColorErrorEstimateActor actor, out ColorErrorResult result)
-    {
-        result.minSpeed = 1.0f;
-        result.clampColor = float3(0, 0, 0);
+    { 
+        result.clampColor = actor.preHistoryCenterColor;
         result.isSafe = true;
         if (!IsValidUv(actor.preUv))
             return false;
         
         actor.Compute(result);
         return true;
-    }
+    } 
 }

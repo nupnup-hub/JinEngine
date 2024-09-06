@@ -478,8 +478,8 @@ namespace JinEngine
 		const XMVECTOR U = up.ToXmV();
 		const XMVECTOR L = front.ToXmV();
 		const XMVECTOR P = position.ToXmV();
-
-		// Fill in the view matrix entries.
+		 
+		//Position = Axis vector scale
 		const float x = -XMVectorGetX(XMVector3Dot(P, R));
 		const float y = -XMVectorGetX(XMVector3Dot(P, U));
 		const float z = -XMVectorGetX(XMVector3Dot(P, L));

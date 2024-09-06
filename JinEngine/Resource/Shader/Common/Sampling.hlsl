@@ -337,6 +337,20 @@ float PowerHeuristic(int nf, float pdfF, int ng, float pdfG)
     return f2 / (f2 + g * g);
 }
  
+float Halton(int number, int base)
+{
+	//https://en.wikipedia.org/wiki/Halton_sequence/
+    float f = 1.0;
+    float rand = 0.0;
+    while (number > 0)
+    {
+        f = f / float(base);
+        rand = rand + f * float(number % base);
+        number = number / base;
+    }
+    return rand;
+}
+ 
 namespace Catmul
 {
     struct Parameter
@@ -401,42 +415,68 @@ namespace Catmul
 
         return result;
     }
-}
-
-namespace TextureSampling
+} 
+namespace Bilinear
 {
-    float2 Bilinear(Texture2D<float2> tex, SamplerState linearSampler, float2 sampleCoord, float2 invTexutreSize)
+    struct Parameter
     {
+        float2 origin;
+        float2 weights;
+    }; 
+    Parameter CreateFilter(float2 uv, float2 texSize)
+    { 
+        const float t = uv * texSize - 0.5f;      
+        Parameter result;
+        result.origin = floor(t);
+        result.weights = frac(t - result.origin);
+        return result;
+    } 
+    float4 ComputeWeights(Parameter param, float4 customWeights = float4(1, 1, 1, 1))
+    {
+        /* 
+        bilinear weights
         float x = frac(sampleCoord.x);
         float y = frac(sampleCoord.y);
-
-        int2 offset[4] =
-        {
-            uint2(0, 0), uint2(0, 1), uint2(1, 0), uint2(1, 1)
-        };
-        // bilinear weights
         const float w[4] = { (1 - x) * (1 - y), x * (1 - y), (1 - x) * y, x * y };
-
-        float2 colorSum = float2(0, 0);
-        float weightSum = 0;
-        // perform the actual bilinear interpolation
-        [unroll]
-        for (int sampleIdx = 0; sampleIdx < 4; sampleIdx++)
+        즉 pixel내부의 sampleCoord 위치에 따라 달라진다.
+        */
+        float2 oneMinuseWeight = 1.0 - param.weights;
+        float4 weights;
+        weights.x = oneMinuseWeight.x * oneMinuseWeight.y;
+        weights.y = param.weights.x * oneMinuseWeight.y;
+        weights.z = oneMinuseWeight.x * param.weights.y;
+        weights.w = param.weights.x * param.weights.y;
+        return weights * customWeights;
+    } 
+    float4 ApplyWeights(float4 s00, float4 s10, float4 s01, float4 s11, float4 w, bool normalize = true)
+    {
+        float4 r = s00 * w.x + s10 * w.y + s01 * w.z + s11 * w.w;
+        //normalize => colorSum / weightSum
+        //rcp는 성분별 역수
+        return r * (normalize ? rcp(dot(w, 1.0)) : 1.0);
+    } 
+    float4 Compute(Texture2D<float4> tex, SamplerState linearSampler, Parameter param, float2 invTexutreSize, float4 weights)
+    {
+        int2 offset[4] =
         {
-            float2 sampleUv = (sampleCoord + offset[sampleIdx]) * invTexutreSize;
-            colorSum += w[sampleIdx] * tex.SampleLevel(linearSampler, sampleUv, 0);
-            weightSum += w[sampleIdx];
-        }
-        return colorSum / weightSum;
-    }
-    float4 Bilinear(Texture2D<float4> tex, SamplerState linearSampler, float2 sampleCoord, float2 invTexutreSize)
+            uint2(0, 0), uint2(1, 0), uint2(0, 1), uint2(1, 1)
+        };
+        
+        float4 s00 = tex.SampleLevel(linearSampler, (param.origin + offset[0]) * invTexutreSize, 0);
+        float4 s10 = tex.SampleLevel(linearSampler, (param.origin + offset[1]) * invTexutreSize, 0);
+        float4 s01 = tex.SampleLevel(linearSampler, (param.origin + offset[2]) * invTexutreSize, 0);
+        float4 s11 = tex.SampleLevel(linearSampler, (param.origin + offset[3]) * invTexutreSize, 0);
+        
+        return ApplyWeights(s00, s10, s01, s11, weights);
+    } 
+    float4 Compute(Texture2D<float4> tex, SamplerState linearSampler, float2 sampleCoord, float2 invTexutreSize)
     {
         float x = frac(sampleCoord.x);
         float y = frac(sampleCoord.y);
 
         int2 offset[4] =
         {
-            uint2(0, 0), uint2(0, 1), uint2(1, 0), uint2(1, 1)
+            int2(0, 0), int2(0, 1), int2(1, 0), int2(1, 1)
         };
         // bilinear weights
         const float w[4] = { (1 - x) * (1 - y), x * (1 - y), (1 - x) * y, x * y };
@@ -452,53 +492,5 @@ namespace TextureSampling
             weightSum += w[sampleIdx];
         }
         return colorSum / weightSum;
-    }
-}
-namespace CustomSampling
-{
-    struct BilinearParameter
-    {
-        float2 origin;
-        float2 weights;
-    };
-    
-    BilinearParameter GetBilinearFilter(float2 uv, float2 texSize)
-    {
-        BilinearParameter result;
-        result.origin = floor(uv * texSize - 0.5f);
-        result.weights = frac(uv * texSize - 0.5f);
-        return result;
-    }
-    
-    float4 GetBilinearCustomWeights(BilinearParameter param, float4 customWeights)
-    {
-        float2 oneMinuseWeight = 1.0 - param.weights;
-        float4 weights;
-        weights.x = oneMinuseWeight.x * oneMinuseWeight.y;
-        weights.y = param.weights.x * oneMinuseWeight.y;
-        weights.z = oneMinuseWeight.x * param.weights.y;
-        weights.w = param.weights.x * param.weights.y;
-        return weights * customWeights;
-    }
-     
-    float4 ApplyBilinearCustomWeights(float4 s00, float4 s10, float4 s01, float4 s11, float4 w, bool normalize = true)
-    {
-        float4 r = s00 * w.x + s10 * w.y + s01 * w.z + s11 * w.w;
-        return r * (normalize ? rcp(dot(w, 1.0)) : 1.0);
-    }
-   
-    float4 ComputeBilinear(Texture2D<float4> tex, SamplerState linearSampler, BilinearParameter param, float2 invTexutreSize, float4 w)
-    {
-        int2 offset[4] =
-        {
-            uint2(0, 0), uint2(1, 0), uint2(0, 1), uint2(1, 1)
-        };
-        
-        float4 s00 = tex.SampleLevel(linearSampler, (param.origin + offset[0]) * invTexutreSize, 0);
-        float4 s10 = tex.SampleLevel(linearSampler, (param.origin + offset[1]) * invTexutreSize, 0);
-        float4 s01 = tex.SampleLevel(linearSampler, (param.origin + offset[2]) * invTexutreSize, 0);
-        float4 s11 = tex.SampleLevel(linearSampler, (param.origin + offset[3]) * invTexutreSize, 0);
-        
-        return ApplyBilinearCustomWeights(s00, s10, s01, s11, w);
     }
 }

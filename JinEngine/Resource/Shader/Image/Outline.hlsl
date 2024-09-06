@@ -28,9 +28,7 @@ SOFTWARE.
 
 Texture2D<float> depthMap : register(t0);
 Texture2D<uint2> stencilMap : register(t1);
-
-sampler sam : register(s0);
-
+ 
 cbuffer cbPass : register(b0)
 {
 	//0 is invalid color {0,0,0,}

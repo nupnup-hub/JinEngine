@@ -100,7 +100,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
             const float2 sampleUv = uv + offset * cb.invRtSize; 
             const float kernel = kernelWeights[abs(xx)] * kernelWeights[abs(yy)];
 
-            if (IsValidUv(sampleUv) && (xx != 0 || yy != 0)) // skip center pixel, it is already accumulated
+            if (IsValidUv(sampleUv) && (xx != 0 || yy != 0)) 
             {
                 const float4 sampleColorHistory = srcColorHistory.SampleLevel(samLinearClmap, sampleUv, 0);
                 const float sampleLuminance = RGBToLuminance(sampleColorHistory.rgb); 
@@ -110,12 +110,9 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
                 param.normal.Update(sampleNormalW);
                 param.depth.Update(sampleViewZ, -offset);
                 param.luminance.Update(sampleLuminance);
-             
-                // compute the edge-stopping functions
-                float weight = CrossBilateral::NormalDepthLuminance::ComputeWeight(param) * kernel;
-                //float weight = CrossBilateral::SVGF::ComputeWeight(param, PHI_NORMAL, phiDepth * length(float2(xx, yy)), phiLIllumination);
-                 
-                // alpha channel contains the variance, therefore the weights need to be squared, see paper for the formula
+              
+                //edge stopping function
+                float weight = CrossBilateral::NormalDepthLuminance::ComputeWeight(param) * kernel; 
                 colorSum += sampleColorHistory * float4(weight.xxx, weight * weight);
                 weightSum += weight;
             }

@@ -44,8 +44,7 @@ Texture2DArray srcMap : register(t0);
 #else 
 Texture2D srcMap : register(t0);
 #endif
-RWTexture2D<float4> result : register(u0);
-SamplerState samLinearWrap : register(s0);
+RWTexture2D<float4> result : register(u0); 
 
 cbuffer cbSettings : register(b0)
 {

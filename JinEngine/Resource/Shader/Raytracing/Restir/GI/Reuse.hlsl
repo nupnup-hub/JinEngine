@@ -52,14 +52,14 @@ SOFTWARE.
 #ifndef USE_RESTIRN
 #define USE_RESTIRN 0
 #endif
-#ifndef DEPTH_THRESHOLD
-#define DEPTH_THRESHOLD 0.98f
+#ifndef POSITION_THRESHOLD
+#define POSITION_THRESHOLD 1.0f
 #endif
 #ifndef VELOCITY_THRESHOLD
 #define VELOCITY_THRESHOLD 0.1f
 #endif
 #ifndef NORMAL_THRESHOLD
-#define NORMAL_THRESHOLD 0.8f
+#define NORMAL_THRESHOLD 0.75f
 #endif  
 #ifndef RAND_THRESHOLD
 #define RAND_THRESHOLD 0.2f
@@ -423,7 +423,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     set.pixelIndex = set.pixelCoord.y * cb.halfRtSize.x + set.pixelCoord.x;
     set.gBufferLocation = int3(set.pixelCoord, 0);
  
-    float2 currUv = float2(set.pixelCoord + 0.5f) * cb.halfInvRtSize;
+    float2 curUv = float2(set.pixelCoord + 0.5f) * cb.halfInvRtSize;
     //set.prePixelCoord = set.pixelCoord;
     //set.prePixelIndex = set.pixelIndex;
     
@@ -431,40 +431,49 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     //uint2 prevID = clamp(preUv * cb.halfRtSize, 0, cb.halfRtSize - 1);
     //uint preReserviorIndex = prevID.y * cb.halfRtSize.x + prevID.x;
  
-    set.depth = NdcToViewPZ(depthMap.SampleLevel(samLinearBorder, currUv, 0).x, cb.camNearMulFar, cb.camNearFar);
+    set.depth = NdcToViewPZ(depthMap.SampleLevel(samLinearBorder, curUv, 0).x, cb.camNearMulFar, cb.camNearFar);
     set.normalW = initialSample[set.pixelIndex].UnpackVisibleNormal();
     set.posW = ComputeRayOrigin(initialSample[set.pixelIndex].visiblePos, set.normalW);
     //set.posW = initialSample[set.pixelIndex].visiblePos;
 #ifdef USE_AO_MAP
-    set.aoFactor = aoMap.SampleLevel(samLinearBorder, currUv, 0).x;
+    set.aoFactor = aoMap.SampleLevel(samLinearBorder, curUv, 0).x;
 #else
     set.aoFactor = 1.0f;
 #endif
     set.viewZThresHold = cb.camNearFar.y - cb.camNearFar.x * VIRE_Z_THRESHOLD_RATE;
     
-    UnPackAlbedoColorLayer(albedoMap.SampleLevel(samLinearBorder, currUv, 0), set.material.albedoColor, set.material.specularFactor);
+    UnPackAlbedoColorLayer(albedoMap.SampleLevel(samLinearBorder, curUv, 0), set.material.albedoColor, set.material.specularFactor);
     
-    float4 lightProp = lightPropMap.SampleLevel(samLinearBorder, currUv, 0);
+    float4 lightProp = lightPropMap.SampleLevel(samLinearBorder, curUv, 0);
     UnpackLightPropLayer(lightProp, set.material.metallic, set.material.roughness);
- 
+  
     float4 prePosH = mul(float4(set.posW, 1.0f), cb.camPreViewProj);
     float3 prePosNdc = prePosH.xyz / prePosH.w;
     float2 preUv = prePosNdc.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
- 
+    float2 velocity = preUv - curUv;
+    
+    //부동소수점 오차 교정
+    if (abs(velocity.x) <= EPSILON)
+        velocity.x = 0;
+    if (abs(velocity.y) <= EPSILON)
+        velocity.y = 0;
+    preUv = velocity + curUv;
+    velocity = abs(velocity);
+    
     set.prePixelCoord = clamp(preUv * cb.halfRtSize, 0, cb.halfRtSize - 1); 
     set.prePixelIndex = set.prePixelCoord.y * cb.halfRtSize.x + set.prePixelCoord.x;
     
     set.rng.Initialize(set.pixelCoord, cb.currSampleSetIndex);
-    bool isPreValid = cb.updateCount > 0 && !cb.forceClearPrevalue && all(preUv > 0.0f) && all(preUv < 1.0f);
+    bool isPreValid = cb.updateCount > 0 && !cb.forceClearPrevalue && all(preUv >= 0.0f) && all(preUv <= 1.0f);
     if (isPreValid)
     {   
         float3 curNormal = set.normalW;
         float3 preNormal = SignedOctDecode(preNormalMap.SampleLevel(samLinearBorder, preUv, 0).xyw);
-        isPreValid &= length(preUv - currUv) < VELOCITY_THRESHOLD && dot(curNormal, preNormal) > NORMAL_THRESHOLD;
-        
         float rand = set.rng.Random01();
-        if (((length(set.posW - cb.camPosW) / length(set.posW - cb.camPrePosW)) < DEPTH_THRESHOLD) || rand < RAND_THRESHOLD)
-            isPreValid = false;
+        isPreValid &= all(velocity < VELOCITY_THRESHOLD);
+        isPreValid &= dot(curNormal, preNormal) > NORMAL_THRESHOLD;
+        isPreValid &= abs(length(set.posW - cb.camPosW) - length(set.posW - cb.camPrePosW)) < POSITION_THRESHOLD;
+        isPreValid &= rand >= RAND_THRESHOLD;
     }
 
     //[unroll]

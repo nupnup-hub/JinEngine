@@ -174,7 +174,7 @@ void ToneMapping(uint3 dispatchThreadID : SV_DispatchThreadID)
 	dst[dispatchThreadID.xy].xyz  = color;
 #else	 
     // Tone map to SDR
-	color = ToneMapACES(color);
+    color = ToneMapACES(color * paperWhiteRatio) * maxBrightness;
 	dst[dispatchThreadID.xy].xyz = color;
 #endif
 	

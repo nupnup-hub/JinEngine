@@ -731,7 +731,7 @@ namespace JinEngine
 		}
 	public:
 		void Activate()noexcept
-		{
+		{  
 			IMPL_REGISTER_TRANFORM_FRAME_DRITY_LISTENER();
 			IMPL_REGISTER_FRAME_UPDATE_ACTION();
 

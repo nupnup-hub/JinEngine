@@ -102,7 +102,27 @@ namespace JinEngine::Graphic
 	J_GRAPHIC_DEVICE_TYPE JDx12ConvertColor::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
-	} 
+	}  
+	bool JDx12ConvertColor::HasDependency(const JGraphicInfo::TYPE type)const noexcept
+	{
+		return false;
+	}
+	bool JDx12ConvertColor::HasDependency(const JGraphicOption::TYPE type)const noexcept
+	{
+		return type == JGraphicOption::TYPE::DEBUGGING;
+	}
+	void JDx12ConvertColor::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
+	{
+	}
+	void JDx12ConvertColor::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
+	{
+		auto dx12Set = static_cast<const JDx12GraphicOptionChangedSet&>(set);
+		if (set.newOption.debugging.requestRecompileToneMappingShader)
+		{
+			Clear();
+			BuildResource(dx12Set.device, dx12Set.gm);
+		}
+	}
 	void JDx12ConvertColor::ApplyToLinearColor(JPostProcessComputeSet* computeSet, const JDrawHelper& helper)
 	{
 		if (!IsSameDevice(computeSet))
@@ -115,7 +135,12 @@ namespace JinEngine::Graphic
 			return;
 
 		auto gInterface = helper.GetResourceInterface();
-		JDx12GraphicResourceComputeSet srcSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		JDx12GraphicResourceComputeSet srcSet;
+		if (helper.option.postProcess.useTaa)
+			srcSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
+		else
+			srcSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+		
 		JDx12GraphicResourceComputeSet dstSet = context->ComputeSet(imageShare->GetUpdateWaitIntermediate());
 	 
 		const JVector2F dstSize = dstSet.info->GetResourceSize();
