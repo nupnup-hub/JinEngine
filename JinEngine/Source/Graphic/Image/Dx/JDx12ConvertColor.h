@@ -62,6 +62,12 @@ namespace JinEngine
 			void Clear()final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		private:
+			bool HasDependency(const JGraphicInfo::TYPE type)const noexcept final;
+			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final;
+		private:
+			void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)final;
+			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;
 		public:
 			void ApplyToLinearColor(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) final;
 			void ApplyToDisplayColor(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) final;

@@ -33,12 +33,13 @@ SOFTWARE.
 #endif   
 
 #define RADIUS 1
-#define TAB_DISTANCE 1
-
-Texture2D srcMap : register(t0); 
-RWTexture2D<float4> destMap : register(u0); 
-SamplerState samLinearClmap : register(s0);
+#define TAB_DISTANCE 1.0f
  
+Texture2D history : register(t0);
+RWTexture2D<float4> destMap : register(u0); 
+SamplerState samPointClmap : register(s0);
+SamplerState samLinearClmap : register(s1);
+
 [numthreads(DIMX, DIMY, 1)]
 void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThreadID)
 {
@@ -47,14 +48,27 @@ void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThr
    
     int2 pixelCoord = dispatchThreadID.xy;
     float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
-     
-    float3 center = srcMap.SampleLevel(samLinearClmap, uv, 0).xyz;
-    float3 left = srcMap.SampleLevel(samLinearClmap, uv + float2(-TAB_DISTANCE, 0) * cb.invRtSize, 0).xyz;
-    float3 right = srcMap.SampleLevel(samLinearClmap, uv + float2(TAB_DISTANCE, 0) * cb.invRtSize, 0).xyz;
-    float3 up = srcMap.SampleLevel(samLinearClmap, uv + float2(0, -TAB_DISTANCE) * cb.invRtSize, 0).xyz;
-    float3 down = srcMap.SampleLevel(samLinearClmap, uv + float2(0, TAB_DISTANCE) * cb.invRtSize, 0).xyz;
+      
+    float3 historyColor; 
+    bool isOutline;
+    TAA::UnPackHistory(history.SampleLevel(samLinearClmap, uv, 0), historyColor, isOutline);
  
-    float3 sharpColor = saturate(center + 4 * center - left - right - up - down);
-    destMap[pixelCoord].xyz = center;
-
+    if (!isOutline)
+    {
+        float3 center = historyColor;
+        float3 left = history.SampleLevel(samLinearClmap, uv, 0, int2(-TAB_DISTANCE, 0)).xyz;
+        float3 right = history.SampleLevel(samLinearClmap, uv, 0, int2(TAB_DISTANCE, 0)).xyz;
+        float3 up = history.SampleLevel(samLinearClmap, uv, 0, int2(0, -TAB_DISTANCE)).xyz;
+        float3 down = history.SampleLevel(samLinearClmap, uv, 0, int2(0, TAB_DISTANCE)).xyz;
+ 
+        float3 sharpColor = saturate(center + 4 * center - left - right - up - down);
+        destMap[pixelCoord].xyz = sharpColor;
+        
+        //destMap[pixelCoord].xyz = float3(1, 0, 0);
+    }
+    else
+    {
+        destMap[pixelCoord].xyz = historyColor;
+     //   destMap[pixelCoord].xyz = float3(0, 0, 1);
+    }
 }

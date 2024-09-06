@@ -66,7 +66,7 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
       
     RandomNumberGenerator rng;
     rng.Initialize(pixelCoord, cb.sampleNumber);
-    float2 trigger = RandomRotationTrig(rng.Random01());
+    float2 trigger = RandomRotationTrig(rng.Random01() * 2.0f - 1.0f);
     
     [unroll]
     for (uint i = 0; i < POISSON_SAMPLE_COUNT; ++i)

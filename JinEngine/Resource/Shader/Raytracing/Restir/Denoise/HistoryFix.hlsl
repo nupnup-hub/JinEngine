@@ -65,16 +65,17 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
         float centerViewZ = viewZMap.SampleLevel(samLinearClmap, centerUv, 0);
         float2 ddxy = depthDerivative.SampleLevel(samLinearClmap, centerUv, 0);
         
-        CrossBilateral::NormalDepthLuminance::Parameters param;
+        CrossBilateral::NormalDepth::Parameters param;
         param.normal.Initialize(centerNormal);
         param.depth.Initialize(centerViewZ, ddxy);
-        param.luminance.Initialize(centerHistory.w, centerUv, cb.invRtSize, srcColorHistory, samLinearClmap);
+        //param.luminance.Initialize(centerHistory.w, centerUv, cb.invRtSize, srcColorHistory, samLinearClmap);
         
-        //float3 colorSum = centerHistory.xyz;
+        float3 colorSum = centerHistory.xyz;
         //float momentSum = centerHistory.w;
-        float3 colorSum = float3(0, 0, 0);
+        //float3 colorSum = float3(0, 0, 0);
         //float momentSum = 0;
-        float weightSum = 0.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
+        //float weightSum = 0.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
+        float weightSum = CrossBilateral::NormalDepth::ComputeWeight(param);
         
         [unroll]
         for (int y = -BLUR_RADIUS; y <= BLUR_RADIUS; ++y)
@@ -82,32 +83,33 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
             [unroll]
             for (int x = -BLUR_RADIUS; x <= BLUR_RADIUS; ++x)
             {
-                //if(i == 0 && j == 0)
-                //    continue;
+                if(x == 0 && y == 0)
+                    continue;
                 
                 //Per pixel kernel rotation
                 //Input signal is already noisy  
                 int2 offset = int2(x, y) * TAB_DISTANCE;
                 float2 uv = centerUv + offset * cb.invRtSize;
                 //uv = max(uv, float2(0, 0));
-        
+         
                 float4 sampleHistory = srcColorHistory.SampleLevel(samLinearClmap, uv, 0);
                 float sampleViewZ = viewZMap.SampleLevel(samLinearClmap, uv, 0);
                 float3 sampleNormalW = UnpackNormal(normalMap.SampleLevel(samLinearClmap, uv, 0));
          
                 param.normal.Update(sampleNormalW);
                 param.depth.Update(sampleViewZ, -offset);
-                param.luminance.Update(sampleHistory.w);
+                //param.luminance.Update(sampleHistory.w);
                 
                 float weight = IsValidUv(uv);
-                weight *= CrossBilateral::NormalDepthLuminance::ComputeWeight(param);
+                weight *= CrossBilateral::NormalDepth::ComputeWeight(param);
+                //weight *= ComputeGaussian(x, y, 0.45f);
                 colorSum += sampleHistory.xyz * weight;
                 //momentSum += sampleHistory.w * weight;
                 weightSum += weight;
             }
         } 
         weightSum = max(weightSum, EPSILON);
-        colorSum /= weightSum; 
+        colorSum /= weightSum;  
         //colorSum = float3(0, 0, 1);
         float variance = ComputeColorVariance(colorSum);
         destColorHistory[pixelCoord] = float4(colorSum, variance);

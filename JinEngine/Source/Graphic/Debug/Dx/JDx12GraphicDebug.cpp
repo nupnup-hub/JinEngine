@@ -426,16 +426,17 @@ namespace JinEngine::Graphic
 	}
 	void JDx12GraphicDebug::BuildRootSignature(ID3D12Device* device)
 	{
-		JDx12RootSignatureBuilder2<Private::slotCount, 1> builder;
+		//JDx12RootSignatureBuilder2<Private::slotCount, 1> builder;
+		JDx12RootSignatureBuilder<Private::slotCount> builder;
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);		//srcTextureHandleIndex 
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);		//destTextureHandleIndex
 		builder.PushConstants(3, 0);	//settingCbIndex
-		builder.PushSampler(D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
-			D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressUVW
-			0.0f,                               // mipLODBias
-			16.0f,                                 // maxAnisotropy
-			D3D12_COMPARISON_FUNC_LESS_EQUAL,
-			D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE);
+		//builder.PushSampler(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, // filter
+		//	D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressUVW
+		//	0.0f,                               // mipLODBias
+		//	16.0f,                                 // maxAnisotropy
+		//	D3D12_COMPARISON_FUNC_LESS_EQUAL,
+		//	D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE);
 		builder.Create(device, L"Debug RootSignature", cRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);
 	}
 	void JDx12GraphicDebug::BuildPso(ID3D12Device* device)

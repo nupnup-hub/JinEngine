@@ -161,10 +161,12 @@ namespace JinEngine
 		void JDx12Outline::BuildRootSignature(ID3D12Device* device)
 		{
 			static constexpr int slotCount = 3;
-			JDx12RootSignatureBuilder2<slotCount, 1> builder;
+			//JDx12RootSignatureBuilder2<slotCount, 1> builder;
+			JDx12RootSignatureBuilder<slotCount> builder;
 			builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);		//depthMap
 			builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);		//stencilMap
 			builder.PushConstantsBuffer(0);									//passCB
+			/*
 			std::vector<CD3DX12_STATIC_SAMPLER_DESC> sam 
 			{
 				CD3DX12_STATIC_SAMPLER_DESC(0,
@@ -177,8 +179,9 @@ namespace JinEngine
 				D3D12_COMPARISON_FUNC_LESS_EQUAL,
 				D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
 			};
-			for (const auto& data : sam)
+			/for (const auto& data : sam)
 				builder.PushSampler(data);
+			*/ 
 			builder.Create(device, L"Outline RootSignature", mRootSignature.GetAddressOf(), D3D12_ROOT_SIGNATURE_FLAG_NONE);
 		}
 		void JDx12Outline::BuildPso(ID3D12Device* device)

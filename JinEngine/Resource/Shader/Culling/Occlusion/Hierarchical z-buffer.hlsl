@@ -228,7 +228,7 @@ int CullBBox(const float3 center, const float3 extents)
 }
 
 float3 CalNearPoint(const float3 p0, const float3 p1, const float3 p2, const float3 p3)
-{
+{ 
 	const float3 Pos = float3(0, 0, 0);
 	const float3 pNormal = normalize(cross(p1 - p0, p2 - p0));
 	const float3 dist = -dot(pNormal, p0);

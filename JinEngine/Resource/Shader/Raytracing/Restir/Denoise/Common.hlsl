@@ -54,31 +54,45 @@ struct ReserviorDenoiseConstants
 ConstantBuffer<ReserviorDenoiseConstants> cb : register(b0);
 
 #ifndef NORMAL_THRESHOLD
-#define NORMAL_THRESHOLD 0.75f
+#define NORMAL_THRESHOLD 0.5f
 #endif
 #ifndef DISOCCLUSION_THRES_HOLD
 #define DISOCCLUSION_THRES_HOLD 0.01f 
 #endif 
+ 
+struct ReprojectionIn
+{
+    float2 preUv;
+    float3 curCenterPosW;
+    float3 curCenterNormalW;
+    float curCenterViewZ;
+    uint curCenterMaterialID;
+    double2 velocity;
+};
 
+struct ReprojectionOut
+{
+    float4 preColor;
+    float4 preFastColor;
+    uint curHistoryLength;
+    float minAccumSpeed; 
+};
+ 
 namespace RestirTA
-{ 
-    TA::GeometryErrorEstimationActor CreateActor(float2 preUv,
-        float3 centerPos,
-        float3 centerNormal, 
-        float centerViewZ,
-        uint centerMaterialID,
+{  
+    TA::GeometryErrorEstimationActor CreateActor(in ReprojectionIn pixel,
         Texture2D<float> preViewZMap,
         Texture2D preLightPropMap,
         Texture2D preNormalMap,
         SamplerState samPointClamp,
         SamplerState samLinearClmap)
     {
-        float centerPlaneDist = dot(centerPos, centerNormal);
+        float centerPlaneDist = dot(pixel.curCenterPosW, pixel.curCenterNormalW);
         TA::GeometryErrorEstimationActor actor;
-        actor.Initialze(preUv,
-            centerPos,
-            centerNormal,
-            centerMaterialID,
+        actor.Initialze(pixel.preUv,
+            pixel.curCenterPosW,
+            pixel.curCenterNormalW,
+            pixel.curCenterMaterialID,
             cb.rtSize,
             cb.invRtSize,
             1.0f / centerPlaneDist,

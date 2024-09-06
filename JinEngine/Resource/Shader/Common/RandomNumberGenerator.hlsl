@@ -104,3 +104,4 @@ struct RandomNumberGenerator
     }
 };
 #endif // RANDOMNUMBERGENERATOR_H
+ 

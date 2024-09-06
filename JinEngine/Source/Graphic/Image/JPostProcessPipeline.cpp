@@ -65,7 +65,6 @@ namespace JinEngine::Graphic
 		   
 		POST_PROCESSING_TYPE appliedType = POST_PROCESSING_TYPE::NONE;
 		computeSet->imageShareData->UpdateBegin();
-		computeSet->ppSet->convertColor->ApplyToLinearColor(computeSet, helper);
 
 		if (helper.option.postProcess.useTaa)
 		{
@@ -73,6 +72,8 @@ namespace JinEngine::Graphic
 			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::TAA);
 		}
 
+		computeSet->ppSet->convertColor->ApplyToLinearColor(computeSet, helper);
+ 
 		if (helper.option.postProcess.useBloom)
 		{
 			computeSet->ppSet->bloom->ApplyBloom(computeSet, helper);
