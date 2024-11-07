@@ -27,6 +27,7 @@ SOFTWARE.
 #include"JAllocationDesc.h"
 #include"../Platform/JHardwareInfo.h"
 #include"../Platform/JPlatformInfo.h"
+#include"../Utility/JCommonUtility.h"
 #include<assert.h> 
 #include<Windows.h>  
 #include<fstream>
@@ -539,11 +540,13 @@ namespace JinEngine
 
 			delete[] isUsePage;
 			isUsePage = new bool[reservedPageCount]();
-			memset(isUsePage, 1, preReservePageCount);
-
+			JCUtil::Fill<bool, 1>(isUsePage, reservedPageCount);
+			//std::fill_n(isUsePage, preReservePageCount, 1);
+			 
 			delete[] isUseBlock;
 			isUseBlock = new bool[reservedBlockCount]();
-			memset(isUseBlock, 1, preReserveBlockCount);
+			JCUtil::Fill<bool, 1>(isUseBlock, reservedBlockCount);
+			//std::fill_n(isUseBlock, preReserveBlockCount, 1);
 
 			allocablePaegHead = new PageInfo();
 			allocablePaegHead->pageIndex = preReservePageCount;

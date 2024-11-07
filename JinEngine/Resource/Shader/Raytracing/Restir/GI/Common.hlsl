@@ -48,7 +48,7 @@ struct RestirGiConstants
     float2 originalRtSize;
     float2 originalInvRtSize;
     float tMax;
-    uint totalNumPixels;    //mul rtSize.x * rtSize.y
+    uint totalNumPixels;    //mul rtSize.x * rtSize.y 
     
     float3 camPosW;
     float camNearMulFar;
@@ -71,7 +71,7 @@ struct RestirGiConstants
     uint totalLightCount;
     float invTotalLightCount;
     uint forceClearPrevalue; ///< Clear temporal and spatial reservoirs. 
-    uint pad00;
+    uint pad00; 
     uint pad01;
 }; 
 ConstantBuffer<RestirGiConstants> cb : register(b0);
@@ -213,10 +213,11 @@ struct RestirReserviorData
     }
 };
    
-float3 GetWorldPos(float2 uv, float depth)
+float3 GetWorldPos(float2 uv, float viewZ)
 { 
     //주의! float3이아닌 float4로 변환해야한다(이동)
-    return mul(float4(UVToViewSpace(uv, NdcToViewPZ(depth, cb.camNearMulFar, cb.camNearFar), cb.uvToViewA, cb.uvToViewB), 1.0f), cb.camInvView).xyz;
+    return mul(float4(UVToViewSpace(uv, viewZ, cb.uvToViewA, cb.uvToViewB), 1.0f), cb.camInvView).xyz;
+    //return mul(float4(UVToViewSpace(uv, NdcToViewPZ(depth, cb.camNearMulFar, cb.camNearFar), cb.uvToViewA, cb.uvToViewB), 1.0f), cb.camInvView).xyz;
 }
  
 RestirReserviorData UnpackRestirGiSample(RestirSamplePack pack)
@@ -272,7 +273,7 @@ RestirReserviorPack PackRestirGiReservior(RestirReserviorData data)
     pack.PackM(data.M);
     return pack;
 } 
-bool IsValidNeighbor(float3 normal, float3 otherNormal, float depth, float otherDepth, float normalThreshold, float depthThreshold)
+bool IsValidNeighbor(float3 normal, float3 otherNormal, float viewZ, float otherViewZ, float normalThreshold, float viewZThreshold)
 {
-    return dot(normal, otherNormal) >= normalThreshold && abs((depth - otherDepth)) <= depthThreshold;
+    return dot(normal, otherNormal) >= normalThreshold && abs((viewZ - otherViewZ)) <= viewZThreshold;
 }

@@ -197,6 +197,20 @@ namespace JinEngine::Graphic
 
 		GetAdaptee(deviceType)->ExecuteEndFrame(drawRefSet, cond);
 	}
+	void JGraphicAdapter::BeginMultiThreadTask(const J_GRAPHIC_DEVICE_TYPE deviceType, Core::JobDesc* theadJobDesc)
+	{
+		if (!IsSameDevice(deviceType))
+			return;
+
+		GetAdaptee(deviceType)->BeginMultiThreadTask(theadJobDesc);
+	}
+	void JGraphicAdapter::EndMultiThreadTask(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	{
+		if (!IsSameDevice(deviceType))
+			return;
+
+		GetAdaptee(deviceType)->EndMultiThreadTask();
+	}
 	void JGraphicAdapter::SettingDrawOccTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadOccTaskSet& dataSet)
 	{
 		if (!IsSameDevice(deviceType))

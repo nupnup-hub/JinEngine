@@ -93,6 +93,13 @@ float UnpackSpecularFactor(float4 pack)
     UnPackAlbedoColorLayer(pack, albedoColor, specularFactor);
     return specularFactor;
 }
+float3 UnpackSpecularColor(float4 pack)
+{
+    float3 albedoColor;
+    float specularFactor;
+    UnPackAlbedoColorLayer(pack, albedoColor, specularFactor);
+    return specularFactor.xxx;
+}
 
 float4 PackLightPropLayer(in float metalic, in float roughness, in float aoFactor, in uint materialID)
 { 

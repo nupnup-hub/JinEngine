@@ -25,7 +25,8 @@ SOFTWARE.
 
 #pragma once
 #include"JGraphicConstants.h"    
- 
+#include"Thread/JGraphicThreadInfo.h"
+
 #include"../Object/GraphicRule/FrameResource/JGraphicModuleFrameResourceType.h"
 #include"../Object/GraphicRule/Culling/JGraphicModuleCullingType.h"
 #include"../Object/GraphicRule/GraphicResource/JGraphicModuleTextureResourceType.h"
@@ -63,7 +64,8 @@ namespace JinEngine
 				//guiManagerInterface is deleted when app close
 				static void Initialize(std::unique_ptr<JGraphicAdapter>&& adapter,
 					std::unique_ptr<JGuiBackendDataAdapter>&& guiAdapter,
-					JGuiBackendInterface* guiBackendInterface);
+					JGuiBackendInterface* guiBackendInterface,
+					const JGraphicThreadInfo& threadInfo);
 				static void Clear();
 			private:
 				static std::unique_ptr<JGuiInitData> GetGuiInitData()noexcept;

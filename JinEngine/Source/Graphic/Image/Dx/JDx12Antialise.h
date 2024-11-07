@@ -44,7 +44,7 @@ namespace JinEngine
 		class JDx12GraphicResourceManager;
 		class JDx12GraphicDevice;
 		class JDx12CommandContext;
-
+		 
 		class JDx12Antialise final: public JAntialise
 		{
 		private:
@@ -72,15 +72,12 @@ namespace JinEngine
 				float camNearMulFar = 0; 
 				uint sampleNumber = 0; 
 			};
-			struct TAAUserPrivateData : public Core::JVolatileStorageInterface
+			struct TAAUserPrivateData : public GraphicVolatileStorageInterface
 			{
 			public:
 				static constexpr uint historyCount = 2;
 			public:
-				JUserPtr<JGraphicResourceInfo> colorHistory[historyCount]; 
-			public:
-				JUserPtr<JGraphicResourceInfo> viewZ;			//sample 연산중 중복되는 계산을 피하기 위해
-				JUserPtr<JGraphicResourceInfo> preViewZ;		//sample 연산중 중복되는 계산을 피하기 위해
+				JUserPtr<JGraphicResourceInfo> colorHistory[historyCount];  
 			public:
 				JGraphicDevice* device = nullptr;
 				JGraphicResourceManager* gm = nullptr;
@@ -107,6 +104,7 @@ namespace JinEngine
 				TAAUserPrivateData* userPrivate; 
 			public:
 				ImageProcessingShareData* imageShare = nullptr;
+				DrawSceneShareData* drawSceneShareData = nullptr;
 			public:
 				JUserPtr<JCamera> cam;
 			public:
@@ -145,6 +143,8 @@ namespace JinEngine
 				TAADataSet(JPostProcessComputeSet* computeSet, const JDrawHelper& helper);
 			public:
 				void SetUserPrivate(TAAUserPrivateData* data, const JDrawHelper& helper);
+			public:
+				bool IsValid()const noexcept;
 			};
 		private:
 			class AABase : public Core::JActivatedInterface
@@ -185,12 +185,10 @@ namespace JinEngine
 			};
 			class TaaResource final : public AABase
 			{
-			private: 
-				Microsoft::WRL::ComPtr<ID3D12RootSignature> prepareRootSignature;
+			private:  
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> taRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> sharpeningRootSignature;
-			private:
-				std::unique_ptr<JDx12ComputeShaderDataHolder> prepare;
+			private: 
 				std::unique_ptr<JDx12ComputeShaderDataHolder> ta;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> sharpening;
 			private:
@@ -202,8 +200,7 @@ namespace JinEngine
 			public: 
 				void ClearSignature()final;
 				void ClearPso()final; 
-			public:
-				void Prepare(TAADataSet& set, const JDrawHelper& helper);
+			public: 
 				void TemporalAccumulation(TAADataSet& set, const JDrawHelper& helper);
 				void Sharpening(TAADataSet& set, const JDrawHelper& helper);
 				void ClearTAAResource(TAADataSet& set, const JDrawHelper& helper);
@@ -218,8 +215,7 @@ namespace JinEngine
 		private:
 			PushGraphicEventPtr pushGraphicEvPtr;
 		private:
-			std::unordered_map<size_t, std::unique_ptr<TAAUserPrivateData>> taaUserPrivate;
-			uint computeCount = 0;
+			std::unordered_map<size_t, std::unique_ptr<TAAUserPrivateData>> taaUserPrivate; 
 		public: 
 			JDx12Antialise(PushGraphicEventPtr pushGraphicEvPtr);
 			~JDx12Antialise();
@@ -231,6 +227,9 @@ namespace JinEngine
 		private:
 			bool HasDependency(const JGraphicInfo::TYPE type)const noexcept final;
 			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final;
+			bool HasDrawSequencePostProcessing()const noexcept final;
+		private:
+			void DrawSequencePostProcessing()final;
 		private:
 			void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)final;
 			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;

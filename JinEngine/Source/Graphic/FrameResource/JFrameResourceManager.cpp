@@ -79,7 +79,8 @@ namespace JinEngine::Graphic
 	void JFrameResourceManager::UpdateHint::ClearRecordValue(const uint index, const uint count)
 	{
 #ifdef USE_FRAME_MOVE_DIRTY_OPTIMIZATION
-		memset(&movedRecord[index], 0, sizeof(MovedRecordElementType) * count);
+		JCUtil::Fill<MovedRecordElementType, 0>(&movedRecord[index], count);
+		//memset(&movedRecord[index], 0, sizeof(MovedRecordElementType) * count);
 #endif
 	}
 #ifdef USE_FRAME_MOVE_DIRTY_OPTIMIZATION

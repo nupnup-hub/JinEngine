@@ -40,9 +40,7 @@ namespace JinEngine
 {
 	class JCamera;
 	namespace Graphic
-	{
-		using RestirTemporalAccumulationData = JDx12GraphicResourceShareData::RestirTemporalAccumulationData;
-
+	{ 
 		struct JStateObjectBuildData;
 		class JDx12CommandContext;
 		class JDx12RaytracingGI : public JRaytracingGI
@@ -74,7 +72,7 @@ namespace JinEngine
 				JVector2F origianlRtSize = JVector2F::One();
 				JVector2F invOrigianlRtSize = JVector2F::One();
 				float tMax = 0;
-				uint totalNumPixels = 0;
+				uint totalNumPixels = 0; 
 
 				JVector3F camPosW = JVector3F::Zero();
 				float camNearMulFar = 1;
@@ -97,14 +95,14 @@ namespace JinEngine
 				uint totalLightCount = 0;
 				float invTotalLightCount = 0; 
 				uint forceClearReservoirs = 0; 
-				uint pad00 = 0;
+				uint pad00 = 0; 
 				uint pad01 = 0;
 				//uint rectLightVerticesIndex = 0;
 				//uint rectLightIndiciesIndex = 0;
 			public:
 				GIPassConstants() = default; 
 			};
-			struct UserPrivateData : public Core::JVolatileStorageInterface
+			struct UserPrivateData : public GraphicVolatileStorageInterface
 			{
 			public:
 				JDx12GraphicBufferT<GIPassConstants> frameBuffer;
@@ -133,12 +131,14 @@ namespace JinEngine
 				JDx12GraphicDevice* device;
 				UserPrivateData* userPrivate; 
 			public:
-				RestirTemporalAccumulationData* sharedata;
+				RestirTemporalAccumulationData* taShareData;
+				DrawSceneShareData* drawSceneShareData;
 			public:
 				JUserPtr<JCamera> cam;
 			public:
 				JDx12GraphicResourceComputeSet rtSet;
 				JDx12GraphicResourceComputeSet dsSet;
+				JDx12GraphicResourceComputeSet viewZSet;
 			public:
 				JDx12GraphicResourceComputeSet albedoSet; 
 				JDx12GraphicResourceComputeSet lightPropSet; 
@@ -149,14 +149,15 @@ namespace JinEngine
 			public:
 				//for rt spatial-temporal process
 				JDx12GraphicResourceComputeSet preRsSet;
-				JDx12GraphicResourceComputeSet preDsSet;
+				JDx12GraphicResourceComputeSet preViewZSet;
+				//JDx12GraphicResourceComputeSet preDsSet;
 				JDx12GraphicResourceComputeSet preNormalSet;
 				//JDx12GraphicResourceComputeSet preTangentSet;
 			public:
 				JDx12GraphicResourceComputeSet initialSampleSet;
 				JDx12GraphicResourceComputeSet temporalReserviorSet[2];
-				JDx12GraphicResourceComputeSet spatialReserviorSet[2];
-				JDx12GraphicResourceComputeSet colorIntermediate;
+				JDx12GraphicResourceComputeSet spatialReserviorSet[2]; 
+				JDx12GraphicResourceComputeSet colorIntermediateHalf;
 				JDx12GraphicResourceComputeSet destSet;
 			public:
 				JDx12GraphicResourceComputeSet* preTemporalReserviorSet;
@@ -165,7 +166,7 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet* currSpatialReserviorSet;
 			public:
 				JDx12AcceleratorResourceComputeSet accelSet;
-			public:
+			public: 
 				JVector2<uint> halfResolution;
 				JVector2<uint> oriResolution;
 				JVector2<uint> threadDim;
@@ -208,8 +209,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JDx12GraphicBufferT<HemisphereSample>> hemiSample;
 		private:
-			std::unordered_map<size_t, std::unique_ptr<UserPrivateData>> userPrivate;
-			uint computeCount = 0;
+			std::unordered_map<size_t, std::unique_ptr<UserPrivateData>> userPrivate; 
 		public:
 			~JDx12RaytracingGI();
 		public:
@@ -220,6 +220,9 @@ namespace JinEngine
 		private:
 			bool HasDependency(const JGraphicInfo::TYPE type)const noexcept final;
 			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final;
+			bool HasDrawSequencePostProcessing()const noexcept final;
+		private:
+			void DrawSequencePostProcessing();
 		private:
 			void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)final;
 			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;

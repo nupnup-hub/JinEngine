@@ -82,7 +82,9 @@ namespace JinEngine
 	public:
 		JRenderItemImpl(const InitData& initData, JRenderItem* thisRitemRaw)
 			:renderLayer(initData.layer), acceleratorMask(initData.acceleratorMask)
-		{}
+		{
+			sizeof(JRenderItem);
+		}
 		~JRenderItemImpl() { }
 	public:
 		JUserPtr<JMeshGeometry> GetMesh()const noexcept

@@ -65,8 +65,8 @@ namespace JinEngine
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> treadCmdListAlloc[(uint)J_THREAD_TASK_TYPE::COUNT][Constants::gMaxFrameThread];
 			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> treadCmdList[(uint)J_THREAD_TASK_TYPE::COUNT][Constants::gMaxFrameThread];
 			ID3D12CommandList* threadCmdBatch[(uint)J_THREAD_TASK_TYPE::COUNT][Constants::gMaxFrameThread];
-		private: 
-			HANDLE threadTaskHandle[(uint)J_THREAD_TASK_TYPE::COUNT][Constants::gMaxFrameThread];
+		//private: 
+		//	HANDLE threadTaskHandle[(uint)J_THREAD_TASK_TYPE::COUNT][Constants::gMaxFrameThread];
 		private:
 			// Fence value to mark commands up to this fence point.  This lets us
 			// check if these frame resources are still in use by the GPU.
@@ -123,8 +123,8 @@ namespace JinEngine
 			ID3D12GraphicsCommandList* GetCmd(const J_MAIN_THREAD_ORDER type)const noexcept;	//Main thread
 			ID3D12GraphicsCommandList* GetCmd(const J_THREAD_TASK_TYPE taskType, const uint index)const noexcept;	//thread 
 			ID3D12CommandList*const* GetBatchCmd(const J_THREAD_TASK_TYPE taskType)const noexcept;
-			HANDLE GetHandle(const J_THREAD_TASK_TYPE taskType, const uint index)const noexcept;	//thread 
-			const HANDLE* GetHandle(const J_THREAD_TASK_TYPE taskType)const noexcept;	//thread 
+			//HANDLE GetHandle(const J_THREAD_TASK_TYPE taskType, const uint index)const noexcept;	//thread 
+			//const HANDLE* GetHandle(const J_THREAD_TASK_TYPE taskType)const noexcept;				//thread 
 		public:
 			void SetFenceValue(const GraphicFence value)noexcept;
 		public:

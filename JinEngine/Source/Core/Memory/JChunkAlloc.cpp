@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 #include"JChunkAlloc.h"
+#include"../Utility/JCommonUtility.h"
 
 namespace JinEngine::Core
 {
@@ -54,9 +55,9 @@ namespace JinEngine::Core
 	void JChunkAlloc::Deallocate(void* p, size_t blockSize)
 	{
 		uint blockIndex = GetBlockIndex(p);
-		firstAvailableBlock = blockIndex; 
-
-		memset(p, 0, blockSize);
+		firstAvailableBlock = blockIndex;  
+		JCUtil::Fill<BYTE, 0>(p, blockSize);
+		//memset(p, 0, blockSize);
 	} 
 	uint JChunkAlloc::GetBlockIndex(void* p)const noexcept
 	{

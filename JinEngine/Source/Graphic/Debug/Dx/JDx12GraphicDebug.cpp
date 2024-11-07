@@ -97,16 +97,14 @@ namespace JinEngine::Graphic
 				srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP));
 			else
 				srcBase.Push(JDx12GraphicResourceComputeSet());
-
+			 
+			srcBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO));
+			srcBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SSR_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSR));
+			srcBase.Push(JDx12GraphicResourceComputeSet());	//velocity
 			//if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY))
 			//	srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY));
 			//else
 			//	srcBase.Push(JDx12GraphicResourceComputeSet());
-			srcBase.Push(context->ComputeSet(gRInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO));
-			if (rtSet.info->HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY))
-				srcBase.Push(context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY));
-			else
-				srcBase.Push(JDx12GraphicResourceComputeSet());
 
 			for (uint i = 0; i < DEBUG_TYPE_COUNT; ++i)
 				allowTrigger[i] = srcBase(i).IsValid();
@@ -119,7 +117,8 @@ namespace JinEngine::Graphic
 				J_GRAPHIC_TASK_TYPE::NORMAL_MAP_VISUALIZE,
 				J_GRAPHIC_TASK_TYPE::TANGENT_MAP_VISUALIZE,
 				J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE,
-				//J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE,
+				J_GRAPHIC_TASK_TYPE::SSR_VISUALIZE,
+				J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE,
 			};
 			 
 			for (uint i = 0; i < DEBUG_TYPE_COUNT; ++i)
@@ -253,7 +252,8 @@ namespace JinEngine::Graphic
 			normalMapShaderData.get(),
 			tangentMapShaderData.get(), 
 			aoMapShaderData.get(),
-			//velocityMapShaderData.get()
+			ssrMapShaderData.get(),
+			velocityMapShaderData.get()
 		};
 
 		context->Transition(&srcBuff, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -451,9 +451,10 @@ namespace JinEngine::Graphic
 		normalMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		tangentMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		aoMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
+		ssrMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		velocityMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 
-		constexpr uint shaderCount = SIZE_OF_ARRAY(nonLinearDepthMapShaderData) + 8;
+		constexpr uint shaderCount = SIZE_OF_ARRAY(nonLinearDepthMapShaderData) + 9;
 
 		JDx12ComputeShaderDataHolder* holderSet[shaderCount]
 		{
@@ -461,11 +462,14 @@ namespace JinEngine::Graphic
 			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE].get(),
 			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC].get(),
 			csmShaderData.get(),
+
 			albedoMapShaderData.get(),
 			specularMapShaderData.get(),
 			normalMapShaderData.get(),
 			tangentMapShaderData.get(),
+
 			aoMapShaderData.get(),
+			ssrMapShaderData.get(),
 			velocityMapShaderData.get(),
 		};
 		JCompileInfo compileInfoSet[shaderCount]
@@ -474,11 +478,14 @@ namespace JinEngine::Graphic
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNonLinearMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeCSM"),
+
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeAlbedoMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeSpecularMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeNormalMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeTangentMap"),
+
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeAoMap"),
+			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeSsrMap"),
 			JCompileInfo(ShaderRelativePath::Image(L"DebugVisualize.hlsl"), L"VisualizeVelocityMap")
 		};
 		std::vector<JMacroSet> macroSet[shaderCount]
@@ -492,6 +499,7 @@ namespace JinEngine::Graphic
 			std::vector<JMacroSet>{ { L"NORMAL_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"TANGENT_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"SSAO_MAP", std::to_wstring(1) }},
+			std::vector<JMacroSet>{ { L"SSR_MAP", std::to_wstring(1) }},
 			std::vector<JMacroSet>{ { L"VELOCITY_MAP", std::to_wstring(1) }}
 		};
 		JVector3<uint> threadDim[shaderCount]
@@ -505,10 +513,12 @@ namespace JinEngine::Graphic
 			Private::GetThreadDim(),
 			Private::GetThreadDim(),
 			Private::GetThreadDim(),
+			Private::GetThreadDim(),
 			Private::GetThreadDim()
 		};
 		ID3D12RootSignature* rootSignature[shaderCount]
 		{
+			cRootSignature.Get(),
 			cRootSignature.Get(),
 			cRootSignature.Get(),
 			cRootSignature.Get(),
@@ -544,6 +554,7 @@ namespace JinEngine::Graphic
 		normalMapShaderData = nullptr;
 		tangentMapShaderData = nullptr;
 		aoMapShaderData = nullptr;
+		ssrMapShaderData = nullptr;
 		velocityMapShaderData = nullptr;
 		cRootSignature = nullptr;
 	}

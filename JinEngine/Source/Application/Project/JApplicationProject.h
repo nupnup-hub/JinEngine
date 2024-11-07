@@ -100,6 +100,7 @@ namespace JinEngine
 			static std::wstring ProjectVersionFilePath()noexcept;
 		public:   
 			static std::wstring ShaderMetafilePath()noexcept;
+			static std::wstring ShaderPdbPath()noexcept;
 			static std::wstring ModResourceCachePath()noexcept;
 		public:
 			//Binrary

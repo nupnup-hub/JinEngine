@@ -27,7 +27,7 @@ SOFTWARE.
 #include"JGraphicInfo.h"
 #include"JGraphicOption.h"
 #include"Exception/JGraphicException.h"
-
+ 
 namespace JinEngine
 {
 	namespace Graphic
@@ -46,6 +46,19 @@ namespace JinEngine
 		private:
 			virtual bool HasDependency(const JGraphicInfo::TYPE type)const noexcept;
 			virtual bool HasDependency(const JGraphicOption::TYPE type)const noexcept;
+			virtual bool HasUpdateSequencePreProcessing()const noexcept;
+			virtual bool HasUpdateSequencePostProcessing()const noexcept;
+			virtual bool HasDrawSequencePreProcessing()const noexcept;
+			virtual bool HasDrawSequencePostProcessing()const noexcept;
+		public:
+			//Call Update sequence start
+			virtual void UpdateSequencePreProcessing();
+			//Call Update sequence end
+			virtual void UpdateSequencePostProcessing();
+			//Call Draw sequence start
+			virtual void DrawSequencePreProcessing();
+			//Call Draw sequence end
+			virtual void DrawSequencePostProcessing();
 		private:
 			virtual void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set);
 			virtual void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set); 

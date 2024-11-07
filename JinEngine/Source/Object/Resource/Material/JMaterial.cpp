@@ -113,7 +113,7 @@ namespace JinEngine
 		JGraphicShaderCondition shaderCond;
 	public:
 		JMaterialImpl(const InitData& initData, JMaterial* thisMatRaw)
-		{
+		{ 
 		}
 		~JMaterialImpl()
 		{

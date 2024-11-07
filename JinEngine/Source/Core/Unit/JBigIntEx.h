@@ -75,6 +75,7 @@ namespace JinEngine
 			int n = a.Length(), m = b.Length();
 			if (m > n)
 				a.digits.append(m - n, 0);
+			  
 			n = a.Length();
 			for (i = 0; i < n; i++)
 			{

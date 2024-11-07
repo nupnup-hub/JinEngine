@@ -44,8 +44,26 @@ namespace JinEngine::Graphic
 	{
 		return false;
 	}
-	void JGraphicSubClassInterface::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
-	{}
-	void JGraphicSubClassInterface::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)
-	{} 
+	bool JGraphicSubClassInterface::HasUpdateSequencePreProcessing()const noexcept
+	{
+		return false;
+	}
+	bool JGraphicSubClassInterface::HasUpdateSequencePostProcessing()const noexcept
+	{
+		return false;
+	}
+	bool JGraphicSubClassInterface::HasDrawSequencePreProcessing()const noexcept
+	{
+		return false;
+	}
+	bool JGraphicSubClassInterface::HasDrawSequencePostProcessing()const noexcept
+	{
+		return false;
+	}
+	void JGraphicSubClassInterface::UpdateSequencePreProcessing() {}
+	void JGraphicSubClassInterface::UpdateSequencePostProcessing() {}
+	void JGraphicSubClassInterface::DrawSequencePreProcessing() {}
+	void JGraphicSubClassInterface::DrawSequencePostProcessing() {}
+	void JGraphicSubClassInterface::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set){}
+	void JGraphicSubClassInterface::NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set){} 
 }

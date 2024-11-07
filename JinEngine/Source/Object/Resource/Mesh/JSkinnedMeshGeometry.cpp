@@ -345,7 +345,7 @@ namespace JinEngine
 		return impl->graphicData.Get();
 	} 
 	Core::J_MESHGEOMETRY_TYPE JSkinnedMeshGeometry::GetMeshGeometryType()const noexcept
-	{
+	{ 
 		return Core::J_MESHGEOMETRY_TYPE::SKINNED;
 	}
 	JUserPtr<JSkeletonAsset> JSkinnedMeshGeometry::GetSkeletonAsset()const noexcept

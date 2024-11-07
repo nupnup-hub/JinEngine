@@ -130,6 +130,7 @@ namespace JinEngine
 				bool useTaa = false;
 				bool useSsao = false;
 				bool useSsaoInterleave = true;
+				bool useSsr = false;
 				bool usePostprocess = false;
 				bool useHdr = false;
 			public:
@@ -166,6 +167,7 @@ namespace JinEngine
 				bool requestRecompileGraphicShader = false;			//for debugging
 				bool requestRecompileLightClusterShader = false;	//for debugging
 				bool requestRecompileSsaoShader = false;			//for debugging 
+				bool requestRecompileSsrShader = false;			//for debugging 
 				bool requestRecompileToneMappingShader = false;		//for debugging
 				bool requestRecompileRtGiShader = false;			//for debugging 
 				bool requestRecompileRtDenoiseShader = false;		//for debugging 
@@ -199,6 +201,7 @@ namespace JinEngine
 			bool CanUseRtGi()const noexcept;
 			bool CanUsePostProcess()const noexcept;
 			bool CanUseSSAO()const noexcept; 
+			bool CanUseSSR()const noexcept;
 		public:
 			void Load();
 			void Store();

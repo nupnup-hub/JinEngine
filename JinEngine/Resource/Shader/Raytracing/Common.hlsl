@@ -101,8 +101,7 @@ struct SkinnedVertex
     uint4 boneIndices : BONEINDICES;
 }; 
 
-
-RaytracingAccelerationStructure sceneAs : register(t0);
+RaytracingAccelerationStructure sceneAs : register(t0); 
 StructuredBuffer<InstanceData> instanceInfo : register(t1);
 
 //return isVisible
@@ -128,6 +127,26 @@ bool VisibilityRayQuery(RayDesc desc)
     }
     return true;
 }
+bool RayCast(RayDesc desc, out float3 hitPos)
+{
+    hitPos = float3(0, 0, 0); 
+    RayQuery<RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH > rayQuery;
+    rayQuery.TraceRayInline(sceneAs, RAY_FLAG_NONE, 0xff, desc);
+     
+    while (rayQuery.Proceed())
+    {
+        if (rayQuery.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE)
+            rayQuery.CommitNonOpaqueTriangleHit();
+        
+        if (rayQuery.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
+        {
+            hitPos = rayQuery.WorldRayOrigin() + rayQuery.CommittedRayT() * rayQuery.WorldRayDirection();
+            return true;
+        }
+    }
+    return false;
+}
+
 
 float3 HitWorldPosition()
 {
@@ -165,6 +184,61 @@ StaticVertex BarycentricLerpV(in StaticVertex v0, in StaticVertex v1, in StaticV
     return v;
 }
 
+float3 ComputeRayOrigin(float3 pos, float3 normal)
+{
+    const float origin = 1.f / 16.f;
+    const float fScale = 3.f / 65536.f;
+    const float iScale = 3 * 256.f;
+
+    // Per-component integer offset to bit representation of fp32 position.
+    int3 iOff = int3(normal * iScale);
+    float3 iPos = asfloat(asint(pos) + select(pos < 0.0f, -iOff, iOff));
+
+    // Select per-component between small fixed offset or above variable offset depending on distance to origin.
+    float3 fOff = normal * fScale;
+    return select(abs(pos) < origin, pos + fOff, iPos);
+}
+//raycast시 자기교차를 피하는 방법에 대한 적용이 필요하다
+//ref raytracing gem1 ch 6
+RayDesc CreateRayDesc(float3 pos, float3 endPoint, float tMin)
+{
+    float3 offset = endPoint - pos;
+    float tMax = length(offset);
+    float3 dir = offset / tMax;
+    RayDesc rayDesc;
+    rayDesc.Origin = pos;
+    rayDesc.Direction = dir;
+    rayDesc.TMin = tMin;
+    rayDesc.TMax = 0.999f * tMax;
+    return rayDesc;
+}
+RayDesc CreateRayDesc(float3 pos, float3 endPoint, float3 normal, float tMin)
+{
+    float3 offset = endPoint - pos;
+    float tMax = length(offset);
+    float3 dir = offset / tMax;
+    RayDesc rayDesc;
+    rayDesc.Origin = ComputeRayOrigin(pos, normal);
+    rayDesc.Direction = dir;
+    rayDesc.TMin = tMin;
+    rayDesc.TMax = 0.999f * tMax;
+    return rayDesc;
+}
+RayDesc CreateRayDesc(float3 pos, float3 dir, float3 normal, float distance, float tMin)
+{
+    RayDesc rayDesc;
+    rayDesc.Origin = ComputeRayOrigin(pos, normal);
+    rayDesc.Direction = dir;
+    rayDesc.TMin = tMin;
+    rayDesc.TMax = 0.999f * distance;
+    return rayDesc;
+}
+bool EvaluateSegmentVisibility(float3 pos, float3 endPoint, float tMin)
+{
+    return VisibilityRayQuery(CreateRayDesc(pos, endPoint, tMin));
+}
+
+ 
 StaticVertex GetStaticMeshVertex(const uint instanceID, uint primitiveIndex, in BuiltInTriangleIntersectionAttributes attr)
 {
     StructuredBuffer<StaticVertex> vertexBuffer = ResourceDescriptorHeap[instanceInfo[instanceID].verticesIndex];
@@ -234,58 +308,5 @@ float3 GetSurfaceNormal(const uint verticesIndex, const uint indicesIndex, uint 
     
     float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
     return normalize(BarycentricLerpF3(v0.normal, v1.normal, v2.normal, barycentrics));
-}
-float3 ComputeRayOrigin(float3 pos, float3 normal)
-{
-    const float origin = 1.f / 16.f;
-    const float fScale = 3.f / 65536.f;
-    const float iScale = 3 * 256.f;
-
-    // Per-component integer offset to bit representation of fp32 position.
-    int3 iOff = int3(normal * iScale);
-    float3 iPos = asfloat(asint(pos) + select(pos < 0.0f, -iOff, iOff));
-
-    // Select per-component between small fixed offset or above variable offset depending on distance to origin.
-    float3 fOff = normal * fScale;
-    return select(abs(pos) < origin, pos + fOff, iPos);
-}
-//raycast시 자기교차를 피하는 방법에 대한 적용이 필요하다
-//ref raytracing gem1 ch 6
-RayDesc CreateRayDesc(float3 pos, float3 endPoint, float tMin)
-{
-    float3 offset = endPoint - pos;
-    float tMax = length(offset);
-    float3 dir = offset / tMax;
-    RayDesc rayDesc;
-    rayDesc.Origin = pos;
-    rayDesc.Direction = dir;
-    rayDesc.TMin = tMin;
-    rayDesc.TMax = 0.999f * tMax;
-    return rayDesc;
-}
-RayDesc CreateRayDesc(float3 pos, float3 endPoint, float3 normal, float tMin)
-{
-    float3 offset = endPoint - pos;
-    float tMax = length(offset);
-    float3 dir = offset / tMax;
-    RayDesc rayDesc;
-    rayDesc.Origin = ComputeRayOrigin(pos, normal);
-    rayDesc.Direction = dir;
-    rayDesc.TMin = tMin;
-    rayDesc.TMax = 0.999f * tMax;
-    return rayDesc;
-}
-RayDesc CreateRayDesc(float3 pos, float3 dir, float3 normal, float distance, float tMin)
-{     
-    RayDesc rayDesc;
-    rayDesc.Origin = ComputeRayOrigin(pos, normal);
-    rayDesc.Direction = dir;
-    rayDesc.TMin = tMin;
-    rayDesc.TMax = 0.999f * distance;
-    return rayDesc;
-}
-bool EvaluateSegmentVisibility(float3 pos, float3 endPoint, float tMin)
-{  
-    return VisibilityRayQuery(CreateRayDesc(pos, endPoint, tMin));
 }
 

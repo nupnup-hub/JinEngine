@@ -59,12 +59,15 @@ SamplerState samLinearClmap : register(s1);
 #define FAIL_MARK -1
 #define COMMON_SPEED (1.0f / float(MAX_FRAME_ACCMURATION))
 #define DISCARD_PRE_HISTORY_SPEED (1.0f)
-#define BI_CUBIC_SPEED (COMMON_SPEED* 2.0f)
-#define BI_LINEAR_SPEED (COMMON_SPEED * 2.0f)
+#define BI_CUBIC_SPEED (COMMON_SPEED* 2.5f)
+#define BI_LINEAR_SPEED (COMMON_SPEED * 4.0f)
 #define COLOR_ERROR_SPEED BI_CUBIC_SPEED
 
 void Reproject(in ReprojectionIn input, out ReprojectionOut output)
 {
+    //motion, Hit Point Reproject을 거칠기에 따라 선택하는 기능 추가필요.. 
+    //Hit Point Reproject는 hit distance에 정보가 필요.
+    //반사되는 물체에 변화량과 비쳐지는 물체의 변화량이 다르기 때문에 고려할 필요가 있음. 
     output.preColor = float3(0, 0, 0);  
     output.accumSpeed = COMMON_SPEED;
     output.safetyLevel = FAIL_MARK;
@@ -182,7 +185,7 @@ void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThr
     if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
         return;
    
-    const float2 halton[16] =
+    const float2 halton[MAX_SAMPLE_COUNT] =
     {
         //{0.5f, 0.5f },
         { 0.5f, 0.333333f },
@@ -213,10 +216,10 @@ void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThr
     float3 normal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, centerUv, 0));
     uint materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, centerUv, 0));
  
-    double3 posV = UVToViewSpace(centerUv, viewZ, cb.uvToViewA, cb.uvToViewB);
-    double3 posW = mul(float4(posV, 1.0f), cb.camInvView).xyz;
+    float3 posV = UVToViewSpace(centerUv, viewZ, cb.uvToViewA, cb.uvToViewB);
+    float3 posW = mul(float4(posV, 1.0f), cb.camInvView).xyz;
     double4 prePosH = mul(float4(posW, 1.0f), cb.camPreViewProj);
-    double2 preUv = double2(prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+    double2 preUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
     double2 velocity = preUv - centerUv;
      
     //부동소수점 오차 교정

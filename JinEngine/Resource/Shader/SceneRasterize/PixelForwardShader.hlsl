@@ -95,7 +95,7 @@ PixelOut PS(PixelIn pin) : SV_Target
     specularFactor = ComputeDefaultSpecularFactor(albedoColor.xyz, metallic);
 #endif
 	 
-    Material mat = { albedoColor.xyz, specularFactor, metallic, roughness, 0.0f };
+    Material mat = { albedoColor.xyz, specularFactor.xxx, metallic, roughness, 0.0f };
 #ifdef LIGHT_CLUSTER
 	float3 directLight = ComputeLight(mat, pin.posW, normalW, pin.tangentW, toEyeW, pin.posH.xy, pin.posH.z);
 	//float3 directLight = ComputeLight(mat, pin.posW, normalW, pin.tangentW, toEyeW, pin.posH.xy, depth);

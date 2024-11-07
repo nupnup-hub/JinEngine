@@ -40,7 +40,7 @@ namespace JinEngine
 		* Resource type도 일부를 제외하면 task type에 종속적이므로 Resource 생성시 사용되는 task를 예측해서
 		* 사용될 share data를 특정할수있다.
 		* 위와 같은 가정은 task별 선택사항이며 subclass에서 event queue에 share data 생성에 대한 요청을 push할수도있다.
-		*/
+		*/ 
 		class JGraphicResourceInfo;	 
 		class JDx12GraphicResourceShareData : public JGraphicResourceShareData
 		{
@@ -95,6 +95,8 @@ namespace JinEngine
 				JUserPtr<JGraphicResourceInfo> fxaaIndirectParameters;
 				JUserPtr<JGraphicResourceInfo> fxaaWorkerQueue;
 				JUserPtr<JGraphicResourceInfo> fxaaColorQueue; 
+			public: 
+				JUserPtr<JGraphicResourceInfo> ssrMip[Constants::ssrMipCount];
 			private:
 				JGraphicDevice* device = nullptr;
 				JGraphicResourceManager* gM = nullptr;
@@ -113,6 +115,7 @@ namespace JinEngine
 			public:
 				void AddUpdatedIndexCount()noexcept;
 			public:
+				bool HasUpdated()const noexcept;
 				bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept;
 				static bool _IsSupported(const J_GRAPHIC_TASK_TYPE taskType)noexcept;
 			public:
@@ -123,10 +126,10 @@ namespace JinEngine
 			{
 			public:
 				JUserPtr<JGraphicResourceInfo> restirColorIntermediate00;
+				//JUserPtr<JGraphicResourceInfo> restirColorIntermediate01;
 			public: 
 				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate00;
 				JUserPtr<JGraphicResourceInfo> restirColorHistoryIntermediate01; 
-				JUserPtr<JGraphicResourceInfo> restirDepthDerivative;
 				JUserPtr<JGraphicResourceInfo> restirDenoiseMipmap[Constants::restirDenoiseMipmapCount];
 			private:
 				JGraphicDevice* device = nullptr;
@@ -143,28 +146,66 @@ namespace JinEngine
 				void UpdateBegin() final;
 				void UpdateEnd() final;
 			};
+		public:
+			class DrawSceneData : public JShareDataHolderInterface, public GraphicVolatileStorageInterface
+			{ 
+			private:
+				JGraphicDevice* device = nullptr;
+				JGraphicResourceManager* gM = nullptr;
+			public:
+				JUserPtr<JGraphicResourceInfo> viewZMap;
+				JUserPtr<JGraphicResourceInfo> preViewZMap;
+				JUserPtr<JGraphicResourceInfo> depthDerivativeMap;
+			public:
+				JVector2<uint> size;  
+			public:
+				DrawSceneData(JGraphicDevice* device, JGraphicResourceManager* gM, const JVector2<uint> size);
+				~DrawSceneData();
+			public:
+				J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+			public:
+				bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept;
+				static bool _IsSupported(const J_GRAPHIC_TASK_TYPE taskType)noexcept;
+				bool IsValid()const noexcept;
+			public:
+				void UpdateBegin() final;
+				void UpdateEnd() final;
+			};
 		private:
 			std::unordered_map<size_t, std::unique_ptr<SsaoData>> ssaoDataMap;
 			std::unordered_map<size_t, std::unique_ptr<ImageProcessingData>> imageProcessingDataMap;
 			std::unordered_map<size_t, std::unique_ptr<RestirTemporalAccumulationData>> restirTemporalAccDataMap;
+		private:
+			std::unordered_map<size_t, std::unique_ptr<DrawSceneData>> drawSceneDataMap;
 		public:
 			~JDx12GraphicResourceShareData();
 		public: 
-			void Clear() final;
+			void Clear()final;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 			SsaoData* GetSsaoData(const uint width, const uint height);
 			ImageProcessingData* GetImageProcessingData(const uint width, const uint height);
 			RestirTemporalAccumulationData* GetRestirTemporalAccumulationData(const uint width, const uint height);
-			JShareDataHolderInterface* GetResourceDependencyData(const J_GRAPHIC_TASK_TYPE taskType, JGraphicResourceInfo* info)final;
+			JShareDataHolderInterface* GetResourceDependencyData(const J_GRAPHIC_TASK_TYPE taskType, JGraphicResourceInfo* info)final;		
+		public:
+			DrawSceneData* GetDrawSceneData(const size_t guid, const JVector2<uint>& size);
+			JShareDataHolderInterface* GetRequestDependencyData(const J_GRAPHIC_REQUEST_TYPE type, const size_t guid, const JVector2<uint>& size) final;
+		public:
+			bool HasDrawSequencePostProcessing()const noexcept;
+		public:
+			void DrawSequencePostProcessing()final;
 		public:
 			void NotifyGraphicResourceCreation(JGraphicDevice* device, JGraphicResourceManager* gM, JGraphicResourceInfo* newInfo)final;
 			void NotifyGraphicResourceDestruction(JGraphicDevice* device, JGraphicResourceManager* gM, JGraphicResourceInfo* info)final;
+		public:
+			void RequestShareDataCreation(JGraphicDevice* device, JGraphicResourceManager* gM, const J_GRAPHIC_REQUEST_TYPE type, const size_t guid, const JVector2<uint>& size)final;
 		private:
 			void ClearResource();
 		};
 
 		using SsaoShareData = JDx12GraphicResourceShareData::SsaoData;
 		using ImageProcessingShareData = JDx12GraphicResourceShareData::ImageProcessingData;
+		using RestirTemporalAccumulationData = JDx12GraphicResourceShareData::RestirTemporalAccumulationData;
+		using DrawSceneShareData = JDx12GraphicResourceShareData::DrawSceneData;
 	}
 }

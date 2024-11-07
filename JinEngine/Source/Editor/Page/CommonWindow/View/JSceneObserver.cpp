@@ -1228,7 +1228,7 @@ namespace JinEngine
 
 					//depth, normal, ssao		... except tangent 
 					using condFunc = bool(*)(const GUser*);
-					constexpr uint deubgMapCount = 6; //7; 
+					constexpr uint deubgMapCount = 7; //8; 
 					condFunc cond[deubgMapCount]
 					{
 						[](const GUser* g) {return true; },
@@ -1237,6 +1237,7 @@ namespace JinEngine
 						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW); },
 						[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP, J_GRAPHIC_TASK_TYPE::SCENE_DRAW); },
 						[](const GUser* g) {return g->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO); },
+						[](const GUser* g) {return g->IsValidHandle(J_GRAPHIC_RESOURCE_TYPE::SSR_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSR); },
 						//[](const GUser* g) {return g->HasOption(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY, J_GRAPHIC_TASK_TYPE::SCENE_DRAW); },
 					};
 					std::string name[deubgMapCount]
@@ -1247,13 +1248,14 @@ namespace JinEngine
 						"Normal Map",
 						"Tangent Map", 
 						"SSAO Map",
+						"SSR_MAP"
 					//	"Velocity Map"
 					};
 
 					const uint debugMapCount = gUser->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 					const uint sequence[deubgMapCount]
 					{
-						1, 2, 0, 3, 4, 5, // 6
+						1, 2, 0, 3, 4, 5, 6 // 7
 					};
 					for (uint i = 0; i < debugMapCount; ++i)
 					{

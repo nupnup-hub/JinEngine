@@ -76,6 +76,27 @@ namespace JinEngine
 
 		static constexpr float cullingUpdateFrequencyMin = 0.0f;
 		static constexpr float cullingUpdateFrequencyMax = 1.0f;
+
+		static constexpr float minSsrStepScale = 1.0f;
+		static constexpr float maxSsrStepScale = 128.0f;
+
+		static constexpr float minSsrStepCount = 1.0f;
+		static constexpr float maxSsrStepCount = 2048.0f;
+
+		static constexpr float minSsrRaydistance =1.0f;
+		static constexpr float maxSsrRaydistance = 2048.0f;
+
+		static constexpr float minSsrThickness = 0.1f;
+		static constexpr float maxSsrThickness = 2048.0f;
+
+		static constexpr float minSsrObjectViewZBias = -4.0f;
+		static constexpr float maxSsrObjectViewZBias = 4.0f;
+
+		static constexpr float minFadeDistance = 0.0f;
+		static constexpr float maxFadeDistance = 0.5f;
+
+		static constexpr float minStartOffset = 1.0f;
+		static constexpr float maxStartOffset = 16.0f;
 	}
 
 	class JCamera::JCameraImpl : public Core::JTypeImplBase, public WindowEventListener
@@ -97,6 +118,7 @@ namespace JinEngine
 			MANAGED_SET_HD_CULLING,
 			MANAGED_SET_LIGHT_CULLING,
 			MANAGED_SET_SSAO,
+			MANAGED_SET_SSR,
 			MANAGED_SET_IMAGE_PROCESSING,
 			MANAGED_SET_GI,
 			MANAGED_SET_DEFERRED_RESOURCE,
@@ -144,7 +166,7 @@ namespace JinEngine
 	public:
 		//JTransform* ownerTransform;
 		J_CAMERA_STATE camState = J_CAMERA_STATE::RENDER;
-		REGISTER_GUI_GROUP(camera)
+		REGISTER_GUI_GROUP(Camera)
 		// Cache frustum properties.
 		REGISTER_PROPERTY_EX(camNear, GetNear, SetNear, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true))
 		float camNear = 0.0f;
@@ -170,17 +192,6 @@ namespace JinEngine
 		//REGISTER_PROPERTY_EX(occlusionCulingFrequency, GetOcclusionCullingFrequency, SetOcclusionCullingFrequency, GUI_SLIDER(Private::cullingUpdateFrequencyMin, Private::cullingUpdateFrequencyMax, true))
 		//float occlusionCulingFrequency = 0;
 	public:
-		REGISTER_GUI_GROUP(Ssao)
-		REGISTER_GET_SET_METHOD_EX(SsaoRadius, GetSsaoRadius, SetSsaoRadius, GUI_SLIDER(Private::minSsaoRadius, Private::maxSsaoRadius, true, false, 3, GUI_GROUP_USER(Ssao)))
-		REGISTER_GET_SET_METHOD_EX(SsaoBias, GetSsaoBias, SetSsaoBias, GUI_SLIDER(Private::minSsaoBias, Private::maxSsaoBias, true, false, 3, GUI_GROUP_USER(Ssao)))
-		REGISTER_GET_SET_METHOD_EX(SsaoSharpness, GetSsaoSharpness, SetSsaoSharpness, GUI_SLIDER(Private::minSsaoSharpness, Private::maxSsaoSharpness, true, false, 3, GUI_GROUP_USER(Ssao)))
-		REGISTER_GET_SET_METHOD_EX(SsaoSmallAoScale, GetSsaoSmallAoScale, SetSsaoSmallAoScale, GUI_SLIDER(Private::minSsaoAoScale, Private::maxSsaoAoScale, true, false, 3, GUI_GROUP_USER(Ssao)))
-		REGISTER_GET_SET_METHOD_EX(SsaoLargeAoScale, GetSsaoLargeAoScale, SetSsaoLargeAoScale, GUI_SLIDER(Private::minSsaoAoScale, Private::maxSsaoAoScale, true, false, 3, GUI_GROUP_USER(Ssao)))
-		REGISTER_GET_SET_METHOD_EX(SsaoType, GetSsaoType, SetSsaoType, GUI_ENUM_COMBO(J_SSAO_TYPE, "", GUI_GROUP_USER(Ssao)))
-		REGISTER_GET_SET_METHOD_EX(SsaoSample, GetSsaoSampleType, SetSsaoSampleType, GUI_ENUM_COMBO(J_SSAO_SAMPLE_TYPE, "", GUI_GROUP_USER(Ssao)))
-		REGISTER_GET_SET_METHOD_EX(SsaoBlurRadius, GetSsaoBlurRadius, SetSsaoBlurRadius, GUI_SLIDER(Private::minSsaoBlurRadius, Private::maxSsaoBlurRadius, false, false, 1, GUI_GROUP_USER(Ssao)))
-			JSsaoDesc ssaoDesc;
-	public:
 		REGISTER_PROPERTY_EX(isOrtho, IsOrthoCamera, SetOrthoCamera, GUI_CHECKBOX());
 		bool isOrtho = false;
 		REGISTER_PROPERTY_EX(allowDisplayRs, AllowDisplayRenderResult, SetAllowDisplayRenderResult, GUI_CHECKBOX())
@@ -202,12 +213,35 @@ namespace JinEngine
 		bool allowReflectAllCullResult = false;	//use editor cam for check space spatial result
 		REGISTER_PROPERTY_EX(allowSsao, AllowSsao, SetAllowSsao, GUI_CHECKBOX())
 		bool allowSsao = false;
+		REGISTER_PROPERTY_EX(allowSsr, AllowSsr, SetAllowSsr, GUI_CHECKBOX())
+		bool allowSsr = false;
+	public:
+		REGISTER_GUI_GROUP(SSAO)
+		REGISTER_GET_SET_METHOD_EX(Radius, GetSsaoRadius, SetSsaoRadius, GUI_SLIDER(Private::minSsaoRadius, Private::maxSsaoRadius, true, false, 3, GUI_GROUP_USER(SSAO)))
+		REGISTER_GET_SET_METHOD_EX(Bias, GetSsaoBias, SetSsaoBias, GUI_SLIDER(Private::minSsaoBias, Private::maxSsaoBias, true, false, 3, GUI_GROUP_USER(SSAO)))
+		REGISTER_GET_SET_METHOD_EX(Sharpness, GetSsaoSharpness, SetSsaoSharpness, GUI_SLIDER(Private::minSsaoSharpness, Private::maxSsaoSharpness, true, false, 3, GUI_GROUP_USER(SSAO)))
+		REGISTER_GET_SET_METHOD_EX(SmallAoScale, GetSsaoSmallAoScale, SetSsaoSmallAoScale, GUI_SLIDER(Private::minSsaoAoScale, Private::maxSsaoAoScale, true, false, 3, GUI_GROUP_USER(SSAO)))
+		REGISTER_GET_SET_METHOD_EX(LargeAoScale, GetSsaoLargeAoScale, SetSsaoLargeAoScale, GUI_SLIDER(Private::minSsaoAoScale, Private::maxSsaoAoScale, true, false, 3, GUI_GROUP_USER(SSAO)))
+		REGISTER_GET_SET_METHOD_EX(Type, GetSsaoType, SetSsaoType, GUI_ENUM_COMBO(J_SSAO_TYPE, "", GUI_GROUP_USER(SSAO)))
+		REGISTER_GET_SET_METHOD_EX(Sample, GetSsaoSampleType, SetSsaoSampleType, GUI_ENUM_COMBO(J_SSAO_SAMPLE_TYPE, "", GUI_GROUP_USER(SSAO)))
+		REGISTER_GET_SET_METHOD_EX(BlurRadius, GetSsaoBlurRadius, SetSsaoBlurRadius, GUI_SLIDER(Private::minSsaoBlurRadius, Private::maxSsaoBlurRadius, false, false, 1, GUI_GROUP_USER(SSAO)))
+		JSsaoDesc ssaoDesc;
+	public:
+		REGISTER_GUI_GROUP(SSR)
+		REGISTER_GET_SET_METHOD_EX(StepScale, GetSsrStepScale, SetSsrStepScale, GUI_SLIDER(Private::minSsrStepScale, Private::maxSsrStepScale, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(StepCount, GetSsrMaxStepCount, SetSsrMaxStepCount, GUI_SLIDER(Private::minSsrStepCount, Private::maxSsrStepCount, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(RayDistance, GetSsrRayDistance, SetSsrRayDistance, GUI_SLIDER(Private::minSsrRaydistance, Private::maxSsrRaydistance, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(Thickness, GetSsrThickness, SetSsrThickness, GUI_SLIDER(Private::minSsrThickness, Private::maxSsrThickness, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(ViewZBias, GetSsrViewZBias, SetSsrViewZBias, GUI_SLIDER(Private::minSsrObjectViewZBias, Private::maxSsrObjectViewZBias, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(FadeDistance, GetSsrFadeDistance, SetSsrFadeDistance, GUI_SLIDER(Private::minFadeDistance, Private::maxFadeDistance, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(StartOffset, GetSsrStartOffset, SetSsrStartOffset, GUI_SLIDER(Private::minStartOffset, Private::maxStartOffset, true, false, 3, GUI_GROUP_USER(SSR)))
+		JSsrDesc ssrDesc;
 	public:
 		//Caution
 		//Impl생성자에서 interface class 참조시 interface class가 함수내에서 impl을 참조할 경우 error
 		//impl이 아직 생성되지 않았으므로
 		JCameraImpl(const InitData& initData, JCamera* thisCamRaw)
-		{
+		{ 
 			rtSizeRate = initData.rtSizeRate;
 		}
 		~JCameraImpl()
@@ -332,6 +366,34 @@ namespace JinEngine
 		J_KERNEL_SIZE GetSsaoBlurKenelSize()const noexcept
 		{
 			return ssaoDesc.blurKenelSize;
+		}
+		float GetSsrStepScale()const noexcept
+		{
+			return ssrDesc.stepScale;
+		}
+		float GetSsrMaxStepCount()const noexcept
+		{
+			return ssrDesc.maxStepCount;
+		}
+		float GetSsrRayDistance()const noexcept
+		{
+			return ssrDesc.rayDistance;
+		}
+		float GetSsrThickness()const noexcept
+		{
+			return ssrDesc.thickness;
+		}
+		float GetSsrViewZBias()const noexcept
+		{
+			return ssrDesc.objectViewZBias;
+		}
+		float GetSsrFadeDistance()const noexcept
+		{
+			return ssrDesc.fadeDistance;
+		} 
+		float GetSsrStartOffset()const noexcept
+		{
+			return ssrDesc.startOffset;
 		}
 	public:
 		void SetFrameDirty()
@@ -500,6 +562,14 @@ namespace JinEngine
 			allowSsao = value;
 			SetFuncList().InvokePassLocalCondition(MANAGED_SET_SSAO, this, SetParam(value, false));
 		}
+		void SetAllowSsr(bool value)
+		{
+			if (allowSsr == value)
+				return;
+
+			allowSsr = value;
+			SetFuncList().InvokePassLocalCondition(MANAGED_SET_SSR, this, SetParam(value, false));
+		}
 		void SetCameraState(const J_CAMERA_STATE state)noexcept
 		{
 			if (camState == state)
@@ -616,6 +686,52 @@ namespace JinEngine
 			newDesc.blurKenelSize = kenelSize;
 			SetSsaoDesc(newDesc);
 		}
+		void SetSsrDesc(const JSsrDesc& newDesc)
+		{
+			ssrDesc = newDesc;
+		}
+		void SetSsrStepScale(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.stepScale = std::clamp(value, Private::minSsrStepScale, Private::maxSsrStepScale);
+			SetSsrDesc(newDesc); 
+		}
+		void SetSsrMaxStepCount(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.maxStepCount = std::clamp(value, Private::minSsrStepCount, Private::maxSsrStepCount);
+			SetSsrDesc(newDesc); 
+		}
+		void SetSsrRayDistance(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.rayDistance = std::clamp(value, Private::minSsrRaydistance, Private::maxSsrRaydistance);
+			SetSsrDesc(newDesc); 
+		}
+		void SetSsrThickness(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.thickness = std::clamp(value, Private::minSsrThickness, Private::maxSsrThickness);
+			SetSsrDesc(newDesc); 
+		}
+		void SetSsrViewZBias(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.objectViewZBias = std::clamp(value, Private::minSsrObjectViewZBias, Private::maxSsrObjectViewZBias);
+			SetSsrDesc(newDesc); 
+		}
+		void SetSsrFadeDistance(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.fadeDistance = std::clamp(value, Private::minFadeDistance, Private::maxFadeDistance);
+			SetSsrDesc(newDesc); 
+		}
+		void SetSsrStartOffset(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.startOffset = std::clamp(value, Private::minStartOffset, Private::maxStartOffset);
+			SetSsrDesc(newDesc);
+		}
 		static ManageFuncList& SetFuncList()
 		{
 			static ManageFuncList setFuncList;
@@ -675,6 +791,10 @@ namespace JinEngine
 		bool AllowSsao()const noexcept
 		{
 			return allowSsao;
+		}
+		bool AllowSsr()const noexcept
+		{
+			return allowSsr;
 		}
 		/*
 		bool AllowBuildGBuffer()const noexcept
@@ -1069,6 +1189,7 @@ namespace JinEngine
 						J_GRAPHIC_TASK_TYPE::NORMAL_MAP_VISUALIZE,
 						J_GRAPHIC_TASK_TYPE::TANGENT_MAP_VISUALIZE,
 						J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE,
+						J_GRAPHIC_TASK_TYPE::SSR_VISUALIZE,
 						J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE
 					};
 					JGraphicResourceCreationDesc desc(typeSet, impl->GetRtSize());
@@ -1294,6 +1415,15 @@ namespace JinEngine
 				}
 				impl->SetFrameDirty();
 			};
+			auto setSsrLam = [](JCameraImpl* impl, SetParam p)
+			{
+				JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::SSR_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSR);
+				if (p.value)
+					GMI()->CreateGraphicResource(impl->graphicData.Get(), JGraphicResourceCreationDesc(typeSet, impl->GetRtSize()));
+				else 
+					GMI()->DestroyGraphicResource(impl->graphicData.Get(), typeSet); 
+				impl->SetFrameDirty();
+			};
 			auto setImageProcessingRtLam = [](JCameraImpl* impl, SetParam p)
 			{
 				JGraphicResourceTypeSet rtTypeSet(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::APPLY_POST_PROCESS_RESULT);
@@ -1437,6 +1567,7 @@ namespace JinEngine
 			SetFuncList().Register(std::make_unique<SetCallable>(setHdCullLam), std::make_unique<CondCallable>(&JCameraImpl::AllowHdOcclusionCulling), MANAGED_SET_HD_CULLING);
 			SetFuncList().Register(std::make_unique<SetCallable>(setLitCullLam), std::make_unique<CondCallable>(&JCameraImpl::AllowLightCulling), MANAGED_SET_LIGHT_CULLING);
 			SetFuncList().Register(std::make_unique<SetCallable>(setSsaoLam), std::make_unique<CondCallable>(&JCameraImpl::AllowSsao), MANAGED_SET_SSAO);
+			SetFuncList().Register(std::make_unique<SetCallable>(setSsrLam), std::make_unique<CondCallable>(&JCameraImpl::AllowSsr), MANAGED_SET_SSR);
 			SetFuncList().Register(std::make_unique<SetCallable>(setImageProcessingRtLam), std::make_unique<CondCallable>(&JCameraImpl::AllowPostProcess), MANAGED_SET_IMAGE_PROCESSING);
 			SetFuncList().Register(std::make_unique<SetCallable>(setGIRtLam), std::make_unique<CondCallable>(&JCameraImpl::AllowRaytracingGI), MANAGED_SET_GI);
 			SetFuncList().Register(std::make_unique<SetCallable>(setDeferredLam), std::make_unique<CondCallable>(&JCameraImpl::AllowDeferred), MANAGED_SET_DEFERRED_RESOURCE);
@@ -1450,6 +1581,7 @@ namespace JinEngine
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_DISPLAY_DEBUG_OBJECT);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_DISPLAY_LIGHT_CULLING_DEBUG);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_SSAO);
+			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_SSR);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_DEFERRED_RESOURCE);
 			SetFuncList().RegisterG(GROUP_SET_CLIENT_SIZE_DEPENDENCY, MANAGED_SET_SPATIAL_TEMPORAL_RESOURCE);
 			SetFuncList().RegisterGlobalCond(std::make_unique<CondCallable>(&JCameraImpl::IsActivated));
@@ -1588,7 +1720,7 @@ namespace JinEngine
 	{
 		a = impl->preUvToViewA;
 		b = impl->preUvToViewB;
-	}
+	} 
 	DirectX::BoundingFrustum JCamera::GetBoundingFrustum()const noexcept
 	{
 		return impl->GetBoundingFrustum();
@@ -1677,6 +1809,10 @@ namespace JinEngine
 	{
 		return impl->ssaoDesc;
 	}
+	JSsrDesc JCamera::GetSsrDesc()const noexcept
+	{
+		return impl->ssrDesc;
+	}
 	void JCamera::SetNear(float value)noexcept
 	{
 		impl->SetNear(value);
@@ -1745,6 +1881,10 @@ namespace JinEngine
 	{
 		impl->SetAllowSsao(value);
 	}
+	void JCamera::SetAllowSsr(const bool value)noexcept
+	{
+		impl->SetAllowSsr(value);
+	}
 	void JCamera::SetCameraState(const J_CAMERA_STATE state)noexcept
 	{
 		impl->SetCameraState(state);
@@ -1756,6 +1896,10 @@ namespace JinEngine
 	void JCamera::SetSsaoDesc(const JSsaoDesc& desc)noexcept
 	{
 		impl->SetSsaoDesc(desc);
+	}
+	void JCamera::SetSsrDesc(const JSsrDesc& desc)noexcept
+	{
+		impl->SetSsrDesc(desc);
 	}
 	bool JCamera::IsOrthoCamera()const noexcept
 	{
@@ -1812,6 +1956,10 @@ namespace JinEngine
 	{
 		return impl->AllowSsao();
 	}
+	bool JCamera::AllowSsr()const noexcept
+	{
+		return impl->AllowSsr();
+	} 
 	bool JCamera::AllowPostProcess()const noexcept
 	{
 		return impl->AllowPostProcess();
@@ -1916,8 +2064,10 @@ namespace JinEngine
 		bool allowHdOcclusionCulling = false;
 		//bool allowLightCulling = false;
 		bool allowSsao = false;
+		bool allowSsr = false;
 		JVector2F rtSizeRate = JVector2F::One();
 		JSsaoDesc ssaoDesc;
+		JSsrDesc ssrDesc;
 
 		auto loadData = static_cast<JCamera::LoadData*>(data);
 		JFileIOTool& tool = loadData->tool;
@@ -1942,6 +2092,8 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadAtomicData(tool, allowHdOcclusionCulling, "AllowHdOcclusionCulling:");
 		//JObjectFileIOHelper::LoadAtomicData(tool, allowLightCulling, "AllowLightCulling:");
 		JObjectFileIOHelper::LoadAtomicData(tool, allowSsao, "AllowSsao:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowSsr, "AllowSsr:");
+
 		JObjectFileIOHelper::LoadVector2(tool, rtSizeRate, "RtSizeRate:");
 		JObjectFileIOHelper::LoadAtomicData(tool, ssaoDesc.radius, "SsaoRadius:");
 		JObjectFileIOHelper::LoadAtomicData(tool, ssaoDesc.bias, "SsaoBias:");
@@ -1951,6 +2103,13 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadEnumData(tool, ssaoDesc.ssaoType, "SsaoType:");
 		JObjectFileIOHelper::LoadEnumData(tool, ssaoDesc.sampleType, "SsaoSampleType:");
 		JObjectFileIOHelper::LoadEnumData(tool, ssaoDesc.blurKenelSize, "SsaoBlurKenelSize:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.stepScale, "SsrStepScale:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.maxStepCount, "SsrMaxStepCount:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.rayDistance, "SsrRayDistance:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.thickness, "SsrThickness:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.objectViewZBias, "SsrObjectViewZBias:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.fadeDistance, "SsrFadeDistance:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.startOffset, "SsrStartOffset:");
 
 		auto initData = std::make_unique<JCamera::InitData>(guid, flag, owner);
 		initData->rtSizeRate = rtSizeRate;
@@ -1977,6 +2136,7 @@ namespace JinEngine
 			impl->CalPerspectiveLens();
 
 		impl->SetSsaoDesc(ssaoDesc);
+		impl->SetSsrDesc(ssrDesc);
 		impl->SetAllowDisplayRenderResult(allowDisplayRs);
 		impl->SetAllowDisplayDebugObject(allowDisplayDebugObject);
 		impl->SetAllowDisplayOccCullingDepthMap(allowDisplayOccCullingDepthMap);
@@ -1986,6 +2146,7 @@ namespace JinEngine
 		impl->SetAllowHdOcclusionCulling(allowHdOcclusionCulling);
 		//impl->SetAllowLightCulling(allowLightCulling);
 		impl->SetAllowSsao(allowSsao);
+		impl->SetAllowSsr(allowSsr);
 		impl->SetRenderTargetRate(rtSizeRate);
 		impl->SetCameraState(camState);
 		if (!isActivated)
@@ -2028,6 +2189,7 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowHdOcclusionCulling, "AllowHdOcclusionCulling:");
 		//JObjectFileIOHelper::StoreAtomicData(tool, impl->allowLightCulling, "AllowLightCulling:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowSsao, "AllowSsao:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowSsr, "AllowSsr:");
 
 		JObjectFileIOHelper::StoreVector2(tool, impl->rtSizeRate, "RtSizeRate:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssaoDesc.radius, "SsaoRadius:");
@@ -2038,6 +2200,16 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreEnumData(tool, impl->ssaoDesc.ssaoType, "SsaoType:");
 		JObjectFileIOHelper::StoreEnumData(tool, impl->ssaoDesc.sampleType, "SsaoSampleType:");
 		JObjectFileIOHelper::StoreEnumData(tool, impl->ssaoDesc.blurKenelSize, "SsaoBlurKenelSize:");
+
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.stepScale, "SsrStepScale:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.maxStepCount, "SsrMaxStepCount:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.rayDistance, "SsrRayDistance:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.thickness, "SsrThickness:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.objectViewZBias, "SsrObjectViewZBias:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.fadeDistance, "SsrFadeDistance:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.startOffset, "SsrStartOffset:");
+
+		//JSsrDesc
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	} 
 

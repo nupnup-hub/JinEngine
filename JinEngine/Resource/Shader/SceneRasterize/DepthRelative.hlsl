@@ -23,8 +23,8 @@ SOFTWARE.
 ****************************************************************************************/
 
 #pragma once  
-#include"Common.hlsl" 
-#include"../../../Common/DepthFunc.hlsl" 
+#include"../Common/CommonConstantsStructureDefine.hlsl"
+#include"../Common/DepthFunc.hlsl" 
  
 #ifndef DIMX
 #define DIMX 16
@@ -33,24 +33,45 @@ SOFTWARE.
 #define DIMY 16
 #endif
 
+ConstantBuffer<CameraData> cb : register(b0);
 Texture2D depthMap : register(t0);
 Texture2D preDepthMap : register(t1);
 RWTexture2D<float> viewZMap : register(u0);
 RWTexture2D<float> preViewZMap : register(u1);
-RWTexture2D<float2> depthDerivative : register(u2);
- 
+RWTexture2D<float2> depthDerivativeMap : register(u2);
+  
+uint GetIndexOfValueClosestToTheReference(const float refValue, const float2 vValues)
+{
+    float2 delta = abs(refValue - vValues);
+    uint outIndex = delta[1] < delta[0] ? 1 : 0;
+    return outIndex;
+}
+uint GetIndexOfValueClosestToTheReference(const float refValue, const float4 vValues)
+{
+    float4 delta = abs(refValue - vValues);
+
+    uint outIndex = delta[1] < delta[0] ? 1 : 0;
+    outIndex = delta[2] < delta[outIndex] ? 2 : outIndex;
+    outIndex = delta[3] < delta[outIndex] ? 3 : outIndex;
+
+    return outIndex;
+}
+
 [numthreads(DIMX, DIMY, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.renderTargetSize.x || dispatchThreadID.y >= cb.renderTargetSize.y)
         return;
        
-    float depth = depthMap[dispatchThreadID.xy].x; 
-    float viewZ = NdcToViewPZ(depth, cb.camNearMulFar, cb.camNearFar);
+    float2 camNearFar = float2(cb.nearZ, cb.farZ);
+    float camNearMulFar = camNearFar.x * camNearFar.y;
+    
+    float depth = depthMap[dispatchThreadID.xy].x;
+    float viewZ = NdcToViewPZ(depth, camNearMulFar, camNearFar);
     viewZMap[dispatchThreadID.xy] = viewZ;
      
-    float preDepth = preDepthMap[dispatchThreadID.xy].x; 
-    float preViewZ = NdcToViewPZ(preDepth, cb.camNearMulFar, cb.camNearFar);
+    float preDepth = preDepthMap[dispatchThreadID.xy].x;
+    float preViewZ = NdcToViewPZ(preDepth, camNearMulFar, camNearFar);
     preViewZMap[dispatchThreadID.xy] = preViewZ;
     
     //                x
@@ -59,20 +80,20 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     // y  |  [left]   DTiD   [right]
     //    v    x    [bottom]   x
     //
-    uint2 top = clamp(dispatchThreadID.xy + uint2(0, -1), 0, cb.rtSize - 1);
-    uint2 bottom = clamp(dispatchThreadID.xy + uint2(0, 1), 0, cb.rtSize - 1);
-    uint2 left = clamp(dispatchThreadID.xy + uint2(-1, 0), 0, cb.rtSize - 1);
-    uint2 right = clamp(dispatchThreadID.xy + uint2(1, 0), 0, cb.rtSize - 1);
+    uint2 top = clamp(dispatchThreadID.xy + uint2(0, -1), 0, cb.renderTargetSize - 1);
+    uint2 bottom = clamp(dispatchThreadID.xy + uint2(0, 1), 0, cb.renderTargetSize - 1);
+    uint2 left = clamp(dispatchThreadID.xy + uint2(-1, 0), 0, cb.renderTargetSize - 1);
+    uint2 right = clamp(dispatchThreadID.xy + uint2(1, 0), 0, cb.renderTargetSize - 1);
 
     float centerValue = viewZ;
     float2 backwardDifferences = centerValue - float2(depthMap[left].x, depthMap[top].x);
     float2 forwardDifferences = float2(depthMap[right].x, depthMap[bottom].x) - centerValue;
 
-    centerValue = NdcToViewPZ(centerValue, cb.camNearMulFar,cb.camNearFar);
-    backwardDifferences.x = NdcToViewPZ(backwardDifferences.x, cb.camNearMulFar, cb.camNearFar);
-    backwardDifferences.y = NdcToViewPZ(backwardDifferences.y, cb.camNearMulFar, cb.camNearFar);
-    forwardDifferences.x = NdcToViewPZ(forwardDifferences.x, cb.camNearMulFar, cb.camNearFar);
-    forwardDifferences.y = NdcToViewPZ(forwardDifferences.y, cb.camNearMulFar, cb.camNearFar);
+    centerValue = NdcToViewPZ(centerValue, camNearMulFar, camNearFar);
+    backwardDifferences.x = NdcToViewPZ(backwardDifferences.x, camNearMulFar, camNearFar);
+    backwardDifferences.y = NdcToViewPZ(backwardDifferences.y, camNearMulFar, camNearFar);
+    forwardDifferences.x = NdcToViewPZ(forwardDifferences.x, camNearMulFar, camNearFar);
+    forwardDifferences.y = NdcToViewPZ(forwardDifferences.y, camNearMulFar, camNearFar);
     
     // Calculates partial derivatives as the min of absolute backward and forward differences. 
 
@@ -94,5 +115,5 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     float2 _sign = sign(ddxy);
     ddxy = _sign * min(abs(ddxy), maxDdxy);
 
-    depthDerivative[dispatchThreadID.xy] = ddxy;
+    depthDerivativeMap[dispatchThreadID.xy] = ddxy;
 }

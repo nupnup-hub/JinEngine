@@ -185,6 +185,16 @@ namespace JinEngine::Graphic
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 	 
+	JDx12GraphicSsrComputeSet::JDx12GraphicSsrComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData, JGraphicDevice* device)
+		:JGraphicSsrComputeSet(context, shareData), device(device)
+	{
+		SetValid(IsAllSameDevice(context, shareData, device));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicSsrComputeSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	} 
+
 	JDx12GraphicConvertColorComputeSet::JDx12GraphicConvertColorComputeSet(JCommandContext* context, const JConvertColorDesc& desc, JGraphicResourceInfo* srcInfo, JGraphicResourceInfo* destInfo)
 		:JGraphicConvertColorComputeSet(context, desc), srcInfo(srcInfo), destInfo(destInfo)
 	{
@@ -265,17 +275,26 @@ namespace JinEngine::Graphic
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-	JDx12GraphicVelocityComputeSet::JDx12GraphicVelocityComputeSet(JCommandContext* context, JGraphicDevice* device)
-		:JGraphicVelocityComputeSet(context), device(device)
+	JDx12GraphicSceneDependencyDataComputeSet::JDx12GraphicSceneDependencyDataComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData, JGraphicDevice* device, JGraphicResourceManager* gm)
+		:JGraphicSceneDependencyDataComputeSet(context, shareData), device(device), gm(gm)
 	{
-		SetValid(IsAllSameDevice(context, device));
+		SetValid(IsAllSameDevice(context, shareData, device));
 	}
-	J_GRAPHIC_DEVICE_TYPE JDx12GraphicVelocityComputeSet::GetDeviceType()const noexcept
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicSceneDependencyDataComputeSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
-
+	JDx12GraphicShareResourceUpdateSet::JDx12GraphicShareResourceUpdateSet(JCommandContext* context, JGraphicResourceShareData* shareData, JGraphicDevice* device)
+		:JGraphicShareResourceUpdateSet(context, shareData), device(device)
+	{
+		SetValid(IsAllSameDevice(context, shareData, device));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicShareResourceUpdateSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+	 
 	JDx12GraphicInfoChangedSet::JDx12GraphicInfoChangedSet(const JGraphicInfo& preInfo,
 		const JGraphicInfo& newInfo, 
 		JGraphicDevice* device,

@@ -34,7 +34,9 @@ SOFTWARE.
 #ifndef DIMY
 #define DIMY 16
 #endif  
- 
+
+#define RADIUS 2
+
 Texture2D srcColorHistory : register(t0);
 Texture2D<float> viewZMap : register(t1);
 Texture2D normalMap : register(t2);
@@ -89,12 +91,12 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float4 colorSum = centerColorHistory;
     float weightSum = 1.0;
  
-    const float kernelWeights[3] = { 1.0f, 2.0f / 3.0f, 1.0f / 6.0f };
+    const float kernelWeights[RADIUS + 1] = { 1.0f, 2.0f / 3.0f, 1.0f / 6.0f };
     [unroll]
-    for (int yy = -2; yy <= 2; yy++)
+    for (int yy = -RADIUS; yy <= RADIUS; yy++)
     {
         [unroll]
-        for (int xx = -2; xx <= 2; xx++)
+        for (int xx = -RADIUS; xx <= RADIUS; xx++)
         {
             const float2 offset = float2(xx, yy) * stepSize;
             const float2 sampleUv = uv + offset * cb.invRtSize; 

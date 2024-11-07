@@ -25,6 +25,7 @@ SOFTWARE.
 
 #pragma once
 #include"../JGraphicConstants.h"
+#include"../Thread/JGraphicThreadInfo.h"
 #include"../Device/JGraphicDeviceUser.h"
 #include"../DataSet/JGraphicTaskDataSet.h"
 #include"../DataSet/JGraphicIndirectDataSet.h" 
@@ -32,13 +33,17 @@ SOFTWARE.
 
 namespace JinEngine
 {
+	namespace Core
+	{
+		struct JobDesc;
+	}
 	namespace Graphic
 	{ 
 		//Draw object
 		class JGraphicResourceInfo;
 		class JCommandContextManager;
 		class JGraphicAdaptee : public JGraphicDeviceUser
-		{
+		{  
 		public:
 			virtual void Initialize(JCommandContextManager* manager) = 0;
 			virtual void Clear() = 0;
@@ -66,6 +71,9 @@ namespace JinEngine
 			virtual bool ExecuteMidFrame(const JGraphicDrawReferenceSet& drawRefSet) = 0;
 			virtual bool SettingEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond) = 0;
 			virtual bool ExecuteEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond) = 0;
+		public:
+			virtual void BeginMultiThreadTask(Core::JobDesc* theadJobDesc) = 0;
+			virtual void EndMultiThreadTask() = 0;
 		public:
 			//create task set and notify task done --- child thread
 			virtual bool SettingDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadOccTaskSet& dataSet) = 0;

@@ -55,32 +55,32 @@ PixelOut PS(PixelIn pin) : SV_Target
     //float linearDepth = camProj[3][2] / (depth - camProj[2][2]);
 	//float3 posW = RestructionPosition(pin.dir, linearDepth); 
     //	return ((far * near) / (far - v * (far - near)) - near) / (far - near);
-    float viewZ = NdcToViewPZ(depth); 
+    float viewZ = NdcToViewPZ(depth);
     float3 posV = UVToViewSpace(pin.texC, viewZ, cbCam.uvToViewA, cbCam.uvToViewB);
     float3 posW = mul(float4(posV, 1.0f), cbCam.invView).xyz;
     float3 toEyeW = normalize(cbCam.eyePosW - posW);
         
     float metalic;
     float roughness;
-    float aoFactor;   
+    float aoFactor;
     uint materialID;
     UnpackLightPropLayer(lightProp, metalic, roughness, aoFactor, materialID);
-    
-    Material mat = { albedoColor, specularFactor, metalic, roughness, 0.0f };
+     
+    Material mat = { albedoColor, specularFactor.xxx, metalic, roughness, 0.0f };
 #ifdef LIGHT_CLUSTER
 	float3 directLight = ComputeLight(mat, posW, normalW, tangentW, toEyeW, samplePos, depth);
 #else
     float3 directLight = ComputeLight(mat, posW, normalW, tangentW, toEyeW);
-#endif  
+#endif   
     if (cbCam.hasAoTexture)
         aoFactor = ambientOcclusionMap.Sample(samLinearWrap, pin.texC);
  
 #ifdef GLOBAL_ILLUMINATION
-     directLight = CombineGlobalLight(directLight, mat.albedoColor.xyz, giMap.Sample(samLinearWrap, pin.texC), aoFactor);
+    directLight = CombineGlobalLight(directLight, mat.albedoColor.xyz, giMap.Sample(samLinearWrap, pin.texC), aoFactor);
 #else 
-     directLight = CombineApproxGlobalLight(directLight, mat.albedoColor, aoFactor);
+    directLight = CombineApproxGlobalLight(directLight, mat.albedoColor, aoFactor);
 #endif
-		
+    
     return float4(directLight, 1.0f);
 	//return float4(normalW, 1.0f);
 }

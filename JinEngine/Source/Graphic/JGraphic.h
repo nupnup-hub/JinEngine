@@ -63,9 +63,7 @@ namespace JinEngine
 			JGraphic();
 			~JGraphic();
 		};
-
-
-
+		  
 		using _JGraphic = JinEngine::Core::JSingletonHolder<Graphic::JGraphic>;
 	}
 	using JGraphic = Graphic::_JGraphic;

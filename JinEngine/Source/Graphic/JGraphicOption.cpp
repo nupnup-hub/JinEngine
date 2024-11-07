@@ -137,6 +137,10 @@ namespace JinEngine
 		{ 
 			return postProcess.useSsao;
 		}  
+		bool JGraphicOption::CanUseSSR()const noexcept
+		{
+			return postProcess.useSsr;
+		}
 		void JGraphicOption::Load()
 		{
 			JFileIOTool tool;
@@ -199,6 +203,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useTaa, "UseTaa:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useSsao, "UseSsao:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useSsaoInterleave, "UseSsaoInterleave:");
+			JFileIOHelper::LoadAtomicData(tool, postProcess.useSsr, "UseSsr:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.usePostprocess, "UsePostprocess:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useHdr, "UseHdr:");
 			JFileIOHelper::LoadAtomicData(tool, postProcess.useToneMapping, "UseToneMapping:");
@@ -291,6 +296,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useTaa, "UseTaa:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useSsao, "UseSsao:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useSsaoInterleave, "UseSsaoInterleave:");
+			JFileIOHelper::StoreAtomicData(tool, postProcess.useSsr, "UseSsr:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.usePostprocess, "UsePostprocess:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useHdr, "UseHdr:");
 			JFileIOHelper::StoreAtomicData(tool, postProcess.useToneMapping, "UseToneMapping:");

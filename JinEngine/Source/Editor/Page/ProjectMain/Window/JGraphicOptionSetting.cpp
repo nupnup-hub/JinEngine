@@ -160,6 +160,7 @@ namespace JinEngine
 				isChanged |= JGui::CheckBox("TAA##JGraphicOptionSetting", option.postProcess.useTaa);
 				isChanged |= JGui::CheckBox("SSAO##JGraphicOptionSetting", option.postProcess.useSsao);	
 				isChanged |= JGui::CheckBox("Use Ssao Inetrleave##JGraphicOptionSetting", option.postProcess.useSsaoInterleave);
+				isChanged |= JGui::CheckBox("SSR##JGraphicOptionSetting", option.postProcess.useSsr);
 				isChanged |= JGui::CheckBox("Use Postprocess##JGraphicOptionSetting", option.postProcess.usePostprocess);
 				isChanged |= JGui::CheckBox("Use Hdr##JGraphicOptionSetting", option.postProcess.useHdr);
 
@@ -196,6 +197,7 @@ namespace JinEngine
 				isChanged |= JGui::CheckBox("Recompile Graphic Shader##JGraphicOptionSetting", option.debugging.requestRecompileGraphicShader);
 				isChanged |= JGui::CheckBox("Recompile Light Cluster Shader##JGraphicOptionSetting", option.debugging.requestRecompileLightClusterShader);
 				isChanged |= JGui::CheckBox("Recompile Ssao Shader##JGraphicOptionSetting", option.debugging.requestRecompileSsaoShader);
+				isChanged |= JGui::CheckBox("Recompile Ssr Shader##JGraphicOptionSetting", option.debugging.requestRecompileSsrShader);
 				isChanged |= JGui::CheckBox("Recompile ToneMapping Shader##JGraphicOptionSetting", option.debugging.requestRecompileToneMappingShader);
 				isChanged |= JGui::CheckBox("Recompile RtGi Shader##JGraphicOptionSetting", option.debugging.requestRecompileRtGiShader);
 				isChanged |= JGui::CheckBox("Recompile RtDenoise Shader##JGraphicOptionSetting", option.debugging.requestRecompileRtDenoiseShader);

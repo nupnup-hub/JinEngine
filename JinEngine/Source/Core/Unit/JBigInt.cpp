@@ -41,12 +41,24 @@ namespace JinEngine
 			}
 		}
 		JBigInt::JBigInt(size_t n)
-		{
-			do
+		{ 
+			digits = std::to_string(n);
+			std::reverse(digits.begin(), digits.end());
+			/*
+			const int range = n > 0 ? log10(n) : 0;
+			const int length = range + 1;
+
+			digits.resize(length);
+			size_t p = pow(10, range);
+			float d = 1.0f / p;
+			float f = n * d;
+
+			for (int i = 0; i < length; ++i)
 			{
-				digits.push_back(n % 10);
-				n /= 10;
-			} while (n);
+				digits[i] = char('0' + (int(f) % 10));
+				f *= 10;
+			}
+			*/
 		}
 		JBigInt::JBigInt(const char* s)
 		{

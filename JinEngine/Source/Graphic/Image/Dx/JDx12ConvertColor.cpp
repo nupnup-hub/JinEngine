@@ -136,7 +136,7 @@ namespace JinEngine::Graphic
 
 		auto gInterface = helper.GetResourceInterface();
 		JDx12GraphicResourceComputeSet srcSet;
-		if (helper.option.postProcess.useTaa)
+		if (imageShare->HasUpdated())
 			srcSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
 		else
 			srcSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);

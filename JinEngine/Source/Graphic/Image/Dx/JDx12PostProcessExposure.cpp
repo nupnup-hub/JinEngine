@@ -64,19 +64,7 @@ namespace JinEngine::Graphic
 		static constexpr uint cb32BitCount = 5;
 		static constexpr uint threadDimX = Constants::histogramBufferCount;
 		static constexpr uint threadDimY = 1;
-	}
-	namespace Private
-	{ 
-		static void StuffComputeShaderDispatchInfo(_Inout_ JComputeShaderInitData& initHelper, 
-			const JGraphicInfo& graphicInfo,
-			const uint threadXCount,
-			const uint threadYCount)
-		{ 
-			initHelper.dispatchInfo.threadDim = JVector3<uint>(threadXCount, threadYCount, 1);
-			initHelper.dispatchInfo.groupDim = JVector3<uint>(1, 1, 1);
-			initHelper.dispatchInfo.taskOriCount = 0;	//not valid
-		}
-	}
+	} 
 
 	JDx12PostProcessExposure::~JDx12PostProcessExposure()
 	{

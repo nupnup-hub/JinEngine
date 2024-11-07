@@ -36,13 +36,18 @@ namespace JinEngine
 		class JDxShaderDataUtil
 		{
 		public: 
-			static Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filename,
+			static Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath,
 				const std::wstring& entrypoint,
 				const std::wstring& target);
-			static Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filename,
+			static Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath,
 				const std::vector<JMacroSet>& macroSet,
 				const std::wstring& entrypoint,
 				const std::wstring& target);
+			static Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath,
+				const std::vector<JMacroSet>& macroSet,
+				const std::wstring& entrypoint,
+				const std::wstring& target,
+				const size_t uniqueID);
 			static Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const JCompileInfo& info,
 				const std::vector<JMacroSet>& macroSet,
 				const std::wstring& target);

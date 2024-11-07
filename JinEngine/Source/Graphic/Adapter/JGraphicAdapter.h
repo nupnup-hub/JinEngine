@@ -29,16 +29,20 @@ SOFTWARE.
 #include"../Device/JGraphicDeviceUser.h"
 #include"../DataSet/JGraphicTaskDataSet.h"
 #include"../DataSet/JGraphicIndirectDataSet.h"
-#include"../../Core/JCoreEssential.h" 
+#include"../../Core/JCoreEssential.h"  
 
 namespace JinEngine
 {
+	namespace Core
+	{
+		struct JobDesc;
+	}
 	namespace Graphic
 	{   
 		class JGraphicAdapter
 		{
 		private:
-			std::unique_ptr<JGraphicAdaptee> adaptee[(uint)J_GRAPHIC_DEVICE_TYPE::COUNT]; 
+			std::unique_ptr<JGraphicAdaptee> adaptee[(uint)J_GRAPHIC_DEVICE_TYPE::COUNT];  
 		public:
 			~JGraphicAdapter();
 		public:
@@ -71,6 +75,9 @@ namespace JinEngine
 			void ExecuteMidFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 			void SettingEndFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond);
 			void ExecuteEndFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond);
+		public:
+			void BeginMultiThreadTask(const J_GRAPHIC_DEVICE_TYPE deviceType, Core::JobDesc* theadJobDesc);
+			void EndMultiThreadTask(const J_GRAPHIC_DEVICE_TYPE deviceType);
 		public:
 			//create task set and notify task done --- child thread
 			void SettingDrawOccTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadOccTaskSet& dataSet);

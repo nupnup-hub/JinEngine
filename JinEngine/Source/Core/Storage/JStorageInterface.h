@@ -61,50 +61,54 @@ namespace JinEngine
 		/*
 		* Interface for Can delete storage data by trigger condition 
 		*/
+		template<int _MaxlifeCount>
 		class JVolatileStorageInterface : public JStorageInterface, public JStorageUpdateInterface
 		{
+		public:
+			static constexpr int maxlifeCount = _MaxlifeCount;
 		private:
-			bool canAlive = false;
+			int life = maxlifeCount;
 		public:
-			void SetAliveTrigger()noexcept;
-			void OffAliveTrigger()noexcept;
+			int GetLife()const noexcept
+			{
+				return life;
+			}
 		public:
-			bool CanAlive()const noexcept;
+			void SetLife()noexcept
+			{ 
+				life = maxlifeCount;
+			}
 		public:
 			template<typename Key, typename Value>
 			static void UpdateEnd(std::unordered_map<Key, Value>& map)
 			{
-				if constexpr (std::is_convertible_v<Value, JVolatileStorageInterface>)
+				if constexpr (std::is_same_v<JVolatileStorageInterface<_MaxlifeCount>, Value>)
 				{
 					for (auto iter = map.begin(); iter != map.end();)
 					{
-						if (iter->second.CanAlive())
-						{
-							iter->second.OffAliveTrigger();
-							++iter;
-						}
+						--iter->second.life;
+						if (iter->second.life <= 0)
+							iter = map.erase(iter);
 						else
-							map.erase(iter);
+							++iter; 
 					}
 				}
 			}
 			template<typename Key, typename Value>
 			static void UpdateEnd(std::unordered_map<Key, std::unique_ptr<Value>>& map)
 			{
-				if constexpr (std::is_convertible_v<Value, JVolatileStorageInterface>)
+				if constexpr (std::is_same_v<JVolatileStorageInterface<_MaxlifeCount>, Value>)
 				{
-					for (auto iter = map.begin(); iter != map.end(); )
+					for (auto iter = map.begin(); iter != map.end();)
 					{
-						if (iter->second->CanAlive())
-						{
-							iter->second->OffAliveTrigger();
-							++iter;
-						}
+						--iter->second->life;
+						if (iter->second->life <= 0)
+							iter = map.erase(iter);
 						else
-							map.erase(iter); 
-					} 
+							++iter; 
+					}
 				}
 			}
-		};  
+		};
 	}
 }

@@ -29,6 +29,7 @@ SOFTWARE.
 #include"JGuiWidgetInfoHandleBase.h"
 #include"JGuiWidgetType.h"  
 
+#include<Windows.h>
 namespace JinEngine
 {
 	namespace Core
@@ -55,11 +56,10 @@ namespace JinEngine
 			return infoMapName;
 		}
 		JUserPtr<JGuiExtraFunctionInfo> JGuiExtraFunctionUserInfo::GetExtraFunctionInfo()const noexcept
-		{
+		{ 
 			auto data = ExtraInfoMap::Data().find(infoMapName);
 			if (data == ExtraInfoMap::Data().end())
 				return nullptr;
-
 			return data->second;
 		}
 
@@ -239,11 +239,11 @@ namespace JinEngine
 		}
 
 		void JGuiExtraFunctionInfoMap::Register(JOwnerPtr<JGuiExtraFunctionInfo>&& info)
-		{
+		{  
 			auto& data = ExtraInfoMap::Data();
 			if (data.find(info->GetName()) != data.end())
 				return;
-
+			 
 			data.emplace(info->GetName(), std::move(info));
 		}
 #pragma endregion

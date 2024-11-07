@@ -23,7 +23,7 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once
+#pragma once 
 /*
 * Convert Ndc depth to linear depth (Perpective)
 */

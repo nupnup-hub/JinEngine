@@ -104,8 +104,8 @@ namespace JinEngine
 		}
 
 		void JGraphicDrawTarget::UpdateInfo::BeginUpdate()
-		{
-			memset(log, 0, sizeof(JGraphicUpdateLog) * totalCompVariation);
+		{  
+			JCUtil::FillZero(log, SIZE_OF_ARRAY(log) * sizeof(JGraphicUpdateLog));
 			 
 			sceneUpdated = false;
 			shadowUpdated = false;

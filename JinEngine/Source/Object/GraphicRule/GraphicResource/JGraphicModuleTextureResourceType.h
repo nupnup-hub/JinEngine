@@ -62,6 +62,7 @@ namespace JinEngine
 		SSAO_INTERLEAVE_MAP,
 		SSAO_DEPTH_MAP,
 		SSAO_DEPTH_INTERLEAVE_MAP,
+		SSR_MAP,
 		IMAGE_PROCESSING,
 		POST_PROCESS_EXPOSURE,
 		POST_PROCESS_LUMA,
@@ -214,7 +215,8 @@ namespace JinEngine
 	public:
 		JGraphicResourceBindDesc()
 		{
-			memset(requestAdditionalBind, false, (size_t)J_GRAPHIC_BIND_TYPE::COUNT * sizeof(bool));
+			JCUtil::Fill<bool, 0>(requestAdditionalBind, SIZE_OF_ARRAY(requestAdditionalBind));
+			//memset(requestAdditionalBind, false, (size_t)J_GRAPHIC_BIND_TYPE::COUNT * sizeof(bool));
 		}
 		JGraphicResourceBindDesc(const JGraphicResourceBindDesc& rhs)
 			:useEngineDefinedBindType(rhs.useEngineDefinedBindType),

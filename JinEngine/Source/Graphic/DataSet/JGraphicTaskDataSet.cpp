@@ -37,10 +37,11 @@ namespace JinEngine::Graphic
 		JAntialise* aa,
 		JPostProcessHistogram* histogram,
 		JPostProcessExposure* exposure,
-		JConvertColor* convertColor)
-		: tm(tm), bloom(bloom), blur(blur), aa(aa), histogram(histogram), exposure(exposure), convertColor(convertColor)
+		JConvertColor* convertColor,
+		JSsr* ssr)
+		: tm(tm), bloom(bloom), blur(blur), aa(aa), histogram(histogram), exposure(exposure), convertColor(convertColor), ssr(ssr)
 	{ 
-		SetValid(tm != nullptr && bloom != nullptr && histogram != nullptr && exposure != nullptr && convertColor != nullptr);
+		SetValid(tm != nullptr && bloom != nullptr && histogram != nullptr && exposure != nullptr && convertColor != nullptr && ssr != nullptr);
 	}
 
 	JGraphicDrawReferenceSet::JGraphicDrawReferenceSet(const JGraphicInfo& info,
@@ -141,6 +142,10 @@ namespace JinEngine::Graphic
 	JGraphicSsaoComputeSet::JGraphicSsaoComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
 		: context(context), shareData(shareData)
 	{}
+
+	JGraphicSsrComputeSet::JGraphicSsrComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
+		: context(context), shareData(shareData)
+	{}
 	  
 	JGraphicConvertColorComputeSet::JGraphicConvertColorComputeSet(JCommandContext* context, const JConvertColorDesc& desc)
 		: context(context), desc(desc)
@@ -174,8 +179,12 @@ namespace JinEngine::Graphic
 		: context(context)
 	{}
 	 
-	JGraphicVelocityComputeSet::JGraphicVelocityComputeSet(JCommandContext* context)
-		: context(context)
+	JGraphicSceneDependencyDataComputeSet::JGraphicSceneDependencyDataComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData)
+		: context(context), shareData(shareData)
+	{}
+
+	JGraphicShareResourceUpdateSet::JGraphicShareResourceUpdateSet(JCommandContext* context, JGraphicResourceShareData* shareData)
+		: context(context), shareData(shareData)
 	{}
 
 	JGraphicEndConditonSet::JGraphicEndConditonSet(const bool isSceneDrawn)

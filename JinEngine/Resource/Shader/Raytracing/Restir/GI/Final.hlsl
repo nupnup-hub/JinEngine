@@ -46,7 +46,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
         return;
      
     RestirReserviorPack data = src[dispatchThreadID.x + dispatchThreadID.y * cb.halfRtSize.x];
-    dst[dispatchThreadID.xy] = float4(data.sample.UnpackRadiance() * data.W, 1.0f); 
+    dst[dispatchThreadID.xy] = float4(data.sample.UnpackRadiance() * data.W, 1.0f);
     
     //for debugging
     //RestirSamplePack init = intial[dispatchThreadID.x + dispatchThreadID.y * cb.rtSize.x];

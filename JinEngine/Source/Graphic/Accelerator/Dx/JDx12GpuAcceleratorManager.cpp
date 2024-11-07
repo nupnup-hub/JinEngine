@@ -196,7 +196,7 @@ namespace JinEngine::Graphic
 		std::vector<ObjectData> objectData;
 		std::set<size_t> meshSet;
 		uint instanceCount = 0;
-		uint newInstanceCount = 0;
+		uint geometryCount = 0;
 		uint blasHolderCount = 0;
 	public:
 		bool isStatic = false;
@@ -259,7 +259,7 @@ namespace JinEngine::Graphic
 			if (meshSet.find(data.mesh->GetGuid()) == meshSet.end())
 			{
 				meshSet.emplace(data.mesh->GetGuid());
-				newInstanceCount += totalSubmesh;
+				geometryCount += totalSubmesh;
 				blasHolderCount += 1;
 			}
 			instanceCount += totalSubmesh;
@@ -274,7 +274,7 @@ namespace JinEngine::Graphic
 			if (meshSet.find(data.mesh->GetGuid()) == meshSet.end())
 			{
 				meshSet.emplace(data.mesh->GetGuid());
-				newInstanceCount += totalSubmesh;
+				geometryCount += totalSubmesh;
 				blasHolderCount += 1;
 			}
 			instanceCount += totalSubmesh;
@@ -417,9 +417,9 @@ namespace JinEngine::Graphic
 		auto& geometryDescs = buildData.geometryDescs;
 		auto& intermediateBuffer = buildData.intermediateBuffer;
 
-		geometryDescs.resize(buildData.newInstanceCount);
-		intermediateBuffer.resize(buildData.newInstanceCount);
-		blasDesc.resize(buildData.newInstanceCount);
+		geometryDescs.resize(buildData.geometryCount);
+		intermediateBuffer.resize(buildData.geometryCount);
+		blasDesc.resize(buildData.geometryCount);
 
 		const uint existBlasHolder = (uint)blasVec.size();
 		blasVec.resize(existBlasHolder + buildData.blasHolderCount);

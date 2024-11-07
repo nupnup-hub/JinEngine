@@ -77,6 +77,7 @@ namespace JinEngine
 			JPostProcessHistogram* histogram;
 			JPostProcessExposure* exposure;
 			JConvertColor* convertColor;
+			JSsr* ssr;
 		public:
 			JPostProcessEffectSet(JToneMapping* tm,
 				JBloom* bloom,
@@ -84,7 +85,8 @@ namespace JinEngine
 				JAntialise* aa,
 				JPostProcessHistogram* histogram,
 				JPostProcessExposure* exposure,
-				JConvertColor* convertColor);
+				JConvertColor* convertColor,
+				JSsr* ssr);
 		};
 
 		struct JGraphicDrawReferenceSet : public Core::JValidInterface
@@ -248,6 +250,15 @@ namespace JinEngine
 		public:
 			JGraphicSsaoComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData);
 		};
+
+		struct JGraphicSsrComputeSet : public JGraphicDeviceUser, public Core::JValidInterface
+		{
+		public:
+			JCommandContext* context;
+			JGraphicResourceShareData* shareData;
+		public:
+			JGraphicSsrComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData);
+		};
 		 
 		//추후에 color curve를 변경하는 기능 추가
 		struct JGraphicConvertColorComputeSet : public JGraphicDeviceUser, public Core::JValidInterface
@@ -271,6 +282,7 @@ namespace JinEngine
 			JGraphicResourceShareData* shareData; 
 		public:
 			JShareDataHolderInterface* imageShareData;
+			JShareDataHolderInterface* drawSceneShareData;
 		public:
 			JPostProcessComputeSet(JPostProcessEffectSet* ppSet, JCommandContext* context, JGraphicDevice* device, JGraphicResourceManager* gm, JGraphicResourceShareData* shareData);
 		};
@@ -323,15 +335,24 @@ namespace JinEngine
 			JGraphicRtShadowComputeSet(JCommandContext* context);
 		};
 
-		struct JGraphicVelocityComputeSet : public JGraphicDeviceUser, public Core::JValidInterface
+		struct JGraphicSceneDependencyDataComputeSet : public JGraphicDeviceUser, public Core::JValidInterface
 		{
 		public:
 			JCommandContext* context;
+			JGraphicResourceShareData* shareData;
 		public:
-			JGraphicVelocityComputeSet(JCommandContext* context);
+			JGraphicSceneDependencyDataComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData);
 		};
 
-
+		struct JGraphicShareResourceUpdateSet : public JGraphicDeviceUser, public Core::JValidInterface
+		{
+		public:
+			JCommandContext* context;
+			JGraphicResourceShareData* shareData;
+		public:
+			JGraphicShareResourceUpdateSet(JCommandContext* context, JGraphicResourceShareData* shareData);
+		};
+		 
 		//draw scene single thread
 		struct JGraphicDrawSceneSTSet
 		{
@@ -345,20 +366,22 @@ namespace JinEngine
 			std::unique_ptr<JGraphicDebugRsComputeSet> debugCompute;
 			std::unique_ptr<JGraphicOutlineDrawSet> outline;
 			std::unique_ptr<JGraphicSsaoComputeSet> ssao; 
+			std::unique_ptr<JGraphicSsrComputeSet> ssr;
 			std::unique_ptr<JPostProcessComputeSet> postPrcess;
 			std::unique_ptr<JGraphicLightCullingTaskSet> litCulling;
 			std::unique_ptr<JGraphicLightCullingDebugDrawSet> litCullingDebug;
 			std::unique_ptr<JGraphicRtAoComputeSet> rtao;
 			std::unique_ptr<JGraphicRtGiComputeSet> rtgi; 
 			std::unique_ptr<JGraphicRtDenoiseComputeSet> rtDenoiser;
-			std::unique_ptr<JGraphicVelocityComputeSet> velocity;
+			std::unique_ptr<JGraphicSceneDependencyDataComputeSet> sceneDependencyData;
+			std::unique_ptr<JGraphicShareResourceUpdateSet> shareResource;
 		};
 
 		struct JGraphicBeginFrameSet
 		{
 		public:
 			std::unique_ptr<JGraphicBindSet> bind;
-			std::unique_ptr<JGraphicLightCullingTaskSet> litCulling;
+			std::unique_ptr<JGraphicLightCullingTaskSet> litCulling; 
 		};
 
 		struct JGraphicMidFrameSet
@@ -371,12 +394,14 @@ namespace JinEngine
 			std::unique_ptr<JGraphicDebugRsComputeSet> debugCompute;
 			std::unique_ptr<JGraphicOutlineDrawSet> outline;
 			std::unique_ptr<JGraphicSsaoComputeSet> ssao; 
+			std::unique_ptr<JGraphicSsrComputeSet> ssr;
 			std::unique_ptr<JPostProcessComputeSet> postPrcess;
 			std::unique_ptr<JGraphicLightCullingDebugDrawSet> litCullingDebug;
 			std::unique_ptr<JGraphicRtAoComputeSet> rtao;
 			std::unique_ptr<JGraphicRtGiComputeSet> rtgi; 
 			std::unique_ptr<JGraphicRtDenoiseComputeSet> rtDenoiser;
-			std::unique_ptr<JGraphicVelocityComputeSet> velocity;
+			std::unique_ptr<JGraphicSceneDependencyDataComputeSet> sceneDependencyData;
+			std::unique_ptr<JGraphicShareResourceUpdateSet> shareResource;
 		};
 
 		struct JGraphicEndConditonSet

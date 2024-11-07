@@ -22,40 +22,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
+#pragma once  
+#include"../../Common/CommonConstantsStructureDefine.hlsl" 
+#include"../../Common/GBufferCommon.hlsl"
+#include"../../Common/DepthFunc.hlsl"
+#include"../../Common/PixelCommon.hlsl"
 
-#pragma once
-#include"JThreadInfo.h"
-#include"../Func/Functor/JFunctor.h" 
-namespace JinEngine
+#ifndef DIMX
+#define DIMX 16
+#endif
+#ifndef DIMY
+#define DIMY 16
+#endif  
+ 
+struct SSRData
 {
-	namespace Graphic
-	{
-		class JGraphic;
-	} 
-	class JMain;
-	namespace Core
-	{ 
-		class JThreadManagerPrivate
-		{
-		public:
-			class MainAccess
-			{
-			private:
-				friend class JMain;
-			private:
-				static void Initialize(const uint reservedThreadCount);
-				static void Clear();
-			private:
-				static void Update(); 
-			};
-			class GraphicInterface
-			{
-			private:
-				friend class Graphic::JGraphic;
-			private:
-				static JThreadUserHandle SetUpdateThreadTask(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
-				static JThreadUserHandle SetDrawThreadTask(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
-			};
-		};
-	}
-}
+    float4x4 camView;
+    float4x4 camProj;
+    float4x4 camInvView;
+    
+    float2 rtSize;
+    float2 invRtSize;
+     
+    float2 uvToViewA;
+    float2 uvToViewB;
+    
+    float2 nearFarZ;
+    float nearFarMul;
+    float startOffset;
+    
+    float3 camPosW;  
+    float stepScale;
+    
+    float maxStepCount;
+    float rayDistance; //0 ~ 10000   
+    float thickness; //0 ~ 10000    
+    float objectViewZBias; //0 ~ 10000
+    
+    float fadeDistance; //0 ~ 1.0f
+    float fadeOneRate; //to [0.0f ~ 1.0f]
+    int pad00;
+    int pad01;
+};

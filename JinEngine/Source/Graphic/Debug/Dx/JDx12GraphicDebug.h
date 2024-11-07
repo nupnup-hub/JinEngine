@@ -58,7 +58,8 @@ namespace JinEngine
 				DEBUG_TYPE_NORMAL,
 				DEBUG_TYPE_TANGENT,  
 				DEBUG_TYPE_AO,
-				//DEBUG_TYPE_VELOCITY,
+				DEBUG_TYPE_SSR,
+				DEBUG_TYPE_VELOCITY,
 				DEBUG_TYPE_COUNT
 			};
 		private: 
@@ -107,6 +108,7 @@ namespace JinEngine
 			std::unique_ptr<JDx12ComputeShaderDataHolder> tangentMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> velocityMapShaderData;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> aoMapShaderData;
+			std::unique_ptr<JDx12ComputeShaderDataHolder> ssrMapShaderData;
 		public:
 			~JDx12GraphicDebug();
 		public:

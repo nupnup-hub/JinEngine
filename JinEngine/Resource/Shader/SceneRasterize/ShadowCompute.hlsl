@@ -672,12 +672,12 @@ float3 ComputeLight(Material mat, float3 posW, float3 normalW, float3 tangentW, 
 	const uint rangeX = cbCam.renderTargetSize.x / CLUSTER_DIM_X;
 	const uint rangeY = cbCam.renderTargetSize.y / CLUSTER_DIM_Y; 
 	const float minDepth = cbScene.clusterMinDepth; //log2(NEAR_CLUST);
-	const float maxDepth = log2(cbCam.FarZ);
+	const float maxDepth = log2(cbCam.farZ);
 
 	const float scale = 1.0f / (maxDepth - minDepth) * (CLUSTER_DIM_Z - 1.0f);
 	const float bias = 1.0f - minDepth * scale;  
-	const float depth = NdcToViewPZ(nonLinearDepth, cbCam.nearZ, cbCam.FarZ);
-	if (depth == cbCam.FarZ)
+	const float depth = NdcToViewPZ(nonLinearDepth, cbCam.nearZ, cbCam.farZ);
+	if (depth == cbCam.farZ)
 		return lightColor; 
 	   
 	int dep = int(max(log2(depth) * scale + bias, 0.0f)); 

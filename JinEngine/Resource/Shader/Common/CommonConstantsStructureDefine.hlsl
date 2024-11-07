@@ -33,7 +33,6 @@ SOFTWARE.
 //ex) float -> float4(valid, empty, empty, empty) ... cpu에서 buffer size계산시 주의하자.
  
 //48
-
 struct SceneData 
 {
     float appTotalTime;
@@ -76,10 +75,10 @@ struct CameraData
     float2 uvToViewB;
     float3 eyePosW;
     float nearZ;
-    float FarZ;
+    float farZ;
     uint csmLocalIndex; //aligned by registered time
-    int hasAoTexture;
-    uint pad00;
+    int hasAoTexture; 
+    int hasSsrTexture;
 }; 
  
 struct ObjectData 

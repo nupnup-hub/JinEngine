@@ -825,4 +825,8 @@ namespace JinEngine
 	{
 		return d1 + d2 * d1Range + d3 * d1Range * d2Range;
 	}
+	void JCUtil::FillZero(void* rawPtr, const uint byteCount)
+	{
+		memset(rawPtr, 0, byteCount);
+	}
 }
