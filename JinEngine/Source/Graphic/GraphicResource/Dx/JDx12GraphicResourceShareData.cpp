@@ -148,7 +148,9 @@ namespace JinEngine::Graphic
 		intermediate01 = gM->CreateResource(device, desc);
  
 		uint histogramInitData[Constants::histogramBufferCount];
-		memset(histogramInitData, 0, Constants::histogramBufferCount * sizeof(uint));
+		JCUtil::Fill<uint, 0>(histogramInitData, Constants::histogramBufferCount);
+
+		//memset(histogramInitData, 0, Constants::histogramBufferCount * sizeof(uint));
 		 
 		desc.width = Constants::histogramBufferCount;
 		desc.height = 1;
@@ -230,6 +232,19 @@ namespace JinEngine::Graphic
 		desc.formatHint->isUnsigned = true;
 		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::BYTE_BUFFER_COMMON;
 		fxaaWorkerQueue = gM->CreateResource(device, desc);
+ 
+		desc.width = width;
+		desc.height = height;
+		desc.formatHint = nullptr;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::SSR_MAP;
+
+		//1920, 960, 480, 240, 120, 60
+		for (uint i = 0; i < Constants::ssrMipCount; ++i)
+		{
+			ssrMip[i] = gM->CreateResource(device, desc);
+			desc.width = desc.width * 0.5f;					 
+			desc.height = desc.height * 0.5f;
+		}
 	}
 	JDx12GraphicResourceShareData::ImageProcessingData::~ImageProcessingData()
 	{
@@ -247,7 +262,10 @@ namespace JinEngine::Graphic
 		gM->DestroyGraphicTextureResource(device, fxaaWorkCounter.Release());
 		gM->DestroyGraphicTextureResource(device, fxaaIndirectParameters.Release());
 		gM->DestroyGraphicTextureResource(device, fxaaWorkerQueue.Release());
-		gM->DestroyGraphicTextureResource(device, fxaaColorQueue.Release()); 
+		gM->DestroyGraphicTextureResource(device, fxaaColorQueue.Release());  
+
+		for (uint i = 0; i < Constants::ssrMipCount; ++i)
+			gM->DestroyGraphicTextureResource(device, ssrMip[i].Release());
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::ImageProcessingData::GetDeviceType()const noexcept
 	{
@@ -266,6 +284,10 @@ namespace JinEngine::Graphic
 		++lastUpdatedIndex;
 		if (lastUpdatedIndex >= 2)
 			lastUpdatedIndex = 0;
+	}
+	bool JDx12GraphicResourceShareData::ImageProcessingData::HasUpdated()const noexcept
+	{
+		return lastUpdatedIndex != invalidIndex;
 	}
 	bool JDx12GraphicResourceShareData::ImageProcessingData::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 	{
@@ -305,18 +327,16 @@ namespace JinEngine::Graphic
 		desc.height = height * 0.5f;
 		restirColorIntermediate00 = gM->CreateResource(device, desc);
 
+		//desc.width = width * 0.5f;
+		//desc.height = height * 0.5f;
+		//restirColorIntermediate01 = gM->CreateResource(device, desc);
+
 		desc.width = width;
 		desc.height = height;
 		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
 		restirColorHistoryIntermediate00 = gM->CreateResource(device, desc);
 		restirColorHistoryIntermediate01 = gM->CreateResource(device, desc); 
  
-		desc.width = width;
-		desc.height = height;
-		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16_UNORM;
-		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
-		restirDepthDerivative = gM->CreateResource(device, desc);
-
 		desc.width = width;
 		desc.height = height;
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
@@ -328,10 +348,12 @@ namespace JinEngine::Graphic
 		//}
 	}
 	JDx12GraphicResourceShareData::RestirTemporalAccumulationData::~RestirTemporalAccumulationData()
-	{ 
+	{
+		gM->DestroyGraphicTextureResource(device, restirColorIntermediate00.Release());
+		//gM->DestroyGraphicTextureResource(device, restirColorIntermediate01.Release());
 		gM->DestroyGraphicTextureResource(device, restirColorHistoryIntermediate00.Release());
 		gM->DestroyGraphicTextureResource(device, restirColorHistoryIntermediate01.Release());
-		gM->DestroyGraphicTextureResource(device, restirDepthDerivative.Release());
+		//gM->DestroyGraphicTextureResource(device, restirDepthDerivative.Release());
 		//for (uint i = 0; i < SIZE_OF_ARRAY(restirDenoiseMipmap); ++i)
 		//	gM->DestroyGraphicTextureResource(restirDenoiseMipmap[i].Release());
 	}
@@ -354,6 +376,67 @@ namespace JinEngine::Graphic
 
 	}
 	void JDx12GraphicResourceShareData::RestirTemporalAccumulationData::UpdateEnd()
+	{
+
+	}
+
+	JDx12GraphicResourceShareData::DrawSceneData::DrawSceneData(JGraphicDevice* device, JGraphicResourceManager* gM, const JVector2<uint> size)
+		:device(device), gM(gM), size(size)
+	{
+		SetWaitFrame(Constants::gNumFrameResources);
+		JGraphicResourceTypeSet typeSet(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON, J_GRAPHIC_TASK_TYPE::UNKNOWN);
+		JGraphicResourceCreationDesc desc(typeSet);
+		desc.width = size.x;
+		desc.height = size.y;
+		desc.bindDesc.requestAdditionalBind[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
+		desc.bindDesc.useEngineDefinedBindType = false;
+		desc.textureDesc = std::make_unique<JTextureCreationDesc>();
+		desc.textureDesc->mipMapDesc.type = J_GRAPHIC_MIP_MAP_TYPE::NONE;
+ 
+		desc.formatHint = std::make_unique< JGraphicFormatHint>();
+		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		viewZMap = gM->CreateResource(device, desc);
+
+		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		preViewZMap = gM->CreateResource(device, desc); 
+		 
+		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16_UNORM;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
+		depthDerivativeMap = gM->CreateResource(device, desc);
+	}
+	JDx12GraphicResourceShareData::DrawSceneData::~DrawSceneData()
+	{
+		gM->DestroyGraphicTextureResource(device, viewZMap.Release());
+		gM->DestroyGraphicTextureResource(device, preViewZMap.Release()); 
+		gM->DestroyGraphicTextureResource(device, depthDerivativeMap.Release()); 
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::DrawSceneData::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+	bool JDx12GraphicResourceShareData::DrawSceneData::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+	{
+		return _IsSupported(taskType);
+	}
+	bool JDx12GraphicResourceShareData::DrawSceneData::_IsSupported(const J_GRAPHIC_TASK_TYPE taskType)noexcept
+	{ 
+		//DrawScene 작업은 전부 지원.
+		return true; 
+	}
+	bool JDx12GraphicResourceShareData::DrawSceneData::IsValid()const noexcept
+	{
+		//Update시 SetLife를 수행하며 
+		//Draw sequence 마지막에 Life를 감소시키므로
+		//매 프레임 업데이트에 성공한 객체는 GetLife() == maxlifeCount 조건을 만족한다.
+		return GetLife() == maxlifeCount;
+	}
+	void JDx12GraphicResourceShareData::DrawSceneData::UpdateBegin()
+	{
+
+	}
+	void JDx12GraphicResourceShareData::DrawSceneData::UpdateEnd()
 	{
 
 	}
@@ -397,6 +480,30 @@ namespace JinEngine::Graphic
 				return GetRestirTemporalAccumulationData(info->GetWidth(), info->GetHeight());
 		}
 		return nullptr;
+	}
+	JDx12GraphicResourceShareData::DrawSceneData* JDx12GraphicResourceShareData::GetDrawSceneData(const size_t guid, const JVector2<uint>& size)
+	{
+		auto data = drawSceneDataMap.find(guid);
+		if (data == drawSceneDataMap.end())
+			return nullptr;
+
+		return data->second->size == size ? data->second.get() : nullptr;
+	}
+	JShareDataHolderInterface* JDx12GraphicResourceShareData::GetRequestDependencyData(const J_GRAPHIC_REQUEST_TYPE type, const size_t guid, const JVector2<uint>& size)
+	{
+		if (type == J_GRAPHIC_REQUEST_TYPE::DRAW_SCENE)
+			return GetDrawSceneData(guid, size);
+		else
+			return nullptr;
+	} 
+	bool JDx12GraphicResourceShareData::HasDrawSequencePostProcessing()const noexcept
+	{
+		return true;
+	}
+	void JDx12GraphicResourceShareData::DrawSequencePostProcessing()
+	{
+		JGraphicResourceShareData::DrawSequencePostProcessing();
+		GraphicVolatileStorageInterface::UpdateEnd(drawSceneDataMap);
 	}
 	void JDx12GraphicResourceShareData::NotifyGraphicResourceCreation(JGraphicDevice* device, JGraphicResourceManager* gM, JGraphicResourceInfo* newInfo)
 	{
@@ -451,10 +558,23 @@ namespace JinEngine::Graphic
 			}
 		}
 	}
+	void JDx12GraphicResourceShareData::RequestShareDataCreation(JGraphicDevice* device, JGraphicResourceManager* gM, const J_GRAPHIC_REQUEST_TYPE type, const size_t guid, const JVector2<uint>& size)
+	{
+		if (!IsAllSameDevice(device, gM))
+			return;
+
+		if (type == J_GRAPHIC_REQUEST_TYPE::DRAW_SCENE)
+		{
+			auto exist = drawSceneDataMap.find(guid);
+			if (exist == drawSceneDataMap.end())
+				drawSceneDataMap.emplace(guid, std::make_unique<DrawSceneData>(device, gM, size));
+		}
+	}
 	void JDx12GraphicResourceShareData::ClearResource()
 	{
 		ssaoDataMap.clear();
 		imageProcessingDataMap.clear();
 		restirTemporalAccDataMap.clear();
+		drawSceneDataMap.clear();
 	}
 }

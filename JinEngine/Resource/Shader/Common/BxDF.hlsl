@@ -30,7 +30,7 @@ SOFTWARE.
 #if defined(USE_BRDF_GGX_NDF) && defined(USE_BRDF_SMITH_MASKING) && defined(USE_BRDF_ISOTROPY_NDF)
 #define USE_GGX_SMITH_APPROXIMATION
 #endif
- 
+  
 class BxDF
 {
     float3 albedoColor;
@@ -60,12 +60,12 @@ class BxDF
     float dotBH;
 #endif
     
-    float3 ComputeF0(float3 specularColor, float3 albedoColor)
+    float3 ComputeF0(float3 specularColor)
     {
         return lerp(specularColor, albedoColor, metalic);
     } 
     void Initialize(const float3 _albedoColor, 
-        const float _specularFactor, 
+        const float3 _specularColor,
         const float3 _normal,
         const float3 _lightVec, 
         const float3 _viewVec, 
@@ -98,10 +98,10 @@ class BxDF
         roughness2 = roughness * roughness;
         metalic = _metalic;    
         
-        f0 = ComputeF0(_specularFactor.xxx, albedoColor);
+        f0 = ComputeF0(_specularColor);
     }    
     void Initialize(const float3 _albedoColor,
-        const float _specularFactor,
+        const float3 _specularColor,
         const float3 _normal,
         const float3 _tangent,
         const float3 _lightVec,
@@ -111,7 +111,7 @@ class BxDF
         const float ansio,
         const float epsilon = EPSILON)
     { 
-        Initialize(_albedoColor, _specularFactor, _normal, _lightVec, _viewVec, _roughness, _metalic, epsilon);    
+        Initialize(_albedoColor, _specularColor, _normal, _lightVec, _viewVec, _roughness, _metalic, epsilon);
 #ifdef USE_BRDF_ANISOTROPY_NDF  
         roughnessX = roughness2 * (1.0f + ansio);
         roughnessY = roughness2 * (1.0f - ansio);

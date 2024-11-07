@@ -106,10 +106,10 @@ namespace JinEngine::Graphic
 				threadCmdBatch[i][j] = treadCmdList[i][j].Get();
 			}
 		}
-		for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
+		//for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
 		{ 
-			for (uint j = 0; j < gInfo.frame.threadCount; ++j)
-				threadTaskHandle[i][j] = CreateEvent(NULL, FALSE, FALSE, NULL);
+			//for (uint j = 0; j < gInfo.frame.threadCount; ++j)
+			//	threadTaskHandle[i][j] = CreateEvent(NULL, FALSE, FALSE, NULL);
 		}
 		framePerThread = gInfo.frame.threadCount;
 
@@ -230,6 +230,7 @@ namespace JinEngine::Graphic
 	{
 		return threadCmdBatch[(uint)taskType];
 	}
+	/*
 	HANDLE JDx12FrameResource::GetHandle(const J_THREAD_TASK_TYPE taskType, const uint index)const noexcept
 	{
 		return threadTaskHandle[(uint)taskType][index];
@@ -238,6 +239,7 @@ namespace JinEngine::Graphic
 	{
 		return threadTaskHandle[(uint)taskType];
 	}
+	*/
 	void JDx12FrameResource::SetFenceValue(const GraphicFence value)noexcept
 	{
 		fence = value;
@@ -302,10 +304,10 @@ namespace JinEngine::Graphic
 				threadCmdBatch[i][j] = nullptr;
 			}
 		}
-		for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
+		//for (uint i = 0; i < (uint)J_THREAD_TASK_TYPE::COUNT; ++i)
 		{
-			for (uint j = 0; j < framePerThread; ++j)
-				CloseHandle(threadTaskHandle[i][j]);
+			//for (uint j = 0; j < framePerThread; ++j)
+			//	CloseHandle(threadTaskHandle[i][j]);
 		}
 		framePerThread = 0;
 	}

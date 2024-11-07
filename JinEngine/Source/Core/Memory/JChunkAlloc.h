@@ -30,8 +30,8 @@ namespace JinEngine
 {
     namespace Core
     { 
-		//unuse
-		class JChunkAlloc
+		//unuse 
+		class JChunkAlloc  
 		{
 		private:
 			/// Pointer to array of allocated blocks.
@@ -41,7 +41,7 @@ namespace JinEngine
 			/// Count of empty blocks.
 			BYTE allocableBlockCount;
 		private:
-			size_t allocBlockSize;
+			size_t allocBlockSize; 
 		public:
 			bool Initialize(BYTE* newData, BYTE blocks, const size_t blockSize);
 			void Clear();

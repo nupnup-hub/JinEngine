@@ -329,6 +329,12 @@ float2 SampleCMJ2D(uint sampleSetIndex, uint sampleSetX, uint sampleSetY, uint p
     return float2((sx + (sy + jx) / sampleSetY) / sampleSetX, (sampleSetIndex + jy) / N);
 }
 
+float BalanceHeuristic(int nf, float pdfF, int ng, float pdfG)
+{ 
+    float f = nf * pdfF;
+    return f / (f + ng * pdfG);
+}
+ 
 float PowerHeuristic(int nf, float pdfF, int ng, float pdfG)
 {
     float f = nf * pdfF;

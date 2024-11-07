@@ -55,7 +55,7 @@ namespace JinEngine::Graphic
 		static constexpr uint threadDimY = 16;
 		 
 		static uint ThreadDimXY()
-		{
+		{ 
 			return sqrt(Constants::histogramBufferCount);
 		} 
 	}

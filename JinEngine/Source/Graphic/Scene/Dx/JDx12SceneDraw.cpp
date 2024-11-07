@@ -357,7 +357,8 @@ namespace JinEngine::Graphic
 		static constexpr int textureShadowMapArrayBuffIndex = textureShadowMapBuffIndex + 1;
 		static constexpr int textureShadowMapCubeBuffIndex = textureShadowMapArrayBuffIndex + 1;
 
-		static constexpr int ambientOcclusionMapIndex = textureShadowMapCubeBuffIndex + 1;
+		static constexpr int ambientOcclusionMapIndex = textureShadowMapCubeBuffIndex + 1; 
+
 		static constexpr int depthMapBufferIndex = ambientOcclusionMapIndex + 1;
 		static constexpr int cluserOffsetBufferIndex = depthMapBufferIndex + 1;
 		static constexpr int clusterLinkBufferIndex = cluserOffsetBufferIndex + 1;
@@ -521,7 +522,7 @@ namespace JinEngine::Graphic
 			static constexpr int textureShadowMapArrayBuffIndex = textureShadowMapBuffIndex + 1;
 			static constexpr int textureShadowMapCubeBuffIndex = textureShadowMapArrayBuffIndex + 1;
 
-			static constexpr int ambientOcclusionMapIndex = textureShadowMapCubeBuffIndex + 1;
+			static constexpr int ambientOcclusionMapIndex = textureShadowMapCubeBuffIndex + 1; 
 
 			static constexpr int gBufferIndex = ambientOcclusionMapIndex + 1;
 			static constexpr int depthMapBufferIndex = gBufferIndex + 1;
@@ -599,8 +600,8 @@ namespace JinEngine::Graphic
 		}
 
 		aoSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, J_GRAPHIC_TASK_TYPE::APPLY_SSAO);
-
-		canUseAo = aoSet.IsValid();
+	 
+		canUseAo = aoSet.IsValid(); 
 		canUseLightCulling = helper.cam->AllowLightCulling() && helper.option.culling.allowLightCluster;
 		canUseLightCluster = canUseLightCulling && helper.option.culling.allowLightCluster;
 		canUseGi = helper.allowRtGi;
@@ -731,8 +732,6 @@ namespace JinEngine::Graphic
 		context->SetGraphicsRootDescriptorTable(Forward::textureShadowMapBuffIndex, J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP);
 		context->SetGraphicsRootDescriptorTable(Forward::textureShadowMapArrayBuffIndex, J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY);
 		context->SetGraphicsRootDescriptorTable(Forward::textureShadowMapCubeBuffIndex, J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE);
-
-		context->SetGraphicsRootDescriptorTable(Forward::ambientOcclusionMapIndex, J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE);
 	}
 	void JDx12SceneDraw::BindDeferredGeometryRootAndResource(JDx12CommandContext* context)
 	{
@@ -785,6 +784,7 @@ namespace JinEngine::Graphic
 	void JDx12SceneDraw::SwitchResourceStateForDeferredShade(JDx12CommandContext* context, ResourceDataSet& rSet, const JDrawHelper& helper)
 	{
 		using namespace Deferred;
+		context->Transition(rSet.rtSet.holder, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		context->Transition(rSet.dsSet.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		context->Transition(rSet.gBufferSet, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false, std::make_index_sequence<Constants::gBufferLayerCount>());
 		if (rSet.canUseLightCluster)
@@ -828,7 +828,7 @@ namespace JinEngine::Graphic
 			context->SetGraphicsRootDescriptorTable(Deferred::Shading::ambientOcclusionMapIndex, rSet.aoSet.GetGpuSrvHandle());
 		else
 			context->SetGraphicsRootDescriptorTable(Forward::ambientOcclusionMapIndex, rSet.aoSet.GetGpuSrvHandle());
-	}
+	} 
 	void JDx12SceneDraw::BindLightListResource(JDx12CommandContext* context, const ResourceDataSet& rSet, const JDrawHelper& helper)
 	{
 		if (helper.option.rendering.allowDeferred)
@@ -951,7 +951,8 @@ namespace JinEngine::Graphic
 		if (!rSet.IsValid())
 			return;
 
-		rSet.canUseAo &= !helper.option.rendering.allowDeferred;
+		//forward에서 normal맵 추출이 가능하게 변경하면 수정필요.
+		rSet.canUseAo &= !helper.option.rendering.allowDeferred; 
 		rSet.canUseLightCluster &= !helper.option.rendering.allowDeferred;
 		if (rSet.canUseLightCluster)
 			rSet.SettingCluster(context, helper);
@@ -967,7 +968,7 @@ namespace JinEngine::Graphic
 		BindCommonCB(context, rSet, helper);
 		BindViewPortAndRect(context, rSet);
 		if (rSet.canUseAo)
-			BindAoResource(context, rSet, helper);
+			BindAoResource(context, rSet, helper); 
 		if (rSet.canUseLightCluster)
 			BindLightListResource(context, rSet, helper);
 		DrawSceneGameObject(context, helper);
@@ -987,7 +988,8 @@ namespace JinEngine::Graphic
 		if (!rSet.IsValid())
 			return;
 
-		rSet.canUseAo &= !helper.option.rendering.allowDeferred;
+		//forward에서 normal맵 추출이 가능하게 변경하면 수정필요.
+		rSet.canUseAo &= !helper.option.rendering.allowDeferred; 
 		rSet.canUseLightCluster &= !helper.option.rendering.allowDeferred;
 		if (rSet.canUseLightCluster)
 			rSet.SettingCluster(context, helper);
@@ -998,7 +1000,7 @@ namespace JinEngine::Graphic
 			BindRenderTarget(context, rSet, helper, true);
 		BindCommonCB(context, rSet, helper);
 		if (rSet.canUseAo)
-			BindAoResource(context, rSet, helper);
+			BindAoResource(context, rSet, helper); 
 		if (rSet.canUseLightCluster)
 			BindLightListResource(context, rSet, helper);
 		BindViewPortAndRect(context, rSet);
@@ -1076,7 +1078,7 @@ namespace JinEngine::Graphic
 		BindRenderTarget(context, rSet, helper, false);
 		BindCommonCB(context, rSet, helper);
 		if (rSet.canUseAo)
-			BindAoResource(context, rSet, helper);
+			BindAoResource(context, rSet, helper); 
 		BindGBufferResource(context, rSet, helper);
 		if (rSet.canUseLightCluster)
 			BindLightListResource(context, rSet, helper);
@@ -1106,7 +1108,7 @@ namespace JinEngine::Graphic
 		BindRenderTarget(context, rSet, helper, false);
 		BindCommonCB(context, rSet, helper);
 		if (rSet.canUseAo)
-			BindAoResource(context, rSet, helper);
+			BindAoResource(context, rSet, helper); 
 		BindGBufferResource(context, rSet, helper);
 		if (rSet.canUseLightCluster)
 			BindLightListResource(context, rSet, helper);
@@ -1254,7 +1256,7 @@ namespace JinEngine::Graphic
 		holder->ps = JDxShaderDataUtil::CompileShader(pixelShaderPath, initData.macro[(uint)initData.layoutType], L"PS", L"ps_6_0");
 	}
 	void JDx12SceneDraw::StuffInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)
-	{
+	{ 
 		switch (vertexLayout)
 		{
 		case JinEngine::J_GRAPHIC_SHADER_VERTEX_LAYOUT::STATIC:
@@ -1506,7 +1508,7 @@ namespace JinEngine::Graphic
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY], 2, 3);
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.resource.border[(uint)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE], 2, 4);
 
-		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 5);			//ambientOcclusion 
+		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 5);			//ambientOcclusion  
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, layerCount, 2, 6);	//gBuffer
 		builder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 7);			//depth 
 

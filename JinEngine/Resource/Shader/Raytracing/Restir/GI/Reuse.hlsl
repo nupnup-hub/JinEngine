@@ -80,7 +80,7 @@ SOFTWARE.
 #define SPATIAL_WEIGHT_CLAMP_THRESHOLD 10.0f
 #endif
 #ifndef VIRE_Z_THRESHOLD_RATE
-#define VIRE_Z_THRESHOLD_RATE 0.015f
+#define VIRE_Z_THRESHOLD_RATE 0.05f
 #endif
 #ifndef NEIGHBOR_LOOP_COUNT
 #define NEIGHBOR_LOOP_COUNT 10
@@ -106,16 +106,16 @@ StructuredBuffer<RestirReserviorPack> preTemporal : register(t2);
 StructuredBuffer<RestirReserviorPack> preSpatial : register(t3);
 Texture2D albedoMap : register(t4); 
 Texture2D lightPropMap : register(t5); 
-Texture2D depthMap : register(t6);
+Texture2D<float> viewZMap : register(t6);
 Texture2D preNormalMap : register(t7);
-Texture2D preDepthMap : register(t8);
+Texture2D<float> preViewZMap : register(t8);
 Texture2D aoMap : register(t9);
 RWStructuredBuffer<RestirReserviorPack> temporal : register(u0);
 RWStructuredBuffer<RestirReserviorPack> spatial : register(u1);
 SamplerState samLinearBorder: register(s0);
 
 RestirReserviorData LoadReservior(uint baseIndex, uint sampleIndex, uint elementCount)
-{
+{ 
     return UnpackRestirGiSample(initialSample[baseIndex + sampleIndex * elementCount]);
 }
 RestirReserviorData LoadReservior(StructuredBuffer<RestirReserviorPack> buffer, uint baseIndex, uint sampleIndex, uint elementCount)
@@ -144,7 +144,7 @@ float EvaluateTargetFunction(float3 radiance, float3 posW, float3 normalW, float
 struct ReuseDataSet
 {
     Material material;
-    float depth;
+    float viewZ;
     float3 posW;
     float3 normalW;
      
@@ -296,10 +296,10 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
         //float2 randOffset = Sample2DPoint(set.pixelIndex, currSampleSetIndex);   
         float2 neighborUv = neighborID * cb.halfInvRtSize;
         float3 neighborNormal = SignedOctDecode(preNormalMap.SampleLevel(samLinearBorder, neighborUv, 0).xyw);
-        float neighborDepth = NdcToViewPZ(preDepthMap.SampleLevel(samLinearBorder, neighborUv, 0).x, cb.camNearMulFar, cb.camNearFar);
+        float neighborViewZ = preViewZMap.SampleLevel(samLinearBorder, neighborUv, 0).x;
              
         // Check geometric similarity. 
-        if (!IsValidNeighbor(set.normalW, neighborNormal, set.depth, neighborDepth, NEIBOR_NORMAL_THRESHOLD, set.viewZThresHold))
+        if (!IsValidNeighbor(set.normalW, neighborNormal, set.viewZ, neighborViewZ, NEIBOR_NORMAL_THRESHOLD, set.viewZThresHold))
             continue;
 
         // Read neighbor's spatial reservoir.
@@ -431,7 +431,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     //uint2 prevID = clamp(preUv * cb.halfRtSize, 0, cb.halfRtSize - 1);
     //uint preReserviorIndex = prevID.y * cb.halfRtSize.x + prevID.x;
  
-    set.depth = NdcToViewPZ(depthMap.SampleLevel(samLinearBorder, curUv, 0).x, cb.camNearMulFar, cb.camNearFar);
+    set.viewZ = viewZMap.SampleLevel(samLinearBorder, curUv, 0).x;
     set.normalW = initialSample[set.pixelIndex].UnpackVisibleNormal();
     set.posW = ComputeRayOrigin(initialSample[set.pixelIndex].visiblePos, set.normalW);
     //set.posW = initialSample[set.pixelIndex].visiblePos;
@@ -441,16 +441,16 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     set.aoFactor = 1.0f;
 #endif
     set.viewZThresHold = cb.camNearFar.y - cb.camNearFar.x * VIRE_Z_THRESHOLD_RATE;
-    
-    UnPackAlbedoColorLayer(albedoMap.SampleLevel(samLinearBorder, curUv, 0), set.material.albedoColor, set.material.specularFactor);
+     
+    UnPackAlbedoColorLayer(albedoMap.SampleLevel(samLinearBorder, curUv, 0), set.material.albedoColor, set.material.specularColor);
     
     float4 lightProp = lightPropMap.SampleLevel(samLinearBorder, curUv, 0);
     UnpackLightPropLayer(lightProp, set.material.metallic, set.material.roughness);
   
-    float4 prePosH = mul(float4(set.posW, 1.0f), cb.camPreViewProj);
-    float3 prePosNdc = prePosH.xyz / prePosH.w;
-    float2 preUv = prePosNdc.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-    float2 velocity = preUv - curUv;
+    double4 prePosH = mul(float4(set.posW, 1.0f), cb.camPreViewProj);
+    double3 prePosNdc = prePosH.xyz / prePosH.w;
+    double2 preUv = prePosNdc.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+    double2 velocity = preUv - curUv;
     
     //부동소수점 오차 교정
     if (abs(velocity.x) <= EPSILON)
@@ -473,7 +473,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
         isPreValid &= all(velocity < VELOCITY_THRESHOLD);
         isPreValid &= dot(curNormal, preNormal) > NORMAL_THRESHOLD;
         isPreValid &= abs(length(set.posW - cb.camPosW) - length(set.posW - cb.camPrePosW)) < POSITION_THRESHOLD;
-        isPreValid &= rand >= RAND_THRESHOLD;
+        isPreValid &= rand >= RAND_THRESHOLD; 
     }
 
     //[unroll]

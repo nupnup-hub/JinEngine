@@ -120,9 +120,11 @@ PixelOut PS(PixelIn pin) : SV_Target
   		
     float specularFactor = 0.0f;
 #ifdef SPECULAR_MAP	
-	specularFactor = RGBToLuminance(textureMaps[matData.specularMapIndex].Sample(samAnisotropicWrap, texC).xyz * metallic);
+	specularFactor = RGBToLuminance(textureMaps[matData.specularMapIndex].Sample(samAnisotropicWrap, texC).xyz) * matData.specularFactor;
+	//specularFactor = RGBToLuminance(textureMaps[matData.specularMapIndex].Sample(samAnisotropicWrap, texC).xyz * metallic);
 #else
-    specularFactor = ComputeDefaultSpecularFactor(albedoColor.xyz, metallic);
+    specularFactor = matData.specularFactor;
+    //specularFactor = ComputeDefaultSpecularFactor(albedoColor.xyz, metallic);
 #endif
 	 
     pOut.albedoColor = PackAlbedoColorLayer(albedoColor, specularFactor);

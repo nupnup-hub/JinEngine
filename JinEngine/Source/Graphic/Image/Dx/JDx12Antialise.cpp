@@ -43,11 +43,7 @@ SOFTWARE.
 #define VERTICAL_ORIENTATION L"VERTICAL_ORIENTATION"
 
 namespace JinEngine::Graphic
-{
-	namespace Common
-	{
-		static constexpr uint clearUserDataFrequency = 7680;
-	}
+{ 
 	namespace FXAA
 	{
 		ROOT_INDEX_CREATOR(, firstSrvHandleIndex, secondSrvHandleIndex, thirdSrvHandleIndex,
@@ -77,7 +73,7 @@ namespace JinEngine::Graphic
 		ROOT_INDEX_CREATOR(Clear, passCBIndex, colorHistoryIndex, preColorHistoryIndex)
 
 		static constexpr uint sampleNumberMax = 16; 
-		static constexpr uint shaderCount = 4;
+		static constexpr uint shaderCount = 3;
 
 		static JVector3<uint> ThreadDim()
 		{
@@ -95,9 +91,7 @@ namespace JinEngine::Graphic
 	JDx12Antialise::TAAUserPrivateData::~TAAUserPrivateData()
 	{
 		for (uint i = 0; i < historyCount; ++i)
-			gm->DestroyGraphicTextureResource(device, colorHistory[i].Release());
-		gm->DestroyGraphicTextureResource(device, viewZ.Release());
-		gm->DestroyGraphicTextureResource(device, preViewZ.Release());
+			gm->DestroyGraphicTextureResource(device, colorHistory[i].Release()); 
 		frameBuffer.Clear();
 	}
 	void JDx12Antialise::TAAUserPrivateData::Begin(const JDrawHelper& helper)
@@ -128,8 +122,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12Antialise::TAAUserPrivateData::End(const JDrawHelper& helper)
 	{
-		AddUpdateCount();
-		SetAliveTrigger();
+		AddUpdateCount(); 
 		++historyIndex;
 		if (historyIndex >= historyCount)
 			historyIndex = 0;
@@ -145,7 +138,8 @@ namespace JinEngine::Graphic
 		cam = helper.cam;
 
 		imageShare = static_cast<ImageProcessingShareData*>(set->imageShareData);
-		if (imageShare == nullptr)
+		drawSceneShareData = static_cast<DrawSceneShareData*>(set->drawSceneShareData);
+		if (imageShare == nullptr || drawSceneShareData == nullptr || !drawSceneShareData->IsValid())
 			return;
 
 		auto gInterface = helper.GetResourceInterface();
@@ -166,11 +160,13 @@ namespace JinEngine::Graphic
 
 		preLightPropSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
 		preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
-
-		colorSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
-		//colorSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
+		 
+		if (imageShare->HasUpdated())
+			colorSet = context->ComputeSet(imageShare->GetUpdatedIntermediate());
+		else
+			colorSet = rtSet;
+		
 		destSet = context->ComputeSet(imageShare->GetUpdateWaitIntermediate());
-
 		resolution = rtSet.info->GetResourceSize();
 		currFrameIndex = helper.info.frame.currIndex;
 
@@ -180,19 +176,20 @@ namespace JinEngine::Graphic
 	{
 		userPrivate = data;
 		if (userPrivate->colorHistory[0] == nullptr)
-		{
 			requestCreateDependencyData = true;
-			userPrivate->SetAliveTrigger();
-		}
 		else
 		{
 			userPrivate->Begin(helper);
 			colorHistorySet = context->ComputeSet(userPrivate->colorHistory[userPrivate->historyIndex]);
 			preColorHistorySet = context->ComputeSet(userPrivate->colorHistory[userPrivate->preHistoryIndex]);
 
-			viewZSet = context->ComputeSet(userPrivate->viewZ);
-			preViewZSet = context->ComputeSet(userPrivate->preViewZ);
+			viewZSet = context->ComputeSet(drawSceneShareData->viewZMap);
+			preViewZSet = context->ComputeSet(drawSceneShareData->preViewZMap);
 		}
+	}
+	bool JDx12Antialise::TAADataSet::IsValid()const noexcept
+	{
+		return rtSet.IsValid() && dsSet.IsValid() && drawSceneShareData != nullptr && drawSceneShareData->IsValid();
 	}
 
 	void JDx12Antialise::AABase::BuildResource(JGraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option)
@@ -420,15 +417,7 @@ namespace JinEngine::Graphic
 
 	void JDx12Antialise::TaaResource::BuildSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
-		using namespace TAA;
-		JDx12RootSignatureBuilder<Prepare::rootSlotCount> pBuilder;
-		pBuilder.PushConstantsBuffer(0);
-		pBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-		pBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-		pBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
-		pBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
-		pBuilder.Create(device, L"PrepareRootSignature", prepareRootSignature.GetAddressOf());
-
+		using namespace TAA; 
 		JDx12RootSignatureBuilder2<TA::rootSlotCount, 2> tBuilder;
 		tBuilder.PushConstantsBuffer(0);
 		tBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -460,20 +449,13 @@ namespace JinEngine::Graphic
 	}
 	void JDx12Antialise::TaaResource::BuildPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option)
 	{
-		using namespace TAA;
-		prepare = std::make_unique<JDx12ComputeShaderDataHolder>();
+		using namespace TAA; 
 		ta = std::make_unique<JDx12ComputeShaderDataHolder>();
 		sharpening = std::make_unique<JDx12ComputeShaderDataHolder>();
 		clearShader = std::make_unique<JDx12ComputeShaderDataHolder>();
 
 		JDx12ComputePsoBulder<shaderCount> psoBuilder("JDx12AntialiseTAA");
-
-		psoBuilder.PushHolder(prepare.get());
-		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::TAA(L"Prepare.hlsl"), L"main"));
-		psoBuilder.PushThreadDim(ThreadDim());
-		psoBuilder.PushRootSignature(prepareRootSignature.Get());
-		psoBuilder.Next();
-
+		 
 		psoBuilder.PushHolder(ta.get());
 		psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::TAA(L"TemporalAccumulation.hlsl"), L"main"));
 		psoBuilder.PushThreadDim(ThreadDim());
@@ -495,38 +477,17 @@ namespace JinEngine::Graphic
 		psoBuilder.Create(device);
 	}
 	void JDx12Antialise::TaaResource::ClearSignature()
-	{
-		prepareRootSignature = nullptr;
+	{ 
 		taRootSignature = nullptr;
 		sharpeningRootSignature = nullptr;
 		clearRootSignature = nullptr;
 	}
 	void JDx12Antialise::TaaResource::ClearPso()
-	{
-		prepare = nullptr;
+	{  
 		ta = nullptr;
 		sharpening = nullptr;
 		clearShader = nullptr;
-	}
-	void JDx12Antialise::TaaResource::Prepare(TAADataSet& set, const JDrawHelper& helper)
-	{
-		using namespace TAA;
-		set.context->Transition(set.dsSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		set.context->Transition(set.preDepthSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		set.context->Transition(set.viewZSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		set.context->Transition(set.preViewZSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		set.context->FlushResourceBarriers();
-
-		set.context->SetComputeRootSignature(prepareRootSignature.Get());
-		set.context->SetComputeRootConstantBufferView(Prepare::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
-		set.context->SetComputeRootDescriptorTable(Prepare::depthMapIndex, set.dsSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Prepare::preDepthMapIndex, set.preDepthSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Prepare::viewZMapIndex, set.viewZSet.GetGpuUavHandle());
-		set.context->SetComputeRootDescriptorTable(Prepare::preViewZMapIndex, set.preViewZSet.GetGpuUavHandle());
-
-		set.context->SetPipelineState(prepare.get());
-		set.context->Dispatch2D(set.resolution, prepare->dispatchInfo.threadDim.XY());
-	}
+	} 
 	void JDx12Antialise::TaaResource::TemporalAccumulation(TAADataSet& set, const JDrawHelper& helper)
 	{
 		using namespace TAA;
@@ -637,6 +598,14 @@ namespace JinEngine::Graphic
 	{
 		return type == JGraphicOption::TYPE::DEBUGGING;
 	}
+	bool JDx12Antialise::HasDrawSequencePostProcessing()const noexcept
+	{
+		return true;
+	}
+	void JDx12Antialise::DrawSequencePostProcessing()
+	{
+		GraphicVolatileStorageInterface::UpdateEnd(taaUserPrivate);
+	}
 	void JDx12Antialise::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
 	{
 	}
@@ -662,6 +631,9 @@ namespace JinEngine::Graphic
 			return;
 
 		TAADataSet set(computeSet, helper);
+		if (!set.IsValid())
+			return;
+
 		BeginTAA(set, helper);
 		if (set.requestCreateDependencyData)
 		{
@@ -683,8 +655,7 @@ namespace JinEngine::Graphic
 				if (set.userPrivate->HasClearRequest())
 					taa.ClearTAAResource(set, helper);
 
-				taa.SettingFirstLoop(set, helper);
-				taa.Prepare(set, helper);
+				taa.SettingFirstLoop(set, helper); 
 				taa.TemporalAccumulation(set, helper);
 				taa.Sharpening(set, helper);
 			}
@@ -700,13 +671,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12Antialise::EndTAA(TAADataSet& set, const JDrawHelper& helper)
 	{
-		set.userPrivate->End(helper);
-		++computeCount;
-		if (computeCount >= Common::clearUserDataFrequency)
-		{
-			Core::JVolatileStorageInterface::UpdateEnd(taaUserPrivate);
-			computeCount = 0;
-		}
+		set.userPrivate->End(helper); 
 	}
 	void JDx12Antialise::RecompileShader(const JGraphicShaderCompileSet& set)
 	{
@@ -729,15 +694,7 @@ namespace JinEngine::Graphic
 		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R16G16B16A16_UNORM;
 		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
 		for (uint i = 0; i < userPrivate->historyCount; ++i)
-			userPrivate->colorHistory[i] = gm->CreateResource(device, desc);
-
-		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
-		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
-		userPrivate->viewZ = gm->CreateResource(device, desc);
-
-		desc.formatHint->format = J_GRAPHIC_RESOURCE_FORMAT::R32_FLOAT;
-		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_COMMON;
-		userPrivate->preViewZ = gm->CreateResource(device, desc);
+			userPrivate->colorHistory[i] = gm->CreateResource(device, desc); 
 
 		userPrivate->device = device;
 		userPrivate->gm = gm;

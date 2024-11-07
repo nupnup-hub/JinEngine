@@ -106,7 +106,7 @@ namespace JinEngine::Graphic
 		Clear();
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
 			readBack[i].Build(device, newCapacity);
-		cpuBuffer = new ResultType[newCapacity]();
+		cpuBuffer = new ResultType[newCapacity](); 
 		//memset(result.GetCpuPointer(), Constants::hdNonCullingValue, sizeof(uint64) * newCapacity);
 	}
 	void JDx12FrustumCullingResultHolder::Clear()
@@ -120,7 +120,8 @@ namespace JinEngine::Graphic
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
 			readBack[i].SutffClearValue(cmdList, uploadBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COMMON, 0);
-		memset(cpuBuffer, 0, readBack[0].GetElementCount() * sizeof(ResultType));
+		JCUtil::Fill<ResultType, 0>(cpuBuffer, readBack[0].GetElementCount());
+		//memset(cpuBuffer, 0, readBack[0].GetElementCount() * sizeof(ResultType));
 	}
 
 	JHzbDx12CullingResultHolder::JHzbDx12CullingResultHolder(const J_CULLING_TARGET target, const uint frameInedx)
@@ -195,7 +196,8 @@ namespace JinEngine::Graphic
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
 			readBack[i].SutffClearValue(cmdList, uploadBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COMMON, 0);
-		memset(cpuBuffer, 0, readBack[0].GetElementCount() * sizeof(ResultType));
+		JCUtil::Fill<ResultType, 0>(cpuBuffer, readBack[0].GetElementCount());
+		//memset(cpuBuffer, 0, readBack[0].GetElementCount() * sizeof(ResultType));
 	}
 
 	JHdDx12CullingResultHolder::JHdDx12CullingResultHolder(const J_CULLING_TARGET target, const uint frameIndex)
@@ -270,6 +272,8 @@ namespace JinEngine::Graphic
 	{
 		for (uint i = 0; i < Constants::gNumFrameResources; ++i)
 			readBack[i].SutffClearValue(cmdList, uploadBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COMMON, 1);
-		memset(cpuBuffer, 1, readBack[0].GetElementCount() * sizeof(ResultType));
+		
+		JCUtil::Fill<ResultType, 1>(cpuBuffer, readBack[0].GetElementCount());
+		//std::fill_n(cpuBuffer, readBack[0].GetElementCount(), 1); 
 	}
 }

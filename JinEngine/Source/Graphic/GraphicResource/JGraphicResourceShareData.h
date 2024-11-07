@@ -25,7 +25,7 @@ SOFTWARE.
 
 #pragma once 
 #include"../JGraphicTaskInterface.h" 
-#include"../JGraphicSubClassInterface.h"
+#include"../JGraphicSubClassInterface.h" 
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 
@@ -35,6 +35,7 @@ namespace JinEngine
 	{ 
 		class JGraphicResourceManager;
 		class JGraphicResourceInfo;
+		struct JDrawHelper;
 
 		class JShareDataHolderInterface : public JGraphicTaskInterface
 		{ 
@@ -45,17 +46,22 @@ namespace JinEngine
 
 		//shared data by shader pass
 		//ex) ssao, imageProcessing(bloom, toneMapping, aa...)
-		//share data is created by use resource creation
+		//creation
+		//1. share data is created by use resource creation(managed by auto)
+		//2. request Draw step shared data queue(managed by menual)
 		//ex) creation ssao -> try create related resource(interleave, depth, intermediate ...)
 		class JGraphicResourceShareData : public JGraphicDeviceUser, public JGraphicSubClassInterface
 		{
-		public: 
+		public:  
 			virtual void Clear() = 0;
 		public:  
 			virtual JShareDataHolderInterface* GetResourceDependencyData(const J_GRAPHIC_TASK_TYPE taskType, JGraphicResourceInfo* info) = 0;
+			virtual JShareDataHolderInterface* GetRequestDependencyData(const J_GRAPHIC_REQUEST_TYPE type, const size_t guid, const JVector2<uint>& size) = 0;
 		public:
 			virtual void NotifyGraphicResourceCreation(JGraphicDevice* device, JGraphicResourceManager* gM, JGraphicResourceInfo* newInfo) = 0;
 			virtual void NotifyGraphicResourceDestruction(JGraphicDevice* device, JGraphicResourceManager* gM, JGraphicResourceInfo* info) = 0;
+		public:
+			virtual void RequestShareDataCreation(JGraphicDevice* device, JGraphicResourceManager* gM, const J_GRAPHIC_REQUEST_TYPE type, const size_t guid, const JVector2<uint>& size) = 0;
 		};
 	}
 }

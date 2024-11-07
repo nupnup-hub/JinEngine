@@ -35,6 +35,7 @@ SOFTWARE.
 #include"../Graphic/Adapter/JDx12Adaptee.h" 
 #include"../Graphic/Gui/JGuiBackendDataAdapter.h" 
 #include"../Graphic/JGraphicPrivate.h" 
+#include"../Graphic/Thread/JGraphicThreadInfo.h"
 #include"../Object/Resource/JResourceManager.h"  
 #include"../Object/Resource/JResourceManagerPrivate.h" 
 #include"../Object/GraphicRule/JGraphicModuleInterfaceHolder.h" 
@@ -44,8 +45,7 @@ SOFTWARE.
 #include"../Core/Time/JStopWatch.h"  
 #include"../Core/Func/Functor/JFunctor.h"  
 #include"../Core/Event/JEventListener.h"
-#include"../Core/Threading/JThreadManager.h"
-#include"../Core/Threading/JThreadManagerPrivate.h"
+#include"../Core/Threading/JThreadManager.h"  
 #include"../Core/Module/JModuleManager.h"
 #include"../Core/Module/JModuleManagerPrivate.h"
 #include"../Core/Plugin/JPluginManager.h"
@@ -53,6 +53,7 @@ SOFTWARE.
 #include"../Core/Utility/JCommonUtility.h" 
 #include"../Core/Reflection/JTypeBase.h"
 #include"../Core/Log/JLogMacro.h"
+#include"../Core/Math/JMathHelper.h"
 #include"../Editor/JEditorManager.h" 
 #include"../Editor/Interface/JEditorProjectInterface.h" 
 #include"../Editor/Gui/Data/ImGui/JImGuiPrivateData.h"
@@ -73,8 +74,7 @@ namespace JinEngine
 {
 	namespace
 	{
-		using WindowMainAccess = Window::JWindowPrivate::MainAccess;
-		using ThreadManagerAccess = Core::JThreadManagerPrivate::MainAccess;
+		using WindowMainAccess = Window::JWindowPrivate::MainAccess; 
 		using ResourceManagerMainAccess = JResourceManagerPrivate::MainAccess;
 		using RefelectionMainAccess = Core::JReflectionInfoPrivate::MainAccess;
 		using EngineMainAccess = JApplicationEnginePrivate::MainAccess;
@@ -99,6 +99,8 @@ namespace JinEngine
 	public:
 		const size_t guid;
 		Editor::JEditorManager editorManager;
+	private:
+		Graphic::JGraphicThreadInfo graphicThreadInfo; 
 	public:
 		END_FRAME_EVENT edFrameEv = END_FRAME_EVENT::NONE; 
 	public:
@@ -107,7 +109,15 @@ namespace JinEngine
 		{
 			RefelectionMainAccess::Initialize();
 			EngineMainAccess::Initialize();
-			ThreadManagerAccess::Initialize(Graphic::Constants::gMaxFrameThread);
+
+			static constexpr float threadRate = 0.75f;
+			static constexpr size_t spinLockCount = UINT_MAX;	//매 프레임 Update, Draw 함수에서 호출 되므로 짧은 대기시간으로 예상됨.
+			Core::JThreadGroupOption option;
+			option.spinLockCount = spinLockCount;
+
+			graphicThreadInfo.threadCount = min(max(JMathHelper::PowerOfTwoFloor(std::thread::hardware_concurrency()), 1), Graphic::Constants::gMaxFrameThread);
+			graphicThreadInfo.guid  = _JThreadManager::Instance().CreateThreadGroup(graphicThreadInfo.threadCount, option);
+
 			_JModuleManager::Instance().LoadModule(JApplicationEngine::SolutionPath());
 			_JPluginManager::Instance().LoadPlugin(JApplicationEngine::SolutionPath());
 
@@ -117,9 +127,9 @@ namespace JinEngine
 		}
 		~JMainImpl()
 		{
+			_JThreadManager::Instance().DestroyThreadGroup(graphicThreadInfo.guid);
 			PluginMainAccess::Clear();
-			ModuleMainAccess::Clear();
-			ThreadManagerAccess::Clear();
+			ModuleMainAccess::Clear(); 
 			RefelectionMainAccess::Clear();
 		}
 	public:
@@ -129,7 +139,7 @@ namespace JinEngine
 
 			Develop::JDevelopDebugMain::Initialize();
 			WindowMainAccess::OpenProjecSelectorWindow();
-			GraphicMainAccess::Initialize(CreateGraphicAdapter(), CreateGuiBackendDataAdapter(), editorManager.GetBackendInterface());
+			GraphicMainAccess::Initialize(CreateGraphicAdapter(), CreateGuiBackendDataAdapter(), editorManager.GetBackendInterface(), graphicThreadInfo);
 			ResourceManagerMainAccess::Initialize();
 			ResourceManagerMainAccess::LoadSelectorResource();
 
@@ -148,8 +158,7 @@ namespace JinEngine
 
 				Core::JGameTimer::UpdateAllTimer();
 				GraphicMainAccess::UpdateWait();
-				RefelectionMainAccess::Update();
-				ThreadManagerAccess::Update();  
+				RefelectionMainAccess::Update(); 
 				editorManager.Update();
 				GraphicMainAccess::Draw(false);
 
@@ -174,7 +183,7 @@ namespace JinEngine
 			_JPluginManager::Instance().LoadPlugin(JApplicationProject::RootPath());
 			Develop::JDevelopDebugMain::Initialize();
 			WindowMainAccess::OpenEngineWindow();
-			GraphicMainAccess::Initialize(CreateGraphicAdapter(), CreateGuiBackendDataAdapter(), editorManager.GetBackendInterface());
+			GraphicMainAccess::Initialize(CreateGraphicAdapter(), CreateGuiBackendDataAdapter(), editorManager.GetBackendInterface(), graphicThreadInfo);
 			ResourceManagerMainAccess::Initialize();
 			ResourceManagerMainAccess::LoadProjectResource();
 			editorManager.Initialize(CreateGuiBehaviorAdapter());
@@ -193,8 +202,7 @@ namespace JinEngine
 				if (JWindow::IsActivated())
 				{ 
 					GraphicMainAccess::UpdateWait();
-					RefelectionMainAccess::Update();
-					ThreadManagerAccess::Update();
+					RefelectionMainAccess::Update(); 
 					editorManager.Update();
 					GraphicMainAccess::Update();
 					GraphicMainAccess::Draw(true);
@@ -393,7 +401,7 @@ namespace JinEngine
 		std::unique_ptr<Graphic::JGraphicAdapter> CreateGraphicAdapter()
 		{
 			std::unique_ptr<Graphic::JGraphicAdapter> adapter = std::make_unique<Graphic::JGraphicAdapter>();
-			adapter->AddAdaptee(std::make_unique<Graphic::JDx12Adaptee>());
+			adapter->AddAdaptee(std::make_unique<Graphic::JDx12Adaptee>(graphicThreadInfo));
 			return std::move(adapter);
 		}
 		std::unique_ptr<Graphic::JGuiBackendDataAdapter> CreateGuiBackendDataAdapter()

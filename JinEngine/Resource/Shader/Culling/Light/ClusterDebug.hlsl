@@ -87,8 +87,8 @@ float4 PS(VertexOut pIn) : SV_TARGET
 {  
 	int2 screenPos = pIn.posH.xy;
 	// Look up the light list for the cluster
-	const float Near = passPack.x;
-	const float Far = passPack.y;
+	const float near = passPack.x;
+	const float far = passPack.y;
 	const float rtWidth = passPack.z;
 	const float rtHeight = passPack.w;
 	//const uint log2Tile = (uint) passPack.z; 
@@ -96,22 +96,22 @@ float4 PS(VertexOut pIn) : SV_TARGET
 	const uint rangeY = rtHeight / CLUSTER_DIM_Y;
 	 
 #ifdef LINEAR_DEPTH_DIST
-	const float depth = LinearDepthOne(depthMap.Load(int3(screenPos, 0)).r, Near, Far);
+	const float depth = LinearDepthOne(depthMap.Load(int3(screenPos, 0)).r, near, far);
 	if(depth == 1.0f)
 		return float4(1,1,1,1);
 	int dep = int(depth * CLUSTER_DIM_Z);
 #else
 	const float min_depth = log2(NEAR_CLUST);
-	const float max_depth = log2(Far);
+	const float max_depth = log2(far);
 
 	const float scale = 1.0f / (max_depth - min_depth) * (CLUSTER_DIM_Z - 1.0f);
 	const float bias = 1.0f - min_depth * scale;
-	//const float distnace = Far - Near;
-	const float depth = NdcToViewPZ(depthMap.Load(int3(screenPos, 0)).r, Near, Far); 
-	if (depth == Far)
+	//const float distnace = far - near;
+	const float viewZ = NdcToViewPZ(depthMap.Load(int3(screenPos, 0)).r, near, far); 
+    if (viewZ == far)
 		return float4(1, 1, 1, 1);
 
-	int dep = int(max(log2(depth) * scale + bias, 0.0f));
+    int dep = int(max(log2(viewZ) * scale + bias, 0.0f));
 #endif
 		  
 	uint numLights = 0;

@@ -40,8 +40,7 @@ namespace JinEngine
 {
 	class JCamera;
 	namespace Graphic
-	{
-		using RestirTemporalAccumulationData = JDx12GraphicResourceShareData::RestirTemporalAccumulationData;
+	{ 
 		class JDx12CommandContext;
 		class JDx12RaytracingDenoiser : public JRaytracingDenoiser
 		{
@@ -76,17 +75,14 @@ namespace JinEngine
 				uint pad00 = 0;
 			};
 		private:
-			struct UserPrivateData : public Core::JVolatileStorageInterface
+			struct UserPrivateData : public GraphicVolatileStorageInterface
 			{
 			public:
 				static constexpr uint historyCount = 2; 
 			public:
 				JUserPtr<JGraphicResourceInfo> colorHistory[historyCount];
 				JUserPtr<JGraphicResourceInfo> fastColorHistory[historyCount];
-				JUserPtr<JGraphicResourceInfo> historyLength[historyCount];  
-			public:
-				JUserPtr<JGraphicResourceInfo> viewZ;			//sample 연산중 중복되는 계산을 피하기 위해
-				JUserPtr<JGraphicResourceInfo> preViewZ;		//sample 연산중 중복되는 계산을 피하기 위해
+				JUserPtr<JGraphicResourceInfo> historyLength[historyCount];   
 			public:
 				JGraphicDevice* device = nullptr;
 				JGraphicResourceManager* gm = nullptr;
@@ -95,6 +91,7 @@ namespace JinEngine
 			public:
 				uint historyIndex = 0;
 				uint preHistoryIndex = 1;
+				uint sampleNumber = 0;
 			public:
 				bool waitResourceCreation = true;
 			public:
@@ -112,7 +109,8 @@ namespace JinEngine
 				JGraphicResourceManager* gm;
 				UserPrivateData* userPrivate;
 			public:
-				RestirTemporalAccumulationData* sharedata;
+				RestirTemporalAccumulationData* taShareData;
+				DrawSceneShareData* drawSceneShareData;
 			public:
 				JUserPtr<JCamera> cam;
 			public:
@@ -218,8 +216,7 @@ namespace JinEngine
 			class RestirDenoiser : public DenoiserBase
 			{
 				//for restir gi
-			private:
-				Microsoft::WRL::ComPtr<ID3D12RootSignature> prepareRootSignature;
+			private: 
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> preBlurRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> taRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyFixRootSignature;
@@ -227,8 +224,7 @@ namespace JinEngine
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> antiFireFlyRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> atorusRootSignature;
 				Microsoft::WRL::ComPtr<ID3D12RootSignature> historyStabilizationRootSignature;
-			private:
-				std::unique_ptr<JDx12ComputeShaderDataHolder> prepareShader;
+			private: 
 				std::unique_ptr<JDx12ComputeShaderDataHolder> preBlurShader;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> taShader;
 				std::unique_ptr<JDx12ComputeShaderDataHolder> historyFixShader;
@@ -249,8 +245,7 @@ namespace JinEngine
 			private:
 				void ClearRootSignature() final;
 				void ClearPso() final;
-			public:
-				void Prepare(const DenoiseDataSet& set, const JDrawHelper& helper);
+			public: 
 				void PreBlur(const DenoiseDataSet& set, const JDrawHelper& helper);
 				void TemporalAccumulation(const DenoiseDataSet& set, const JDrawHelper& helper);
 				void HistoryFix(const DenoiseDataSet& set, const JDrawHelper& helper);
@@ -269,8 +264,7 @@ namespace JinEngine
 		private:
 			DenoiserBase* denoiser[denoiserCount];
 		private:
-			std::unordered_map<size_t, std::unique_ptr<UserPrivateData>> userPrivate;
-			uint computeCount = 0;
+			std::unordered_map<size_t, std::unique_ptr<UserPrivateData>> userPrivate; 
 		private:
 			PushGraphicEventPtr pushGraphicEvPtr;
 		public:
@@ -284,6 +278,9 @@ namespace JinEngine
 		private:
 			bool HasDependency(const JGraphicInfo::TYPE type)const noexcept final;
 			bool HasDependency(const JGraphicOption::TYPE type)const noexcept final;
+			bool HasDrawSequencePostProcessing()const noexcept final;
+		private: 
+			void DrawSequencePostProcessing();
 		private:
 			void NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)final;
 			void NotifyGraphicOptionChanged(const JGraphicOptionChangedSet& set)final;
@@ -295,12 +292,9 @@ namespace JinEngine
 		private:
 			void CreateDependencyData(JGraphicDevice* device, JGraphicResourceManager* gm, UserPrivateData* userPrivate, JVector2<uint> rtSize);
 		private:
-			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM); 
+			void BuildResource(JGraphicDevice* device, JGraphicResourceManager* gM);  
 		private:
-			//void BuildBuffer(JDx12GraphicDevice* device);
-		private:
-			void ClearResource(); 
-			//void ClearUserPrivateData();
+			void ClearResource();   
 		};
 	}
 }

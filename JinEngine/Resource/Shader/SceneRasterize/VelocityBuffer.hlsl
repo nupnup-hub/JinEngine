@@ -39,7 +39,7 @@ SOFTWARE.
 #define DIMZ 1
 #endif 
  
-Texture2D depthMap : register(t0); 
+Texture2D<float> viewZMap : register(t0); 
 RWTexture2D<VELOCITY_FORMAT> velocityMap : register(u0);
 ConstantBuffer<CameraData> cbCam : register(b0);
  
@@ -60,9 +60,8 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
  
     int3 mapLocation = int3(dispatchThreadID.xy, 0); 
     float2 uv = (mapLocation.xy + float2(0.5f, 0.5f)) * cbCam.invRenderTargetSize;
- 
-    float depth = depthMap.Load(mapLocation).x;
-    float viewZ = NdcToViewPZ(depth, cbCam.nearZ, cbCam.FarZ);
+  
+    float viewZ = viewZMap.Load(mapLocation).x;
     
     float3 posV = UVToViewSpace(uv, viewZ, cbCam.uvToViewA, cbCam.uvToViewB);
     float3 posW = mul(float4(posV, 1.0f), cbCam.invView).xyz;
@@ -70,7 +69,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     float4 prePosH = mul(float4(posW, 1.0f), preViewProj);
     float2 preUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
     
-    float3 velocity = float3(preUv - uv, NdcToViewPZ(((prePosH.z / prePosH.w) - depth), cbCam.nearZ, cbCam.FarZ));
+    float3 velocity = float3(preUv - uv, NdcToViewPZ((prePosH.z / prePosH.w), cbCam.nearZ, cbCam.farZ) - viewZ);
     velocityMap[mapLocation.xy] = PackVelocity(velocity);
 }
  

@@ -29,6 +29,7 @@ SOFTWARE.
 #include"../../../Core/Time/JGameTimer.h" 
 #include"../../../Core/Threading/JThreadManager.h"
 #include"../../../Core/Threading/JThreadUtil.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 
 #include"../../../Object/Component/RenderItem/JRenderItem.h" 
 #include"../../../Object/Component/Transform/JTransform.h"
@@ -109,7 +110,8 @@ namespace JinEngine::Graphic
 				:info(info), option(option), fm(fm), cacheData(cacheData)
 			{ 
 				frame = fm->GetCurrentDxFrameResource();
-				memset(minMoveDirtyIndex, 0, sizeof(int) * (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT);
+				JCUtil::Fill<int, 0>(minMoveDirtyIndex, SIZE_OF_ARRAY(minMoveDirtyIndex));
+				//memset(minMoveDirtyIndex, 0, sizeof(int) * (uint)J_FRAME_RESOURCE_UPLOAD_TYPE::COUNT);
 			}
 		public:
 			template<J_FRAME_RESOURCE_UPLOAD_TYPE type, typename Type>
@@ -276,6 +278,8 @@ namespace JinEngine::Graphic
 				drawScene.farZ = camFar;
 				drawScene.csmLocalIndex = camera->ModuleManagedData()->GetCsmTargetUserInterface()->GetTargetIndex();
 				drawScene.hasAoTexture = camera->AllowSsao() && set.option.CanUseSSAO();
+				drawScene.hasSsrTexture = camera->AllowSsr() && set.option.CanUseSSR();
+				 
 				set.CopyData<J_FRAME_RESOURCE_UPLOAD_TYPE::CAMERA>(&drawScene);
 			}
 			//DepthTest
@@ -1115,7 +1119,7 @@ namespace JinEngine::Graphic
 			}
 		}
 	}
-
+	 
 	void JDx12FrameResourceManager::CacheData::Initialize()
 	{
 		missing = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
@@ -1142,6 +1146,9 @@ namespace JinEngine::Graphic
 			ltcMat = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_MAT);
 	}
 
+	JDx12FrameResourceManager::JDx12FrameResourceManager(const JGraphicThreadInfo threadInfo)
+		:threadInfo(threadInfo)
+	{}
 	JDx12FrameResourceManager::~JDx12FrameResourceManager()
 	{
 		ClearResource();
@@ -1410,19 +1417,21 @@ namespace JinEngine::Graphic
 		InnerUpdateFuncSet funcSet = GetUpdateFuncSet(set.metadata);
 		if (funcSet.updateF == nullptr)
 			return;
+		 
+		bool canMultiThread = GetGraphicOption().debugging.testTrigger00;
+		if (canMultiThread && set.metadata.isNeedToUpdateEveryFrame &&  funcSet.canUseMultiThread(set.option, set.GetDataStorageCount()))
+		{
+			isTaskDone.OffWithCount(threadInfo.threadCount); 
+			static Core::JobDesc jobDesc[Constants::gMaxFrameThread];
 
-		if (set.option.setUpdateThreadTask != nullptr && set.metadata.isNeedToUpdateEveryFrame &&  funcSet.canUseMultiThread(set.option, set.GetDataStorageCount()))
-		{ 
-			WaitAllThreadTaskDone();
-			auto setUpdateThreadTask = set.option.setUpdateThreadTask;
-			const uint threadCount = GetGraphicInfo().frame.threadCount;
-
-			//작업분배
-			for (uint i = 0; i < threadCount; ++i)
+			for (uint i = 0; i < threadInfo.threadCount; ++i)
 			{
 				cacheSet[i] = set;
-				threadHandle[i] = setUpdateThreadTask(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
+				jobDesc[i].func = UniqueBind(*workerFunctor, std::move(i));
+				jobDesc[i].notifyAtomic = isTaskDone.GetPtr(i);
 			}
+
+			_JThreadManager::Instance().PushJobPerThread(threadInfo.guid, jobDesc);
 			set.updateLog.updateCount += set.GetDataStorageCount();
 			hasRequestThreadSync = true;
 		}
@@ -1465,9 +1474,8 @@ namespace JinEngine::Graphic
 	{
 		if (!hasRequestThreadSync)
 			return;
-		  
-		for (uint i = 0; i < maxNumOfUpdateThread; ++i)
-			_JThreadManager::Instance().WaitUntilThreadEnd(threadHandle[i]); 
+		   
+		isTaskDone.Wait(0, threadInfo.threadCount);
 		hasRequestThreadSync = false;
 	} 
 	void JDx12FrameResourceManager::BuildResource(JGraphicDevice* device)

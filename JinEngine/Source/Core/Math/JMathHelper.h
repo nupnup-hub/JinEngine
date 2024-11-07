@@ -29,6 +29,8 @@ SOFTWARE.
 #include"../JCoreEssential.h"
 #include"../Math/JVector.h"
 #include"../Math/JMatrix.h"
+ 
+//extern int eAbcd = 20;
 
 namespace JinEngine
 {
@@ -43,6 +45,7 @@ namespace JinEngine
 	public:
 		static int Log2Int(uint v)noexcept;
 		static uint PowerOfTwoExponent(uint v)noexcept;
+		static uint PowerOfTwoFloor(uint v)noexcept;
 		static uint DivideTwo(uint v, int count)noexcept; 
 	public: 
 		// Returns simple random float in [0, 1).

@@ -2787,6 +2787,7 @@ namespace JinEngine
 				Core::JGuiExtraFunctionUserInfo* groupUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP).Get();
 				Core::JGuiExtraFunctionUserInfo* tableUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE).Get();
 				bool canDisplayWidget = !failCondition;
+		 
 				if (groupUserInfo != nullptr)
 				{
 					const std::string extraMapKey = MakeExtraMapKey(groupUserInfo, updateData);
@@ -2794,6 +2795,9 @@ namespace JinEngine
 					if (extraData == userData->guiExtraHandleMap.end())
 					{
 						std::unique_ptr<JGuiWidgetExtraHandle> extraHandle = MakeExtraGroupHandle(updateData);
+						if (extraHandle != nullptr)
+							OutputDebugStringA(std::to_string((int)extraHandle->GetExtraFuncType()).c_str());
+
 						if (extraHandle != nullptr)
 							extraData = userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle)).first;
 						//extraData = userData->guiExtraHandleMap.find(extraMapKey);

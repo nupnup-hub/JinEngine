@@ -151,6 +151,24 @@ namespace JinEngine
 		static uint CalDimIndex(const uint d1, const uint d2, const uint d1Range)noexcept;
 		static uint CalDimIndex(const uint d1, const uint d2, const uint d3, const uint d1Range, const uint d2Range)noexcept;
 	public:
+		template<typename Value, Value value>
+		static void Fill(void* rawPtr, const uint count)
+		{ 
+			if constexpr (value == 0 && (std::is_trivial_v<Value>))
+			{			
+				//값이 0 이고, char, int와 같은 data type이거나
+				//기본 생성 & 소멸자를 사용하는 가상함수가 없는 클래스
+				memset(rawPtr, 0, sizeof(Value) * count);
+			}
+			else
+			{
+				Value* castPtr = static_cast<Value*>(rawPtr);
+				for (uint i = 0; i < count; ++i)
+					castPtr[i] = value;
+			}
+		}  
+		static void FillZero(void* rawPtr, const uint byteCount);
+	public:
 		template <class T>
 		static inline void hash_combine(std::size_t& s, const T& v)
 		{

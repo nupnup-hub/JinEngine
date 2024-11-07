@@ -22,57 +22,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
-
-#pragma once
-#include"JThreadType.h"
-#include"JThread.h"
-#include"../Func/Functor/JFunctor.h"
+#pragma once 
+#include"JThreadWork.h" 
 #include"../Singleton/JSingletonHolder.h"
-#include <windows.h>  
+#include<memory>
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		class JThreadManagerPrivate;
+		struct JThreadGroupOption
+		{
+		private:
+			static constexpr size_t initSpinLockCount = 10000;
+		public:
+			size_t spinLockCount = initSpinLockCount;
+		};
 		class JThreadManager
 		{
 		private:
-			template<typename T>friend class JCreateUsingNew;
+			friend class JCreateUsingNew<JThreadManager>;
 		private:
-			friend class JThreadManagerPrivate;
 			class JThreadManagerImpl;
 		private:
-			std::unique_ptr<JThreadManagerImpl> impl; 
+			std::unique_ptr<JThreadManagerImpl> impl;
 		public:
-			uint GetReservedSpaceCount(const J_THREAD_USE_CASE_TYPE type);
-		public:
-			void ExtendCommonThreadCapacity(const uint count);
-			void ReduceCommonThreadCapacity(const uint count); 
-		public:
-			void WaitUntilThreadEnd(const JThreadUserHandle& userHandle);
-		public:
-			template<typename Pointer, typename ...Param>
-			JThreadUserHandle CreateThread(const JThreadInitInfo& initInfo, Pointer pointer, Param&&... param)
-			{
-				auto bind = UniqueBind(std::make_unique<JFunctor<void, Param...>>(pointer), std::forward<Param>(param)...);
-				return DoCreateThread(initInfo, J_THREAD_USE_CASE_TYPE::COMMON, std::move(bind));
-			}
-			template<typename Pointer, typename Object, typename ...Param>
-			JThreadUserHandle CreateThread(const JThreadInitInfo& initInfo, Pointer pointer, Object* obj, Param&&... param)
-			{
-				auto bind = UniqueBind(std::make_unique<JFunctor<void, Param...>>(pointer, obj), std::forward<Param>(param)...);
-				return DoCreateThread(initInfo, J_THREAD_USE_CASE_TYPE::COMMON, std::move(bind));
-			}
-			JThreadUserHandle CreateThread(const JThreadInitInfo& initInfo, std::unique_ptr<JBindHandleBase>&& bind);
-		private:
-			JThreadUserHandle DoCreateThread(const JThreadInitInfo& initInfo, const J_THREAD_USE_CASE_TYPE useCase, std::unique_ptr<JBindHandleBase>&& bind);
-		private:
 			JThreadManager();
 			~JThreadManager();
-			JThreadManager(const JThreadManager& rhs) = delete;
-			JThreadManager& operator=(const JThreadManager& rhs) = delete;
-		};
+		public:
+			size_t CreateThreadGroup(const uint newThreadCount, const JThreadGroupOption option = JThreadGroupOption());
+			size_t CreateThreadGroup(const uint newThreadCount, const JThreadGroupOption option, bool& isSuccess);
+			bool DestroyThreadGroup(const size_t guid);
+		public:
+			void PushJob(const size_t guid, JobDesc&& desc);
+			void PushJobPerThread(const size_t guid, std::vector<JobDesc>& desc);
+			void PushJobPerThread(const size_t guid, std::vector<std::vector<JobDesc>>& desc, const uint perThreadJobCount);
+			void PushJobPerThread(const size_t guid, JobDesc* desc);
+			void PushJobPerThread(const size_t guid, JobDesc* desc, const uint perThreadJobCount);
+		public:
+			JTlsData* GetTlsData();
+		}; 
 	}
-	using _JThreadManager = Core::JSingletonHolder<JinEngine::Core::JThreadManager>;
+
+	using _JThreadManager = Core::JSingletonHolder<Core::JThreadManager>;
 }

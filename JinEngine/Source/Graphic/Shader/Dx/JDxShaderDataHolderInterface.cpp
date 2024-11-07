@@ -28,12 +28,38 @@ SOFTWARE.
 #include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Core/Log/JLogMacro.h"
 #include"../../../Develop/Debug/JDevelopDebug.h"
+#include"../../../Application/Project/JApplicationProject.h"
 #include <D3Dcompiler.h>   
 
 namespace JinEngine::Graphic
 {
     namespace Private
     {
+        struct DebugInfo
+        {
+        public:
+            std::wstring pdbFilePath;
+        public:
+            DebugInfo(const std::wstring& filePath)
+            {
+                std::wstring folderPath;
+                std::wstring name;
+                std::wstring format;
+
+                JCUtil::DecomposeFilePath(filePath, folderPath, name, format);
+                pdbFilePath  = JApplicationProject::ShaderPdbPath() + L"\\" + name + L".pdb";
+            }
+            DebugInfo(const std::wstring& filePath, const size_t uniqueID)
+            {
+                std::wstring folderPath;
+                std::wstring name;
+                std::wstring format;
+
+                JCUtil::DecomposeFilePath(filePath, folderPath, name, format);
+                pdbFilePath = JApplicationProject::ShaderPdbPath() + L"\\" + name + std::to_wstring(uniqueID) + L".pdb";
+            }
+        };
+
         std::vector<DxcDefine> ToDxMacro(const std::vector<JMacroSet>& set)noexcept
         {
             const uint setCount = (uint)set.size();
@@ -54,7 +80,7 @@ namespace JinEngine::Graphic
             //macro[setCount] = { NULL, NULL };
             return macro;
         }
-        static Microsoft::WRL::ComPtr<ID3DBlob> CompileShaderUseOldApi(const std::wstring& filename,
+        static Microsoft::WRL::ComPtr<ID3DBlob> CompileShaderUseOldApi(const std::wstring& filePath,
             const std::vector<JMacroSet>& macroSet,
             const std::string& entrypoint,
             const std::string& target)
@@ -67,7 +93,7 @@ namespace JinEngine::Graphic
             Microsoft::WRL::ComPtr<ID3DBlob> errors;
 
             std::vector<D3D_SHADER_MACRO> macro = ToD3dMacro(macroSet);
-            ThrowIfFailedHr(D3DCompileFromFile(filename.c_str(), macro.data(), D3D_COMPILE_STANDARD_FILE_INCLUDE,
+            ThrowIfFailedHr(D3DCompileFromFile(filePath.c_str(), macro.data(), D3D_COMPILE_STANDARD_FILE_INCLUDE,
                 entrypoint.c_str(), target.c_str(), compileFlags, 0, &byteCode, &errors));
 
             if (errors != nullptr)
@@ -76,10 +102,11 @@ namespace JinEngine::Graphic
             return byteCode;
         }
         //https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
-        static Microsoft::WRL::ComPtr<IDxcBlob> CompileShaderUseNewApi(const std::wstring& filename,
+        static Microsoft::WRL::ComPtr<IDxcBlob> CompileShaderUseNewApi(const std::wstring& filePath,
             const std::vector<JMacroSet>& macroSet,
             const std::wstring& entrypoint,
-            const std::wstring& target)
+            const std::wstring& target,
+            const DebugInfo& debugInfo)
         {
             Microsoft::WRL::ComPtr<IDxcUtils> pUtils;
             Microsoft::WRL::ComPtr<IDxcCompiler3> pCompiler;
@@ -91,33 +118,62 @@ namespace JinEngine::Graphic
 
             uint32_t codePage = CP_UTF8;
             Microsoft::WRL::ComPtr<IDxcBlobEncoding> sourceBlob;
-            library->CreateBlobFromFile(filename.c_str(), &codePage, &sourceBlob);
+            library->CreateBlobFromFile(filePath.c_str(), &codePage, &sourceBlob);
 
             Microsoft::WRL::ComPtr<IDxcIncludeHandler> pIncludeHandler;
             pUtils->CreateDefaultIncludeHandler(&pIncludeHandler);
             
             //Microsoft::WRL::ComPtr<IDxcBlobEncoding> pSource = nullptr;
-           // pUtils->LoadFile(filename.c_str(), nullptr, &pSource);
+           // pUtils->LoadFile(filePath.c_str(), nullptr, &pSource);
 
             DxcBuffer source;
             source.Ptr = sourceBlob->GetBufferPointer();
             source.Size = sourceBlob->GetBufferSize();
             source.Encoding = DXC_CP_ACP; // Assume BOM says UTF8 or UTF16 or this is ANSI text.
-             
+       
             std::vector<DxcDefine> macro = ToDxMacro(macroSet);  
+            std::vector<LPCWSTR> arg =
+            {
+                L"-Zi",
+                L"-Fd", debugInfo.pdbFilePath.c_str()
+            };  
+
             Microsoft::WRL::ComPtr<IDxcCompilerArgs> pArgs;
-            ThrowIfFailedHr(pUtils->BuildArguments(filename.c_str(),
+            ThrowIfFailedHr(pUtils->BuildArguments(filePath.c_str(),
                 entrypoint.c_str(),
                 target.c_str(),
-                nullptr, 0,
+                arg.data(),
+                arg.size(),
                 macro.data(),
                 macro.size(),
                 &pArgs));
               
-            Microsoft::WRL::ComPtr<IDxcOperationResult> pResult;
+            Microsoft::WRL::ComPtr<IDxcResult> pResult;
             HRESULT hr = pCompiler->Compile(&source, pArgs->GetArguments(), pArgs->GetCount(), pIncludeHandler.Get(), IID_PPV_ARGS(&pResult));
             if (SUCCEEDED(hr))
-                pResult->GetStatus(&hr); 
+            {
+                Microsoft::WRL::ComPtr<IDxcBlobUtf8> errors;
+                pResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
+                if (errors && errors->GetStringLength() > 0)
+                    OutputDebugStringA(("Shader compilation errors: " + std::string(errors->GetStringPointer()) + "\n").c_str());
+
+                Microsoft::WRL::ComPtr<IDxcBlob> pdbBlob;
+                Microsoft::WRL::ComPtr<IDxcBlobUtf16> pdbName;
+                pResult->GetOutput(DXC_OUT_PDB, IID_PPV_ARGS(&pdbBlob), &pdbName);
+                if (pdbBlob && pdbName)
+                {
+                    // Save the PDB file
+                    std::wstring pdbFileName(pdbName->GetStringPointer());
+                    FILE* pdbFile = nullptr;
+                    _wfopen_s(&pdbFile, pdbFileName.c_str(), L"wb");
+                    if (pdbFile)
+                    {
+                        fwrite(pdbBlob->GetBufferPointer(), 1, pdbBlob->GetBufferSize(), pdbFile);
+                        fclose(pdbFile);
+                        OutputDebugString((L"PDB file saved to %ls" + pdbFileName + L" \n").c_str());
+                    }
+                }
+            }
             if (FAILED(hr))
             {
                 if (pResult)
@@ -133,7 +189,7 @@ namespace JinEngine::Graphic
                                 Develop::JDevelopDebug::CreatePublicLogHandler("ShaderCompileError");
 
                             Develop::JDevelopDebug::PushLog("Shader compile error");
-                            Develop::JDevelopDebug::PushLog("ShaderCompileError", L"File: " + filename);
+                            Develop::JDevelopDebug::PushLog("ShaderCompileError", L"File: " + filePath);
                             Develop::JDevelopDebug::PushLog("ShaderCompileError", L"Entry: " + entrypoint);
                             Develop::JDevelopDebug::PushLog("ShaderCompileError", L"Target: " + target);
                             Develop::JDevelopDebug::PushLog("ShaderCompileError", "Contents \n" + err);
@@ -149,24 +205,32 @@ namespace JinEngine::Graphic
             return code;
         }
     }
-    Microsoft::WRL::ComPtr<IDxcBlob> JDxShaderDataUtil::CompileShader(const std::wstring& filename,
+    Microsoft::WRL::ComPtr<IDxcBlob> JDxShaderDataUtil::CompileShader(const std::wstring& filePath,
         const std::wstring& entrypoint,
         const std::wstring& target)
     {
-        return Private::CompileShaderUseNewApi(filename, std::vector<JMacroSet>{}, entrypoint, target);
+        return Private::CompileShaderUseNewApi(filePath, std::vector<JMacroSet>{}, entrypoint, target, Private::DebugInfo(filePath));
     }
-    Microsoft::WRL::ComPtr<IDxcBlob> JDxShaderDataUtil::CompileShader(const std::wstring& filename,
+    Microsoft::WRL::ComPtr<IDxcBlob> JDxShaderDataUtil::CompileShader(const std::wstring& filePath,
         const std::vector<JMacroSet>& macroSet,
         const std::wstring& entrypoint,
         const std::wstring& target)
     {
        // auto underLine = target.find_first_of(L"_");
-        return Private::CompileShaderUseNewApi(filename, macroSet, entrypoint, target);
+        return Private::CompileShaderUseNewApi(filePath, macroSet, entrypoint, target, Private::DebugInfo(filePath));
         //auto versionNumber = JCUtil::WstringToInt(target.substr(underLine + 1, 1));
         //if (versionNumber >= 6)
-        //    return Private::CompileShaderUseNewApi(filename, macroSet, entrypoint, target);
+        //    return Private::CompileShaderUseNewApi(filePath, macroSet, entrypoint, target);
         //else
-        //    return Private::CompileShaderUseOldApi(filename, macroSet, JCUtil::WstrToU8Str(entrypoint), JCUtil::WstrToU8Str(target));
+        //    return Private::CompileShaderUseOldApi(filePath, macroSet, JCUtil::WstrToU8Str(entrypoint), JCUtil::WstrToU8Str(target));
+    }
+    Microsoft::WRL::ComPtr<IDxcBlob> JDxShaderDataUtil::CompileShader(const std::wstring& filePath,
+        const std::vector<JMacroSet>& macroSet,
+        const std::wstring& entrypoint,
+        const std::wstring& target,
+        const size_t uniqueID)
+    {
+        return Private::CompileShaderUseNewApi(filePath, macroSet, entrypoint, target, Private::DebugInfo(filePath, uniqueID));
     }
     Microsoft::WRL::ComPtr<IDxcBlob> JDxShaderDataUtil::CompileShader(const JCompileInfo& info,
         const std::vector<JMacroSet>& macroSet,

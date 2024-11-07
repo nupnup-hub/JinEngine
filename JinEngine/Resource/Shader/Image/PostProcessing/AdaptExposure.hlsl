@@ -31,23 +31,28 @@ cbuffer cbAdaptPass : register(b0)
 
 #define HISTOGRAM_COUNT DIMX
 
-groupshared float gs_Accum[DIMX];
-[numthreads(DIMX, 1, 1)]
+groupshared float gs_Accum[HISTOGRAM_COUNT];
+[numthreads(HISTOGRAM_COUNT, 1, 1)]
 void AdaptExposure(uint groupIndex : SV_GroupIndex)
 {
 	float targetLuminance = dataPack.x;
 	float adaptationRate = dataPack.y;
 	float minExposure = dataPack.z;
 	float maxExposure = dataPack.w;
+	
+	//밝기 step * 누적 갯수
 	float weightedSum = (float)groupIndex * (float)histogram.Load(groupIndex * 4);
 
     [unroll]
 	for (uint i = 1; i < HISTOGRAM_COUNT; i *= 2)
 	{
-		gs_Accum[groupIndex] = weightedSum; // Write
-		GroupMemoryBarrierWithGroupSync(); // Sync
-		weightedSum += gs_Accum[(groupIndex + i) % HISTOGRAM_COUNT]; // Read
-		GroupMemoryBarrierWithGroupSync(); // Sync
+		//update all groupshared
+		gs_Accum[groupIndex] = weightedSum;  
+		GroupMemoryBarrierWithGroupSync(); 
+		
+		//sum all weight
+		weightedSum += gs_Accum[(groupIndex + i) % HISTOGRAM_COUNT];  
+		GroupMemoryBarrierWithGroupSync();
 	}
 
     // If the entire image is black, don't adjust exposure
@@ -56,13 +61,13 @@ void AdaptExposure(uint groupIndex : SV_GroupIndex)
 
 	float minLog = exposure[4];
 	float maxLog = exposure[5];
-	float logRange = exposure[6];
+    float logRange = exposure[6];		//initMaxLog - initMinLog
 	float rcpLogRange = exposure[7];
 
-    // Average histogram value is the weighted sum of all pixels divided by the total number of pixels
-    // minus those pixels which provided no weight (i.e. black pixels.)
+    // 히스토그램의 평균 값은 모든 픽셀의 가중 합을 총 픽셀 수로 나눈 값
+    // 검은색 픽셀은 가중치를 제공하지 않으므로 제외(histogram[0])
 	float weightedHistAvg = weightedSum / (max(1, pixelCount - histogram.Load(0))) - 1.0f;
-	float logAvgLuminance = exp2(weightedHistAvg / 254.0f * logRange + minLog);
+	float logAvgLuminance = exp2(weightedHistAvg / 254.0f * logRange + minLog);				//minLog ~ maxLog
 	float targetExposure = targetLuminance / logAvgLuminance;
     //float targetExposure = -log2(1 - targetLuminance) / logAvgLuminance;
 

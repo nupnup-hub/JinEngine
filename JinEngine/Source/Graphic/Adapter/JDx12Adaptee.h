@@ -25,14 +25,20 @@ SOFTWARE.
 
 #pragma once
 #include"JGraphicAdaptee.h"
+#include"../../Core/Threading/JSync.h"
+#include"../Thread/JGraphicThreadType.h" 
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
 		class JDx12Adaptee final : public JGraphicAdaptee
-		{
+		{ 
+		private:
+			Graphic::JGraphicThreadInfo threadInfo; 
+			Core::JAtomicBooleanSet<Constants::gMaxFrameThread> isThreadTaskDone[(uint)J_THREAD_TASK_TYPE::COUNT];
 		public:
+			JDx12Adaptee(const Graphic::JGraphicThreadInfo threadInfo);
 			~JDx12Adaptee();
 		public:
 			void Initialize(JCommandContextManager* manager) final;
@@ -66,6 +72,9 @@ namespace JinEngine
 			bool SettingEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond) final;
 			bool ExecuteEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond) final;
 		public:
+			void BeginMultiThreadTask(Core::JobDesc* theadJobDesc)final;
+			void EndMultiThreadTask()final;
+		public:
 			//create task set and notify task done --- child thread
 			bool SettingDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadOccTaskSet& dataSet) final;
 			bool NotifyCompleteDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex)final;
@@ -86,6 +95,9 @@ namespace JinEngine
 			void EndMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet)final; 
 			bool BeginConvertColorTask(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicConvetColorSettingSet& set)final;
 			void EndConvertColorTask(const JGraphicDrawReferenceSet& drawRefSet)final;
+		private: 
+			void NotifyThreadTaskDone(const J_THREAD_TASK_TYPE taskType, const uint threadIndex);
+			void WaitTheadTaskDone(const J_THREAD_TASK_TYPE taskType);
 		};
 	}
 }

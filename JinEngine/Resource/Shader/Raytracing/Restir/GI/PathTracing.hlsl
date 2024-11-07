@@ -57,7 +57,7 @@ struct ShadowPayload
 {
     float isVisible;
 };
-struct SelectLightInfo
+struct SelectedLightInfo
 {
     int type;
     uint dataIndex;
@@ -84,10 +84,11 @@ struct EstimateDataSet
     float3 throughput;
     float2 lightUniformSample;
     float2 bxdfUniformSample;
+    float bxdf;
     float bxdfPdf;
     uint pathLength;
     uint hitType; //0 object, 1 light, 2 miss
-}; 
+};
 
 #ifndef TEXTURE_2D_COUNT
 #define TEXTURE_2D_COUNT 1
@@ -137,7 +138,7 @@ StructuredBuffer<MaterialData> materialData : register(t3);
 
 Texture2D textureMaps[TEXTURE_2D_COUNT] : register(t4, space5);
 TextureCube skyCubeMap : register(t4, space6);
-Texture2D depthMap : register(t4, space7);
+Texture2D<float> viewZMap : register(t4, space7);
 Texture2D screenAlbedoMap : register(t4, space8); //gbuffer layer 
 Texture2D screenLightProp : register(t4, space9); //gbuffer layer  
 Texture2D screenNormalMap : register(t4, space10); //gbuffer layer 
@@ -195,91 +196,37 @@ void EvaluateRectLight(uint dataIndex, float3 pos, float3 normal, float3 toRayOr
     irradiance = EvaluateRectLight(rLit, pos, normal, toRayOrigin, roughness, lightVec);
     pdf = SampleDirectionRectangularLight_PDF(rLit.area, -toRayOrigin, lightVec, length(rLit.origin - pos));
 }
-float3 SampleLightSourceImportance(in MeshVertex hitSurface, in MeshMaterial material, inout EstimateDataSet set, in SelectLightInfo lightInfo)
+
+void RayCastObject(inout MeshVertex hitSurface, inout MeshMaterial material, inout EstimateDataSet set)
 {
-    RayDesc rayDesc = CreateRayDesc(hitSurface.pos, lightInfo.direction, hitSurface.normal, lightInfo.distance, T_MIN);
-    
-    ShadowPayload shadowPayload;
-    shadowPayload.isVisible = false;
-    
-    uint rayFlag = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
-    TraceRay(sceneAs, rayFlag, OBJECT_MASK, DIRECT_LIGHT_HIT_SHADER_GROUP, 0, DIRECT_LIGHT_MISS_SHADER, rayDesc, shadowPayload);
-    if (!shadowPayload.isVisible)
-        return float3(0, 0, 0);
-    
-    float3 bsdf = float3(0, 0, 0);
-    float bsdfPdf = 1.0f;
-    EvaluateBxdf(hitSurface.normal, material, set.toRayOrigin, lightInfo.direction, set.lightUniformSample, bsdf, bsdfPdf);
-    
-    float3 radiacne = float3(0.0f, 0.0f, 0.0f);
-    float3 irradiance = lightInfo.irradiance;
-    float lightPdf = lightInfo.pdf;
-    float dotNL = max(dot(hitSurface.normal, lightInfo.direction), EPSILON);
-     
-    if (lightInfo.isDeltaLight) 
-        radiacne = (set.throughput * irradiance * bsdf * dotNL) / (lightPdf * cb.invTotalLightCount);
-    else
-    {
-        float misWeight = PowerHeuristic(1, lightPdf, 1, bsdfPdf);
-        radiacne = (set.throughput * irradiance * bsdf * misWeight * dotNL) / (lightPdf * cb.invTotalLightCount);
-    }
-    return radiacne;
-}
-float3 SampleBxdfImportance(inout MeshVertex hitSurface, inout MeshMaterial material, inout EstimateDataSet set, in SelectLightInfo lightInfo)
-{
-    float3 radiance = float3(0, 0, 0);
-    float3 toLight = float3(0, 0, 0);
-    float3 bsdf = float3(0, 0, 0);
-    float bsdfPdf = 1.0f;
- 
-    //out toLight = next ray dir
-    SampleBxdf(hitSurface.normal, hitSurface.tangent, material, set.toRayOrigin, toLight, set.bxdfUniformSample, bsdf, bsdfPdf);
-    set.bxdfPdf = bsdfPdf;
-    
-    RayDesc rayDesc = CreateRayDesc(hitSurface.pos, toLight, hitSurface.normal, cb.tMax, T_MIN);
+    RayDesc rayDesc = CreateRayDesc(hitSurface.pos, -set.toRayOrigin, hitSurface.normal, cb.tMax, T_MIN);
 
     RayPayload rayPayload;
     rayPayload.hitType = MISS;
     
     uint rayFlag = RAY_FLAG_NONE;
     TraceRay(sceneAs, rayFlag, 0xff, INDIRECT_HIT_SHADER_GROUP, 0, INDIRECT_MISS_SHADER, rayDesc, rayPayload);
-    if (rayPayload.hitType == MISS)
-        return radiance;
-     
-    float3 irradiance = float3(0, 0, 0);
-    float3 lightVec = lightInfo.direction;
-    float lightPdf = 0.0f;
     
-    set.hitType = rayPayload.hitType;
-    if (!lightInfo.isDeltaLight)
-    {
-        //irradiance = hit point emission
-        float dotNL = max(dot(hitSurface.normal, normalize(lightVec)), EPSILON);
-        if (set.hitType == OBJECT_HIT)
-        {
-            //float dotNL = max(dot(rayPayload.vertex.normal, normalize(hitSurface.pos - rayPayload.vertex.pos)), 0.0001f);
-            irradiance = material.albedoColor;
-            lightPdf = SampleDirectionHemisphere_PDF();
-            //SampleDirectionHemisphere_PDF
-        }
-       // else if (lightInfo.type == RECT_LIGHT_TYPE)
-       //    EvaluateRectLight(rayPayload.dataIndex, hitSurface.pos, hitSurface.normal, set.toRayOrigin, material.roughness, lightVec, irradiance, lightPdf);
- 
-        if (lightPdf > 0)
-        {
-            float misWeight = PowerHeuristic(1, bsdfPdf, 1, lightPdf);
-            float dotNL = max(dot(hitSurface.normal, normalize(lightVec)), EPSILON);
-            radiance = (set.throughput * irradiance * bsdf * dotNL * misWeight) / (bsdfPdf * cb.invTotalLightCount);
-        }
-    }
-     
+    set.hitType = rayPayload.hitType;  
+    if (set.hitType == MISS)
+        return;
+    
     hitSurface = rayPayload.vertex;
     material = rayPayload.material;
-    set.toRayOrigin = -toLight;
-    set.throughput += bsdf / bsdfPdf;
-    return radiance;
 }
-bool ComputeDirectLightIrradiance(in MeshVertex hitSurface, in MeshMaterial material, in EstimateDataSet set, out SelectLightInfo lightInfo)
+void BxdfImportance(inout MeshVertex hitSurface, inout MeshMaterial material, inout EstimateDataSet set, in SelectedLightInfo lightInfo)
+{
+    float3 toLight = float3(0, 0, 0);
+    float3 bxdf = float3(0, 0, 0);
+    float bxdfPdf = 1.0f;
+ 
+    //out toLight = next ray dir
+    SampleBxdf(hitSurface.normal, hitSurface.tangent, material, set.toRayOrigin, toLight, set.bxdfUniformSample, bxdf, bxdfPdf);
+    set.bxdf = bxdf;
+    set.bxdfPdf = bxdfPdf;
+    set.toRayOrigin = -toLight; 
+};
+void LightSourceImportance(in MeshVertex hitSurface, in MeshMaterial material, in EstimateDataSet set, out SelectedLightInfo lightInfo)
 {
     lightInfo.Initialize();
     uint lightSelector = (uint) (cb.totalLightCount * clamp(set.lightUniformSample.x, 0.0f, 0.999999f));
@@ -298,7 +245,6 @@ bool ComputeDirectLightIrradiance(in MeshVertex hitSurface, in MeshMaterial mate
  
         lightInfo.irradiance = SampleDirectionalLight(color, power);
         lightInfo.pdf = 1.0;
-        return true;
     }
     else if (lightSelector < cb.pointLightRange)
     {
@@ -320,7 +266,6 @@ bool ComputeDirectLightIrradiance(in MeshVertex hitSurface, in MeshMaterial mate
    
         lightInfo.irradiance = SamplePointLight(pLit, hitSurface.pos, hitSurface.normal);
         lightInfo.pdf = 1.0f;
-        return true;
     }
     else if (lightSelector < cb.spotLightRange)
     {
@@ -343,7 +288,6 @@ bool ComputeDirectLightIrradiance(in MeshVertex hitSurface, in MeshMaterial mate
      
         lightInfo.irradiance = SampleSpotLight(sLit, hitSurface.pos, hitSurface.normal);
         lightInfo.pdf = 1.0f;
-        return true;
     }
     else if (lightSelector < cb.rectLightRange)
     {
@@ -364,38 +308,59 @@ bool ComputeDirectLightIrradiance(in MeshVertex hitSurface, in MeshMaterial mate
   
         lightInfo.irradiance = SampleRectLight(rLit, hitSurface.pos, hitSurface.normal, set.toRayOrigin, material.roughness);
         lightInfo.pdf = SampleDirectionRectangularLight_PDF(rLit.area, -set.toRayOrigin, normalize(lightVec), length(rLit.origin - hitSurface.pos));
-        return true;
     }
     else
-        return false;
+        return;
+    
+    RayDesc rayDesc = CreateRayDesc(hitSurface.pos, lightInfo.direction, hitSurface.normal, lightInfo.distance, T_MIN);
+    
+    ShadowPayload shadowPayload;
+    shadowPayload.isVisible = false;
+    
+    uint rayFlag = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+    TraceRay(sceneAs, rayFlag, OBJECT_MASK, DIRECT_LIGHT_HIT_SHADER_GROUP, 0, DIRECT_LIGHT_MISS_SHADER, rayDesc, shadowPayload);
+    
+    lightInfo.pdf = shadowPayload.isVisible == false ? 0 : lightInfo.pdf * cb.invTotalLightCount;
 }
 float3 PathTracing(in MeshVertex hitSurface, in MeshMaterial material, in EstimateDataSet set, uint pixelIndex, inout uint sampleSetIndex)
 {
     float rrProb = 1.0f;
-    float3 radiance = float3(0, 0, 0);
+    float3 radiance = 0;
     
-    //[unroll]
+    [unroll]
     for (uint i = 0; i < MAX_DEPTH; ++i)
     {
-        SelectLightInfo lightInfo;
-        if (!ComputeDirectLightIrradiance(hitSurface, material, set, lightInfo))
-            return float3(0, 0, 0);
-         
-        if (lightInfo.pdf > 0)
-            radiance += SampleLightSourceImportance(hitSurface, material, set, lightInfo);
-        radiance += SampleBxdfImportance(hitSurface, material, set, lightInfo);
-        if (set.hitType == LIGHT_HIT || set.hitType == MISS)
-            break;
+        //MIS
+        //sample light source and bxdf
+        SelectedLightInfo lightInfo;
+        LightSourceImportance(hitSurface, material, set, lightInfo);
+        BxdfImportance(hitSurface, material, set, lightInfo);
         
+        //Compute radiance  
+        if (lightInfo.pdf != 0)
+        {
+            float dotNL = max(dot(hitSurface.normal, lightInfo.direction), EPSILON);
+            float misWeight = BalanceHeuristic(1, set.bxdfPdf, 1, lightInfo.pdf);       
+            radiance += (set.throughput * lightInfo.irradiance * set.bxdf * dotNL * misWeight) / set.bxdfPdf;
+        }
+        set.throughput += set.bxdf / set.bxdfPdf;
+          
+        //Russian roulette 
         if (i >= MIN_DEPTH)
         {
             rrProb = min(RRP_MIN, max(set.throughput.r, max(set.throughput.g, set.throughput.b)));
             float rrSample = Sample1DPoint(pixelIndex, sampleSetIndex);
             if (rrProb > rrSample)
                 break;
-            
+             
             set.throughput /= (1.0f - rrProb);
         }
+        
+        //Find next surface
+        RayCastObject(hitSurface, material, set);
+        if (set.hitType == LIGHT_HIT || set.hitType == MISS)
+            break;
+        
         set.lightUniformSample = Sample2DPoint(pixelIndex, sampleSetIndex);
         set.bxdfUniformSample = Sample2DPoint(pixelIndex, sampleSetIndex);
         ++set.pathLength;
@@ -409,15 +374,18 @@ float3 PathTracing(in MeshVertex hitSurface, in MeshMaterial material, in Estima
 [shader("raygeneration")]
 void RayGenShader()
 {
-    const uint2 pixelCoord = DispatchRaysIndex().xy;
+    const uint2 pixelCoord = DispatchRaysIndex().xy; 
+    if (pixelCoord.x >= cb.halfRtSize.x || pixelCoord.y >= cb.halfRtSize.y)
+        return;
+    
     const uint pixelIndex = pixelCoord.y * DispatchRaysDimensions().x + pixelCoord.x;
     uint sampleSetIndex = 0;
     
     initialSample[pixelIndex].Initialize();
     
     float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.halfInvRtSize;
-    float depth = depthMap.SampleLevel(samLinearClamp, uv, 0).x;
-    if (depth == 1.0f)
+    float viewZ = viewZMap.SampleLevel(samLinearClamp, uv, 0).x;
+    if (viewZ == cb.camNearFar.y)
         return;
     
     float3 albedo;
@@ -425,7 +393,7 @@ void RayGenShader()
     UnPackAlbedoColorLayer(screenAlbedoMap.SampleLevel(samLinearClamp, uv, 0), albedo, specularFactor);
  
     MeshVertex visibleVertex;
-    visibleVertex.pos = GetWorldPos(uv, depth);
+    visibleVertex.pos = GetWorldPos(uv, viewZ);
     UnpackNormalAndTangentLayer(screenNormalMap.SampleLevel(samLinearClamp, uv, 0), visibleVertex.normal, visibleVertex.tangent);
      
     MeshMaterial material;

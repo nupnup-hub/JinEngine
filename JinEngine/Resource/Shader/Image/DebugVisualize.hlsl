@@ -149,6 +149,16 @@ void VisualizeAoMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThread
 	const float ao = srcMap.Load(int3(dispatchThreadID.xy, 0)).r;
 	result[dispatchThreadID.xy] = float4(ao, ao, ao, 1.0f);
 } 
+#elif  SSR_MAP
+[numthreads(DIMX, DIMY, DIMZ)]
+void VisualizeSsrMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+	if (resolution.x <= dispatchThreadID.x || resolution.y <= dispatchThreadID.y)
+		return;
+	
+	const float4 color = srcMap.Load(int3(dispatchThreadID.xy, 0));
+	result[dispatchThreadID.xy] = color;
+} 
 #elif  VELOCITY_MAP
 [numthreads(DIMX, DIMY, DIMZ)]
 void VisualizeVelocityMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)

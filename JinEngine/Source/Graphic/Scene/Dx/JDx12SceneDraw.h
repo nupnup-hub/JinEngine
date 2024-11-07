@@ -100,7 +100,7 @@ namespace JinEngine
 				JDx12GraphicResourceComputeSet gBufferSet[Constants::gBufferLayerCount];
 			public:
 				JDx12GraphicResourceComputeSet velocitySet;
-				JDx12GraphicResourceComputeSet aoSet;
+				JDx12GraphicResourceComputeSet aoSet; 
 			public:
 				JDx12GraphicResourceComputeSet debugSet;
 			public:
@@ -109,7 +109,7 @@ namespace JinEngine
 			public:
 				JDx12GraphicResourceComputeSet giColorSet; 
 			public:
-				bool canUseAo = false;
+				bool canUseAo = false; 
 				bool canUseLightCulling = false;
 				bool canUseLightCluster = false;
 				bool canUseGi = false;

@@ -318,7 +318,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12CommandContext::SetGraphicsRootDescriptorTable(const uint rootIndex, const uint index)
 	{
-		cmd->SetGraphicsRootDescriptorTable(rootIndex, gm->GetGpuDsvDescriptorHandle(index));
+		cmd->SetGraphicsRootDescriptorTable(rootIndex, gm->GetGpuSrvDescriptorHandle(index));
 	}
 	void JDx12CommandContext::SetGraphicsRootDescriptorTable(const uint rootIndex, const CD3DX12_GPU_DESCRIPTOR_HANDLE handle)
 	{

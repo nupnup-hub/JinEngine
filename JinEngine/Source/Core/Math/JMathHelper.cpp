@@ -30,6 +30,9 @@ SOFTWARE.
 #include "JMathHelper.h" 
 #include <cmath>
 
+int externInt = 0;
+static int sAbcd = 0;
+
 using namespace DirectX;
 namespace JinEngine
 {
@@ -42,6 +45,19 @@ namespace JinEngine
 	uint JMathHelper::PowerOfTwoExponent(uint v)noexcept
 	{
 		return std::round(std::log2(v)); 
+	}
+	uint JMathHelper::PowerOfTwoFloor(uint v)noexcept
+	{
+		if (v == 0) 
+			return 0; 
+		 
+		v |= (v >> 1);
+		v |= (v >> 2);
+		v |= (v >> 4);
+		v |= (v >> 8);
+		v |= (v >> 16);
+
+		return v - (v >> 1);  
 	}
 	uint JMathHelper::DivideTwo(uint v, int count)noexcept
 	{

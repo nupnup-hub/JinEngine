@@ -507,6 +507,12 @@ namespace JinEngine::Graphic
 		{
 			return CreateSsaoTexture(data, creationDesc, DXGI_FORMAT_R32_FLOAT);
 		}
+		static JDx12GraphicResourceHolderDesc CreateSsrTexture(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc)
+		{
+			static constexpr DXGI_FORMAT format = DXGI_FORMAT_R16G16B16A16_UNORM;
+			//DXGI_FORMAT_R8G8B8A8_UNORM
+			return CreateCommmon2DTexture(data, creationDesc, format, Constants::GetBackBufferClearColor(), true, false, false);
+		}
 		static JDx12GraphicResourceHolderDesc CreateImageProcessingTexture(const JDeviceData& data, const JGraphicResourceCreationDesc& creationDesc)
 		{
 			bool useMipmap = creationDesc.textureDesc != nullptr ? creationDesc.textureDesc->UseMipmap() : false;
@@ -596,6 +602,8 @@ namespace JinEngine::Graphic
 				return &CreateSsaoDepthTexture;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 				return &CreateSsaoDepthInterleaveTexture;
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSR_MAP:
+				return &CreateSsrTexture;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 				return &CreateImageProcessingTexture;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
@@ -1522,6 +1530,33 @@ namespace JinEngine::Graphic
 				CommonBind(detail);
 			}
 		}
+		static void BindSsrMap(const JBindDesc& bDesc)
+		{
+			const J_GRAPHIC_RESOURCE_TYPE rType = bDesc.info->GetGraphicResourceType();
+			const uint resourceIndex = bDesc.info->GetArrayIndex();
+
+			ID3D12Resource* resourcePtr = bDesc.gm->GetResource(rType, resourceIndex);
+			D3D12_RESOURCE_DESC resourceDesc = resourcePtr->GetDesc();
+ 
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+			srvDesc.Format = resourceDesc.Format;
+			srvDesc.Texture2D.MipLevels = 1;
+
+			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+			uavDesc.Format = resourceDesc.Format;
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+			uavDesc.Texture2D.MipSlice = 0;
+			uavDesc.Texture2D.PlaneSlice = 0; 
+
+			JBindDetailDesc detail(bDesc); 
+			detail.SetSrv(srvDesc);
+			detail.SetUav(uavDesc);
+			CommonBind(detail);
+		}
 		static void BindImageProcessing(const JBindDesc& bDesc)
 		{
 			const J_GRAPHIC_RESOURCE_TYPE rType = bDesc.info->GetGraphicResourceType();
@@ -1725,6 +1760,8 @@ namespace JinEngine::Graphic
 				return &BindSsaoDepthMap;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 				return &BindSsaoDepthInterleaveMap;
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSR_MAP:
+				return &BindSsrMap;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 				return &BindImageProcessing;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
@@ -1912,7 +1949,8 @@ namespace JinEngine::Graphic
 	}
 	void JBindDetailDesc::ClearAllowTrigger()
 	{
-		memset(allowBindResource, 0, (uint)J_GRAPHIC_BIND_TYPE::COUNT * sizeof(bool));
+		JCUtil::Fill<bool, 0>(allowBindResource, (uint)J_GRAPHIC_BIND_TYPE::COUNT);
+		//memset(allowBindResource, 0, (uint)J_GRAPHIC_BIND_TYPE::COUNT * sizeof(bool));
 	}
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> JDx12GraphicResourceCreation::CreateOcclusionQueryResult(ID3D12Device* device, const size_t capa)

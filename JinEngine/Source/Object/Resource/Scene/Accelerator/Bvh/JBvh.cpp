@@ -365,6 +365,7 @@ namespace JinEngine
 					if (centroidSub != 0)
 					{
 						//b is 0 ~ (bucketCount - 1) 
+						//((centroid - centroidMinDim) / centroidSub) = rate [0 ~ 1]
 						b = bucketCount * ((centroid - centroidMinDim) / centroidSub);
 					}
 					if (b >= bucketCount)
@@ -405,6 +406,7 @@ namespace JinEngine
 					count1 += buckets[j].count;
 				}
 				//교차값 = 1, 횡단값 = 1 / 8
+				//
 				cost[i] = traverseRate + (count0 * b0.Surface() + count1 * b1.Surface()) / boundSurface;
 				if (std::isnan(cost[i]))
 					cost[i] = maxCost;

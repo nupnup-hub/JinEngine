@@ -91,8 +91,7 @@ namespace JinEngine::Graphic
 		static constexpr uint canadidateVariation = SIZE_OF_ARRAY(canadidateCount);
 		static constexpr uint defaultCanadidateCount = canadidateCount[2];
 		static constexpr uint sampleSize = Constants::restirSampleSize;
-		static constexpr uint reservoirSize = Constants::restirReserviorSize;
-		static constexpr uint clearUserDataFrequency = 7680;
+		static constexpr uint reservoirSize = Constants::restirReserviorSize; 
 
 		static constexpr int threadDimX = 16;
 		static constexpr int threadDimY = 16;
@@ -103,8 +102,8 @@ namespace JinEngine::Graphic
 	}
 	namespace Raytracing
 	{
-		static constexpr int passCBIndex = 0;
-		static constexpr int asStructureIndex = passCBIndex + 1;
+		static constexpr int commonCBIndex = 0;
+		static constexpr int asStructureIndex = commonCBIndex + 1;
 		static constexpr int objRefBuffIndex = asStructureIndex + 1;
 		//static constexpr int sampleBuffIndex = objRefBuffIndex + 1;
 		static constexpr int dLitBuffIndex = objRefBuffIndex + 1;
@@ -114,8 +113,8 @@ namespace JinEngine::Graphic
 		static constexpr int matBuffIndex = rLitBuffIndex + 1;
 		static constexpr int texture2DBufferIndex = matBuffIndex + 1;
 		static constexpr int textureCubeBufferIndex = texture2DBufferIndex + 1;
-		static constexpr int depthMapIndex = textureCubeBufferIndex + 1;
-		static constexpr int albedoMapIndex = depthMapIndex + 1; 
+		static constexpr int viewZMapIndex = textureCubeBufferIndex + 1;
+		static constexpr int albedoMapIndex = viewZMapIndex + 1; 
 		static constexpr int lightPropMapIndex = albedoMapIndex + 1;
 		static constexpr int normalMapIndex = lightPropMapIndex + 1;
 		static constexpr int srcBuferIndex = normalMapIndex + 1;
@@ -222,17 +221,17 @@ namespace JinEngine::Graphic
 	}
 	namespace Reuse
 	{ 
-		static constexpr int passCBIndex = 0;									//cv
-		static constexpr int asStructureIndex = passCBIndex + 1;
+		static constexpr int commonCBIndex = 0;									//cv
+		static constexpr int asStructureIndex = commonCBIndex + 1;
 		static constexpr int initialSampleIndex = asStructureIndex + 1;
 		static constexpr int preTemporalIndex = initialSampleIndex + 1;
 		static constexpr int preSpatialIndex = preTemporalIndex + 1;
 		static constexpr int albedoMapIndex = preSpatialIndex + 1; 
 		static constexpr int lightPropMapIndex = albedoMapIndex + 1;
-		static constexpr int depthMapIndex = lightPropMapIndex + 1;
-		static constexpr int preNormalMapIndex = depthMapIndex + 1;
-		static constexpr int preDepthMapIndex = preNormalMapIndex + 1;
-		static constexpr int aoMapIndex = preDepthMapIndex + 1;
+		static constexpr int viewZMapIndex = lightPropMapIndex + 1;
+		static constexpr int preNormalMapIndex = viewZMapIndex + 1;
+		static constexpr int preViewZMapIndex = preNormalMapIndex + 1;
+		static constexpr int aoMapIndex = preViewZMapIndex + 1;
 
 		static constexpr int temporalIndex = aoMapIndex + 1;				//srv
 		static constexpr int spatialIndex = temporalIndex + 1;					//uav
@@ -241,24 +240,27 @@ namespace JinEngine::Graphic
 	}
 	namespace Final
 	{
-		static constexpr int passCBIndex = 0;									//cv
-		static constexpr int srcIndex = passCBIndex + 1;
+		static constexpr int commonCBIndex = 0;									//cv
+		static constexpr int srcIndex = commonCBIndex + 1;
 		//static constexpr int testIndex = srcIndex + 1;
 		static constexpr int destIndex = srcIndex + 1;
 		static constexpr int rootSlotCount = destIndex + 1;
 	}
 	namespace Upsample
 	{
-		static constexpr int passCBIndex = 0;									//cv
-		static constexpr int srcIndex = passCBIndex + 1;
+		static constexpr int commonCBIndex = 0;		
+		//static constexpr int passCBIndex = commonCBIndex + 1;
+		static constexpr int srcIndex = commonCBIndex + 1;
 		//static constexpr int testIndex = srcIndex + 1;
 		static constexpr int destIndex = srcIndex + 1;
 		static constexpr int rootSlotCount = destIndex + 1;
+
+		static constexpr int cb32BitCount = 4;
 	}
 	namespace Clear
 	{
-		static constexpr int passCBIndex = 0;					
-		static constexpr int intialIndex = passCBIndex + 1;
+		static constexpr int commonCBIndex = 0;					
+		static constexpr int intialIndex = commonCBIndex + 1;
 		static constexpr int temporal00Index = intialIndex + 1;
 		static constexpr int temporal01Index = temporal00Index + 1;
 		static constexpr int spatial00Index = temporal01Index + 1;
@@ -351,8 +353,7 @@ namespace JinEngine::Graphic
 		if (currSampleSetIndex >= Raytracing::sampleSetCount)
 			currSampleSetIndex = 0;
 
-		AddUpdateCount();
-		SetAliveTrigger();
+		AddUpdateCount(); 
 	}
 	
 	JDx12RaytracingGI::GIDataSet::GIDataSet(const JGraphicRtGiComputeSet* computeSet, const JDrawHelper& helper)
@@ -375,12 +376,16 @@ namespace JinEngine::Graphic
 			return;
 
 		oriResolution = rtSet.info->GetResourceSize();
-		halfResolution = oriResolution * 0.5f;
+		halfResolution = oriResolution * 0.5f; 
 		threadDim = Common::ThreadDim().XY();
 
-		sharedata = static_cast<JDx12GraphicResourceShareData*>(set->shareData)->GetRestirTemporalAccumulationData(oriResolution.x, oriResolution.y);
-		if (sharedata == nullptr)
+		taShareData = static_cast<JDx12GraphicResourceShareData*>(set->shareData)->GetRestirTemporalAccumulationData(oriResolution.x, oriResolution.y);
+		drawSceneShareData = static_cast<JDx12GraphicResourceShareData*>(set->shareData)->GetDrawSceneData(cam->GetGuid(), oriResolution);
+		if (taShareData == nullptr || drawSceneShareData == nullptr || !drawSceneShareData->IsValid())
 			return;
+
+		viewZSet = context->ComputeSet(drawSceneShareData->viewZMap);
+		preViewZSet = context->ComputeSet(drawSceneShareData->preViewZMap);
 
 		albedoSet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::ALBEDO_MAP); 
 		lightPropSet = context->ComputeSet(rtSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::LIGHTING_PROPERTY);
@@ -389,7 +394,6 @@ namespace JinEngine::Graphic
 		aoMapSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, ssaoIndex);
 
 		preRsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA);
-		preDsSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::STORE_PREVIOUS_FRAME_DATA);
 		preNormalSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
 		//preTangentSet = context->ComputeSet(preRsSet.info, J_GRAPHIC_RESOURCE_OPTION_TYPE::VELOCITY);
 
@@ -398,7 +402,7 @@ namespace JinEngine::Graphic
 		temporalReserviorSet[1] = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, reserviorIndex + 1);
 		spatialReserviorSet[0] = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, reserviorIndex + 2);
 		spatialReserviorSet[1] = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RESTIR_RESERVOIR, reserviorIndex + 3);
-		colorIntermediate = context->ComputeSet(sharedata->restirColorIntermediate00);
+		colorIntermediateHalf = context->ComputeSet(taShareData->restirColorIntermediate00);
 		destSet = context->ComputeSet(gInterface, J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::RAYTRACING_GI);
 		accelSet = context->ComputeSet(aInterface);
 		
@@ -426,7 +430,7 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12RaytracingGI::GIDataSet::IsValid()const noexcept
 	{
-		return sharedata != nullptr && accelSet.IsValid() && accelSet.holder->HasData();
+		return taShareData != nullptr && drawSceneShareData != nullptr && drawSceneShareData->IsValid() && accelSet.IsValid() && accelSet.holder->HasData();
 	}
 
 	JDx12RaytracingGI::~JDx12RaytracingGI()
@@ -458,6 +462,14 @@ namespace JinEngine::Graphic
 	bool JDx12RaytracingGI::HasDependency(const JGraphicOption::TYPE type)const noexcept
 	{
 		return type == JGraphicOption::TYPE::RENDERING || type == JGraphicOption::TYPE::DEBUGGING;
+	}
+	bool JDx12RaytracingGI::HasDrawSequencePostProcessing()const noexcept
+	{
+		return true;
+	}
+	void JDx12RaytracingGI::DrawSequencePostProcessing()
+	{
+		GraphicVolatileStorageInterface::UpdateEnd(userPrivate);
 	}
 	void JDx12RaytracingGI::NotifyGraphicInfoChanged(const JGraphicInfoChangedSet& set)
 	{
@@ -534,7 +546,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12RaytracingGI::InitializeSampling(const GIDataSet& set, const JDrawHelper& helper)
 	{
-		set.context->Transition(set.dsSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		set.context->Transition(set.viewZSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.albedoSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE); 
 		set.context->Transition(set.lightPropSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.normalSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -542,7 +554,7 @@ namespace JinEngine::Graphic
 		set.context->FlushResourceBarriers();
 
 		set.context->SetComputeRootSignature(raytracingRootSignature.Get());
-		set.context->SetComputeRootConstantBufferView(Raytracing::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
+		set.context->SetComputeRootConstantBufferView(Raytracing::commonCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
 		set.context->SetTlasView(Raytracing::asStructureIndex, set.accelSet);
 		set.context->SetComputeRootShaderResourceView(Raytracing::objRefBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::OBJECT_REF_INFO);
 		set.context->SetComputeRootShaderResourceView(Raytracing::dLitBuffIndex, J_FRAME_RESOURCE_UPLOAD_TYPE::DIRECTIONAL_LIGHT);
@@ -553,7 +565,7 @@ namespace JinEngine::Graphic
 		set.context->SetComputeRootDescriptorTable(Raytracing::texture2DBufferIndex, J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		if(set.skyMapSrvHeapIndex != invalidIndex)
 			set.context->SetComputeRootDescriptorTable(Raytracing::textureCubeBufferIndex, set.skyMapSrvHeapIndex);
-		set.context->SetComputeRootDescriptorTable(Raytracing::depthMapIndex, set.dsSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(Raytracing::viewZMapIndex, set.viewZSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Raytracing::albedoMapIndex, set.albedoSet.GetGpuSrvHandle()); 
 		set.context->SetComputeRootDescriptorTable(Raytracing::lightPropMapIndex, set.lightPropSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Raytracing::normalMapIndex, set.normalSet.GetGpuSrvHandle());   
@@ -566,7 +578,7 @@ namespace JinEngine::Graphic
 	{
 		set.context->InsertUAVBarrier(set.initialSampleSet.holder); 
 		set.context->Transition(set.preNormalSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		set.context->Transition(set.preDsSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		set.context->Transition(set.preViewZSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.initialSampleSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.preTemporalReserviorSet->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.preSpatialReserviorSet->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -577,16 +589,16 @@ namespace JinEngine::Graphic
 		set.context->FlushResourceBarriers();
  
 		set.context->SetComputeRootSignature(reuseRootSignature.Get()); 
-		set.context->SetComputeRootConstantBufferView(Reuse::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
+		set.context->SetComputeRootConstantBufferView(Reuse::commonCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
 		set.context->SetComputeRootDescriptorTable(Reuse::initialSampleIndex, set.initialSampleSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::preTemporalIndex, set.preTemporalReserviorSet->GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::preSpatialIndex, set.preSpatialReserviorSet->GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::albedoMapIndex, set.albedoSet.GetGpuSrvHandle()); 
 		//set.context->SetComputeRootDescriptorTable(Reuse::normalMapIndex, set.normalSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::lightPropMapIndex, set.lightPropSet.GetGpuSrvHandle());  
-		set.context->SetComputeRootDescriptorTable(Reuse::depthMapIndex, set.dsSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(Reuse::viewZMapIndex, set.viewZSet.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Reuse::preNormalMapIndex, set.preNormalSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Reuse::preDepthMapIndex, set.preDsSet.GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(Reuse::preViewZMapIndex, set.preViewZSet.GetGpuSrvHandle());
 		if(set.aoMapSet.IsValid())
 			set.context->SetComputeRootDescriptorTable(Reuse::aoMapIndex, set.aoMapSet.GetGpuSrvHandle());
 
@@ -603,30 +615,31 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingGI::FinalColor(const GIDataSet& set, const JDrawHelper& helper)
 	{ 
 		set.context->Transition(set.preSpatialReserviorSet->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		set.context->Transition(set.colorIntermediate.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		set.context->Transition(set.colorIntermediateHalf.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		//set.context->InsertUAVBarrier(set.currTemporalReserviorSet->holder, true);
 		set.context->FlushResourceBarriers();
 
 		set.context->SetComputeRootSignature(finalRootSignature.Get());
-		set.context->SetComputeRootConstantBufferView(Final::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
+		set.context->SetComputeRootConstantBufferView(Final::commonCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
 		set.context->SetComputeRootDescriptorTable(Final::srcIndex, set.preSpatialReserviorSet->GetGpuSrvHandle());
 		//set.context->SetComputeRootDescriptorTable(Final::testIndex, set.initialSampleSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Final::destIndex, set.colorIntermediate.GetGpuUavHandle());
+		set.context->SetComputeRootDescriptorTable(Final::destIndex, set.colorIntermediateHalf.GetGpuUavHandle());
 
 		set.context->SetPipelineState(finalShader.get());
 		set.context->Dispatch2D(set.halfResolution, set.threadDim);
 	} 
 	void JDx12RaytracingGI::Upsample(const GIDataSet& set, const JDrawHelper& helper)
-	{ 
-		set.context->Transition(set.colorIntermediate.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	{  
+		set.context->Transition(set.colorIntermediateHalf.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE); 
 		set.context->Transition(set.destSet.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->FlushResourceBarriers();
 
 		set.context->SetComputeRootSignature(upsampleRootSignature.Get());
-		set.context->SetComputeRootConstantBufferView(Upsample::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
-		set.context->SetComputeRootDescriptorTable(Upsample::srcIndex, set.colorIntermediate.GetGpuSrvHandle()); 
+		set.context->SetComputeRootConstantBufferView(Upsample::commonCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
+ 
+		set.context->SetComputeRootDescriptorTable(Upsample::srcIndex, set.colorIntermediateHalf.GetGpuSrvHandle());
 		set.context->SetComputeRootDescriptorTable(Upsample::destIndex, set.destSet.GetGpuUavHandle());
-
+		 
 		set.context->SetPipelineState(upsampleShader.get());
 		set.context->Dispatch2D(set.oriResolution, set.threadDim);
 	}
@@ -639,7 +652,7 @@ namespace JinEngine::Graphic
 		set.context->Transition(set.spatialReserviorSet[1].holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 	 
 		set.context->SetComputeRootSignature(clearRootSignature.Get());
-		set.context->SetComputeRootConstantBufferView(Clear::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
+		set.context->SetComputeRootConstantBufferView(Clear::commonCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
 		set.context->SetComputeRootDescriptorTable(Clear::intialIndex, set.initialSampleSet.GetGpuUavHandle());
 		set.context->SetComputeRootDescriptorTable(Clear::temporal00Index, set.temporalReserviorSet[0].GetGpuUavHandle());
 		set.context->SetComputeRootDescriptorTable(Clear::temporal01Index, set.temporalReserviorSet[1].GetGpuUavHandle());
@@ -661,28 +674,22 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingGI::InitializeSamplingTest(const GIDataSet& set, const JDrawHelper& helper)
 	{ 
 		set.context->Transition(set.initialSampleSet.holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		set.context->Transition(set.colorIntermediate.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		set.context->Transition(set.colorIntermediateHalf.holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->FlushResourceBarriers();
 		 
 		set.context->SetComputeRootSignature(finalRootSignature.Get());
-		set.context->SetComputeRootConstantBufferView(Final::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
+		set.context->SetComputeRootConstantBufferView(Final::commonCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
 		set.context->SetComputeRootDescriptorTable(Final::srcIndex, set.initialSampleSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Final::destIndex, set.colorIntermediate.GetGpuUavHandle());
+		set.context->SetComputeRootDescriptorTable(Final::destIndex, set.colorIntermediateHalf.GetGpuUavHandle());
 
 		set.context->SetPipelineState(finalShader.get());
 		set.context->Dispatch2D(set.halfResolution, set.threadDim);
-		set.context->Transition(set.colorIntermediate.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		set.context->InsertUAVBarrier(set.colorIntermediate.holder, true);
+		set.context->Transition(set.colorIntermediateHalf.holder, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		set.context->InsertUAVBarrier(set.colorIntermediateHalf.holder, true);
 	}
 	void JDx12RaytracingGI::End(const GIDataSet& set, const JDrawHelper& helper)
 	{
-		set.userPrivate->End(helper);
-		++computeCount;
-		if (computeCount >= Common::clearUserDataFrequency)
-		{
-			Core::JVolatileStorageInterface::UpdateEnd(userPrivate); 
-			computeCount = 0;
-		}
+		set.userPrivate->End(helper); 
 	}
 	void JDx12RaytracingGI::DispatchRays(JDx12CommandContext* context, const STATE_OBJECT_TYPE type, const uint width, const uint height)
 	{
@@ -954,6 +961,7 @@ namespace JinEngine::Graphic
 
 		JDx12RootSignatureBuilder2<Upsample::rootSlotCount, 1> uBuilder;
 		uBuilder.PushConstantsBuffer(0);
+		//uBuilder.PushConstants(Upsample::cb32BitCount, 1);
 		uBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 		//fBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 		uBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
@@ -981,6 +989,7 @@ namespace JinEngine::Graphic
 		{
 			const REUSE_OPTION reuseOption = (REUSE_OPTION)i;
 			reuseSamplingShader[i] = std::make_unique<JDx12ComputeShaderDataHolder>();
+
 			psoBuilder.PushHolder(reuseSamplingShader[i].get());
 			psoBuilder.PushCompileInfo(JCompileInfo(ShaderRelativePath::RestirGi(L"Reuse.hlsl"), L"main"));
 
@@ -1077,7 +1086,6 @@ namespace JinEngine::Graphic
 	}
 	void JDx12RaytracingGI::ClearUserPrivateData()
 	{
-		userPrivate.clear();
-		computeCount = 0; 
+		userPrivate.clear(); 
 	}
 }

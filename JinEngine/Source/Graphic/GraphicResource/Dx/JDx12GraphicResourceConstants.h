@@ -53,14 +53,17 @@ namespace JinEngine
 			static constexpr size_t restirSampleSize = 44;	//44(rand 1); 68(non pack)
 			static constexpr size_t restirReserviorSize = restirSampleSize + 8; // 
 			static constexpr uint resitrReserviorBufferCount = 2;
+			//static constexpr float resitrRaytracingResolutionRate = 0.25f; // 1 = original resolution
 
 			static constexpr uint histogramBufferCount = 256;
 			static constexpr uint exposureBufferCount = 8;
 			static constexpr float exposureDefaultValue = 2.0f;
-			static constexpr float exposureDefaultMinLog = -12.0f;
+			static constexpr float exposureDefaultMinLog = -4.0f;
 			static constexpr float exposureDefaultMaxLog = 4.0f;
 
 			static constexpr uint restirDenoiseMipmapCount = 4;
+
+			static constexpr uint ssrMipCount = 7;
 
 			static DXGI_FORMAT GetBackBufferFormat(const bool isHdr)noexcept
 			{

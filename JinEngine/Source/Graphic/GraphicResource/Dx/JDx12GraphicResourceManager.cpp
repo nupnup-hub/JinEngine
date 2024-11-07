@@ -81,7 +81,7 @@ namespace JinEngine::Graphic
 			0.0f,
 			Constants::exposureDefaultMinLog,
 			Constants::exposureDefaultMaxLog,
-			 Constants::exposureDefaultMaxLog - Constants::exposureDefaultMinLog,
+			Constants::exposureDefaultMaxLog - Constants::exposureDefaultMinLog,
 			1.0f / (Constants::exposureDefaultMaxLog - Constants::exposureDefaultMinLog)
 		};
 	public:
@@ -146,6 +146,8 @@ namespace JinEngine::Graphic
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_MAP:
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 				return innerResourceInitCapacity;
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSR_MAP:
+				return 16;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 				return 32;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:
@@ -493,6 +495,22 @@ namespace JinEngine::Graphic
 					return InitCapacity(rType) * InitCapacity(rType);
 				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
 					return 0;
+				default:
+					return 0;
+				}
+			}
+			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSR_MAP:
+			{
+				switch (bType)
+				{
+				case JinEngine::J_GRAPHIC_BIND_TYPE::RTV:
+					return 0;
+				case JinEngine::J_GRAPHIC_BIND_TYPE::DSV:
+					return 0;
+				case JinEngine::J_GRAPHIC_BIND_TYPE::SRV:
+					return InitCapacity(rType);
+				case JinEngine::J_GRAPHIC_BIND_TYPE::UAV:
+					return InitCapacity(rType);
 				default:
 					return 0;
 				}

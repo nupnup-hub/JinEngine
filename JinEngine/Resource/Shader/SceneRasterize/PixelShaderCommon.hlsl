@@ -71,7 +71,7 @@ Texture2DArray shadowArray[SHADOW_MAP_ARRAY_COUNT] : register(t2, space3);
 TextureCube shadowCubeMap[SHADOW_MAP_CUBE_COUNT] : register(t2, space4);
 #endif
 
-Texture2D ambientOcclusionMap : register(t2, space5);
+Texture2D ambientOcclusionMap : register(t2, space5); 
 
 #ifdef DEFERRED_SHADING
 Texture2D gBuffer[G_BUFFER_LAYER_COUNT] : register(t2, space6);
@@ -138,27 +138,27 @@ float2 ApplyParallaxOffset(Texture2D normalMap, Texture2D heightMap, float2 uv, 
 
 float LinearDepth(const float v)
 {
-    return LinearDepth(v, cbCam.nearZ, cbCam.FarZ);
+    return LinearDepth(v, cbCam.nearZ, cbCam.farZ);
 }
 float NonLinearDepth(const float v)
 {
-    return NonLinearDepth(v, cbCam.nearZ, cbCam.FarZ);
+    return NonLinearDepth(v, cbCam.nearZ, cbCam.farZ);
 }
 float NdcToViewPZ(const float v)
 { 
-    return NdcToViewPZ(v, cbCam.nearZ, cbCam.FarZ);
+    return NdcToViewPZ(v, cbCam.nearZ, cbCam.farZ);
 }
 float ViewToNdcPZ(const float v)
 {
-    return ViewToNdcPZ(v, cbCam.nearZ, cbCam.FarZ);
+    return ViewToNdcPZ(v, cbCam.nearZ, cbCam.farZ);
 }
 float NdcToViewOZ(const float v)
 {
-    return NdcToViewOZ(v, cbCam.nearZ, cbCam.FarZ);
+    return NdcToViewOZ(v, cbCam.nearZ, cbCam.farZ);
 }
 float ViewToNdcOZ(const float v)
 {
-    return ViewToNdcOZ(v, cbCam.nearZ, cbCam.FarZ);
+    return ViewToNdcOZ(v, cbCam.nearZ, cbCam.farZ);
 }
 
 #define GI_APP_DIRECT_LIGHT_COLOR_FACTOR 1.0f
@@ -173,9 +173,11 @@ float3 CombineGlobalLight(float3 directLight, float3 albedoColor, float3 giColor
 {  
     if (aoFactor == 0)
         return directLight;
-  
-    float3 ambientLight = giColor * aoFactor;
-    return directLight * GI_DIRECT_LIGHT_COLOR_FACTOR + albedoColor * ambientLight * GI_MATERIAL_COLOR_FACTOR;
+   
+    float giPower = aoFactor * 0.5f;
+    float additionalPower = 1.5f;
+    return directLight * (1.0f - giPower) + giPower * albedoColor * giColor * additionalPower;
+    //return directLight * GI_DIRECT_LIGHT_COLOR_FACTOR + albedoColor * ambientLight * GI_MATERIAL_COLOR_FACTOR;
 }
 float3 CombineApproxGlobalLight(float3 directLight, float3 albedoColor, float aoFactor)
 { 

@@ -24,7 +24,7 @@ SOFTWARE.
 
 
 #pragma once 
-
+#include<atomic>
 namespace JinEngine
 {
 	namespace Core
@@ -32,13 +32,21 @@ namespace JinEngine
 		enum class J_THREAD_USE_CASE_TYPE
 		{
 			ENGINE_TASK_SYNC,	//stuff command list 
-			COMMON
+			COMMON,
+			COUNT
 		};
 
 		enum class J_THREAD_STATE_TYPE
 		{
 			WAIT,
 			WORK
-		};
+		}; 
+
+		using AtomicFlag = std::atomic_flag;
+		using AtomicBoolen = std::atomic_bool;
+		using AtomicInt = std::atomic_int;
+		using AtomicUint = std::atomic_uint; 
+		using AtomicUint64 = std::atomic_uint64_t;
+
 	}
 }

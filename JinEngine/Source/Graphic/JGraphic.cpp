@@ -38,7 +38,7 @@ SOFTWARE.
 #include"DataSet/JGraphicObjectDataSetManager.h"
 #include"Scene/JSceneDraw.h"
 #include"Scene/JOutline.h"
-#include"Scene/JSceneVelocity.h"
+#include"Scene/JSceneDependencyData.h"
 #include"ShadowMap/JShadowMap.h"
 #include"ShadowMap/JCsmManager.h"
 #include"Debug/JGraphicDebug.h"
@@ -47,6 +47,7 @@ SOFTWARE.
 #include"Image/JBlur.h"
 #include"Image/JDownSampling.h"
 #include"Image/JSsao.h"
+#include"Image/JSsr.h"
 #include"Image/JToneMapping.h"
 #include"Image/JBloom.h"
 #include"Image/JAntialise.h"
@@ -81,8 +82,7 @@ SOFTWARE.
 #include"../Core/File/JFileConstant.h"
 #include"../Core/Exception/JExceptionMacro.h"	
 #include"../Core/Platform/JHardwareInfo.h"
-#include"../Core/Threading/JThreadManager.h"
-#include"../Core/Threading/JThreadManagerPrivate.h"
+#include"../Core/Threading/JThreadManager.h" 
 #include"../Core/Memory/JMemoryCapture.h"	
 #include"../Core/Unit/JByteUnit.h"	
 #include"../Core/Utility/JCommonUtility.h"  
@@ -109,6 +109,8 @@ SOFTWARE.
 #include"../Application/Project/JApplicationProject.h"  
 
 #include"../Core/Time/JStopWatch.h"
+#include"../Core/Threading/JThreadJobDesc.h"
+
 //#ifdef DEVELOP
 //#include"../Develop/Debug/JDevelopDebug.h"  
 //#endif
@@ -149,16 +151,6 @@ namespace JinEngine
 			graphic = nullptr;
 			context = nullptr;
 		}
-		void JResourceManageSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
-		{
-			outV.push_back(graphic.get());
-			outV.push_back(culling.get());
-			outV.push_back(csm.get());
-			outV.push_back(accelerator.get());
-			outV.push_back(frame.get());
-			outV.push_back(objectData.get());
-			outV.push_back(shareData.get()); 
-		}
 		void JSceneDrawingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
 		{
 			scene->Initialize(device, resourceManage->graphic.get());
@@ -167,28 +159,18 @@ namespace JinEngine
 
 			outline->Initialize(device, resourceManage->graphic.get());
 			debug->Initialize(device, resourceManage->graphic.get());
-			velocity->Initialize(device, resourceManage->graphic.get());
+			sceneDependencyData->Initialize(device, resourceManage->graphic.get());
 		}
 		void JSceneDrawingSubclassSet::Clear()
 		{
-			velocity = nullptr;
+			sceneDependencyData = nullptr;
 			debug = nullptr;
 			outline = nullptr;
 
 			depthTest = nullptr;
 			shadowMap = nullptr;
 			scene = nullptr;
-		}
-		void JSceneDrawingSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
-		{
-			outV.push_back(scene.get());
-			outV.push_back(shadowMap.get());
-			outV.push_back(depthTest.get());
-
-			outV.push_back(outline.get());
-			outV.push_back(debug.get());
-			outV.push_back(velocity.get());
-		}
+		} 
 		void JCullingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
 		{
 			frustum->Initialize();
@@ -202,19 +184,13 @@ namespace JinEngine
 			hzb = nullptr;
 			hd = nullptr;
 			frustum = nullptr;
-		}
-		void JCullingSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
-		{
-			outV.push_back(lit.get());
-			outV.push_back(hzb.get());
-			outV.push_back(hd.get());
-			outV.push_back(frustum.get());
-		}
+		} 
 		void JImageProcessingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
 		{ 
 			blur->Initialize(device, resourceManage->graphic.get());
 			downSampling->Initialize(device, resourceManage->graphic.get());
 			ssao->Initialize(device, resourceManage->graphic.get());
+			ssr->Initialize(device, resourceManage->graphic.get());
 			tm->Initialize(device, resourceManage->graphic.get());
 			bloom->Initialize(device, resourceManage->graphic.get());
 			aa->Initialize(device, resourceManage->graphic.get());
@@ -232,22 +208,11 @@ namespace JinEngine
 			aa = nullptr;
 			bloom = nullptr;
 			tm = nullptr;
+			ssr = nullptr;
 			ssao = nullptr;
 			downSampling = nullptr;
 			blur = nullptr;  
-		}
-		void JImageProcessingSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
-		{
-			outV.push_back(blur.get());
-			outV.push_back(downSampling.get());
-			outV.push_back(ssao.get());
-			outV.push_back(tm.get());
-			outV.push_back(bloom.get());
-			outV.push_back(aa.get());
-			outV.push_back(histogram.get());
-			outV.push_back(exposure.get());
-			outV.push_back(convertColor.get());
-		}
+		} 
 		void JRaytracingSubclassSet::Initialize(JGraphicDevice* device, JResourceManageSubclassSet* resourceManage)
 		{
 			gi->Initialize(device, resourceManage->graphic.get());
@@ -261,16 +226,9 @@ namespace JinEngine
 			ao = nullptr;
 			denoiser = nullptr;
 		}
-		void JRaytracingSubclassSet::GetManageSubclass(std::vector<JGraphicSubClassInterface*>& outV)
-		{
-			outV.push_back(gi.get());
-			//outV.push_back(ao.get()); 
-			outV.push_back(denoiser.get());
-		}
-		 
+ 
 		namespace
-		{ 
-			using GraphicThreadInteface = Core::JThreadManagerPrivate::GraphicInterface;
+		{  
 			using WindowEventListener = Core::JEventListener<size_t, Window::J_WINDOW_EVENT>;
 		}
 		namespace Private
@@ -352,12 +310,18 @@ namespace JinEngine
 			JRaytracingSubclassSet raytracing;
 		private:
 			std::unique_ptr<JGraphicDrawReferenceSet> drawRefSet;
-			std::unique_ptr<WorkerThreadF::Functor> workerFunctor;
+			std::unique_ptr<WorkerThreadF::Functor> threadTaskFunctor[(uint)J_THREAD_TASK_TYPE::COUNT];  
 		private:
 			JGuiBackendInterface* guiBackendInterface;
 			//graphic api data
 			std::unique_ptr<JGuiBackendDataAdapter> guiAdapter;
 		private:
+			JGraphicThreadInfo threadInfo;
+		private:
+			std::vector<JGraphicSubClassInterface*> updatePreProcessingSub;
+			std::vector<JGraphicSubClassInterface*> updatePostProcessingSub;
+			std::vector<JGraphicSubClassInterface*> drawPreProcessingSub;
+			std::vector<JGraphicSubClassInterface*> drawPostProcessingSub;
 			std::vector<JGraphicSubClassInterface*> infoChangedListener[(uint)JGraphicInfo::TYPE::COUNT];
 			std::vector<JGraphicSubClassInterface*> optionChangedListener[(uint)JGraphicOption::TYPE::COUNT];
 			//std::vector<std::unique_ptr<InnerEventF::CompletelyBind>> innerEvent;
@@ -370,7 +334,10 @@ namespace JinEngine
 			{
 				IntializeGraphicInfo();
 				InitializeGameObjectBuffer();
-				workerFunctor = std::make_unique<WorkerThreadF::Functor>(&JGraphicImpl::WorkerThread, this);
+
+				threadTaskFunctor[(uint)J_THREAD_TASK_TYPE::OCC] = std::make_unique<WorkerThreadF::Functor>(&JGraphicImpl::OccDrawJob, this);
+				threadTaskFunctor[(uint)J_THREAD_TASK_TYPE::SHADOW_MAP] = std::make_unique<WorkerThreadF::Functor>(&JGraphicImpl::ShadowMapDrawJob, this);
+				threadTaskFunctor[(uint)J_THREAD_TASK_TYPE::SCENE] = std::make_unique<WorkerThreadF::Functor>(&JGraphicImpl::SceneDrawJob, this);
 			}
 			~JGraphicImpl()
 			{ }
@@ -384,7 +351,6 @@ namespace JinEngine
 				info.resource.occlusionMinSize = Constants::minOcclusionSize;
 				info.resource.occlusionMapCapacity = occMipmapViewCapa;
 				info.resource.occlusionMapCount = JMathHelper::Log2Int(info.resource.occlusionWidth) - JMathHelper::Log2Int(Constants::minOcclusionSize) + 1;
-				info.frame.threadCount = _JThreadManager::Instance().GetReservedSpaceCount(Core::J_THREAD_USE_CASE_TYPE::ENGINE_TASK_SYNC);
 			}
 			//CallOnce
 			void InitializeGameObjectBuffer()
@@ -458,7 +424,8 @@ namespace JinEngine
 			{
 #pragma region PreProcess
 				bool changedMask[(uint)JGraphicOption::TYPE::COUNT];
-				memset(&changedMask, false, sizeof(bool) * SIZE_OF_ARRAY(changedMask));
+				JCUtil::Fill<bool, 0>(changedMask, SIZE_OF_ARRAY(changedMask));
+				//memset(&changedMask, false, sizeof(bool) * SIZE_OF_ARRAY(changedMask));
 				 
 #pragma endregion
 #pragma region  Restrict Value
@@ -530,6 +497,7 @@ namespace JinEngine
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.usePostprocess != newGraphicOption.postProcess.usePostprocess);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useSsao != newGraphicOption.postProcess.useSsao);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useSsaoInterleave != newGraphicOption.postProcess.useSsaoInterleave);
+				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useSsr != newGraphicOption.postProcess.useSsr);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useHdr != newGraphicOption.postProcess.useHdr);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useFxaa != newGraphicOption.postProcess.useFxaa);
 				changedMask[(uint)JGraphicOption::TYPE::POST_PROCESS] |= (option.postProcess.useTaa != newGraphicOption.postProcess.useTaa);
@@ -541,7 +509,8 @@ namespace JinEngine
 				//debugging`
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileGraphicShader;
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileLightClusterShader;
-				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileSsaoShader; ; ;
+				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileSsaoShader; 
+				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileSsrShader; 
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileToneMappingShader;
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileRtGiShader;		
 				changedMask[(uint)JGraphicOption::TYPE::DEBUGGING] |= newGraphicOption.debugging.requestRecompileRtDenoiseShader;
@@ -644,6 +613,7 @@ namespace JinEngine
 				option.debugging.requestRecompileGraphicShader =
 					option.debugging.requestRecompileLightClusterShader =
 					option.debugging.requestRecompileSsaoShader =
+					option.debugging.requestRecompileSsrShader =
 					option.debugging.requestRecompileToneMappingShader =
 					option.debugging.requestRecompileRtGiShader =
 					option.debugging.requestRecompileRtDenoiseShader = 
@@ -829,7 +799,7 @@ namespace JinEngine
 			}
 		private:
 			void AddInnerEvent(std::unique_ptr<Core::JBindHandleBase>&& b)
-			{
+			{ 
 				innerEvent.push_back(std::move(b));
 			}
 		public:
@@ -1164,7 +1134,7 @@ namespace JinEngine
 
 				AllocateRefSet();
 				if (innerEvent.size() > 0)
-				{
+				{  
 					for (const auto& data : innerEvent)
 						data->InvokeCompletelyBind();
 					innerEvent.clear();
@@ -1173,9 +1143,15 @@ namespace JinEngine
 				adapter->BeginUpdateStart(option.deviceType, *drawRefSet);
 			}
 			void Update()
-			{ 
+			{
+				for (const auto& data : updatePreProcessingSub)
+					data->UpdateSequencePreProcessing();
+
 				UpdateFrameBuffer();
 				UpdateRequestor();
+
+				for (const auto& data : updatePostProcessingSub)
+					data->UpdateSequencePostProcessing();
 			}
 			void UpdateReAllocCondition(JUpdateHelper::UpdateDataBase& uBase)const noexcept
 			{
@@ -1263,9 +1239,7 @@ namespace JinEngine
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
 					drawTarget->BeginUpdate(); 
 
-					JFrameUpdateOption updateOption; 
-					if(option.debugging.testTrigger00)
-						updateOption.setUpdateThreadTask = &GraphicThreadInteface::SetUpdateThreadTask;
+					JFrameUpdateOption updateOption;  
 					updateOption.isActivatedSceneTimer = drawTarget->scene->IsActivatedSceneTime();
 
 					for (uint j = 0; j < totalCompVariation; ++j)
@@ -1411,10 +1385,16 @@ namespace JinEngine
 				AllocateRefSet();
 				if (allowDrawScene)
 				{
+					for (const auto& data : drawPreProcessingSub)
+						data->DrawSequencePreProcessing();
+
 					if (option.rendering.allowMultiThread)
 						DrawUseMultiThread();
 					else
 						DrawUseSingleThread();
+
+					for (const auto& data : drawPostProcessingSub)
+						data->DrawSequencePostProcessing();
 				}
 				else
 					EndFrame(false);
@@ -1432,8 +1412,8 @@ namespace JinEngine
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.scene = drawTarget->scene;
-					helper.drawTarget = drawTarget;
+					helper.SetDrawTarget(drawTarget);
+					 
 					for (const auto& data : drawTarget->frustumCullingRequestor)
 					{
 						if (!data->canDrawThisFrame)
@@ -1501,6 +1481,18 @@ namespace JinEngine
 
 						drawing.scene->DrawSceneRenderTarget(dataSet.sceneDraw.get(),
 							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
+
+					}
+					for (const auto& data : drawTarget->sceneRequestor)
+					{
+						if (!data->canDrawThisFrame && !data->jCamera->AllowPostProcess() && !data->jCamera->AllowRaytracingGI())
+							continue; 
+
+						JDrawHelper copiedHelper = helper;
+						copiedHelper.SettingDrawScene(data->jCamera);
+
+						drawing.sceneDependencyData->ComputeDepthRelative(dataSet.sceneDependencyData.get(), copiedHelper);
+						//drawing.sceneDependencyData->ComputeVelocity(dataSet.sceneDependencyData.get(), copiedHelper);
 					}
 					/*Restir이외에 Velocity buffer 사용시 use
 					for (const auto& data : drawTarget->sceneRequestor)
@@ -1628,14 +1620,18 @@ namespace JinEngine
 				BeginFrame();
 				ComputeCpuFrustumCulling();
 
-				//작업분배
-				for (uint i = 0; i < info.frame.threadCount; ++i)
-					GraphicThreadInteface::SetDrawThreadTask(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
+				static Core::JobDesc jobDesc[(uint)J_THREAD_TASK_TYPE::COUNT * Constants::gMaxFrameThread];
+				for (uint i = 0; i < threadInfo.threadCount; ++i)
+				{ 
+					for (uint j = 0; j < (uint)J_THREAD_TASK_TYPE::COUNT; ++j)
+						jobDesc[i * (uint)J_THREAD_TASK_TYPE::COUNT + j].func = Core::UniqueBind(*threadTaskFunctor[j], std::move(i));
+				}
 
+				adapter->BeginMultiThreadTask(option.deviceType, jobDesc);
 				adapter->ExecuteDrawOccTask(option.deviceType, *drawRefSet);
 				adapter->ExecuteDrawShadowMapTask(option.deviceType, *drawRefSet);
 				adapter->ExecuteDrawSceneTask(option.deviceType, *drawRefSet);
-
+				adapter->EndMultiThreadTask(option.deviceType); 
 				MidFrame();
 				EndFrame(true);
 			}
@@ -1658,23 +1654,19 @@ namespace JinEngine
 					}
 				}
 			}
-		private:
-			void WorkerThread(uint threadIndex)
-			{
-				//mostly handle drawing object
-				JGraphicThreadOccTaskSet occTaskSet;
-				JGraphicThreadShadowMapTaskSet shadowMapTaskSet;
-				JGraphicThreadSceneTaskSet sceneTaskSet;
-
-				const J_GRAPHIC_RENDERING_PROCESS objRenderingType = option.rendering.allowDeferred ? J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY : J_GRAPHIC_RENDERING_PROCESS::FORWARD;
-				const uint drawListCount = JGraphicDrawList::GetListCount();
-				JDrawHelper helper(info, option, alignedObject);
-				helper.SetAllowMultithreadDraw(true);
-				helper.SetTheadInfo(info.frame.threadCount, threadIndex);
-
+		private: 
+			void OccDrawJob(uint threadIndex)
+			{  
 				if (option.IsOcclusionActivated())
 				{
+					JGraphicThreadOccTaskSet occTaskSet;
 					adapter->SettingDrawOccTask(option.deviceType, *drawRefSet, threadIndex, occTaskSet);
+
+					JDrawHelper helper(info, option, alignedObject);
+					helper.SetAllowMultithreadDraw(true);
+					helper.SetTheadInfo(info.frame.threadCount, threadIndex);
+					 
+					const uint drawListCount = JGraphicDrawList::GetListCount();
 					for (uint i = 0; i < drawListCount; ++i)
 					{
 						JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
@@ -1690,9 +1682,19 @@ namespace JinEngine
 						}
 					}
 				}
-				adapter->NotifyCompleteDrawOccTask(option.deviceType, *drawRefSet, threadIndex);
+				adapter->NotifyCompleteDrawOccTask(option.deviceType, *drawRefSet, threadIndex);  
+			}
+			void ShadowMapDrawJob(uint threadIndex)
+			{ 
+				JGraphicThreadShadowMapTaskSet shadowMapTaskSet;
 				adapter->SettingDrawShadowMapTask(option.deviceType, *drawRefSet, threadIndex, shadowMapTaskSet);
 				drawing.shadowMap->BindResource(shadowMapTaskSet.bind.get());
+
+				JDrawHelper helper(info, option, alignedObject);
+				helper.SetAllowMultithreadDraw(true);
+				helper.SetTheadInfo(info.frame.threadCount, threadIndex);
+
+				const uint drawListCount = JGraphicDrawList::GetListCount();
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
@@ -1706,12 +1708,22 @@ namespace JinEngine
 						drawing.shadowMap->DrawSceneShadowMapMultiThread(shadowMapTaskSet.shadowMapDraw.get(),
 							JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
 					}
-				}
-
-				adapter->NotifyCompleteDrawShadowMapTask(option.deviceType, *drawRefSet, threadIndex);
+				} 
+				adapter->NotifyCompleteDrawShadowMapTask(option.deviceType, *drawRefSet, threadIndex); 
+			}
+			void SceneDrawJob(uint threadIndex)
+			{ 
+				const J_GRAPHIC_RENDERING_PROCESS objRenderingType = option.rendering.allowDeferred ? J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY : J_GRAPHIC_RENDERING_PROCESS::FORWARD;
+				
+				JGraphicThreadSceneTaskSet sceneTaskSet;
 				adapter->SettingDrawSceneTask(option.deviceType, *drawRefSet, threadIndex, sceneTaskSet);
 				drawing.scene->BindResource(objRenderingType, sceneTaskSet.bind.get());
-
+	 
+				JDrawHelper helper(info, option, alignedObject);
+				helper.SetAllowMultithreadDraw(true);
+				helper.SetTheadInfo(info.frame.threadCount, threadIndex);
+   
+				const uint drawListCount = JGraphicDrawList::GetListCount();
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
@@ -1744,6 +1756,7 @@ namespace JinEngine
 				}
 				adapter->NotifyCompleteDrawSceneTask(option.deviceType, *drawRefSet, threadIndex);
 			}
+		private:
 			//for multi thread
 			void BeginFrame()
 			{
@@ -1847,7 +1860,24 @@ namespace JinEngine
 					}
 				}
 				*/
-				if (option.CanUseSSAO() || option.CanUseRtGi())
+				for (const auto& data : registeredSceneRequestor)
+				{
+					helper.SetDrawTarget(data->GetOwnerTarget());
+					if (!data->canDrawThisFrame && !data->jCamera->AllowPostProcess() && !data->jCamera->AllowRaytracingGI())
+						continue;
+
+					JDrawHelper copiedHelper = helper;
+					copiedHelper.SettingDrawScene(data->jCamera);
+
+					drawing.sceneDependencyData->ComputeDepthRelative(dataSet.sceneDependencyData.get(), copiedHelper);
+					//drawing.sceneDependencyData->ComputeVelocity(dataSet.sceneDependencyData.get(), copiedHelper);
+				}
+
+				const bool canUseSSAO = option.CanUseSSAO();
+				const bool canUsePostProcess = option.CanUsePostProcess();
+				const bool canUseRtGi = option.CanUseRtGi();
+
+				if (canUseSSAO  || canUseRtGi)
 				{
 					for (const auto& data : registeredSceneRequestor)
 					{
@@ -1857,13 +1887,14 @@ namespace JinEngine
 
 						JDrawHelper copiedHelper = helper;
 						copiedHelper.SettingDrawScene(data->jCamera);
-						imageProcessing.ssao->ApplySsao(dataSet.ssao.get(), copiedHelper);
+						if(canUseSSAO && data->jCamera->AllowSsao())
+							imageProcessing.ssao->ApplySsao(dataSet.ssao.get(), copiedHelper); 
 
-						if (!data->jCamera->AllowRaytracingGI())
-							continue;
-
-						raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
-						raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
+						if (canUseRtGi && data->jCamera->AllowRaytracingGI())
+						{
+							raytracing.gi->ComputeGI(dataSet.rtgi.get(), copiedHelper);
+							raytracing.denoiser->ApplyGIDenoise(dataSet.rtDenoiser.get(), copiedHelper);
+						}
 					}
 				}
 				if (option.rendering.allowDeferred)
@@ -1876,7 +1907,7 @@ namespace JinEngine
 							continue;
 
 						drawing.scene->DrawSceneShadeMultiThread(dataSet.sceneDraw.get(), JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
-					}
+					} 
 				}
 
 				drawing.scene->BindResource(J_GRAPHIC_RENDERING_PROCESS::FORWARD, dataSet.bind.get());
@@ -2006,15 +2037,18 @@ namespace JinEngine
 		public:
 			void Initialize(std::unique_ptr<JGraphicAdapter>&& newAdpter,
 				std::unique_ptr<JGuiBackendDataAdapter> newGuiAdapter,
-				JGuiBackendInterface* newGuiBackendInterface)
+				JGuiBackendInterface* newGuiBackendInterface,
+				const JGraphicThreadInfo& newThreadInfo)
 			{ 
 				const JVector2F clientSize = JWindow::GetClientSize();
 				info.width = clientSize.x;
 				info.height = clientSize.y;
-
+				info.frame.threadCount = newThreadInfo.threadCount;
+ 
 				adapter = std::move(newAdpter);
 				guiAdapter = std::move(newGuiAdapter);
 				guiBackendInterface = newGuiBackendInterface;
+				threadInfo = newThreadInfo;
 
 				auto pushEvLam = [](std::unique_ptr<Core::JBindHandleBase>&& b) {_JGraphic::Instance().impl->AddInnerEvent(std::move(b)); };
 				JGraphicSubClassShareData shareData(pushEvLam);
@@ -2024,13 +2058,25 @@ namespace JinEngine
 				adapter->CreateCullingSubclass(option.deviceType, shareData, culling);
 				adapter->CreateImageProcessingSubclass(option.deviceType, shareData, imageProcessing);
 				adapter->CreateRaytracingSubclass(option.deviceType, shareData, raytracing);
-
+				  
 				std::vector<JGraphicSubClassInterface*> managedSubclass;
-				resourceManage.GetManageSubclass(managedSubclass);
-				drawing.GetManageSubclass(managedSubclass);
-				culling.GetManageSubclass(managedSubclass);
-				imageProcessing.GetManageSubclass(managedSubclass);
-				raytracing.GetManageSubclass(managedSubclass);
+				resourceManage.Push(managedSubclass);
+				drawing.Push(managedSubclass);
+				culling.Push(managedSubclass);
+				imageProcessing.Push(managedSubclass);
+				raytracing.Push(managedSubclass);
+ 
+				for (const auto& data : managedSubclass)
+				{
+					if (data->HasUpdateSequencePreProcessing())
+						updatePreProcessingSub.push_back(data);
+					if (data->HasUpdateSequencePostProcessing())
+						updatePostProcessingSub.push_back(data);
+					if (data->HasDrawSequencePreProcessing())
+						drawPreProcessingSub.push_back(data);
+					if (data->HasDrawSequencePostProcessing())
+						drawPostProcessingSub.push_back(data);
+				}
 
 				for (uint i = 0; i < SIZE_OF_ARRAY(infoChangedListener); ++i)
 				{
@@ -2081,7 +2127,11 @@ namespace JinEngine
 				for (uint i = 0; i < SIZE_OF_ARRAY(infoChangedListener); ++i)
 					infoChangedListener[i].clear();
 				for (uint i = 0; i < SIZE_OF_ARRAY(optionChangedListener); ++i)
-					optionChangedListener[i].clear();
+					optionChangedListener[i].clear(); 
+				updatePreProcessingSub.clear();
+				updatePostProcessingSub.clear();
+				drawPreProcessingSub.clear();
+				drawPostProcessingSub.clear();
 
 				raytracing.Clear();
 				imageProcessing.Clear();
@@ -2679,9 +2729,10 @@ namespace JinEngine
 
 		void MainAccess::Initialize(std::unique_ptr<JGraphicAdapter>&& adapter,
 			std::unique_ptr<JGuiBackendDataAdapter>&& guiAdapter,
-			JGuiBackendInterface* JGuiBackendInterface)
+			JGuiBackendInterface* JGuiBackendInterface,
+			const JGraphicThreadInfo& threadInfo)
 		{
-			JinEngine::JGraphic::Instance().impl->Initialize(std::move(adapter), std::move(guiAdapter), JGuiBackendInterface);
+			JinEngine::JGraphic::Instance().impl->Initialize(std::move(adapter), std::move(guiAdapter), JGuiBackendInterface, threadInfo);
 		}
 		void MainAccess::Clear()
 		{

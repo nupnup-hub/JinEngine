@@ -19,6 +19,10 @@ namespace JinEngine
 			{
 				return Image() + L"\\Ssao\\" + name;
 			}
+			static std::wstring Ssr(const std::wstring& name)
+			{
+				return Image() + L"\\SSR\\" + name;
+			}
 			static std::wstring Postprocessing(const std::wstring& name)
 			{
 				return Image() + L"\\Postprocessing\\" + name;

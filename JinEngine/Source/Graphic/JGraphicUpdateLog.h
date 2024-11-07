@@ -35,7 +35,7 @@ namespace JinEngine
 			uint updateCount = 0;
 			uint hotUpdateCount = 0;
 			uint moveCount = 0;
-			uint thisFrameCount = 0;
+			uint thisFrameCount = 0; 
 		};
 	}
 }

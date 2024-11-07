@@ -36,17 +36,16 @@ SOFTWARE.
 #endif
 
 #include"../Object/GraphicRule/JGraphicModuleType.h"
+#include"../Core/Storage/JStorageInterface.h"
+
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		using GraphicFence = uint64;
- 	 
-
 		namespace Constants
 		{
 			static constexpr uint gNumFrameResources = 3;
-			static constexpr uint gMaxFrameThread = 8;
+			static constexpr uint gMaxFrameThread = 16;
 			static constexpr uint stencilclearValue = 0;
 			static constexpr uint commonStencilRef = 1;
 			static constexpr uint outlineStencilRef= 2;
@@ -73,5 +72,7 @@ namespace JinEngine
 				return JVector4F(1.0f, 1.0f, 1.0f, 1.0f);
 			} 
 		}
+		using GraphicFence = uint64;
+		using GraphicVolatileStorageInterface = Core::JVolatileStorageInterface<Constants::gNumFrameResources>;
 	}
 }

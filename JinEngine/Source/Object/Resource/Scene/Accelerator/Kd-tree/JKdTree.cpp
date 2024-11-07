@@ -491,6 +491,7 @@ namespace JinEngine
 			{
 				if (edge[i].edgeType == J_BOUND_EDGE_TYPE::END)
 					--nAbove;
+
 				float edgeP = edge[i].p;
 				if (edgeP > pMinP && edgeP < pMaxP)
 				{

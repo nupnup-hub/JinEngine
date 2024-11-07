@@ -123,8 +123,8 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     float3 normal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, uv, 0));
     uint materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, uv, 0));
     
-    double3 posV = UVToViewSpace(uv, viewZ, cb.uvToViewA, cb.uvToViewB);
-    double3 posW = mul(float4(posV, 1.0f), cb.camInvView).xyz;
+    float3 posV = UVToViewSpace(uv, viewZ, cb.uvToViewA, cb.uvToViewB);
+    float3 posW = mul(float4(posV, 1.0f), cb.camInvView).xyz;
     double4 prePosH = mul(float4(posW, 1.0f), cb.camPreViewProj);
     double2 preUv = double2(prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
     double2 velocity = preUv - uv;

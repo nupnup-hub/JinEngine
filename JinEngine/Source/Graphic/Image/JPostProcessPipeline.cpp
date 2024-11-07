@@ -31,6 +31,7 @@ SOFTWARE.
 #include"JAntialise.h"
 #include"JPostProcessExposure.h"
 #include"JPostProcessHistogram.h"
+#include"JSsr.h"
 #include"../JGraphicOption.h"
 #include"../JGraphicUpdateHelper.h"
 #include"../GraphicResource/JGraphicResourceManager.h"
@@ -47,7 +48,8 @@ namespace JinEngine::Graphic
 		BLUR = 1 << 2,
 		FXAA = 1 << 3,
 		EXPOSURE= 1 << 4,
-		TAA = 1 << 5
+		TAA = 1 << 5,
+		SSR = 1 << 6,
 	};
 	void JPostProcessPipeline::ApplyPostProcess(JPostProcessComputeSet* computeSet, const JDrawHelper& helper, const bool isUpdatedThisFrame)
 	{ 
@@ -60,12 +62,18 @@ namespace JinEngine::Graphic
 		auto gInterface = helper.GetResourceInterface(); 
 		auto gInfo = gInterface->GetGraphicInfo(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 		computeSet->imageShareData = computeSet->shareData->GetResourceDependencyData(J_GRAPHIC_TASK_TYPE::CONTROLL_POST_PROCESS_PIPELINE, gInfo.Get());
-		if (computeSet->imageShareData == nullptr)
+		computeSet->drawSceneShareData = computeSet->shareData->GetRequestDependencyData(J_GRAPHIC_REQUEST_TYPE::DRAW_SCENE, helper.cam->GetGuid(), helper.cam->GetRenderTargetSize());
+		if (computeSet->imageShareData == nullptr || computeSet->drawSceneShareData == nullptr)
 			return;
 		   
 		POST_PROCESSING_TYPE appliedType = POST_PROCESSING_TYPE::NONE;
 		computeSet->imageShareData->UpdateBegin();
 
+		if (helper.option.postProcess.useSsr && helper.cam->AllowSsr())
+		{
+			computeSet->ppSet->ssr->ApplySsr(computeSet, helper);
+			appliedType = Core::AddSQValueEnum(appliedType, POST_PROCESSING_TYPE::SSR);
+		}
 		if (helper.option.postProcess.useTaa)
 		{
 			computeSet->ppSet->aa->ApplyTAA(computeSet, helper);

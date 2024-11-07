@@ -61,7 +61,7 @@ namespace JinEngine
 			float farZ = 0.0f;
 			uint csmLocalIndex = 0;
 			int hasAoTexture = 0;
-			uint cameraPad00 = 0;   
+			int hasSsrTexture = 0;
 		};   
 		struct JSsaoConstants
 		{

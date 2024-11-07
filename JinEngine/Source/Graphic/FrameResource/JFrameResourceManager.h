@@ -43,9 +43,7 @@ namespace JinEngine
 	{ 
 		using SetUpdateThreadTaskPtr = Core::JSFunctorType<Core::JThreadUserHandle, const Core::JThreadInitInfo&, std::unique_ptr<Core::JBindHandleBase>&&>::Ptr;
 		struct JFrameUpdateOption
-		{ 
-		public:
-			SetUpdateThreadTaskPtr setUpdateThreadTask = nullptr;
+		{  
 		public: 
 			bool isActivatedSceneTimer = false;
 		}; 

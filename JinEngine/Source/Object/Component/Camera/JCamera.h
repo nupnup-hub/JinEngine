@@ -70,7 +70,7 @@ namespace JinEngine
 		DirectX::XMMATRIX GetPreInvView()const noexcept;
 		JMatrix4x4 GetPreViewProj()const noexcept;
 		void GetUvToView(JVector2F& a, JVector2F& b)const noexcept;
-		void GetPreUvToView(JVector2F& a, JVector2F& b)const noexcept;
+		void GetPreUvToView(JVector2F& a, JVector2F& b)const noexcept; 
 		/*
 		* @return world bounding frustum
 		*/
@@ -105,6 +105,7 @@ namespace JinEngine
 		JVector2F GetRenderTargetSize()const noexcept; 
 		JVector2F GetRenderTargetRate()const noexcept;
 		JSsaoDesc GetSsaoDesc()const noexcept; 
+		JSsrDesc GetSsrDesc()const noexcept;
 	public:
 		void SetNear(const float value)noexcept;
 		void SetFar(const float value) noexcept;
@@ -123,9 +124,11 @@ namespace JinEngine
 		void SetAllowDisplayOccCullingDepthMap(const bool value)noexcept;
 		void SetReflectAllCullingResult(const bool value)noexcept;
 		void SetAllowSsao(const bool value)noexcept;
+		void SetAllowSsr(const bool value)noexcept;
 		void SetCameraState(const J_CAMERA_STATE state)noexcept;
 		void SetRenderTargetRate(const JVector2F rate)noexcept;		//default 1,1 = client window size
 		void SetSsaoDesc(const JSsaoDesc& desc)noexcept;
+		void SetSsrDesc(const JSsrDesc& desc)noexcept;
 	public:  
 		bool IsOrthoCamera()const noexcept; 
 		bool IsAvailableOverlap()const noexcept final; 
@@ -140,6 +143,8 @@ namespace JinEngine
 		bool AllowDisplayLightCullingDebug()const noexcept;
 		bool AllowReflectAllCullingResult()const noexcept;
 		bool AllowSsao()const noexcept;
+		bool AllowSsr()const noexcept;
+		bool AllowHighCostRendering()const noexcept;
 		bool AllowPostProcess()const noexcept;
 		bool AllowRaytracingGI()const noexcept; 
 	protected:

@@ -277,9 +277,10 @@ namespace JinEngine::Graphic
 			static constexpr uint normalDebuggingNumber = specularDebuggingNumber + 1;
 			static constexpr uint tangentDebuggingNumber = normalDebuggingNumber + 1;
 			static constexpr uint ssaoDebuggingNumber = tangentDebuggingNumber + 1;
+			static constexpr uint ssrDebuggingNumber = ssaoDebuggingNumber + 1;
 			//static constexpr uint velocityDebuggingNumber = ssaoDebuggingNumber + 1;
 			//static constexpr uint debuggingMapCount = velocityDebuggingNumber + 1;
-			static constexpr uint debuggingMapCount = ssaoDebuggingNumber + 1;
+			static constexpr uint debuggingMapCount = ssrDebuggingNumber + 1;
 			static constexpr uint debugCount = debuggingMapCount + 1;
  
 			static constexpr uint reserviorCount = 4;
@@ -323,6 +324,7 @@ namespace JinEngine::Graphic
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::LIGHT_LINKED_LIST, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP, 1>,
+				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::SSR_MAP, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE, 1>,
 				JStaticTupleGraphicUint<J_GRAPHIC_RESOURCE_TYPE::RESTIR_INITIAL_SAMPLE, 1>,
@@ -358,6 +360,8 @@ namespace JinEngine::Graphic
 							return 1;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE)
 							return 1;
+						else if (taskType == J_GRAPHIC_TASK_TYPE::SSR_VISUALIZE)
+							return 1;
 						//else if (taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
 						//	return 1;
 						else
@@ -389,6 +393,8 @@ namespace JinEngine::Graphic
 					case J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
 						return 1;
 					case J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
+						return 1;
+					case J_GRAPHIC_RESOURCE_TYPE::SSR_MAP:
 						return 1;
 					case J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 						return 1;
@@ -431,6 +437,8 @@ namespace JinEngine::Graphic
 							return tangentDebuggingNumber;
 						else if (taskType == J_GRAPHIC_TASK_TYPE::SSAO_VISUALIZE)
 							return ssaoDebuggingNumber;
+						else if (taskType == J_GRAPHIC_TASK_TYPE::SSR_VISUALIZE)
+							return ssrDebuggingNumber;
 						//else if (taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_VISUALIZE)
 						//	return velocityDebuggingNumber;
 						else
@@ -462,6 +470,8 @@ namespace JinEngine::Graphic
 					case J_GRAPHIC_RESOURCE_TYPE::LIGHT_OFFSET:
 						return 0;
 					case J_GRAPHIC_RESOURCE_TYPE::SSAO_MAP:
+						return 0;
+					case J_GRAPHIC_RESOURCE_TYPE::SSR_MAP:
 						return 0;
 					case J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 						return 0;

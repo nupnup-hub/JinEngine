@@ -156,6 +156,16 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
+
+		struct JDx12GraphicSsrComputeSet : public JGraphicSsrComputeSet
+		{
+		public:
+			JGraphicDevice* device;
+		public:
+			JDx12GraphicSsrComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData, JGraphicDevice* device);
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		};
 		 
 		struct JDx12GraphicConvertColorComputeSet : public JGraphicConvertColorComputeSet
 		{
@@ -235,17 +245,27 @@ namespace JinEngine
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
 
-		struct JDx12GraphicVelocityComputeSet : public JGraphicVelocityComputeSet
+		struct JDx12GraphicSceneDependencyDataComputeSet : public JGraphicSceneDependencyDataComputeSet
 		{
 		public:
 			JGraphicDevice* device; 
+			JGraphicResourceManager* gm;
 		public:
-			JDx12GraphicVelocityComputeSet(JCommandContext* context, JGraphicDevice* device);
+			JDx12GraphicSceneDependencyDataComputeSet(JCommandContext* context, JGraphicResourceShareData* shareData, JGraphicDevice* device, JGraphicResourceManager* gm);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
 
-
+		struct JDx12GraphicShareResourceUpdateSet : public JGraphicShareResourceUpdateSet
+		{
+		public:
+			JGraphicDevice* device;
+		public:
+			JDx12GraphicShareResourceUpdateSet(JCommandContext* context, JGraphicResourceShareData* shareData, JGraphicDevice* device);
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		};
+		 
 		struct JDx12GraphicInfoChangedSet : public JGraphicInfoChangedSet
 		{
 		public:

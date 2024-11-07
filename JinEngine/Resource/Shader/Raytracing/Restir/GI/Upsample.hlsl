@@ -33,7 +33,15 @@ SOFTWARE.
 #ifndef DIMY
 #define DIMY 16
 #endif
-  
+
+/*
+cbuffer PassCB : register(b1)
+{
+    uint2 destSize;
+    float2 invDestSize;
+}; 
+*/
+
 Texture2D src : register(t0); 
 RWTexture2D<float4> dst : register(u0);
 SamplerState samLinearClamp : register(s0);
@@ -47,7 +55,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
        
     const float2 uv = (dispatchThreadID.xy + 0.5f) * cb.originalInvRtSize;
     
-    Catmul::Parameter param; 
+    Catmul::Parameter param;
     param.Initialize(uv, cb.halfRtSize, cb.halfInvRtSize);
     
     float3 color = Catmul::Compute(src, samLinearClamp, param).xyz;

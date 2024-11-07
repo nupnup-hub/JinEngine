@@ -64,17 +64,4 @@ namespace JinEngine::Core
 	{
 		return waitFrame > 0;
 	}
-
-	void JVolatileStorageInterface::SetAliveTrigger()noexcept
-	{
-		canAlive = true;
-	}
-	void JVolatileStorageInterface::OffAliveTrigger()noexcept
-	{
-		canAlive = false;
-	}
-	bool JVolatileStorageInterface::CanAlive()const noexcept
-	{ 
-		return canAlive;
-	}
 }

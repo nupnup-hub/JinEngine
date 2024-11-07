@@ -34,7 +34,8 @@ SOFTWARE.
 struct Material
 {
     float3 albedoColor;
-    float specularFactor;
+    //float specularFactor;
+    float3 specularColor;
     float metallic;
     float roughness;
     float ansio;
@@ -87,17 +88,25 @@ struct RectLight
 };
 #define LCT_SIZE 32.0f 
  
+//lightVec = light - surface
+//viewVec = cam - surface
 float3 ComputeBxDF(const float3 normal, float3 tangent, const float3 lightVec, const float3 viewVec, const Material mat)
 { 
     BxDF bxdf;
-    bxdf.Initialize(mat.albedoColor, mat.specularFactor, normal, tangent, lightVec, viewVec, mat.roughness, mat.metallic, mat.ansio);
+    bxdf.Initialize(mat.albedoColor, mat.specularColor, normal, tangent, lightVec, viewVec, mat.roughness, mat.metallic, mat.ansio);
     return bxdf.Evaluate();
 }
 float3 ComputeBxDF(const float3 normal, const float3 lightVec, const float3 viewVec, const Material mat)
 {
     BxDF bxdf;
-    bxdf.Initialize(mat.albedoColor, mat.specularFactor, normal, lightVec, viewVec, mat.roughness, mat.metallic);
+    bxdf.Initialize(mat.albedoColor, mat.specularColor, normal, lightVec, viewVec, mat.roughness, mat.metallic);
     return bxdf.Evaluate();
+}
+float3 ComputeFresnel(const float3 normal, const float3 lightVec, const float3 viewVec, const Material mat)
+{
+    BxDF bxdf;
+    bxdf.Initialize(mat.albedoColor, mat.specularColor, normal, lightVec, viewVec, mat.roughness, mat.metallic);
+    return bxdf.SchlickFresnel(); 
 }
 
 float CalLinearAttenuation(float d, float falloffStart, float falloffEnd)

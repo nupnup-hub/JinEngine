@@ -22,32 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
-#pragma once  
-#include"Common.hlsl" 
-#include"../../Common/DepthFunc.hlsl" 
- 
-#ifndef DIMX
-#define DIMX 16
-#endif
-#ifndef DIMY
-#define DIMY 16
-#endif
 
-Texture2D depthMap : register(t0);
-Texture2D preDepthMap : register(t1);
-RWTexture2D<float> viewZMap : register(u0);
-RWTexture2D<float> preViewZMap : register(u1);
- 
-[numthreads(DIMX, DIMY, 1)]
-void main(uint3 dispatchThreadID : SV_DispatchThreadID)
+#include"JSceneDependencyData.h"
+
+namespace JinEngine::Graphic
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
-        return;
-       
-    const float depth = depthMap[dispatchThreadID.xy].x; 
-    viewZMap[dispatchThreadID.xy] = NdcToViewPZ(depth, cb.camNearMulFar, cb.camNearFar);
-     
-    const float preDepth = preDepthMap[dispatchThreadID.xy].x;
-    preViewZMap[dispatchThreadID.xy] = NdcToViewPZ(preDepth, cb.camNearMulFar, cb.camNearFar);
-     
+	bool JSceneDependencyData::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+	{
+		return taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_COMPUTE || taskType == J_GRAPHIC_TASK_TYPE::DEPTH_RELATIVE_COMPUTE;
+	}
 }

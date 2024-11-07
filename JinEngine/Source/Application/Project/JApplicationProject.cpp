@@ -725,6 +725,10 @@ namespace JinEngine
 		{
 			return ProjectPrivateResourcePath() + L"\\" + L"ShaderMetafile";
 		}
+		std::wstring JApplicationProject::ShaderPdbPath()noexcept
+		{
+			return ProjectPrivateResourcePath() + L"\\" + L"ShaderPdb";
+		}
 		std::wstring JApplicationProject::ModResourceCachePath()noexcept
 		{
 			return ProjectPrivateResourcePath() + L"\\" + L"ModResourceCache";
@@ -779,6 +783,7 @@ namespace JinEngine
 					BinaryPath(),
 					SolutionPath(),
 					ShaderMetafilePath(),
+					ShaderPdbPath(),
 					ModResourceCachePath(),
 					EditoConfigPath(),
 					LogPath(),

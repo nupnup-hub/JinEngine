@@ -23,12 +23,12 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#include"JSceneVelocity.h"
+#include"JSsr.h"
 
 namespace JinEngine::Graphic
 {
-	bool JSceneVelocity::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
+	bool JSsr::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 	{
-		return taskType == J_GRAPHIC_TASK_TYPE::VELOCITY_MAP_COMPUTE;
+		return taskType == J_GRAPHIC_TASK_TYPE::APPLY_SSR;
 	}
 }

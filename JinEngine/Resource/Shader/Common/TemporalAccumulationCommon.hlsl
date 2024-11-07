@@ -45,23 +45,7 @@ SOFTWARE.
 #define TAA_COLOR_ERROR_ESTIMATE_RADIUS 1
 #define TAA_CLAMP_SCALE 1
 #define TAA_COLOR_GAUS_BLUR_RADIUS 1
-
-uint GetIndexOfValueClosestToTheReference(const float refValue, const float2 vValues)
-{
-    float2 delta = abs(refValue - vValues);
-    uint outIndex = delta[1] < delta[0] ? 1 : 0;
-    return outIndex;
-}
-uint GetIndexOfValueClosestToTheReference(const float refValue, const float4 vValues)
-{
-    float4 delta = abs(refValue - vValues);
-
-    uint outIndex = delta[1] < delta[0] ? 1 : 0;
-    outIndex = delta[2] < delta[outIndex] ? 2 : outIndex;
-    outIndex = delta[3] < delta[outIndex] ? 3 : outIndex;
-
-    return outIndex;
-}
+ 
 float ComputeColorVariance(const float3 color)
 {
     float2 moments;
@@ -429,8 +413,7 @@ groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
             float3 p0 = (YCoCgToRGB(minYCoCg) - preHistoryCenterRgb) / dir;
             float3 p1 = (YCoCgToRGB(maxYCoCg) - preHistoryCenterRgb) / dir;
             float t = saturate(max(max(min(p0.x, p1.x), min(p0.y, p1.y)), min(p0.z, p1.z)));
-            
-            //float3 colorYCoCg = clamp(preHistoryCenterYCoCg, minYCoCg, maxYCoCg);
+             
             float3 clampYCoCg = lerp(preHistoryCenterYCoCg, curCenterYCoCg, t);
             result.clampColor = YCoCgToRGB(clampYCoCg);
             result.errorFactor = t;

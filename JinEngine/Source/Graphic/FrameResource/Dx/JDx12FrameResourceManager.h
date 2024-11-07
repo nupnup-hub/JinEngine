@@ -27,7 +27,9 @@ SOFTWARE.
 #include"JDx12FrameResource.h"
 #include"JDx12FrameUpdateInfo.h"
 #include"../JFrameResourceManager.h"
+#include"../../Thread/JGraphicThreadInfo.h"
 #include"../../../Core/Threading/JThreadInfo.h" 
+#include"../../../Core/Threading/JSync.h" 
 
 namespace JinEngine
 { 
@@ -68,14 +70,17 @@ namespace JinEngine
 			JDx12FrameResource resource[Constants::gNumFrameResources];
 			int currResourceIndex = 0;  
 		private:
-			std::unique_ptr<WorkerF::Functor> workerFunctor;
-			Core::JThreadUserHandle threadHandle[maxNumOfUpdateThread];
+			std::unique_ptr<WorkerF::Functor> workerFunctor; 
 			JFrameUpdateDataSet cacheSet[maxNumOfUpdateThread];
+		private:
+			JGraphicThreadInfo threadInfo;
+			Core::JAtomicBooleanSet<Constants::gMaxFrameThread> isTaskDone;
 		private:
 			CacheData cacheData; 
 		private:
 			bool hasRequestThreadSync = false;
 		public:
+			JDx12FrameResourceManager(const JGraphicThreadInfo threadInfo);
 			~JDx12FrameResourceManager();
 		public: 
 			void Initialize(JGraphicDevice* device) final;

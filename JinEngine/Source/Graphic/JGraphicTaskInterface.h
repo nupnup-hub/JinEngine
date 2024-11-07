@@ -34,8 +34,8 @@ namespace JinEngine
 	{
 		class JGraphicTaskInterface : public JGraphicDeviceUser
 		{
-		public:
+		public: 
 			virtual bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept = 0;
-		};
+		}; 
 	}
 }
