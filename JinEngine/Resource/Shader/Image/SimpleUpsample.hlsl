@@ -23,26 +23,41 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-#include"../../../Common/TemporalAccumulationCommon.hlsl"
- 
-struct ReserviorDenoiseConstants
-{
-    TACommonPassData common;            //256
-     
-    float baseRadius;
-    float radiusRange;
-    float denoiseRange;
-    uint sampleNumber;
-};
+#pragma once
+#include"../Common/Sampling.hlsl" 
 
-ConstantBuffer<ReserviorDenoiseConstants> cb : register(b0);
-
+#ifndef DIMX
+#define DIMX 16
+#endif
+#ifndef DIMY
+#define DIMY 16
+#endif
   
-struct ReprojectionOut
+cbuffer PassCB : register(b0)
 {
-    float4 preColor;
-    float4 preFastColor;
-    uint curHistoryLength;
-    float minAccumSpeed; 
+    float4 srcRtSize;       //xy = rt, zw = inv
+    float4 destRtSize;      //xy = rt, zw = inv
 }; 
+
+Texture2D src : register(t0);
+RWTexture2D<float4> dst : register(u0);
+SamplerState samLinearClamp : register(s0);
+ 
+//upsample
+[numthreads(DIMX, DIMY, 1)]
+void main(uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+    if (dispatchThreadID.x >= destRtSize.x || dispatchThreadID.y >= destRtSize.y)
+        return;
+       
+    const float2 uv = (dispatchThreadID.xy + 0.5f) * destRtSize.zw;
+    
+    Catmul::Parameter param;
+    param.Initialize(uv, srcRtSize.xy, srcRtSize.zw);
+     
+    dst[dispatchThreadID.xy] = Catmul::Compute(src, samLinearClamp, param);
+    
+    //for debugging
+    //RestirSamplePack init = intial[dispatchThreadID.x + dispatchThreadID.y * cb.rtSize.x];
+   // dst[dispatchThreadID.xy] = float4(init.UnpackRadiance(), 1.0f);
+}

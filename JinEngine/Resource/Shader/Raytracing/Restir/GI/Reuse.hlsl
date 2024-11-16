@@ -159,7 +159,7 @@ struct ReuseDataSet
     float viewZThresHold;
     RandomNumberGenerator rng;
 };
-float2 GetSpatialRadius(const uint preRadius, const uint iterNumber, const uint M, const uint age, const float aoFactor, const float reserviorAccuracy)
+float2 GetSpatialRadius(const float2 preRadius, const uint iterNumber, const uint M, const uint age, const float aoFactor, const float reserviorAccuracy)
 {
 #if 1
     const float baseRadiusRate = 0.01f * reserviorAccuracy + 0.005f * (1.0f - reserviorAccuracy);         //4.8, 9.6, 19.2
@@ -273,7 +273,7 @@ void SpatialReuse(in ReuseDataSet set, bool isPreValid)
     int maxIteration = reservior.M > fastReuseThreshold ? normalIteration : fastReuseIteration;  
     RestirReserviorData neighborReservoir;
      
-    float searchRadius = 1;
+    float2 searchRadius = float2(1, 1);
     float searchRadiusExtendFactor = min(((SPATIAL_SAMPLE_MAX - reservior.M) / SPATIAL_SAMPLE_MAX), 0.01f);
     searchRadiusExtendFactor *= min(((SAMPLE_MAX_AGE - reservior.age) / SAMPLE_MAX_AGE), 0.01f);
     
@@ -460,7 +460,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     preUv = velocity + curUv;
     velocity = abs(velocity);
     
-    set.prePixelCoord = clamp(preUv * cb.halfRtSize, 0, cb.halfRtSize - 1); 
+    set.prePixelCoord = int2(clamp(preUv * cb.halfRtSize, 0, cb.halfRtSize - 1));
     set.prePixelIndex = set.prePixelCoord.y * cb.halfRtSize.x + set.prePixelCoord.x;
     
     set.rng.Initialize(set.pixelCoord, cb.currSampleSetIndex);
@@ -468,7 +468,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     if (isPreValid)
     {   
         float3 curNormal = set.normalW;
-        float3 preNormal = SignedOctDecode(preNormalMap.SampleLevel(samLinearBorder, preUv, 0).xyw);
+        float3 preNormal = SignedOctDecode(preNormalMap.SampleLevel(samLinearBorder, float2(preUv), 0).xyw);
         float rand = set.rng.Random01();
         isPreValid &= all(velocity < VELOCITY_THRESHOLD);
         isPreValid &= dot(curNormal, preNormal) > NORMAL_THRESHOLD;

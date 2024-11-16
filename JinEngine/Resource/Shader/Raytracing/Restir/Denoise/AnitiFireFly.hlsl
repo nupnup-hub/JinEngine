@@ -51,12 +51,12 @@ void StuffShareMemory(int groupIndex, const float2 uv)
 [numthreads(DIMX, DIMY, 1)]
 void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
         return;
     
     int2 pixelCoord = dispatchThreadID.xy;
     float2 pixelCenterCoord = pixelCoord + float2(0.5f, 0.5f);
-    float2 uv = pixelCenterCoord * cb.invRtSize;
+    float2 uv = pixelCenterCoord * cb.common.invRtSize;
     
     StuffShareMemory(groupIndex, uv);
     GroupMemoryBarrierWithGroupSync();
@@ -80,7 +80,7 @@ void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThr
             if ((x == 0) && (y == 0))
                 continue;
             
-            float2 sampleUv = uv + float2(x, y) * cb.invRtSize;
+            float2 sampleUv = uv + float2(x, y) * cb.common.invRtSize;
             if (!IsValidUv(sampleUv))
                 continue;
             

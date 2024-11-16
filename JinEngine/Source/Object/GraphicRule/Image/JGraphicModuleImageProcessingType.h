@@ -210,13 +210,18 @@ namespace JinEngine
 	struct JSsrDesc
 	{
 	public:
+		static constexpr float initTmin = 1e-2;
+	public:
 		float stepScale = 1;
-		float maxStepCount = 256;
+		uint maxStepCount = 256;
 		float rayDistance = 100;                 
 		float thickness = 4;
 		float objectViewZBias = 0;
 		float fadeDistance = 0.025f;			//0 ~ 0.5f
 		float startOffset = 1.0f;
+		float blurScale = 1.0f;
+	public:
+		float rayqueryTmin = initTmin;
 	};
 	//나중에 color curve 변경하는 기능 option 추가 할 것.
 	struct JConvertColorDesc

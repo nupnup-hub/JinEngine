@@ -136,9 +136,9 @@ namespace JinEngine
 		struct JGraphicShaderCompileSet
 		{
 		public:
-			JGraphicDevice* device; 
+			JGraphicDevice* device;  
 		public:
-			JGraphicShaderCompileSet(JGraphicDevice* device); 
+			JGraphicShaderCompileSet(JGraphicDevice* device);
 		};
  
 		//device type per draw data set 

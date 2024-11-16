@@ -20,6 +20,9 @@
 #define SAMPLE_COUNT 2
 #endif
 
+#define DATA_TYPE float4
+
+
 Texture2D<float3> bloom : register(t0); 
 RWTexture2D<float3> result0 : register(u0);
 RWTexture2D<float3> result1 : register(u1);

@@ -110,12 +110,12 @@ namespace JinEngine
 			RefelectionMainAccess::Initialize();
 			EngineMainAccess::Initialize();
 
-			static constexpr float threadRate = 0.75f;
+			static constexpr float threadRate = 0.5f;
 			static constexpr size_t spinLockCount = UINT_MAX;	//매 프레임 Update, Draw 함수에서 호출 되므로 짧은 대기시간으로 예상됨.
 			Core::JThreadGroupOption option;
 			option.spinLockCount = spinLockCount;
 
-			graphicThreadInfo.threadCount = min(max(JMathHelper::PowerOfTwoFloor(std::thread::hardware_concurrency()), 1), Graphic::Constants::gMaxFrameThread);
+			graphicThreadInfo.threadCount = min(std::thread::hardware_concurrency(), Graphic::Constants::gMaxFrameThread);
 			graphicThreadInfo.guid  = _JThreadManager::Instance().CreateThreadGroup(graphicThreadInfo.threadCount, option);
 
 			_JModuleManager::Instance().LoadModule(JApplicationEngine::SolutionPath());

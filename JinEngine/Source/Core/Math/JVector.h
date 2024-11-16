@@ -341,6 +341,10 @@ namespace JinEngine
 		{
 			return DirectX::XMVector2Normalize(ToXmV());
 		}
+		JVector2<float> Inverse()const noexcept
+		{
+			return JVector2<float>(1.0f / float(x), 1.0f / float(y));
+		}
 		bool Contained(const JVector2& pos, const JVector2& size)const noexcept
 		{
 			return x >= pos.x && x <= (pos.x + size.x) && y >= pos.y && y <= (pos.y + size.y);
@@ -881,6 +885,10 @@ namespace JinEngine
 			w = static_cast<ValueType>(rhs.w);
 			return *this;
 		}
+		template<typename U>
+		JVector4(const JVector2<U>& v2A, const JVector2<U>& v2B)
+			: x(v2A.x), y(v2A.y), z(v2B.x), w(v2B.y)
+		{}
 		template<typename U>
 		JVector4(const JVector2<U>& v2, const typename JVector2<U>::ValueType z1, const typename JVector2<U>::ValueType w1)
 			: x(v2.x), y(v2.y), z(z1), w(w1)

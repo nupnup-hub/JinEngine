@@ -300,7 +300,7 @@ namespace JinEngine
 				const uint createCount = std::clamp(index + 1, (uint)0, count);
 				for (uint i = 0; i < createCount; ++i)
 				{ 
-					J_LOG_PRINT_OUT_IF_FAIL_AND_RETURN(HasValidData(i), std::to_string(i) + " is invalid data", errMsg);
+					J_LOG_PRINT_OUT_IF_FAIL_AND_RETURN(HasValidData(i), std::to_string(i) + " is invalid data", errMsg + "\nshader path: " + JCUtil::WstrToU8Str(compileInfo[i].filePath));
 
 					JComputeShaderInitData initData;
 					initData.dispatchInfo.threadDim = threadDim[i];

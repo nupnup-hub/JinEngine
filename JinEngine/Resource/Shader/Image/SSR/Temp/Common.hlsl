@@ -22,27 +22,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ****************************************************************************************/
 
+#pragma once  
+#include"../../Common/CommonConstantsStructureDefine.hlsl" 
+#include"../../Common/GBufferCommon.hlsl"
+#include"../../Common/DepthFunc.hlsl"
+#include"../../Common/PixelCommon.hlsl"
 
-#pragma once 
-#include"../../../Common/TemporalAccumulationCommon.hlsl"
+#ifndef DIMX
+#define DIMX 16
+#endif
+#ifndef DIMY
+#define DIMY 16
+#endif  
  
-struct ReserviorDenoiseConstants
+struct SSRData
 {
-    TACommonPassData common;            //256
+    float4x4 camView;
+    float4x4 camProj;
+    float4x4 camInvView;
+    
+    float2 rtSize;
+    float2 invRtSize;
      
-    float baseRadius;
-    float radiusRange;
-    float denoiseRange;
-    uint sampleNumber;
+    float2 uvToViewA;
+    float2 uvToViewB;
+    
+    float2 nearFarZ;
+    float nearFarMul;
+    float startOffset;
+    
+    float3 camPosW;  
+    float stepScale;
+    
+    float maxStepCount;
+    float rayDistance; //0 ~ 10000   
+    float thickness; //0 ~ 10000    
+    float objectViewZBias; //0 ~ 10000
+    
+    float fadeDistance; //0 ~ 1.0f
+    float fadeOneRate; //to [0.0f ~ 1.0f]
+    int pad00;
+    int pad01;
 };
-
-ConstantBuffer<ReserviorDenoiseConstants> cb : register(b0);
-
-  
-struct ReprojectionOut
-{
-    float4 preColor;
-    float4 preFastColor;
-    uint curHistoryLength;
-    float minAccumSpeed; 
-}; 

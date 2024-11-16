@@ -48,7 +48,7 @@ VertexOut VS(VertexIn vin)
 	float range = light[index].frustumFar * LIGHT_RANGE_OFFSET;
 	 
 	float4 posW = float4(vin.posL.xyz * range + light[index].midPosition, 1);
-	vout.posV = mul(posW, cbCam.view);
+	vout.posV = mul(posW, cbCam.view).xyz;
 	vout.id = vin.id;   
 	return vout;
 }
@@ -114,7 +114,7 @@ VertexOut VS(VertexIn vin)
 	float range = light[index].frustumFar * LIGHT_RANGE_OFFSET; 
 
 	float4 posW = float4(vin.posL.xyz * range + light[index].origin, 1);
-	vout.posV = mul(posW, cbCam.view);
+	vout.posV = mul(posW, cbCam.view).xyz;
 	vout.id = vin.id;   
 	return vout;
 #endif

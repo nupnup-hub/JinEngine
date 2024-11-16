@@ -100,19 +100,19 @@ namespace JinEngine::Graphic
 
 
 	ROOT_INDEX_CREATOR(Prepare, passCBIndex, depthMapIndex, preDepthMapIndex, viewZMapIndex, preViewZMapIndex, depthDerivativeMapIndex)
-		ROOT_INDEX_CREATOR(PreBlur, passCBIndex, srcColorMapIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, destColorMapIndex)
-		ROOT_INDEX_CREATOR(TA, passCBIndex, colorMapIndex, viewZMapIndex, normalMapIndex, preViewZMapIndex, preNormalMapIndex, preColorHistoryIndex, preFastColorHistoryIndex, preHistroyLengthIndex, lightPropIndex, preLightPropIndex, colorHistoryIndex, fastColorHistoryIndex, histroyLengthIndex)
-		ROOT_INDEX_CREATOR(Fix, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex, destFastColorHistoryIndex)
-		ROOT_INDEX_CREATOR(Clamping, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, destColorHistoryIndex)
-		ROOT_INDEX_CREATOR(AntiFireFly, passCBIndex, srcColorHistoryIndex, destColorHistoryIndex)
-		ROOT_INDEX_CREATOR(HOT, passCBIndex, srcColorHistoryIndex, FastHistoryIndex, histroyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex)
+	ROOT_INDEX_CREATOR(PreBlur, passCBIndex, srcColorMapIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, destColorMapIndex)
+	ROOT_INDEX_CREATOR(TA, passCBIndex, colorMapIndex, viewZMapIndex, normalMapIndex, preViewZMapIndex, preNormalMapIndex, preColorHistoryIndex, preFastColorHistoryIndex, preHistroyLengthIndex, lightPropIndex, preLightPropIndex, colorHistoryIndex, fastColorHistoryIndex, histroyLengthIndex)
+	ROOT_INDEX_CREATOR(Fix, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex, destFastColorHistoryIndex)
+	ROOT_INDEX_CREATOR(Clamping, passCBIndex, srcColorHistoryIndex, srcFastColorHistoryIndex, historyLengthIndex, destColorHistoryIndex)
+	ROOT_INDEX_CREATOR(AntiFireFly, passCBIndex, srcColorHistoryIndex, destColorHistoryIndex)
+	ROOT_INDEX_CREATOR(HOT, passCBIndex, srcColorHistoryIndex, FastHistoryIndex, histroyLengthIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex)
 
 		//ROOT_INDEX_CREATOR(DownSampling, passCBIndex, srcMapIndex, mipmap00Index, mipmap01Index, mipmap02Index, mipmap03Index)
 		//ROOT_INDEX_CREATOR(Reconstruct, passCBIndex, mipmapIndex, viewZMapIndex, depthDerivativeMapIndex, targetIndex)
-		ROOT_INDEX_CREATOR(Stabilization, passCBIndex, colorHistoryIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, colorMapIndex)
-		ROOT_INDEX_CREATOR(Atrous, passCBIndex, atrousCBIndex, srcColorHistoryIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, destColorHistoryIndex)
-		ROOT_INDEX_CREATOR(Clear, passCBIndex, colorHistoryIndex, FastHistoryIndex, histroyLengthIndex, preColorHistoryIndex, preFastHistoryIndex, preHistroyLengthIndex)
-		namespace Common
+	ROOT_INDEX_CREATOR(Stabilization, passCBIndex, colorHistoryIndex, viewZMapIndex, normalMapIndex, histroyLengthIndex, depthDerivativeMapIndex, colorMapIndex)
+	ROOT_INDEX_CREATOR(Atrous, passCBIndex, atrousCBIndex, srcColorHistoryIndex, viewZMapIndex, normalMapIndex, depthDerivativeMapIndex, destColorHistoryIndex)
+	ROOT_INDEX_CREATOR(Clear, passCBIndex, colorHistoryIndex, FastHistoryIndex, histroyLengthIndex, preColorHistoryIndex, preFastHistoryIndex, preHistroyLengthIndex)
+	namespace Common
 	{
 		static constexpr uint denoiseRange = 16;
 		static constexpr float baseRadius = 4.0f;
@@ -158,24 +158,27 @@ namespace JinEngine::Graphic
 
 		static GIDenoiserPassConstants constants;
 
-		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
-		constants.camPreInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreInvView()));
-		constants.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj().LoadXM()));
-		constants.rtSize = camRtSize;
-		constants.invRtSize = 1.0f / camRtSize;
-		cam->GetUvToView(constants.uvToViewA, constants.uvToViewB);
-		cam->GetPreUvToView(constants.preUvToViewA, constants.preUvToViewB);
+		constants.common.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
+		constants.common.camPreInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreInvView()));
+		constants.common.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj().LoadXM()));
+		constants.common.rtSize = camRtSize;
+		constants.common.invRtSize = 1.0f / camRtSize;
+		cam->GetUvToView(constants.common.uvToViewA, constants.common.uvToViewB);
+		cam->GetPreUvToView(constants.common.preUvToViewA, constants.common.preUvToViewB);
 
-		constants.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
-		constants.camNearMulFar = constants.camNearFar.x * constants.camNearFar.y;
+		constants.common.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
+		constants.common.camNearMulFar = constants.common.camNearFar.x * constants.common.camNearFar.y;
+
 		constants.denoiseRange = Common::denoiseRange;
 		constants.baseRadius = Common::baseRadius;
 		constants.radiusRange = Common::radiusRange;
 		constants.sampleNumber = sampleNumber;
 
+		frameBuffer.CopyData(helper.info.frame.currIndex, constants);
+
+		++sampleNumber;
 		if (sampleNumber >= Common::sampleNumberMax)
 			sampleNumber = 0;
-		frameBuffer.CopyData(helper.info.frame.currIndex, constants);
 	}
 	void JDx12RaytracingDenoiser::UserPrivateData::End(const JDrawHelper& helper)
 	{
@@ -340,9 +343,8 @@ namespace JinEngine::Graphic
 		aBuilder.PushConstants(1, 1);
 		aBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 		aBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-		aBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
+		aBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2); 
 		aBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3);
-		aBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4);
 		aBuilder.PushTable(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 		aBuilder.PushSampler(D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 		aBuilder.Create(device->GetDevice(), L"AtrousRootSignature", atorusRootSignature.GetAddressOf());
@@ -600,8 +602,7 @@ namespace JinEngine::Graphic
 		set.context->Dispatch2D(set.resolution, antiFireFlyShader->dispatchInfo.threadDim.XY());
 	}
 	void JDx12RaytracingDenoiser::RestirDenoiser::Atrous(DenoiseDataSet& set, const JDrawHelper& helper, const uint stepCount)
-	{
-		set.context->Transition(set.atrousHistoryLength->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	{ 
 		set.context->Transition(set.atrousPing->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->Transition(set.atrousPong->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->InsertUAVBarrier(set.atrousPing->holder);
@@ -610,8 +611,7 @@ namespace JinEngine::Graphic
 		set.context->SetComputeRootSignature(atorusRootSignature.Get());
 		set.context->SetComputeRootConstantBufferView(Atrous::passCBIndex, &set.userPrivate->frameBuffer, set.currFrameIndex);
 		set.context->SetComputeRootDescriptorTable(Atrous::viewZMapIndex, set.viewZSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Atrous::normalMapIndex, set.normalSet.GetGpuSrvHandle());
-		set.context->SetComputeRootDescriptorTable(Atrous::histroyLengthIndex, set.atrousHistoryLength->GetGpuSrvHandle());
+		set.context->SetComputeRootDescriptorTable(Atrous::normalMapIndex, set.normalSet.GetGpuSrvHandle()); 
 		set.context->SetComputeRootDescriptorTable(Atrous::depthDerivativeMapIndex, set.depthDerivative.GetGpuSrvHandle());
 		set.context->SetPipelineState(atorusShader.get());
 
@@ -637,6 +637,7 @@ namespace JinEngine::Graphic
 	void JDx12RaytracingDenoiser::RestirDenoiser::HistoryStabilization(const DenoiseDataSet& set, const JDrawHelper& helper)
 	{
 		set.context->Transition(set.stabSrcColorHistory->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		set.context->Transition(set.stabHistoryLength->holder, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		set.context->Transition(set.stabDestColorMap->holder, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		set.context->InsertUAVBarrier(set.stabSrcColorHistory->holder);
 		set.context->FlushResourceBarriers();

@@ -59,11 +59,11 @@ SamplerState samLinearClmap : register(s1);
 #define FAIL_MARK -1
 #define COMMON_SPEED (1.0f / float(MAX_FRAME_ACCMURATION))
 #define DISCARD_PRE_HISTORY_SPEED (1.0f)
-#define BI_CUBIC_SPEED (COMMON_SPEED* 2.5f)
-#define BI_LINEAR_SPEED (COMMON_SPEED * 4.0f)
+#define BI_CUBIC_SPEED (COMMON_SPEED)
+#define BI_LINEAR_SPEED (COMMON_SPEED * 2.5f)
 #define COLOR_ERROR_SPEED BI_CUBIC_SPEED
 
-void Reproject(in ReprojectionIn input, out ReprojectionOut output)
+void Reproject(in TA::PixelData input, out TAA::ReprojectionOut output)
 {
     //motion, Hit Point Reproject을 거칠기에 따라 선택하는 기능 추가필요.. 
     //Hit Point Reproject는 hit distance에 정보가 필요.
@@ -72,11 +72,11 @@ void Reproject(in ReprojectionIn input, out ReprojectionOut output)
     output.accumSpeed = COMMON_SPEED;
     output.safetyLevel = FAIL_MARK;
     
-    int2 prePixelCenterCoord = int2(input.preUv * cb.rtSize);
-    float4 preHistoryValue = preHistory.SampleLevel(samLinearClmap, input.preUv, 0);
+    int2 prePixelCenterCoord = int2(input.preCenterUv * cb.common.rtSize);
+    float4 preHistoryValue = preHistory.SampleLevel(samLinearClmap, input.preCenterUv, 0);
         
     TA::GeometryErrorResult result;
-    TA::GeometryErrorEstimationActor actor = TAA::CreateActor(input, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
+    TA::GeometryErrorEstimationActor actor = TA::CreateActor(input, cb.common, preViewZMap, preLightProp, preNormalMap, samPointClmap, samLinearClmap);
     TA::ComputeGeometryErrorEstimate(actor, result);
      
     output.isOutline = !result.canUseCubic;
@@ -89,21 +89,21 @@ void Reproject(in ReprojectionIn input, out ReprojectionOut output)
     } 
      
     //float maxVelocityFactor = floor(max(input.velocity.x, input.velocity.y) * 10) * 0.1f;
-    float maxVelocityFactor = max(input.velocity.x, input.velocity.y);
-    float speedOffset = float(maxVelocityFactor * (MAX_FRAME_ACCMURATION - 1)) * 0.0625f;
+    //float maxVelocityFactor = max(input.velocity.x, input.velocity.y);
+    //float speedOffset = float(maxVelocityFactor * (MAX_FRAME_ACCMURATION - 1)) * 0.0625f;
     
     if (result.canUseCubic)
     { 
         output.preColor = Catmul::Compute(preHistory, samLinearClmap, result.bicubicParameter);
-        output.accumSpeed = BI_CUBIC_SPEED + speedOffset;
+        output.accumSpeed = BI_CUBIC_SPEED;
         output.safetyLevel = PASS_BICUBIC_MARK;
        // output.preColor = float3(0, 0, 1); 
     }
     else if (result.canUseBilinear)
     { 
-        output.preColor = Catmul::Compute(preHistory, samLinearClmap, result.bicubicParameter);
-        //Catmul::Compute(preHistory, samLinearClmap, result.bicubicParameter); 
-        output.accumSpeed = BI_LINEAR_SPEED + speedOffset;
+        //output.preColor = Catmul::Compute(preHistory, samLinearClmap, result.bicubicParameter); 
+        output.preColor = Bilinear::Compute(preHistory, samLinearClmap, result.bilinearParameter, actor.invRtSize, result.customWeight);
+        output.accumSpeed = BI_LINEAR_SPEED;
         output.safetyLevel = PASS_BILINEAR_MARK;    
         //output.preColor = float3(1, 0, 0);
     }
@@ -114,42 +114,10 @@ void Reproject(in ReprojectionIn input, out ReprojectionOut output)
         output.safetyLevel = FAIL_MARK;
     }  
     output.accumSpeed = saturate(output.accumSpeed); 
-}
-float3 Blur(const float3 centerColor, const float2 centerUv)
-{ 
-    //Accum speed는 1.0f 이므로 AA효과가 사라진다.
-    //따라서 Blur로 AA를 대체.
-        
-    float weightSum = 0.25f;
-    float3 colorSum = centerColor * weightSum;
-        
-    [unroll]
-    for (int y = -TAA_COLOR_GAUS_BLUR_RADIUS; y <= TAA_COLOR_GAUS_BLUR_RADIUS; y++)
-    {
-        [unroll]
-        for (int x = -TAA_COLOR_GAUS_BLUR_RADIUS; x <= TAA_COLOR_GAUS_BLUR_RADIUS; x++)
-        {
-            if (x == 0 && y == 0)
-                continue;
-                    
-            float2 sampleUv = centerUv + float2(x, y) * cb.invRtSize;
-            if (!IsValidUv(sampleUv))
-                continue;
-                    
-            int factor = 2 - (abs(y) + abs(x));
-            float weight = 0.0625f * (1 << factor);
-                
-            float3 sampleColor = colorMap.SampleLevel(samPointClmap, sampleUv, 0).xyz;
-            colorSum += sampleColor * weight;
-            weightSum += weight;
-        }
-    }
-   // destMap[pixelCoord].xyz = float3(0,1, 0);
-    return colorSum / weightSum;
-}
-void ValidateHistoryColor(in ValidateHistoryColorIn input, in ReprojectionOut repResult, out float4 newHistoryValue)
+} 
+void ValidateHistoryColor(in TA::PixelData input, in TAA::ReprojectionOut repResult, out float4 newHistoryValue)
 {
-    float4 newPixelColor = colorMap.SampleLevel(samPointClmap, input.curJitterUv, 0);
+    float4 newPixelColor = colorMap.SampleLevel(samPointClmap, input.jitteredCenterUv, 0);
     TA::sharedColor[input.groupIndex] = float4(RGBToYCoCg(newPixelColor.xyz), 1.0f);
     GroupMemoryBarrierWithGroupSync();
   
@@ -158,7 +126,7 @@ void ValidateHistoryColor(in ValidateHistoryColorIn input, in ReprojectionOut re
     float accumSpeed = repResult.accumSpeed;
     
     TA::ColorErrorResult result;
-    TA::ColorErrorEstimateActor actor = TAA::CreateColorActor(input, newPixelColor.xyz, preHistoryColor, colorMap, samPointClmap, samLinearClmap);
+    TA::ColorErrorEstimateActor actor = TA::CreateColorActorWithJittered(input, cb.common, newPixelColor.xyz, preHistoryColor, colorMap, samPointClmap, samLinearClmap);
      
     //Accum speed는 1.0f은 이는 이전 history 값을 폐기한다는 의미이므로 History에 ColorErrorEstimate 과정이 무의미해 진다.
     if (accumSpeed < DISCARD_PRE_HISTORY_SPEED)
@@ -171,85 +139,30 @@ void ValidateHistoryColor(in ValidateHistoryColorIn input, in ReprojectionOut re
         newPixelColor.xyz = lerp(preHistoryColor, newPixelColor.xyz, accumSpeed); 
     }
     
-    if (accumSpeed > COMMON_SPEED)
+    if (accumSpeed >= BI_LINEAR_SPEED)
     {
-        //Accum speed는 COMMON_SPEED이상이면 무조건 Velocity가 존재하는 경우이다.
+        //Accum speed는 BI_LINEAR_SPEED이상이면 무조건 Velocity가 존재하는 경우이다.
         //Ghosting이 생길거라고 예상되며 따라서 Blur를 통해 어느정도 완화를 시도한다.
-        newPixelColor.xyz = Blur(newPixelColor.xyz, input.curCenterUv);
+        newPixelColor.xyz = TA::GaiussianBlur(colorMap, samPointClmap, newPixelColor.xyz, input.centerUv, cb.common.invRtSize);
     }
     newHistoryValue = TAA::PackHistory(newPixelColor.xyz, repResult.isOutline);
 }
 [numthreads(DIMX, DIMY, 1)]
 void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
-        return;
-   
-    const float2 halton[MAX_SAMPLE_COUNT] =
-    {
-        //{0.5f, 0.5f },
-        { 0.5f, 0.333333f },
-        { 0.25f, 0.666667f },
-        { 0.75f, 0.111111f },
-        { 0.125f, 0.444444f },
-        { 0.625f, 0.777778f },
-        { 0.375f, 0.222222f },
-        { 0.875f, 0.555556f },
-        { 0.0625f, 0.888889f },
-        { 0.5625f, 0.037037f },
-        { 0.3125f, 0.37037f },
-        { 0.8125f, 0.703704f },
-        { 0.1875f, 0.148148f },
-        { 0.6875f, 0.481481f },
-        { 0.4375f, 0.814815f },
-        { 0.9375f, 0.259259f },
-        { 0.03125f, 0.592593f }
-    }; 
-      
-    int2 pixelCoord = dispatchThreadID.xy; 
-    float2 jitter = (halton[cb.sampleNumber] - float2(0.5f, 0.5f)) * 2.0f; 
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
+        return; 
     
-    float2 jitterUv = float2(pixelCoord + float2(0.5f, 0.5f) + jitter) * cb.invRtSize;
-    float2 centerUv = float2(pixelCoord + 0.5f) * cb.invRtSize;
+    TA::PixelData pixelData;
+    pixelData.Initialize(dispatchThreadID.xy, groupIndex, cb.common, viewZMap, normalMap, lightProp, samPointClmap, samLinearClmap);
+    pixelData.SetJitter(cb.common.haltonSampleNumber, cb.common.invRtSize);
+    pixelData.SkipVelocity(SKIP_VELOCITY);
     
-    float viewZ = viewZMap.SampleLevel(samLinearClmap, centerUv, 0);
-    float3 normal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, centerUv, 0));
-    uint materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, centerUv, 0));
- 
-    float3 posV = UVToViewSpace(centerUv, viewZ, cb.uvToViewA, cb.uvToViewB);
-    float3 posW = mul(float4(posV, 1.0f), cb.camInvView).xyz;
-    double4 prePosH = mul(float4(posW, 1.0f), cb.camPreViewProj);
-    double2 preUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-    double2 velocity = preUv - centerUv;
-     
-    //부동소수점 오차 교정
-    //if (abs(velocity.x) <= SKIP_VELOCITY)
-    //    velocity.x = 0;
-    //if (abs(velocity.y) <= SKIP_VELOCITY)
-     //   velocity.y = 0;
-    
-    //preUv = velocity + centerUv;
-    //velocity = abs(velocity);
-  
-    ReprojectionIn input;
-    input.preUv = preUv;
-    input.curCenterPosW = posW;
-    input.curCenterNormalW = normal;
-    input.curCenterViewZ = viewZ;
-    input.curCenterMaterialID = materialID;
-    input.velocity = velocity;
-    
-    ReprojectionOut output;
-    Reproject(input, output);
-      
-    ValidateHistoryColorIn vIn;
-    vIn.groupIndex = groupIndex;    
-    vIn.curJitterUv = jitterUv;
-    vIn.curCenterUv = centerUv;
-    vIn.preUv = preUv; 
- 
+    TAA::ReprojectionOut output;
+    Reproject(pixelData, output);
+       
     float4 newHistoryValue;
-    ValidateHistoryColor(vIn, output, newHistoryValue);
+    ValidateHistoryColor(pixelData, output, newHistoryValue);
     
-    curHistory[pixelCoord] = newHistoryValue;   
+    curHistory[pixelData.coord] = newHistoryValue;
 }

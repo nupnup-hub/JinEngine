@@ -1,66 +1,52 @@
-/****************************************************************************************
-MIT License
-
-Copyright (c) 2021 jinwoo jung
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-****************************************************************************************/
-
-#pragma once  
-#include"../../Common/CommonConstantsStructureDefine.hlsl" 
-#include"../../Common/GBufferCommon.hlsl"
-#include"../../Common/DepthFunc.hlsl"
-#include"../../Common/PixelCommon.hlsl"
+#pragma once
+#include"../../Common/TemporalAccumulationCommon.hlsl"
 
 #ifndef DIMX
 #define DIMX 16
 #endif
 #ifndef DIMY
 #define DIMY 16
-#endif  
+#endif   
  
 struct SSRData
 {
+    TACommonPassData ta;
+    
     float4x4 camView;
-    float4x4 camProj;
-    float4x4 camInvView;
+    float4x4 camProj; 
+ 
+    float3 camPosW;
+    float rayTMin;
+  
+    float2 halfRtSize;
+    float2 halfInvRtSize;
     
-    float2 rtSize;
-    float2 invRtSize;
-     
-    float2 uvToViewA;
-    float2 uvToViewB;
-    
-    float2 nearFarZ;
-    float nearFarMul;
     float startOffset;
-    
-    float3 camPosW;  
-    float stepScale;
-    
-    float maxStepCount;
-    float rayDistance; //0 ~ 10000   
-    float thickness; //0 ~ 10000    
-    float objectViewZBias; //0 ~ 10000
-    
-    float fadeDistance; //0 ~ 1.0f
-    float fadeOneRate; //to [0.0f ~ 1.0f]
-    int pad00;
-    int pad01;
+    float stepScale;  
+    uint maxStepCount;
+    float rayDistance;              //0 ~ 10000   
+   
+    float thickness;                //0 ~ 10000    depth backface를 사용하면 두 번 렌더링 해야하므로 사용자 설정값으로 대채   
+    float objectViewZBias;          //0 ~ 10000    
+    float fadeDistance;             //0 ~ 1.0f
+    float fadeOneRate;              //to [0.0f ~ 1.0f]   
+   
+    uint sampleNumber;    
+    uint sampleSetSize;    
+    uint sampleMax; 
+    uint pad00;
 };
+ 
+
+struct SSRReuseSamplePack
+{
+    float4 data; // x, y = color, b = weight
+};
+
+struct SSRReuseSampleData
+{
+    float4 color; //8 byte 
+    float3 weight; //12 byte
+};
+ 
+  

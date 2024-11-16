@@ -72,7 +72,7 @@ namespace JinEngine::Graphic
 		ROOT_INDEX_CREATOR(Sharpening, passCBIndex, historyIndex, destMapIndex)
 		ROOT_INDEX_CREATOR(Clear, passCBIndex, colorHistoryIndex, preColorHistoryIndex)
 
-		static constexpr uint sampleNumberMax = 16; 
+		static constexpr uint haltonSampleNumber = 16;
 		static constexpr uint shaderCount = 3;
 
 		static JVector3<uint> ThreadDim()
@@ -104,21 +104,21 @@ namespace JinEngine::Graphic
 
 		static TAAPassConstants constants;
 
-		constants.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
-		constants.camPreInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreInvView()));
-		constants.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj().LoadXM()));
-		constants.rtSize = camRtSize;
-		constants.invRtSize = 1.0f / camRtSize;
-		cam->GetUvToView(constants.uvToViewA, constants.uvToViewB);
-		cam->GetPreUvToView(constants.preUvToViewA, constants.preUvToViewB);
-
-		constants.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
-		constants.camNearMulFar = constants.camNearFar.x * constants.camNearFar.y;
-		++constants.sampleNumber;
-		if (constants.sampleNumber >= TAA::sampleNumberMax)
-			constants.sampleNumber = 0;
+		constants.common.camInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetInvView()));
+		constants.common.camPreInvView.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreInvView()));
+		constants.common.camPreViewProj.StoreXM(DirectX::XMMatrixTranspose(cam->GetPreViewProj().LoadXM()));
+		constants.common.rtSize = camRtSize;
+		constants.common.invRtSize = 1.0f / camRtSize;
+		cam->GetUvToView(constants.common.uvToViewA, constants.common.uvToViewB);
+		cam->GetPreUvToView(constants.common.preUvToViewA, constants.common.preUvToViewB);
+		 
+		constants.common.camNearFar = JVector2F(cam->GetNear(), cam->GetFar());
+		constants.common.camNearMulFar = constants.common.camNearFar.x * constants.common.camNearFar.y;
+		if (constants.common.haltonSampleNumber >= TAA::haltonSampleNumber)
+			constants.common.haltonSampleNumber = 0;
 
 		frameBuffer.CopyData(helper.info.frame.currIndex, constants);
+		++constants.common.haltonSampleNumber;
 	}
 	void JDx12Antialise::TAAUserPrivateData::End(const JDrawHelper& helper)
 	{
@@ -579,8 +579,6 @@ namespace JinEngine::Graphic
 			return;
 
 		BuildResource(device);
-		for (auto& data : taaUserPrivate)
-			data.second->SetClearTrigger();
 	}
 	void JDx12Antialise::Clear()
 	{
@@ -613,10 +611,7 @@ namespace JinEngine::Graphic
 	{
 		auto dx12Set = static_cast<const JDx12GraphicOptionChangedSet&>(set);
 		if (set.newOption.debugging.requestRecompileTAAShader)
-		{
-			Clear();
-			BuildResource(dx12Set.device);
-		}
+			RecompileShader(dx12Set.device);
 	}
 	void JDx12Antialise::ApplyFXAA(JPostProcessComputeSet* computeSet, const JDrawHelper& helper)
 	{
@@ -674,7 +669,7 @@ namespace JinEngine::Graphic
 		set.userPrivate->End(helper); 
 	}
 	void JDx12Antialise::RecompileShader(const JGraphicShaderCompileSet& set)
-	{
+	{ 
 		ClearResource();
 		BuildResource(set.device);
 	}
@@ -703,6 +698,9 @@ namespace JinEngine::Graphic
 	{ 
 		for (uint i = 0; i < SIZE_OF_ARRAY(aaBase); ++i)
 			aaBase[i]->BuildResource(device, GetGraphicInfo(), GetGraphicOption());
+
+		for (auto& data : taaUserPrivate)
+			data.second->SetClearTrigger();
 	}
 	void JDx12Antialise::ClearResource()
 	{

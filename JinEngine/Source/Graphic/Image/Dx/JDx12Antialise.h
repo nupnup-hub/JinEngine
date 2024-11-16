@@ -27,6 +27,7 @@ SOFTWARE.
 #include"../JAntialise.h" 
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
+#include"../../FrameResource/Dx/JTACommonConstants.h"
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
 #include"../../Buffer/Dx/JDx12GraphicBuffer.h"
 #include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
@@ -54,23 +55,8 @@ namespace JinEngine
 		private:
 			struct TAAPassConstants
 			{
-			public:
-				JMatrix4x4 camInvView = JMatrix4x4::Identity();
-				JMatrix4x4 camPreInvView = JMatrix4x4::Identity();
-				JMatrix4x4 camPreViewProj = JMatrix4x4::Identity();
-
-				JVector2F rtSize = JVector2F::One();
-				JVector2F invRtSize = JVector2F::One();
-
-				JVector2F uvToViewA = JVector2F::One();
-				JVector2F uvToViewB = JVector2F::One();
-
-				JVector2F preUvToViewA = JVector2F::One();
-				JVector2F preUvToViewB = JVector2F::One();
-
-				JVector2F camNearFar = JVector2F::One();
-				float camNearMulFar = 0; 
-				uint sampleNumber = 0; 
+			public: 
+				JTACommonConstants common;
 			};
 			struct TAAUserPrivateData : public GraphicVolatileStorageInterface
 			{
@@ -85,9 +71,7 @@ namespace JinEngine
 				JDx12GraphicBufferT<TAAPassConstants> frameBuffer;
 			public:
 				uint historyIndex = 0;
-				uint preHistoryIndex = 1;
-			public:
-				bool waitResourceCreation = true;
+				uint preHistoryIndex = 1; 
 			public:
 				TAAUserPrivateData(JGraphicDevice* device);
 				~TAAUserPrivateData();

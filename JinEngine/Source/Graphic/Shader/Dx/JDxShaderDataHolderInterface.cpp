@@ -134,9 +134,11 @@ namespace JinEngine::Graphic
             std::vector<DxcDefine> macro = ToDxMacro(macroSet);  
             std::vector<LPCWSTR> arg =
             {
-                L"-Zi",
+                L"-Zi",                 
                 L"-Fd", debugInfo.pdbFilePath.c_str()
             };  
+            //Zi = debug log
+            //Fd = shader symbol used by pix
 
             Microsoft::WRL::ComPtr<IDxcCompilerArgs> pArgs;
             ThrowIfFailedHr(pUtils->BuildArguments(filePath.c_str(),

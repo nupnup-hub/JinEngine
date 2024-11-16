@@ -59,7 +59,7 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
     CrossBilateral::NormalDepthLuminance::Parameters param;
     param.normal.Initialize(centerNormal);
     param.depth.Initialize(centerViewZ, ddxy);
-    param.luminance.Initialize(centerLuminance, centerUv, cb.invRtSize, colorHistory, samLinearClmap);
+    param.luminance.Initialize(centerLuminance, centerUv, cb.common.invRtSize, colorHistory, samLinearClmap);
  
     float3 result = diffuse;
     float weightSum = 1.0f; // CrossBilateral::NormalDepth::ComputeWeight(param);
@@ -77,7 +77,7 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
         //Per pixel kernel rotation
         //Input signal is already noisy 
         float2 offset = Rotate(poisson.xy, trigger) * radius;
-        float2 uv = centerUv + offset * cb.invRtSize;
+        float2 uv = centerUv + offset * cb.common.invRtSize;
         //uv = max(uv, float2(0, 0));
         
         float3 sampleDiffuse = colorHistory.SampleLevel(samLinearClmap, uv, 0).xyz;
@@ -99,11 +99,11 @@ float3 DiffuseFiltering(int2 pixelCoord, float2 centerUv, float3 diffuse, float3
 [numthreads(DIMX, DIMY, 1)]
 void main(int3 dispatchThreadID : SV_DispatchThreadID)
 { 
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
         return;
     
     int2 pixelCoord = dispatchThreadID.xy;
-    float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
+    float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.common.invRtSize;
     float currHistoryLength = historyLength[pixelCoord].x;
     
     float4 pixelColorHistory = colorHistory.SampleLevel(samLinearClmap, uv, 0);
@@ -111,7 +111,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     
     float3 centerNormal = UnpackNormal(normalMap.SampleLevel(samLinearClmap, uv, 0));
     float centerViewZ = viewZMap.SampleLevel(samLinearClmap, uv, 0);
-    float viewRange = cb.camNearFar.y - cb.camNearFar.x;
+    float viewRange = cb.common.camNearFar.y - cb.common.camNearFar.x;
     float2 ddxy = depthDerivative.SampleLevel(samLinearClmap, uv, 0);
  
     //float radius = cb.baseRadius + (1.0f / float(currHistoryLength)) * cb.radiusRange * (1.0f - centerLinearDepth);

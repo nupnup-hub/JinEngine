@@ -147,7 +147,7 @@ namespace JinEngine::Graphic
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSAO_DEPTH_INTERLEAVE_MAP:
 				return innerResourceInitCapacity;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::SSR_MAP:
-				return 16;
+				return 32;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::IMAGE_PROCESSING:
 				return 32;
 			case JinEngine::J_GRAPHIC_RESOURCE_TYPE::POST_PROCESS_EXPOSURE:

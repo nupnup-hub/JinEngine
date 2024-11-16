@@ -29,6 +29,7 @@ SOFTWARE.
 #include"../../Accelerator/Dx/JDx12GpuAcceleratorManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
+#include"../../FrameResource/Dx/JTACommonConstants.h"
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"
 #include"../../Buffer/Dx/JDx12GraphicBuffer.h" 
 #include"../../../Core/Storage/JStorageInterface.h"
@@ -53,46 +54,65 @@ namespace JinEngine
 		class JDx12Ssr final : public JSsr
 		{
 		private:
+			enum SSR_RAY_COMPUTE_SHADER
+			{
+				SSR_RAY_COMPUTE_SHADER_NORMAL,
+				SSR_RAY_COMPUTE_SHADER_SKIP_SKY_COLOR,
+				SSR_RAY_COMPUTE_SHADER_COUNT
+			};
+			enum SSR_BLUR_SHADER
+			{
+				SSR_BLUR_VERTICAL,
+				SSR_BLUR_HORIZONTAL,
+				SSR_BLUR_SHADER_COUNT
+			};
+		private:
 			using JDx12ComputeShaderDataHolder = JDx12ComputeShaderDataHolder<1>;
 		private:
 			struct SsrPassConstants
 			{
 			public:
+				JTACommonConstants ta;
+
 				JMatrix4x4 camView = JMatrix4x4::Identity();
 				JMatrix4x4 camProj = JMatrix4x4::Identity();
-				JMatrix4x4 camInvView = JMatrix4x4::Identity();
-
-				JVector2F rtSize = JVector2F::One();
-				JVector2F invRtSize = JVector2F::One();
-
-				//JVector2F halfRtSize = JVector2F::One();
-				//JVector2F halfInvRtSize = JVector2F::One();
-
-				JVector2F uvToViewA = JVector2F::One();
-				JVector2F uvToViewB = JVector2F::One();
-
-				JVector2F camNearFar = JVector2F::One();
-				float camNearFarMul = 0;
-				float startOffset = 0;
 
 				JVector3F camPosW = JVector3F::PositiveOne();
-				float stepScale = 0;
+				float rayTMin = 0;
+				 
+				JVector2F halfRtSize = JVector2F::One();
+				JVector2F halfInvRtSize = JVector2F::One();
 
-				float maxStepCount = 0;
+				float startOffset = 0;
+				float stepScale = 0;
+				uint maxStepCount = 0;
 				float rayDistance = 0;                  //0 ~ 10000   
+
 				float thickness = 0;                    //0 ~ 10000
 				float objectViewZBias = 0;              //0 ~ 10000
-
 				float fadeDistance = 0;                 //0 ~ 1.0f
 				float fadeOneRate = 0;                  //to [0.0f ~ 1.0f]
-				int pad00 = 0;
-				int pad01 = 0;
+
+				uint sampleNumber = 0;
+				uint sampleSetSize = 0;
+				uint sampleMax = 0; 		 
+				uint pad00 = 0;
 			};
 		private:
 			struct UserPrivateData : public GraphicVolatileStorageInterface
 			{
 			public:
-				JDx12GraphicBufferT<SsrPassConstants> frameBuffer;
+				static constexpr uint historyCount = 2;
+			public:
+				JUserPtr<JGraphicResourceInfo> colorHistory[historyCount];
+			public:
+				JGraphicDevice* device = nullptr;
+				JGraphicResourceManager* gm = nullptr;
+			public:
+				JDx12GraphicBufferT<SsrPassConstants> frameBuffer; 
+			public:
+				uint historyIndex = 0;
+				uint preHistoryIndex = 1; 
 			public:
 				UserPrivateData(JGraphicDevice* device);
 				~UserPrivateData();
@@ -107,6 +127,7 @@ namespace JinEngine
 			public:
 				JDx12CommandContext* context;
 				JDx12GraphicDevice* device;
+				JGraphicResourceManager* gm;
 			public:
 				ImageProcessingShareData* imageShare = nullptr;
 				DrawSceneShareData* drawSceneShare = nullptr;
@@ -115,53 +136,71 @@ namespace JinEngine
 			public:
 				int skyMapSrvHeapIndex = invalidIndex;
 				bool isValid = false;
+				bool requestCreateDependencyData = false;
 			public:
 				JDx12GraphicResourceComputeSet rtSet;
+			public:
 				JDx12GraphicResourceComputeSet viewZSet;
+				JDx12GraphicResourceComputeSet preViewZSet;
+			public:
 				JDx12GraphicResourceComputeSet albedoSet;
+			public:
 				JDx12GraphicResourceComputeSet normalSet;
+				JDx12GraphicResourceComputeSet preNormalSet;
+			public:
 				JDx12GraphicResourceComputeSet lightPropSet;
-				JDx12GraphicResourceComputeSet ssrSet;
-				JDx12GraphicResourceComputeSet ssrMip[Constants::ssrMipCount];
-			public:
-				JDx12GraphicResourceComputeSet srcSet;
-				JDx12GraphicResourceComputeSet intermediateSet;
-				JDx12GraphicResourceComputeSet destSet;
-			public:
-				JDx12GraphicResourceComputeSet depthDerivativeMap; 
+				JDx12GraphicResourceComputeSet preLightPropSet;
 			public:
 				JDx12AcceleratorResourceComputeSet accelSet;
 			public:
+				JDx12GraphicResourceComputeSet ssrSet;
+				JDx12GraphicResourceComputeSet ssrIntermediateSet;
+				JDx12GraphicResourceComputeSet* ssrHalfIntermediateSet;
+				JDx12GraphicResourceComputeSet ssrCurHistorySet;
+				JDx12GraphicResourceComputeSet ssrPreHistorySet; 
+				JDx12GraphicResourceComputeSet ssrMipPing[Constants::ssrMipCount]; 
+				JDx12GraphicResourceComputeSet ssrMipPong[Constants::ssrMipCount];
+			public:
+				JDx12GraphicResourceComputeSet srcSet;
+				JDx12GraphicResourceComputeSet destSet; 
+			public:
 				JVector2<uint> resolution;
-				//JVector2<uint> halfResolution;
+				JVector2<uint> halfResolution; 
+				JVector4F dimPack;						//xy = rtSize, zw = inverse rtSize
+				JVector4F halfDimPack;					//xy = rtSize, zw = inverse rtSize
+			public:
+				float camFar; 
 			public:
 				SsrComputeSet(JDx12PostProcessComputeSet* computeSet, const JDrawHelper& helper);
 			public:
-				void SetUserPrivate(UserPrivateData* data, const JDrawHelper& helper);
+				void SetUserPrivate(UserPrivateData* data, const JSsrDesc& desc, const JDrawHelper& helper);
 			public:
 				bool IsValid()const noexcept;
 			};
 		private:
 			const size_t guid;
 		private:
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> computeRootSignature[(uint)J_SSR_TYPE::COUNT];
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> downSampleRootsignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> blurRootsignature;
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> applyRootsignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> computeRootSignature[(uint)J_SSR_TYPE::COUNT]; 
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> blurRootSignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> upsampleRootSignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> temporalFilterRootSignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> atorusRootSignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> applyRootSignature;
+			Microsoft::WRL::ComPtr<ID3D12RootSignature> clearRootSignature;
 		private:
-			std::unique_ptr<JDx12ComputeShaderDataHolder> computeShader[(uint)J_SSR_TYPE::COUNT];
-			std::unique_ptr<JDx12ComputeShaderDataHolder> downSample4Shader;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> downSample2Shader;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> blurShader;
+			std::unique_ptr<JDx12ComputeShaderDataHolder> computeShader[(uint)J_SSR_TYPE::COUNT][SSR_RAY_COMPUTE_SHADER_COUNT];
+			std::unique_ptr<JDx12ComputeShaderDataHolder> blurShader[SSR_BLUR_SHADER_COUNT];
+			std::unique_ptr<JDx12ComputeShaderDataHolder> upsampleShader;
+			std::unique_ptr<JDx12ComputeShaderDataHolder> temporalFilterShader;
+			std::unique_ptr<JDx12ComputeShaderDataHolder> atorusShader;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> applyShader; 
+			std::unique_ptr<JDx12ComputeShaderDataHolder> clearShader; 
 		private:
-			JDx12GraphicDevice* cachedDevice;
-			JDx12GraphicResourceManager* cachedGm;
+			PushGraphicEventPtr pushGraphicEvPtr;
 		private:
-			std::unordered_map<size_t, std::unique_ptr<UserPrivateData>> userPrivate;
-			uint computeCount = 0;
+			std::unordered_map<size_t, std::unique_ptr<UserPrivateData>> userPrivate; 
 		public:
-			JDx12Ssr();
+			JDx12Ssr(PushGraphicEventPtr pushGraphicEvPtr);
 			~JDx12Ssr();
 		public:
 			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM)final;
@@ -180,18 +219,24 @@ namespace JinEngine
 		public:
 			void ApplySsr(JPostProcessComputeSet* computeSet, const JDrawHelper& helper) final;
 		private:
+			void BlurSourceMap(SsrComputeSet& set, const JDrawHelper& helper);
 			void ComputeWithRaymarching(SsrComputeSet& set, const JDrawHelper& helper);
-			void ComputeWithRaycasting(SsrComputeSet& set, const JDrawHelper& helper);
-			void DownSample(SsrComputeSet& set, const JDrawHelper& helper);
-			void Blur(SsrComputeSet& set, const JDrawHelper& helper);
+			void ComputeWithRaycasting(SsrComputeSet& set, const JDrawHelper& helper); 
+			//void Resolve(SsrComputeSet& set, const JDrawHelper& helper);
+			void Upsample(SsrComputeSet& set, const JDrawHelper& helper);
+			void TemporalFilter(SsrComputeSet& set, const JDrawHelper& helper);
+			void Atrous(SsrComputeSet& set, const JDrawHelper& helper, const uint stepCount);
 			void Apply(SsrComputeSet& set, const JDrawHelper& helper);
+			void Clear(SsrComputeSet& set, const JDrawHelper& helper);
 		private:
 			void Begin(SsrComputeSet& set, const JDrawHelper& helper);
 			void End(const SsrComputeSet& set, const JDrawHelper& helper);
 		public:
 			void RecompileShader(const JGraphicShaderCompileSet& dataSet)final;
 		private:
-			void BuildResouce(JGraphicDevice* device, JGraphicResourceManager* gM);
+			void CreateDependencyData(JGraphicDevice* device, JGraphicResourceManager* gm, UserPrivateData* userPrivate, JVector2<uint> rtSize);
+		private:
+			void BuildResource(JGraphicDevice* device);
 			void BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 			void BuildPso(ID3D12Device* device, const JGraphicInfo& info, const JGraphicOption& option);
 		private:

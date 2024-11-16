@@ -63,7 +63,7 @@ namespace JinEngine
 
 			static constexpr uint restirDenoiseMipmapCount = 4;
 
-			static constexpr uint ssrMipCount = 7;
+			static constexpr uint ssrMipCount = 6;
 
 			static DXGI_FORMAT GetBackBufferFormat(const bool isHdr)noexcept
 			{

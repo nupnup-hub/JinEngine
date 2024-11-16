@@ -32,105 +32,29 @@ SOFTWARE.
 
 struct TAAPassConstants
 {
-    float4x4 camInvView;
-    float4x4 camPreInvView;
-    float4x4 camPreViewProj;
-    
-    float2 rtSize;
-    float2 invRtSize;
-    
-    float2 uvToViewA;
-    float2 uvToViewB;
-    
-    float2 preUvToViewA;
-    float2 preUvToViewB;
-    
-    float2 camNearFar;
-    float camNearMulFar; 
-    uint sampleNumber; 
+    TACommonPassData common;
 };
 
 ConstantBuffer<TAAPassConstants> cb : register(b0);
-
-#ifndef NORMAL_THRESHOLD
-#define NORMAL_THRESHOLD 0.5f
-#endif
-#ifndef DISOCCLUSION_THRES_HOLD
-#define DISOCCLUSION_THRES_HOLD 0.01f 
-#endif 
- struct ReprojectionIn
-{
-    float2 preUv;
-    float3 curCenterPosW;
-    float3 curCenterNormalW;
-    float curCenterViewZ;
-    uint curCenterMaterialID;
-    double2 velocity;
-};
-
-struct ReprojectionOut
-{
-    float3 preColor; 
-    //uint curHistoryLength;
-    float accumSpeed; 
-    int safetyLevel;                    //0 pass bicubic, 1 pass bilinear, 2 fail
-    bool isOutline;
-};
-
-struct ValidateHistoryColorIn
-{
-    int groupIndex;
-    float2 curCenterUv;
-    float2 curJitterUv;
-    float2 preUv; 
-};
-
+ 
 namespace TAA
-{
-    TA::GeometryErrorEstimationActor CreateActor(in ReprojectionIn pixel,
-        Texture2D<float> preViewZMap,
-        Texture2D preLightPropMap,
-        Texture2D preNormalMap,
-        SamplerState samPointClamp,
-        SamplerState samLinearClmap)
+{  
+    class ReprojectionOut
     {
-        float centerPlaneDist = dot(pixel.curCenterPosW, pixel.curCenterNormalW);
-        TA::GeometryErrorEstimationActor actor;
-        actor.Initialze(pixel.preUv,
-            pixel.curCenterPosW,
-            pixel.curCenterNormalW,
-            pixel.curCenterMaterialID,
-            cb.rtSize,
-            cb.invRtSize,
-            1.0f / centerPlaneDist,
-            DISOCCLUSION_THRES_HOLD * (cb.camNearFar.y - cb.camNearFar.x),
-            NORMAL_THRESHOLD,
-            (float3x3) cb.camPreInvView,
-            cb.preUvToViewA,
-            cb.preUvToViewB,
-            preViewZMap,
-            preLightPropMap,
-            preNormalMap,
-            samPointClamp,
-            samLinearClmap);
-        
-        return actor;
-    }
-    
-    TA::ColorErrorEstimateActor CreateColorActor(in ValidateHistoryColorIn input,
-            float3 curPixelCenterColor,
-            float3 preHistoryCenterColor,
-            Texture2D srcColorMap, 
-            SamplerState samPointClamp,
-            SamplerState samLinearClmap)
-    {
-        TA::ColorErrorEstimateActor actor;
-        actor.Initialize(input.curJitterUv, input.preUv, curPixelCenterColor, preHistoryCenterColor, cb.invRtSize, srcColorMap, samPointClamp, samLinearClmap);
-        actor.SetGroupIndex(input.groupIndex);
-        
-        return actor;
+        float3 preColor;
+        float accumSpeed;
+        int safetyLevel; //0 pass bicubic, 1 pass bilinear, 2 fail
+        bool isOutline;
     };
-
+    ReprojectionOut CreateReprojectionOut()
+    {
+        ReprojectionOut output;
+        output.preColor = float3(0, 0, 0);
+        output.accumSpeed = 0;
+        output.safetyLevel = 0;
+        
+        return output;
+    }  
     //History R16G16B16A16
     float4 PackHistory(const float3 color, const bool isOutline)
     {
@@ -144,6 +68,5 @@ namespace TAA
         
         uint optionMark = historyValue.w * 65535.0f; 
         isOutline = optionMark & 1; 
-    }
-
+    } 
 }

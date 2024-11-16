@@ -12,11 +12,17 @@ namespace JinEngine
 	namespace Core
 	{
 		using ThreadWorkFunc = _beginthreadex_proc_type;
+		using ThreadError = int;
 		namespace Constants
 		{
 			static constexpr AtomicInt::value_type initializeStep = 0;
 			static constexpr AtomicInt::value_type loopStep = 1;
-			static constexpr AtomicInt::value_type endStep = 2; 
+			static constexpr AtomicInt::value_type endStep = 2;  
+		}
+		namespace ThreadErrorCode
+		{
+			static constexpr ThreadError none = 0;
+			static constexpr ThreadError tlsOutOfIndex = 1;
 		}
 		 
 		/**
@@ -35,6 +41,7 @@ namespace JinEngine
 			public:
 				//Thread index per group
 				size_t threadIndex = 0;
+				ThreadError errorCode = ThreadErrorCode::none;
 			};
 			struct SyncManage
 			{

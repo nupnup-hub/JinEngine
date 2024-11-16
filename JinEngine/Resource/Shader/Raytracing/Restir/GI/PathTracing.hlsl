@@ -84,7 +84,7 @@ struct EstimateDataSet
     float3 throughput;
     float2 lightUniformSample;
     float2 bxdfUniformSample;
-    float bxdf;
+    float3 bxdf;
     float bxdfPdf;
     uint pathLength;
     uint hitType; //0 object, 1 light, 2 miss

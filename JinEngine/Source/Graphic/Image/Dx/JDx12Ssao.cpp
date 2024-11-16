@@ -1050,8 +1050,11 @@ namespace JinEngine::Graphic
 			ssaoSampleCB->Clear();
 		ssaoSampleCB = nullptr;
 
-		for (uint i = 0; i < SIZE_OF_ARRAY(randomVecInfo); ++i)
-			cachedGm->DestroyGraphicTextureResource(cachedDevice, randomVecInfo[i].Release());
+		if (cachedGm != nullptr)
+		{
+			for (uint i = 0; i < SIZE_OF_ARRAY(randomVecInfo); ++i)
+				cachedGm->DestroyGraphicTextureResource(cachedDevice, randomVecInfo[i].Release());
+		}
 		if (ssaoAoSliceCB != nullptr)
 			ssaoAoSliceCB->Clear();
 		ssaoAoSliceCB = nullptr;

@@ -431,7 +431,7 @@ namespace Bilinear
     }; 
     Parameter CreateFilter(float2 uv, float2 texSize)
     { 
-        const float t = uv * texSize - 0.5f;      
+        const float2 t = uv * texSize - 0.5f;      
         Parameter result;
         result.origin = floor(t);
         result.weights = frac(t - result.origin);

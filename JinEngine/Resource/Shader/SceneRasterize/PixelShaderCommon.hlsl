@@ -71,7 +71,7 @@ Texture2DArray shadowArray[SHADOW_MAP_ARRAY_COUNT] : register(t2, space3);
 TextureCube shadowCubeMap[SHADOW_MAP_CUBE_COUNT] : register(t2, space4);
 #endif
 
-Texture2D ambientOcclusionMap : register(t2, space5); 
+Texture2D<float> ambientOcclusionMap : register(t2, space5); 
 
 #ifdef DEFERRED_SHADING
 Texture2D gBuffer[G_BUFFER_LAYER_COUNT] : register(t2, space6);

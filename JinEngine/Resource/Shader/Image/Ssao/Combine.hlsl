@@ -46,7 +46,7 @@ PixelOut SsaoCombine(VertexOut pin) : SV_Target
 	int2 offset = fullResPos & 3;
 	int sliceId = offset.y * 4 + offset.x;
 	int2 quarterResPos = fullResPos >> 2;
-	float ao = aoMap.Load(int4(quarterResPos, sliceId, 0));
+	float ao = aoMap.Load(int4(quarterResPos, sliceId, 0)).x;
 	
 #if USE_BLUR 
     float viewDepth = depthMap.Sample(samPointClamp, pin.texC);

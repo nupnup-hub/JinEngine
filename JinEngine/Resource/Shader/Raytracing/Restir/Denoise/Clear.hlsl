@@ -44,10 +44,10 @@ RWStructuredBuffer<uint> preHistoryLength : register(u5);
 [numthreads(DIMX, DIMY, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
         return;
       
-    uint index = dispatchThreadID.x + dispatchThreadID.y * cb.rtSize.x;
+    uint index = dispatchThreadID.x + dispatchThreadID.y * cb.common.rtSize.x;
     colorHistory[index] = float4(0, 0, 0, 0);
     fastColorHistory[index] = float4(0, 0, 0, 0);
     historyLength[index] = 0;

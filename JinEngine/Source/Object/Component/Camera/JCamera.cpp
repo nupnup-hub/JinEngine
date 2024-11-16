@@ -92,11 +92,17 @@ namespace JinEngine
 		static constexpr float minSsrObjectViewZBias = -4.0f;
 		static constexpr float maxSsrObjectViewZBias = 4.0f;
 
-		static constexpr float minFadeDistance = 0.0f;
-		static constexpr float maxFadeDistance = 0.5f;
+		static constexpr float minSsrFadeDistance = 0.0f;
+		static constexpr float maxSsrFadeDistance = 1.0f;
 
-		static constexpr float minStartOffset = 1.0f;
-		static constexpr float maxStartOffset = 16.0f;
+		static constexpr float minSsrStartOffset = 1.0f;
+		static constexpr float maxSsrStartOffset = 16.0f;
+
+		static constexpr float minSsrBlurScale = 0.1f;
+		static constexpr float maxSsrBlurScale = 4.0f;
+
+		static constexpr float minSsrRayTMin = JSsrDesc::initTmin;
+		static constexpr float maxSsrRayTMin = 4.0f;
 	}
 
 	class JCamera::JCameraImpl : public Core::JTypeImplBase, public WindowEventListener
@@ -233,8 +239,10 @@ namespace JinEngine
 		REGISTER_GET_SET_METHOD_EX(RayDistance, GetSsrRayDistance, SetSsrRayDistance, GUI_SLIDER(Private::minSsrRaydistance, Private::maxSsrRaydistance, true, false, 3, GUI_GROUP_USER(SSR)))
 		REGISTER_GET_SET_METHOD_EX(Thickness, GetSsrThickness, SetSsrThickness, GUI_SLIDER(Private::minSsrThickness, Private::maxSsrThickness, true, false, 3, GUI_GROUP_USER(SSR)))
 		REGISTER_GET_SET_METHOD_EX(ViewZBias, GetSsrViewZBias, SetSsrViewZBias, GUI_SLIDER(Private::minSsrObjectViewZBias, Private::maxSsrObjectViewZBias, true, false, 3, GUI_GROUP_USER(SSR)))
-		REGISTER_GET_SET_METHOD_EX(FadeDistance, GetSsrFadeDistance, SetSsrFadeDistance, GUI_SLIDER(Private::minFadeDistance, Private::maxFadeDistance, true, false, 3, GUI_GROUP_USER(SSR)))
-		REGISTER_GET_SET_METHOD_EX(StartOffset, GetSsrStartOffset, SetSsrStartOffset, GUI_SLIDER(Private::minStartOffset, Private::maxStartOffset, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(FadeDistance, GetSsrFadeDistance, SetSsrFadeDistance, GUI_SLIDER(Private::minSsrFadeDistance, Private::maxSsrFadeDistance, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(StartOffset, GetSsrStartOffset, SetSsrStartOffset, GUI_SLIDER(Private::minSsrStartOffset, Private::maxSsrStartOffset, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(BlurScale, GetSsrBlurScale, SetSsrBlurScale, GUI_SLIDER(Private::minSsrBlurScale, Private::maxSsrBlurScale, true, false, 3, GUI_GROUP_USER(SSR)))
+		REGISTER_GET_SET_METHOD_EX(RayTMin, GetSsrRayTMin, SetSsrRayTMin, GUI_SLIDER(Private::minSsrRayTMin, Private::maxSsrRayTMin, true, false, 3, GUI_GROUP_USER(SSR)))
 		JSsrDesc ssrDesc;
 	public:
 		//Caution
@@ -394,6 +402,14 @@ namespace JinEngine
 		float GetSsrStartOffset()const noexcept
 		{
 			return ssrDesc.startOffset;
+		}
+		float GetSsrBlurScale()const noexcept
+		{
+			return ssrDesc.blurScale;
+		}
+		float GetSsrRayTMin()const noexcept
+		{
+			return ssrDesc.rayqueryTmin;
 		}
 	public:
 		void SetFrameDirty()
@@ -698,8 +714,10 @@ namespace JinEngine
 		}
 		void SetSsrMaxStepCount(const float value)noexcept
 		{
+			//imgui input int 호출 시 자동으로 추가되는 버튼이 거슬려서 float data type 사용.
+			//추후 custom input int 작성 시 float -> uint로 data type 변경 필요,
 			JSsrDesc newDesc = ssrDesc;
-			newDesc.maxStepCount = std::clamp(value, Private::minSsrStepCount, Private::maxSsrStepCount);
+			newDesc.maxStepCount = uint(std::clamp(value, Private::minSsrStepCount, Private::maxSsrStepCount));
 			SetSsrDesc(newDesc); 
 		}
 		void SetSsrRayDistance(const float value)noexcept
@@ -723,13 +741,25 @@ namespace JinEngine
 		void SetSsrFadeDistance(const float value)noexcept
 		{
 			JSsrDesc newDesc = ssrDesc;
-			newDesc.fadeDistance = std::clamp(value, Private::minFadeDistance, Private::maxFadeDistance);
+			newDesc.fadeDistance = std::clamp(value, Private::minSsrFadeDistance, Private::maxSsrFadeDistance);
 			SetSsrDesc(newDesc); 
 		}
 		void SetSsrStartOffset(const float value)noexcept
 		{
 			JSsrDesc newDesc = ssrDesc;
-			newDesc.startOffset = std::clamp(value, Private::minStartOffset, Private::maxStartOffset);
+			newDesc.startOffset = std::clamp(value, Private::minSsrStartOffset, Private::maxSsrStartOffset);
+			SetSsrDesc(newDesc);
+		}
+		void SetSsrBlurScale(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.blurScale = std::clamp(value, Private::minSsrBlurScale, Private::maxSsrBlurScale);
+			SetSsrDesc(newDesc);
+		}
+		void SetSsrRayTMin(const float value)noexcept
+		{
+			JSsrDesc newDesc = ssrDesc;
+			newDesc.rayqueryTmin = std::clamp(value, Private::minSsrRayTMin, Private::maxSsrRayTMin);
 			SetSsrDesc(newDesc);
 		}
 		static ManageFuncList& SetFuncList()
@@ -2110,6 +2140,8 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.objectViewZBias, "SsrObjectViewZBias:");
 		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.fadeDistance, "SsrFadeDistance:");
 		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.startOffset, "SsrStartOffset:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.blurScale, "SsrBlurScale:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssrDesc.rayqueryTmin, "SsrRayqueryTmin:");
 
 		auto initData = std::make_unique<JCamera::InitData>(guid, flag, owner);
 		initData->rtSizeRate = rtSizeRate;
@@ -2208,6 +2240,8 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.objectViewZBias, "SsrObjectViewZBias:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.fadeDistance, "SsrFadeDistance:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.startOffset, "SsrStartOffset:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.blurScale, "SsrBlurScale:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssrDesc.rayqueryTmin, "SsrRayqueryTmin:");
 
 		//JSsrDesc
 		return Core::J_FILE_IO_RESULT::SUCCESS;

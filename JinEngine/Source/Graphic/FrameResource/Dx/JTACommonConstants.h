@@ -24,25 +24,31 @@ SOFTWARE.
 
 
 #pragma once 
-#include"../../../Common/TemporalAccumulationCommon.hlsl"
- 
-struct ReserviorDenoiseConstants
-{
-    TACommonPassData common;            //256
-     
-    float baseRadius;
-    float radiusRange;
-    float denoiseRange;
-    uint sampleNumber;
-};
+#include"JFrameConstantsSet.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 
-ConstantBuffer<ReserviorDenoiseConstants> cb : register(b0);
-
-  
-struct ReprojectionOut
+namespace JinEngine
 {
-    float4 preColor;
-    float4 preFastColor;
-    uint curHistoryLength;
-    float minAccumSpeed; 
-}; 
+	namespace Graphic
+	{
+		struct JTACommonConstants
+		{
+			JMatrix4x4 camInvView = JMatrix4x4::Identity();
+			JMatrix4x4 camPreInvView = JMatrix4x4::Identity();
+			JMatrix4x4 camPreViewProj = JMatrix4x4::Identity();
+
+			JVector2F rtSize = JVector2F::One();
+			JVector2F invRtSize = JVector2F::One();
+
+			JVector2F uvToViewA = JVector2F::One();
+			JVector2F uvToViewB = JVector2F::One();
+
+			JVector2F preUvToViewA = JVector2F::One();
+			JVector2F preUvToViewB = JVector2F::One();
+
+			JVector2F camNearFar = JVector2F::One();
+			float camNearMulFar = 0;
+			uint haltonSampleNumber = 0;
+		};
+	}
+}

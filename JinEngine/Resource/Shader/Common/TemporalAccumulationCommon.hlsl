@@ -45,7 +45,15 @@ SOFTWARE.
 #define TAA_COLOR_ERROR_ESTIMATE_RADIUS 1
 #define TAA_CLAMP_SCALE 1
 #define TAA_COLOR_GAUS_BLUR_RADIUS 1
- 
+#define TAA_COLOR_GAUS_BLUR_LENGTH TAA_COLOR_GAUS_BLUR_RADIUS * 2 + 1
+
+#ifndef NORMAL_THRESHOLD
+#define NORMAL_THRESHOLD 0.5f
+#endif
+#ifndef DISOCCLUSION_THRES_HOLD
+#define DISOCCLUSION_THRES_HOLD 0.01f 
+#endif 
+
 float ComputeColorVariance(const float3 color)
 {
     float2 moments;
@@ -134,8 +142,108 @@ float3 HistoryRgbClamping(float3 minRgb, float3 maxRgb, float3 currentPixelRgb, 
     return lerp(historyRgb, currentPixelRgb, t);
 }
     
-namespace TA
+struct TACommonPassData
 {
+    float4x4 camInvView;
+    float4x4 camPreInvView;
+    float4x4 camPreViewProj;
+    
+    float2 rtSize;
+    float2 invRtSize;
+    
+    float2 uvToViewA;
+    float2 uvToViewB;
+    
+    float2 preUvToViewA;
+    float2 preUvToViewB;
+    
+    float2 camNearFar;
+    float camNearMulFar;
+    uint haltonSampleNumber;                      
+};
+namespace TA
+{   
+    struct PixelData
+    {
+        uint2 coord;
+        uint groupIndex;
+        
+        float2 centerUv;
+        float2 jitteredCenterUv;
+    
+        float viewZ;
+        float3 normalW;
+        uint materialID;
+ 
+        float3 posV;
+        float3 posW;
+    
+        double4 prePosH;
+        double2 preCenterUv;
+        double2 velocity;
+         
+        void Initialize(const uint2 _pixelCoord,  
+            const uint _groupIndex,
+            const TACommonPassData cb,
+            Texture2D<float> viewZMap,
+            Texture2D normalMap, 
+            Texture2D lightProp,
+            SamplerState samPointClmap,
+            SamplerState samLinearClmap)
+        { 
+            coord = _pixelCoord;
+            groupIndex = _groupIndex;
+            centerUv = float2(coord + 0.5f) * cb.invRtSize;
+    
+            viewZ = viewZMap.SampleLevel(samLinearClmap, centerUv, 0);
+            normalW = UnpackNormal(normalMap.SampleLevel(samLinearClmap, centerUv, 0));
+            materialID = UnpackMaterialID(lightProp.SampleLevel(samPointClmap, centerUv, 0));
+ 
+            posV = UVToViewSpace(centerUv, viewZ, cb.uvToViewA, cb.uvToViewB);
+            posW = mul(float4(posV, 1.0f), cb.camInvView).xyz;
+            prePosH = mul(float4(posW, 1.0f), cb.camPreViewProj);
+            preCenterUv = (prePosH.xy / prePosH.w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+            velocity = preCenterUv - centerUv;
+        }  
+        void SetJitter(const uint sampleNumber, const float2 invRtSize)
+        {
+            const float2 halton[16] =
+            {
+                //{0.5f, 0.5f },
+                { 0.5f, 0.333333f },
+                { 0.25f, 0.666667f },
+                { 0.75f, 0.111111f },
+                { 0.125f, 0.444444f },
+                { 0.625f, 0.777778f },
+                { 0.375f, 0.222222f },
+                { 0.875f, 0.555556f },
+                { 0.0625f, 0.888889f },
+                { 0.5625f, 0.037037f },
+                { 0.3125f, 0.37037f },
+                { 0.8125f, 0.703704f },
+                { 0.1875f, 0.148148f },
+                { 0.6875f, 0.481481f },
+                { 0.4375f, 0.814815f },
+                { 0.9375f, 0.259259f },
+                { 0.03125f, 0.592593f }
+            };
+            
+            float2 jitter = (halton[sampleNumber] - float2(0.5f, 0.5f)) * 2.0f;
+            jitteredCenterUv = float2(coord + float2(0.5f, 0.5f) + jitter) * invRtSize;
+        }
+        void SkipVelocity(const float threshold)
+        {
+            //부동소수점 오차 교정
+            if (abs(velocity.x) <= threshold)
+                velocity.x = 0;
+            if (abs(velocity.y) <= threshold)
+                velocity.y = 0;
+            
+            preCenterUv = velocity + centerUv;
+            //velocity = abs(velocity);
+        }
+    };
+     
     struct GeometryErrorResult
     {
         Catmul::Parameter bicubicParameter;
@@ -144,7 +252,7 @@ namespace TA
         int passCount;
         bool canUseCubic;
         bool canUseBilinear;
-    };
+    };    
     class GeometryErrorEstimationActor
     {
         float2 preUv;
@@ -301,7 +409,38 @@ namespace TA
             //any(result.customWeight > 0.0f);
             //result.customWeight *= result.customWeight;
         }
-    };
+    };   
+    
+    GeometryErrorEstimationActor CreateActor(in PixelData pixel,
+        in TACommonPassData common,
+        Texture2D<float> preViewZMap,
+        Texture2D preLightPropMap,
+        Texture2D preNormalMap,
+        SamplerState samPointClamp,
+        SamplerState samLinearClmap)
+    {
+        float centerPlaneDist = dot(pixel.posW, pixel.normalW);
+        GeometryErrorEstimationActor actor;
+        actor.Initialze(float2(pixel.preCenterUv),
+            pixel.posW,
+            pixel.normalW,
+            pixel.materialID,
+            common.rtSize,
+            common.invRtSize,
+            1.0f / centerPlaneDist,
+            DISOCCLUSION_THRES_HOLD * (common.camNearFar.y - common.camNearFar.x),
+            NORMAL_THRESHOLD,
+            (float3x3) common.camPreInvView,
+            common.preUvToViewA,
+            common.preUvToViewB,
+            preViewZMap,
+            preLightPropMap,
+            preNormalMap,
+            samPointClamp,
+            samLinearClmap);
+        
+        return actor;
+    }   
     bool ComputeGeometryErrorEstimate(in GeometryErrorEstimationActor actor, out GeometryErrorResult result)
     {
         result.customWeight = float4(0, 0, 0, 0);
@@ -317,6 +456,7 @@ namespace TA
         return true;
     }
 
+    
 #ifdef USE_GROUP_BUFFER_FOR_TAA
 #ifndef SHARED_BUFFER_SIZE
 #define SHARED_BUFFER_SIZE DIMX * DIMY
@@ -399,7 +539,7 @@ groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
             }
             m1 /= loopCount;
             m2 /= loopCount;
-            float sigma = sqrt(m2 - m1 * m1) * TAA_CLAMP_SCALE;
+            float3 sigma = sqrt(m2 - m1 * m1) * TAA_CLAMP_SCALE;
             float3 minYCoCg = m1 - sigma;
             float3 maxYCoCg = m1 + sigma;
             
@@ -420,6 +560,35 @@ groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
             result.isSafe = t == 0;
         }
     };
+    
+    ColorErrorEstimateActor CreateColorActor(in PixelData pixel,
+            in TACommonPassData common,
+            float3 curPixelCenterColor,
+            float3 preHistoryCenterColor,
+            Texture2D srcColorMap,
+            SamplerState samPointClamp,
+            SamplerState samLinearClmap)
+    {
+        ColorErrorEstimateActor actor;
+        actor.Initialize(pixel.centerUv, float2(pixel.preCenterUv), curPixelCenterColor, preHistoryCenterColor, common.invRtSize, srcColorMap, samPointClamp, samLinearClmap);
+        actor.SetGroupIndex(pixel.groupIndex);
+        
+        return actor;
+    };    
+    ColorErrorEstimateActor CreateColorActorWithJittered(in PixelData pixel,
+            in TACommonPassData common,
+            float3 curPixelCenterColor,
+            float3 preHistoryCenterColor,
+            Texture2D srcColorMap,
+            SamplerState samPointClamp,
+            SamplerState samLinearClmap)
+    {
+        ColorErrorEstimateActor actor;
+        actor.Initialize(pixel.jitteredCenterUv, float2(pixel.preCenterUv), curPixelCenterColor, preHistoryCenterColor, common.invRtSize, srcColorMap, samPointClamp, samLinearClmap);
+        actor.SetGroupIndex(pixel.groupIndex);
+        
+        return actor;
+    };    
     bool ComputeColorErrorEstimate(in ColorErrorEstimateActor actor, out ColorErrorResult result)
     { 
         result.clampColor = actor.preHistoryCenterColor;
@@ -430,4 +599,40 @@ groupshared float4 sharedColor[SHARED_BUFFER_SIZE];
         actor.Compute(result);
         return true;
     } 
+     
+    float3 GaiussianBlur(Texture2D colorMap, SamplerState sam, const float3 centerColor, const float2 centerUv, const float2 invRtSize)
+    {
+        //Accum speed는 1.0f 이므로 AA효과가 사라진다.
+        //따라서 Blur로 AA를 대체.
+        
+        //sig = 0.7
+        float gausFilter[TAA_COLOR_GAUS_BLUR_LENGTH][TAA_COLOR_GAUS_BLUR_LENGTH] =
+        {
+            { 0.0421996f, 0.117076f, 0.0421996f},
+            { 0.117076f, 0.324806f, 0.117076f },
+            { 0.0421996f, 0.117076f, 0.0421996f }
+        }; 
+        float weightSum = 0;
+        float3 colorSum = float3(0, 0, 0);
+        
+        [unroll]
+        for (int y = -TAA_COLOR_GAUS_BLUR_RADIUS; y <= TAA_COLOR_GAUS_BLUR_RADIUS; y++)
+        {
+            [unroll]
+            for (int x = -TAA_COLOR_GAUS_BLUR_RADIUS; x <= TAA_COLOR_GAUS_BLUR_RADIUS; x++)
+            {  
+                float2 sampleUv = centerUv + float2(x, y) * invRtSize;
+                if (!IsValidUv(sampleUv))
+                    continue;
+                    
+                int factor = 2 - (abs(y) + abs(x));
+                float weight = gausFilter[y + TAA_COLOR_GAUS_BLUR_RADIUS][x + TAA_COLOR_GAUS_BLUR_RADIUS];
+                
+                float3 sampleColor = colorMap.SampleLevel(sam, sampleUv, 0).xyz;
+                colorSum += sampleColor * weight;
+                weightSum += weight;
+            }
+        }
+        return colorSum / weightSum;
+    }
 }

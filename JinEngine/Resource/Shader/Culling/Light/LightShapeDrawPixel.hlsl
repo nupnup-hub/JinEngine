@@ -61,6 +61,7 @@ bool is_in_yslice(float3 left_plane, float3 right_plane, float3 vert_point)
 
 bool ray_vs_triangle(float3 ray_dir, float3 vert0, float3 vert1, float3 vert2, out float z_pos)
 {
+    z_pos = 0;
 	float3 e1 = vert1 - vert0;
 	float3 e2 = vert2 - vert0;
 	float3 q = cross(ray_dir, e2);
@@ -81,7 +82,7 @@ bool ray_vs_triangle(float3 ray_dir, float3 vert0, float3 vert1, float3 vert2, o
 	if (v < 0.0f || (u + v) > 1.0f) 
 		return false;
 	
-	z_pos = f * dot(e2, r) * ray_dir.z;
+    z_pos = f * dot(e2, r) * ray_dir.z;
 
 	return true;
 }

@@ -50,11 +50,11 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     int3 mapLocation = int3(dispatchThreadID.xy, 0);
     float4 srcColor = src.Load(mapLocation);
 #ifdef REVERSE_X
-    desc[mapLocation.xy].xyz = float4(-srcColor.x, srcColor.yzw);
+    desc[mapLocation.xy] = float4(-srcColor.x, srcColor.yzw);
 #elif REVERSE_Y
-    desc[mapLocation.xy].xyz = float4(srcColor.x, -srcColor.y, srcColor.zw);
+    desc[mapLocation.xy] = float4(srcColor.x, -srcColor.y, srcColor.zw);
 #elif REVERSE_Z
-    desc[mapLocation.xy].xyz = float4(srcColor.xy, -srcColor.z, srcColor.w);
+    desc[mapLocation.xy] = float4(srcColor.xy, -srcColor.z, srcColor.w);
 #else
     desc[mapLocation.xy] = srcColor;
 #endif

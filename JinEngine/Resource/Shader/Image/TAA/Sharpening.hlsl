@@ -43,11 +43,11 @@ SamplerState samLinearClmap : register(s1);
 [numthreads(DIMX, DIMY, 1)]
 void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
         return;
    
     int2 pixelCoord = dispatchThreadID.xy;
-    float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
+    float2 uv = (pixelCoord + float2(0.5f, 0.5f)) * cb.common.invRtSize;
       
     float3 historyColor; 
     bool isOutline;

@@ -237,13 +237,29 @@ namespace JinEngine::Graphic
 		desc.height = height;
 		desc.formatHint = nullptr;
 		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::SSR_MAP;
+		ssrIntermediate = gM->CreateResource(device, desc);
 
-		//1920, 960, 480, 240, 120, 60
+		desc.width = width * 0.5f;
+		desc.height = height * 0.5f;
+		desc.formatHint = nullptr;
+		desc.type.resouce = J_GRAPHIC_RESOURCE_TYPE::SSR_MAP;
+
+		//ex) original resolution 1920 x 1080
+		//mip: 960 x 540 ... 30 x 16
 		for (uint i = 0; i < Constants::ssrMipCount; ++i)
 		{
-			ssrMip[i] = gM->CreateResource(device, desc);
-			desc.width = desc.width * 0.5f;					 
-			desc.height = desc.height * 0.5f;
+			ssrMipPing[i] = gM->CreateResource(device, desc);
+			desc.width *= 0.5f;
+			desc.height *= 0.5f;
+		}
+
+		desc.width = width * 0.5f;
+		desc.height = height * 0.5f;
+		for (uint i = 0; i < Constants::ssrMipCount; ++i)
+		{
+			ssrMipPong[i] = gM->CreateResource(device, desc);
+			desc.width *= 0.5f;
+			desc.height *= 0.5f;
 		}
 	}
 	JDx12GraphicResourceShareData::ImageProcessingData::~ImageProcessingData()
@@ -264,8 +280,12 @@ namespace JinEngine::Graphic
 		gM->DestroyGraphicTextureResource(device, fxaaWorkerQueue.Release());
 		gM->DestroyGraphicTextureResource(device, fxaaColorQueue.Release());  
 
+		gM->DestroyGraphicTextureResource(device, ssrIntermediate.Release());
 		for (uint i = 0; i < Constants::ssrMipCount; ++i)
-			gM->DestroyGraphicTextureResource(device, ssrMip[i].Release());
+		{
+			gM->DestroyGraphicTextureResource(device, ssrMipPing[i].Release());
+			gM->DestroyGraphicTextureResource(device, ssrMipPong[i].Release());
+		}
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceShareData::ImageProcessingData::GetDeviceType()const noexcept
 	{

@@ -51,11 +51,11 @@ SamplerState samLinearClmap : register(s0);
 [numthreads(DIMX, DIMY, 1)]
 void main(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
         return;
     
     int2 pixelCoord = dispatchThreadID.xy; 
-    float2 centerUv = (pixelCoord + float2(0.5f, 0.5f)) * cb.invRtSize;
+    float2 centerUv = (pixelCoord + float2(0.5f, 0.5f)) * cb.common.invRtSize;
     uint currHistoryLength = historyLength[pixelCoord];
  
     if (currHistoryLength <= FIXED_FRAME_COUNT) // not enough temporal history available
@@ -89,7 +89,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
                 //Per pixel kernel rotation
                 //Input signal is already noisy  
                 int2 offset = int2(x, y) * TAB_DISTANCE;
-                float2 uv = centerUv + offset * cb.invRtSize;
+                float2 uv = centerUv + offset * cb.common.invRtSize;
                 //uv = max(uv, float2(0, 0));
          
                 float4 sampleHistory = srcColorHistory.SampleLevel(samLinearClmap, uv, 0);

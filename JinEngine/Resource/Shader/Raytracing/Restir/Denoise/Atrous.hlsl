@@ -39,9 +39,8 @@ SOFTWARE.
 
 Texture2D srcColorHistory : register(t0);
 Texture2D<float> viewZMap : register(t1);
-Texture2D normalMap : register(t2);
-Texture2D<uint> historyLength : register(t3);
-Texture2D<float2> depthDerivative : register(t4);
+Texture2D normalMap : register(t2); 
+Texture2D<float2> depthDerivative : register(t3);
 RWTexture2D<float4> destColorHistory : register(u0); 
 SamplerState samLinearClmap : register(s0);
 
@@ -53,24 +52,23 @@ cbuffer AtorusConstants : register(b1)
 [numthreads(DIMX, DIMY, 1)]
 void main(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
         return;
     
     const int2 pixelCoord = dispatchThreadID.xy;  
     const float2 pixelCenterCoord = pixelCoord + float2(0.5f, 0.5f);
-    const float2 uv = pixelCenterCoord * cb.invRtSize;
+    const float2 uv = pixelCenterCoord * cb.common.invRtSize;
  
     // constant samplers to prevent the compiler from generating code which
     // fetches the sampler descriptor from memory for each texture access
     const float4 centerColorHistory = srcColorHistory.SampleLevel(samLinearClmap, uv, 0);
     const float centerLuminance = RGBToLuminance(centerColorHistory.rgb);
   
-    // number of temporally integrated pixels
-    //const uint currHistoryLength = historyLength[pixelCoord].x;
+    // number of temporally integrated pixels 
     const float centerViewZ = viewZMap.SampleLevel(samLinearClmap, uv, 0);
     const float2 ddxy = depthDerivative.SampleLevel(samLinearClmap, uv, 0);
    
-    if (centerViewZ < 0)
+    if (centerViewZ == cb.common.camNearFar.y)
     {
         // not a valid depth => must be envmap => do not filter
         destColorHistory[pixelCoord] = centerColorHistory;
@@ -81,7 +79,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
     CrossBilateral::NormalDepthLuminance::Parameters param;
     param.normal.Initialize(centerNormal);
     param.depth.Initialize(centerViewZ, ddxy, stepSize);
-    param.luminance.Initialize(centerLuminance, uv, cb.invRtSize, srcColorHistory, samLinearClmap);
+    param.luminance.Initialize(centerLuminance, uv, cb.common.invRtSize, srcColorHistory, samLinearClmap);
  
     //const float phiLIllumination = PHI_COLOR * sqrt(max(0.0, epsVariance + centerVariance));
    // const float phiDepth = max(length(ddxy), 1e-8) * stepSize;
@@ -99,7 +97,7 @@ void main(int3 dispatchThreadID : SV_DispatchThreadID)
         for (int xx = -RADIUS; xx <= RADIUS; xx++)
         {
             const float2 offset = float2(xx, yy) * stepSize;
-            const float2 sampleUv = uv + offset * cb.invRtSize; 
+            const float2 sampleUv = uv + offset * cb.common.invRtSize;
             const float kernel = kernelWeights[abs(xx)] * kernelWeights[abs(yy)];
 
             if (IsValidUv(sampleUv) && (xx != 0 || yy != 0)) 

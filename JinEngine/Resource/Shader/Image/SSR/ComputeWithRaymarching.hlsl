@@ -23,177 +23,217 @@ SOFTWARE.
 ****************************************************************************************/
 
 #pragma once  
-#include"Common.hlsl"  
+#include"ReflectionData.hlsl"  
 
-ConstantBuffer<SSRData> cb : register(b0);
-Texture2D srcMap : register(t0);
-Texture2D<float> viewZMap : register(t1);
-Texture2D normalMap : register(t2);
-RWTexture2D<float4> ssrMap : register(u0);
-SamplerState samPointClamp : register(s0);
-SamplerState samLinearClamp : register(s1);
-//SamplerState samPointClamp : register(s1);
-
-struct SSRInput
-{
-    float3 dir;
-    float3 posV; 
-    float2 uv;
-};
-
-struct SSROutput
-{
-    float2 hitUv;
-    float alpha;
-    bool isHit;
-};
-
+  
+ 
 //Process
 //1. Unpack texture data
-//2. Compute reflect vector by view vec, normalV 
+//2. Create raymarching data
 //3. Raymarching
 //  3.1 Prepare ray info
 //  3.2 Compute DDA
 //  3.3 Loop
-//4. Store
+//  3.4 Binary search   [Optional]
+//4. Sample color
  
 #define DISTANCE_THRESHOLD 0.001f
 #define ROW_DISTANCE_OFFSET 0.01f  
- 
-SSROutput ComputeReflectColor(in SSRInput input)
+
+#ifndef BINARY_SEARCH_LOOP_COUNT 
+#define BINARY_SEARCH_LOOP_COUNT 8
+#endif
+
+#ifdef USE_HI_Z
+#else  
+#define USE_BINARY_SEARCH
+#endif
+
+class RaymarchingActor
 {
-    //3. Raymarching
+    SSR::HitData hit;           //16
     
-    //3.1 Prepare ray info
-    //V = view space
-    //C = clip space
-    //S = screen space     
-    float rayLength = (input.posV.z + input.dir.z * cb.rayDistance) < cb.nearFarZ.x ? (cb.nearFarZ.x - input.posV.z) / input.dir.z : cb.rayDistance;
-    float3 rayEndV = input.posV + input.dir * rayLength;
+    float2 pixelCoord;          //24
+    float inverseW;             //28
     
-    float4 rayBeginC = mul(float4(input.posV, 1.0f), cb.camProj);
-    float4 rayEndC = mul(float4(rayEndV, 1.0f), cb.camProj);
-     
-    float rayBeginInverseW = 1.0f / rayBeginC.w;
-    float rayEndInverseW = 1.0f / rayEndC.w;
-     
-    //Clip -> Ndc -> Screen
-    float2 rayBeginS = (rayBeginC.xy * rayBeginInverseW * float2(0.5f, -0.5f) + 0.5f) * cb.rtSize;
-    float2 rayEndS = (rayEndC.xy * rayEndInverseW * float2(0.5f, -0.5f) + 0.5f) * cb.rtSize;
-    rayEndS += distance(rayEndS, rayBeginS) < DISTANCE_THRESHOLD ? ROW_DISTANCE_OFFSET : 0;
-     
-    //3.2 Compute DDA
-    /*
-        알고리즘.
-        1. 기울기에 따라 기준 축 결정 ... delta < 1 => x, else y
-        2. 기준 축을 따라 진행  ... x: x += 1, y += delta, y: y += 1, y += inverse(delta)
-        3. 결과값이 실수일 경우 반올림. ... 기준 축이 아닌경우만 해당.
-        
-        항상 정수값을 반환하며 중간에 실수값을 취급하지 않는다.
-    */
-    bool permute = false;
-    float2 delta = rayEndS - rayBeginS;
-    if (abs(delta.x) < abs(delta.y))
+    float2 stepDelta;           //36
+    float inverseDelta;         //40
+    
+    float stepDir;              //44
+    float end;                  //48
+    
+    float objectFrontViewZ;     //52
+    float rayViewZ;             //56
+    
+    bool permute;               //60
+    bool isHit;                 //64
+    
+    void Initialize(const float3 posV, const float3 dirV)
     {
-        permute = true;
-        delta = delta.yx;
-        rayBeginS = rayBeginS.yx;
-        rayEndS = rayEndS.yx;
-    }
+        //3. Raymarching
     
-    float stepDir = sign(delta.x);
-    float invDeltaX = stepDir / delta.x;
+        //3.1 Prepare ray info
+        //V = view space
+        //C = clip space
+        //S = screen space     
+        
+        float rayLength = (posV.z + dirV.z * cb.rayDistance) < cb.ta.camNearFar.x ? ((cb.ta.camNearFar.x - posV.z) / dirV.z) : cb.rayDistance;
+        float3 rayEndV = posV + dirV * rayLength;
     
-    float2 stepDelta = float2(stepDir, delta.y * invDeltaX) * cb.stepScale;
-    float inverseDelta = (rayEndInverseW - rayBeginInverseW) * invDeltaX * cb.stepScale; 
+        float4 rayBeginC = mul(float4(posV, 1.0f), cb.camProj);
+        float4 rayEndC = mul(float4(rayEndV, 1.0f), cb.camProj);
+     
+        float rayBeginInverseW = 1.0f / rayBeginC.w;
+        float rayEndInverseW = 1.0f / rayEndC.w;
+     
+        //Clip -> Ndc -> Screen
+        float2 rayBeginS = (rayBeginC.xy * rayBeginInverseW * float2(0.5f, -0.5f) + 0.5f) * cb.halfRtSize;
+        float2 rayEndS = (rayEndC.xy * rayEndInverseW * float2(0.5f, -0.5f) + 0.5f) * cb.halfRtSize;
+        rayEndS += distance(rayEndS, rayBeginS) < DISTANCE_THRESHOLD ? ROW_DISTANCE_OFFSET : 0;
+     
+        //3.2 Compute DDA
+        /*
+            알고리즘.
+            1. 기울기에 따라 기준 축 결정 ... delta < 1 => x, else y
+            2. 기준 축을 따라 진행  ... x: x += 1, y += delta, y: y += 1, y += inverse(delta)
+            3. 결과값이 실수일 경우 반올림. ... 기준 축이 아닌경우만 해당.
+        
+            항상 정수값을 반환하며 중간에 실수값을 취급하지 않는다.
+        */
+        permute = false;
+        float2 delta = rayEndS - rayBeginS;
+        if (abs(delta.x) < abs(delta.y))
+        {
+            permute = true;
+            delta = delta.yx;
+            rayBeginS = rayBeginS.yx;
+            rayEndS = rayEndS.yx;
+        }
     
-    //3.3 Loop 
-    float2 pixelCoord = rayBeginS + stepDelta * cb.startOffset;
-    float inverseW = rayBeginInverseW + inverseDelta * cb.startOffset; 
+        stepDir = sign(delta.x);
+        float invDeltaX = stepDir / delta.x;
+    
+        stepDelta = float2(stepDir, delta.y * invDeltaX) * cb.stepScale;
+        inverseDelta = (rayEndInverseW - rayBeginInverseW) * invDeltaX * cb.stepScale;
+     
+        //초기위치 + stepDelta * jitter에서 마칭 시작.(자가 충돌을 피하기 위해)
+        pixelCoord = rayBeginS + stepDelta * cb.startOffset;
+        inverseW = rayBeginInverseW + inverseDelta * cb.startOffset;
          
-    float stepCount = 0.0f;
-    float end = rayEndS.x * stepDir;
-    
-    //depth backface를 사용하면 두 번 렌더링 해야하므로
-    //사용자 설정값(thickness)으로 대체
-    //초기 위치 Hit를 피하기 위한 값 설정.
-    float rayViewZ = input.posV.z;
-    float thickness = cb.thickness;
-    float objectFrontViewZ = rayViewZ + thickness + 1;
-      
-    //초기위치 + stepDelta * jitter에서 마칭 시작. 
-    SSROutput output;
-    output.alpha = 1;
-    output.hitUv = input.uv;
-    output.isHit = false;
-     
-    //loop condition
-    //1. Distance 
-    //2. Step count
-    //3. Hit
-    
-    [loop]
-    for (;
-        ((pixelCoord.x * stepDir) <= end) && (stepCount < cb.maxStepCount) && IsValidUv(output.hitUv) && !output.isHit && objectFrontViewZ != 0;
-        pixelCoord += stepDelta, inverseW += inverseDelta, stepCount += 1.0f)
-    {
-        output.hitUv = (permute ? pixelCoord.yx : pixelCoord) * cb.invRtSize;
+        end = rayEndS.x * stepDir;
         
-        const float viewZ = viewZMap.SampleLevel(samPointClamp, output.hitUv, 0).r;
-        objectFrontViewZ = viewZ + cb.objectViewZBias;
+        rayViewZ = posV.z;
+        objectFrontViewZ = rayViewZ + cb.thickness + 1;
         
-        rayViewZ = 1.0f / inverseW;
-        output.isHit = viewZ != cb.nearFarZ.y && ((objectFrontViewZ <= rayViewZ) && (rayViewZ <= (objectFrontViewZ + thickness)));
+        hit = SSR::CreateHitData();
     }
-     
-    //0.0f ~ 1.0f 
-    //값에 범위에만 관심이 있으므로 y역전은 적용x  
-    
-    float fadeDistance = cb.fadeDistance;
-    float fadeFactor = saturate(max(abs(output.hitUv.x - 0.5f) * 2.0f, abs(output.hitUv.y - 0.5f) * 2.0f));
- 
-    output.alpha = fadeFactor > (1.0f - fadeDistance) ? (1.0f - fadeFactor) * cb.fadeOneRate : 1.0f;
-    output.alpha = output.alpha * output.alpha * output.alpha;
-     
-    return output;
+    void Execute()
+    { 
+        //3.3 Loop
+        
+        //Optional(Not implemented) 
+        //1. HI-Z Structure (ref: GPU pro 5 ch 4 hi-z cone tracing, Frostbite SSR) for reduce step overhead
+        [loop]
+        for (uint stepCount = 0;
+        ((pixelCoord.x * stepDir) <= end) && (stepCount < cb.maxStepCount) && !hit.isValid && objectFrontViewZ != 0;
+            pixelCoord += stepDelta, inverseW += inverseDelta, ++stepCount)
+        {
+            hit.uv = (permute ? pixelCoord.yx : pixelCoord) * cb.halfInvRtSize;
+        
+            const float viewZ = viewZMap.SampleLevel(samPointClamp, hit.uv, 0).r;
+            objectFrontViewZ = viewZ + cb.objectViewZBias;
+        
+            rayViewZ = 1.0f / inverseW;
+            hit.viewZ = viewZ;
+            hit.isValid = IsValidUv(hit.uv) && viewZ != cb.ta.camNearFar.y && ((objectFrontViewZ <= rayViewZ) && (rayViewZ <= (objectFrontViewZ + cb.thickness)));
+        }
+    }
+    void BinarySearch()
+    { 
+        //3.3 Binary search
+        //for fit intersection point      
+        pixelCoord -= (stepDelta + (stepDelta * 0.5f));
+        inverseW -= (inverseDelta + (inverseDelta * 0.5f));
+        
+        stepDelta *= 0.5f;
+        inverseDelta *= 0.5f;
+        
+        [unroll]
+        for (uint i = 0; i < BINARY_SEARCH_LOOP_COUNT; ++i)
+        {
+            const float2 uv = (permute ? pixelCoord.yx : pixelCoord) * cb.halfInvRtSize;
+            const float viewZ = viewZMap.SampleLevel(samPointClamp, uv, 0);
+            
+            objectFrontViewZ = viewZ + cb.objectViewZBias;        
+            rayViewZ = 1.0f / inverseW;
+            
+            const bool isValid = IsValidUv(uv) && viewZ != cb.ta.camNearFar.y && ((objectFrontViewZ <= rayViewZ) && (rayViewZ <= (objectFrontViewZ + cb.thickness)));
+             
+            stepDelta *= 0.5f;
+            inverseDelta *= 0.5f;
+            
+            if (isValid)
+            {
+                pixelCoord -= stepDelta;
+                inverseW -= inverseDelta;
+                hit.uv = uv;
+                hit.viewZ = viewZ;
+            }
+            else
+            {
+                pixelCoord += stepDelta;
+                inverseW += inverseDelta;
+            }
+        }
+    }
 };
 
 [numthreads(DIMX, DIMY, 1)]
 void main(int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.halfRtSize.x || dispatchThreadID.y >= cb.halfRtSize.y)
         return;
     
     //Preprocess
-    //1. Unpack texture data
-    //2. Compute reflect vector by view vec, normalV 
-    
-    const float2 centerCoord = dispatchThreadID.xy + 0.5f;
-    const float2 centerUv = centerCoord * cb.invRtSize;
-    
-    const float viewZ = viewZMap.SampleLevel(samPointClamp, centerUv, 0).r;
-    if (viewZ == cb.nearFarZ.y)
+    //1. Unpack texture data   
+    SSR::PixelData pixelData = SSR::CreatePixelData(dispatchThreadID);
+    if (!pixelData.isValid)
     {
-        ssrMap[dispatchThreadID.xy] = float4(0, 0, 0, 0);
+        pixelData.InsertFailColor();
         return;
     }
     
-    const float3 posV = GetViewPos(centerUv, viewZ, cb.uvToViewA, cb.uvToViewB);
+    //2. Compute reflect vector by view vec, normalV  
+    SSR::ReflectionData viewReflection = SSR::CreateViewReflection(pixelData);
+      
+    [unroll]
+    for (uint i = 0; i < RAY_COUNT; ++i)
+    {       
+        const float3 reflectionV = viewReflection.Compute(pixelData);
+        
+        //3. Raymarching           
+        RaymarchingActor actor;
+        actor.Initialize(pixelData.posV, reflectionV);
+        actor.Execute();
  
-    const float3 normalW = UnpackNormal(normalMap.SampleLevel(samLinearClamp, centerUv, 0));
-    const float3 normalV = normalize(mul(normalW, (float3x3) cb.camView));
-	   
-    const float3 reflectV = normalize(reflect(posV, normalV));
-     
-    SSRInput input;
-    input.dir = reflectV;
-    input.posV = posV; 
-    input.uv = centerUv;
-    
-    //3. Raymarching
-    SSROutput output = ComputeReflectColor(input);
-    
-    //4. Store
-    const float3 color = srcMap.SampleLevel(samLinearClamp, output.hitUv, 0).xyz;
-    ssrMap[dispatchThreadID.xy] = float4(color, output.alpha) * output.isHit;
+        if (actor.hit.isValid)
+        { 
+            //Hi-Z는 최초 충돌 후 fit한 지점을 찾기위해 레벨을 조정하는 과정을 거치므로
+            //Hi-Z가 적용되지 않은 구현에서 binary search 사용.
+#ifdef USE_BINARY_SEARCH
+            if (cb.stepScale > 1.0f)
+                actor.BinarySearch();
+#endif
+            //4. Sample color
+            pixelData.SampleHitcolor(actor.hit);
+        }
+        else
+        { 
+#ifndef SKIP_SKY_COLOR
+            //Raycast와 다르게 Raymarching은 해당 지점에서 Sky의 가시성을 알 수 없음.
+            //pixelData.SampleSkyColor(reflectionV);
+#endif
+        }
+    }
+    pixelData.InsertReflectionColor();
 }

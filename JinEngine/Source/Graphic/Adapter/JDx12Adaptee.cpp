@@ -293,7 +293,7 @@ namespace JinEngine::Graphic
 		set.blur = std::make_unique<JDx12Blur>();
 		set.downSampling = std::make_unique<JDx12DownSampling>();
 		set.ssao = std::make_unique<JDx12Ssao>();
-		set.ssr = std::make_unique<JDx12Ssr>();
+		set.ssr = std::make_unique<JDx12Ssr>(shareData.pushGraphicEventPtr);
 		set.tm = std::make_unique<JDx12ToneMapping>();
 		set.bloom = std::make_unique<JDx12Bloom>();
 		set.aa = std::make_unique<JDx12Antialise>(shareData.pushGraphicEventPtr);
@@ -602,11 +602,11 @@ namespace JinEngine::Graphic
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ThrowIfFailedG(dx12Frame->GetCmd(J_THREAD_TASK_TYPE::OCC, threadIndex)->Close());
 		 
-		NotifyThreadTaskDone(J_THREAD_TASK_TYPE::OCC, threadIndex);
-
 		JDx12CommandContext* context = Context::Get(J_THREAD_TASK_TYPE::OCC, threadIndex);
 		context->FlushResourceBarriers();
 		EndContext(context);
+
+		NotifyThreadTaskDone(J_THREAD_TASK_TYPE::OCC, threadIndex);
 		return true;
 	}
 	bool JDx12Adaptee::SettingDrawShadowMapTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadShadowMapTaskSet& dataSet)
@@ -633,13 +633,13 @@ namespace JinEngine::Graphic
 			return false;
 
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
-		ThrowIfFailedG(dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex)->Close());
-		 
-		NotifyThreadTaskDone(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex);
+		ThrowIfFailedG(dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex)->Close());		 
 
 		JDx12CommandContext* context = Context::Get(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex);
 		context->FlushResourceBarriers();
 		EndContext(context);
+
+		NotifyThreadTaskDone(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex);
 		return true;
 	}
 	bool JDx12Adaptee::SettingDrawSceneTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadSceneTaskSet& dataSet)
@@ -669,11 +669,11 @@ namespace JinEngine::Graphic
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResourceManager*>(drawRefSet.frameResourceM)->GetCurrentDxFrameResource();
 		ThrowIfFailedG(dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SCENE, threadIndex)->Close());
 		 
-		NotifyThreadTaskDone(J_THREAD_TASK_TYPE::SCENE, threadIndex);
-
 		JDx12CommandContext* context = Context::Get(J_THREAD_TASK_TYPE::SCENE, threadIndex);
 		context->FlushResourceBarriers();
 		EndContext(context);
+
+		NotifyThreadTaskDone(J_THREAD_TASK_TYPE::SCENE, threadIndex);
 		return true;
 	}
 	bool JDx12Adaptee::ExecuteDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet)

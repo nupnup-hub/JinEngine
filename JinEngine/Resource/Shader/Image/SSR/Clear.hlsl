@@ -23,26 +23,31 @@ SOFTWARE.
 ****************************************************************************************/
 
 
-#pragma once 
-#include"../../../Common/TemporalAccumulationCommon.hlsl"
- 
-struct ReserviorDenoiseConstants
+#pragma once  
+
+#ifndef DIMX
+#define DIMX 16
+#endif
+#ifndef DIMY
+#define DIMY 16
+#endif
+
+cbuffer cb0 : register(b0)
 {
-    TACommonPassData common;            //256
-     
-    float baseRadius;
-    float radiusRange;
-    float denoiseRange;
-    uint sampleNumber;
+    uint2 rtSize;
 };
 
-ConstantBuffer<ReserviorDenoiseConstants> cb : register(b0);
+RWStructuredBuffer<float4> colorHistory : register(u0);
+RWStructuredBuffer<float4> preColorHistory : register(u1);
 
-  
-struct ReprojectionOut
+[numthreads(DIMX, DIMY, 1)]
+void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
-    float4 preColor;
-    float4 preFastColor;
-    uint curHistoryLength;
-    float minAccumSpeed; 
-}; 
+    if (dispatchThreadID.x >= rtSize.x || dispatchThreadID.y >= rtSize.y)
+        return;
+      
+    const uint index = dispatchThreadID.x + dispatchThreadID.y * rtSize.x;
+    colorHistory[index] = float4(0, 0, 0, 0);
+    preColorHistory[index] = float4(0, 0, 0, 0);
+}
+  

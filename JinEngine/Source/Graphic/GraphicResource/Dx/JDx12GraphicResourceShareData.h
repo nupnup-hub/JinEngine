@@ -96,7 +96,9 @@ namespace JinEngine
 				JUserPtr<JGraphicResourceInfo> fxaaWorkerQueue;
 				JUserPtr<JGraphicResourceInfo> fxaaColorQueue; 
 			public: 
-				JUserPtr<JGraphicResourceInfo> ssrMip[Constants::ssrMipCount];
+				JUserPtr<JGraphicResourceInfo> ssrIntermediate;
+				JUserPtr<JGraphicResourceInfo> ssrMipPing[Constants::ssrMipCount];
+				JUserPtr<JGraphicResourceInfo> ssrMipPong[Constants::ssrMipCount];
 			private:
 				JGraphicDevice* device = nullptr;
 				JGraphicResourceManager* gM = nullptr;

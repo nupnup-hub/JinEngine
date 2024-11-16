@@ -91,17 +91,17 @@ float3 Clamping(int groupIndex, float3 centerColor, float2 pixelCenterCoord)
 [numthreads(DIMX, DIMY, 1)]
 void main(int groupIndex : SV_GroupIndex, int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    if (dispatchThreadID.x >= cb.rtSize.x || dispatchThreadID.y >= cb.rtSize.y)
+    if (dispatchThreadID.x >= cb.common.rtSize.x || dispatchThreadID.y >= cb.common.rtSize.y)
         return;
     
     int2 pixelCoord = dispatchThreadID.xy;
     float2 pixelCenterCoord = pixelCoord + float2(0.5f, 0.5f);
-    float2 centerUv = pixelCenterCoord * cb.invRtSize;
+    float2 centerUv = pixelCenterCoord * cb.common.invRtSize;
     
     StuffShareMemory(groupIndex, centerUv);
     GroupMemoryBarrierWithGroupSync();
     
-    float3 centerColor = scrColorHistory.SampleLevel(samLinearClmap, pixelCenterCoord * cb.invRtSize, 0);
+    float3 centerColor = scrColorHistory.SampleLevel(samLinearClmap, pixelCenterCoord * cb.common.invRtSize, 0);
     float3 clampColor = Clamping(groupIndex, centerColor, pixelCenterCoord);
          
     uint currHistoryLength = historyLength[pixelCoord];

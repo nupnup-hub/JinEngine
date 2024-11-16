@@ -27,6 +27,7 @@ SOFTWARE.
 #include"../JRaytracingDenoiser.h" 
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceShareData.h"
+#include"../../../FrameResource/Dx/JTACommonConstants.h"
 #include"../../../Buffer/Dx/JDx12GraphicBuffer.h"  
 #include"../../../Shader/Dx/JDx12ShaderDataHolder.h"   
 #include"../../../../Core/Storage/JStorageInterface.h"
@@ -52,27 +53,12 @@ namespace JinEngine
 			struct GIDenoiserPassConstants
 			{
 			public:
-				JMatrix4x4 camInvView = JMatrix4x4::Identity();
-				JMatrix4x4 camPreInvView = JMatrix4x4::Identity();
-				JMatrix4x4 camPreViewProj = JMatrix4x4::Identity();
-
-				JVector2F rtSize = JVector2F::One();
-				JVector2F invRtSize = JVector2F::One();
-
-				JVector2F uvToViewA = JVector2F::One();
-				JVector2F uvToViewB = JVector2F::One();
-
-				JVector2F preUvToViewA = JVector2F::One();
-				JVector2F preUvToViewB = JVector2F::One();
-
-				JVector2F camNearFar = JVector2F::One();
-				float camNearMulFar = 0;
-				float denoiseRange = 0;
-
-				float baseRadius = 0;
-				float radiusRange = 0;
-				uint sampleNumber = 0;
-				uint pad00 = 0;
+				JTACommonConstants common;
+			public: 
+				float baseRadius;
+				float radiusRange;
+				float denoiseRange;
+				uint sampleNumber;
 			};
 		private:
 			struct UserPrivateData : public GraphicVolatileStorageInterface

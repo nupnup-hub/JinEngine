@@ -127,10 +127,12 @@ float BiasedZ(float2 dz_duv, float2 offset, float z0)
 {
     return z0 + dot(dz_duv, offset);
 }
+/*
 float CalBias(float2 uv, float z)
 {
     return SHADOW_SLOPE_SCALE * max(abs(ddx(float3(uv, z))), abs(ddy(float3(uv, z)))) + SHADOW_BIAS * pow(exp2(1.0f) - 32.0f, 2);
 }
+*/
 void CalBlendAmount(float4 textureCoord, float blendRate, in out float currentPixelsBlendBandLocation, out float blendBetweenCascadesAmount)
 {
     float2 distanceToOne = float2(1.0f - textureCoord.x, 1.0f - textureCoord.y);

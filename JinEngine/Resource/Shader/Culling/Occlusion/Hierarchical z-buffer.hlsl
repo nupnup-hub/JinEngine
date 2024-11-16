@@ -390,12 +390,14 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	const float width = viewWidth * (maxX - minX);
 	const float height = viewHeight * (maxY - minY);
 
+	//Object bbox 크기에 맞는 mipmap level
 	int lodFactor = ceil(log2(max(width, height))) - occIndexOffset;
 	if (lodFactor < 0)
 		lodFactor = 0;
 
 	const int lod = clamp((occMapCount - 1) - lodFactor, 0, occMapCount - 1);
-
+	
+	//불필요한 texel load을 최소화 하기 위해 크기에 맞는 mipmap level 사용.
 	float compareDepth00 = mipmap.SampleLevel(occFrameSam, bboxPointNdc[0], lod).r;
 	float compareDepth01 = mipmap.SampleLevel(occFrameSam, bboxPointNdc[1], lod).r;
 	float compareDepth02 = mipmap.SampleLevel(occFrameSam, bboxPointNdc[2], lod).r;
@@ -405,6 +407,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	float compareDepth06 = mipmap.SampleLevel(occFrameSam, bboxPointNdc[6], lod).r;
 	float compareDepth07 = mipmap.SampleLevel(occFrameSam, bboxPointNdc[7], lod).r;
 
+	//가장 먼 깊이값.
 	float finalCompareDepth =  max(max(compareDepth00, max(compareDepth01, max(compareDepth02, compareDepth03))),
 		max(compareDepth04, max(compareDepth05, max(compareDepth06, compareDepth07))));
 	 
