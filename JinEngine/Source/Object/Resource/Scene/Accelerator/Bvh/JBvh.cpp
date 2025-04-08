@@ -357,7 +357,8 @@ namespace JinEngine
 			{
 			case JinEngine::J_ACCELERATOR_SPLIT_TYPE::SAH:
 			{
-				//ÀÎÁ¢ÇÑ bboxµé¿¡ center¸¦ Æ÷ÇÔÇÏ´Â bbox»ı¼º
+				//ì¸ì ‘í•œ bboxë“¤ì— centerë¥¼ í¬í•¨í•˜ëŠ” bboxìƒì„±
+				//bucketCountë¡œ ë‚˜ëˆ ì§„ ì˜ì—­ì—ì„œ Object BBOX ì¤‘ì•™ê°’ì— ë”°ë¼ì„œ ì†í•˜ëŠ” ìœ„ì¹˜ë¥¼ ê²°ì •.
 				for (int i = start; i < end; ++i)
 				{
 					float centroid = GetDimensionValue(objectList[i]->GetRenderItem()->GetBoundingBox().Center, dim);
@@ -386,7 +387,7 @@ namespace JinEngine
 			float boundSurface = bound.Surface();
 			float cost[bucketCount - 1];
 
-			//ÃÖÀû¿¡ Áß¾Ó°ª °áÁ¤
+			//ìµœì ì— ì¤‘ì•™ê°’ ê²°ì •
 			for (int i = 0; i < bucketCount - 1; ++i)
 			{
 				Core::JBBox b0 = Core::JBBox::InfBBox();
@@ -405,7 +406,7 @@ namespace JinEngine
 					b1 = Core::JBBox::Union(b1, buckets[j].bounds);
 					count1 += buckets[j].count;
 				}
-				//±³Â÷°ª = 1, È¾´Ü°ª = 1 / 8
+				//êµì°¨ê°’ = 1, íš¡ë‹¨ê°’ = 1 / 8
 				//
 				cost[i] = traverseRate + (count0 * b0.Surface() + count1 * b1.Surface()) / boundSurface;
 				if (std::isnan(cost[i]))
@@ -584,8 +585,8 @@ namespace JinEngine
 			const uint allNodeCount = (uint)allNodes.size();
 			if (allNodeCount == Private::useCandidateCount)
 			{
-				//ÀÌÁøÆ®¸® À¯Áö¸¦ À§ÇØ ·çÆ® ÀÚ½Ä ³ëµå¸¦ »èÁ¦ÇÏ°í
-				//Æ÷ÇÔµÈ °ÔÀÓ¿ÀºêÁ§Æ®¸¦ ÈÄº¸·Î Ä³½Ì
+				//ì´ì§„íŠ¸ë¦¬ ìœ ì§€ë¥¼ ìœ„í•´ ë£¨íŠ¸ ìì‹ ë…¸ë“œë¥¼ ì‚­ì œí•˜ê³ 
+				//í¬í•¨ëœ ê²Œì„ì˜¤ë¸Œì íŠ¸ë¥¼ í›„ë³´ë¡œ ìºì‹±
 				if (allNodes[nodeNumber]->IsLeftNode())
 					innerGameObjectCandidate = parentNode->GetRightNode()->GetInnerGameObject();
 				else
@@ -599,8 +600,8 @@ namespace JinEngine
 			}
 			else
 			{
-				//Æ®¸® Àç±¸Ãà
-				//ÇÑÂÊ ÀÚ½Äµé¿¡ ÀÚ¿øÀ» ¸ğµÎ ÇØÀçÇÏ°í ´Ù¸¥ ÂÊ ÀÚ½Äµé ÀÚ¿øÀ» °¡Áö°í Àç±¸Ãà
+				//íŠ¸ë¦¬ ì¬êµ¬ì¶•
+				//í•œìª½ ìì‹ë“¤ì— ìì›ì„ ëª¨ë‘ í•´ì¬í•˜ê³  ë‹¤ë¥¸ ìª½ ìì‹ë“¤ ìì›ì„ ê°€ì§€ê³  ì¬êµ¬ì¶•
 				ClearBvhNode(nodeNumber);
 				ReBuildBvh(0);
 			}
