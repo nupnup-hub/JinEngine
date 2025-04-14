@@ -62,9 +62,9 @@ namespace JinEngine::Editor
 			const JVector2<uint>& mousePos,
 			const JVector2<float>& sceneImageWorldMinPoint)
 		{
-			//1.screen¿¡ local mouse pos¸¦ °è»ê
-			//2.local mouse pos¸¦ ÇöÀç editor window Å©±â(scene image Å©±â)¿¡ ¸Â°Ô scale
-			//3. scaleµÈ pos¸¦ world·Î º¯È¯(screen -> ndc -> proj -> view -> world) 
+			//1.screenì— local mouse posë¥¼ ê³„ì‚°
+			//2.local mouse posë¥¼ í˜„ì¬ editor window í¬ê¸°(scene image í¬ê¸°)ì— ë§ê²Œ scale
+			//3. scaleëœ posë¥¼ worldë¡œ ë³€í™˜(screen -> ndc -> proj -> view -> world) 
 
 			//Editor Window view port size = tab + menu + contents 
 			//world mouse pos = 0 ~ app display size
@@ -79,10 +79,11 @@ namespace JinEngine::Editor
 			//screen 0 ~ n
 			//ndc -1 ~ 1
 			//Xndc = 2Xs / w - 1
-			//Yndc = -( 2Ys / w + 1)
+			//Yndc = -( 2Ys / w - 1)
 
 			const float vx = ((2.0f * finalMousePos.x) / cam->GetFarViewWidth() - 1.0f);
-			const float vy = ((-2.0f * finalMousePos.y) / cam->GetFarViewHeight() + 1.0f); 
+			//const float vy = ((-2.0f * finalMousePos.y) / cam->GetFarViewHeight() + 1.0f); 
+			const float vy = -((2.0f * finalMousePos.y) / cam->GetFarViewHeight() - 1.0f); 
 			return JVector2<float>(vx, vy);
 		}
 		static JVector2<float> ToViewPos(JUserPtr<JCamera> cam,
@@ -90,9 +91,9 @@ namespace JinEngine::Editor
 			const JVector2<float>& sceneImageScreenMinPoint,
 			const float pointZValue = 1.0f)
 		{
-			//Xv = Xndc * r * tan(fov) * z = (Xndc * z)/ proj(0, 0)	..Åõ¿µÃ¢À¸·Î ½ºÄÉÀÏ¸µ
-			//Yv = Yndc * r * tan(fov) * z= (Yndc * z) / proj(1, 1)	..Åõ¿µÃ¢À¸·Î ½ºÄÉÀÏ¸µ 
-			//screen»ó¿¡ Á¡ÀÌ¹Ç·Î z ´Â ±âº»ÀûÀ¸·Î 1.0ÀÌ´Ù
+			//Xv = Xndc * r * tan(fov) * z = (Xndc * z)/ proj(0, 0)	..íˆ¬ì˜ì°½ìœ¼ë¡œ ìŠ¤ì¼€ì¼ë§
+			//Yv = Yndc * r * tan(fov) * z= (Yndc * z) / proj(1, 1)	..íˆ¬ì˜ì°½ìœ¼ë¡œ ìŠ¤ì¼€ì¼ë§ 
+			//screenìƒì— ì ì´ë¯€ë¡œ z ëŠ” ê¸°ë³¸ì ìœ¼ë¡œ 1.0ì´ë‹¤
 			const JVector2<float> ndcPos = ToNdcPos(cam, mousePos, sceneImageScreenMinPoint);
 			const JMatrix4x4 proj = cam->GetProj();
 			return JVector2<float>((ndcPos.x * pointZValue) / proj(0, 0), (ndcPos.y * pointZValue) / proj(1, 1));
@@ -106,7 +107,7 @@ namespace JinEngine::Editor
 		if (!Private::IsValidData(scene, cam, sceneImageWorldMinPoint, true))
 			return nullptr;
 
-		//°è»ê¿¡¼­ ±¸ÇÑ pos´Â worldº¯È¯ ÈÄ ray dir·Î »ç¿ë ray pos´Â cam eye¸¦ world·Î º¯È¯ÇÑ°ªÀÌ´Ù
+		//ê³„ì‚°ì—ì„œ êµ¬í•œ posëŠ” worldë³€í™˜ í›„ ray dirë¡œ ì‚¬ìš© ray posëŠ” cam eyeë¥¼ worldë¡œ ë³€í™˜í•œê°’ì´ë‹¤
 		JVector2<float> viewPos = Private::ToViewPos(cam, JGui::GetMousePos(), sceneImageWorldMinPoint);
 		const XMMATRIX invView = XMMatrixInverse(nullptr, cam->GetView().LoadXM());
 
